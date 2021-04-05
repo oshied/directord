@@ -206,5 +206,6 @@ def main():
                     [i for i in tabulated_data if i], headers=headings
                 )
             )
+            print('\nTotal Items: {}\n'.format(len(tabulated_data)))
     else:
         raise AttributeError("Mode is set to an unsupported value.")
