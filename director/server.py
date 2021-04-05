@@ -394,10 +394,6 @@ class Server(manager.Interface):
         run_threads method where their execution will be managed.
         """
 
-        # # Simulate populating the job queue with random tasks.
-        # for _ in range(1, 100):
-        #     self.job_queue.put({"task": str(uuid.uuid4())})
-
         threads = [
             self.thread(target=self.run_socket_server),
             self.thread(target=self.run_heartbeat),

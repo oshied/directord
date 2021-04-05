@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import yaml
+import uuid
 
 import tabulate
 
@@ -197,22 +198,31 @@ def main():
                 with open(orchestrate_file) as f:
                     orchestrations = yaml.safe_load(f)
 
+                job_to_run = list()
                 for orchestrate in orchestrations:
                     targets = orchestrate.get("targets", list())
                     jobs = orchestrate["jobs"]
                     for job in jobs:
+                        job_uuid = str(uuid.uuid4())
                         key, value = next(iter(job.items()))
                         value = [value]
                         for target in targets:
-                            data = user_exec.format_exec(
-                                verb=key, execute=value, target=target
+                            job_to_run.append(
+                                dict(
+                                    verb=key,
+                                    execute=value,
+                                    target=target,
+                                    uuid=job_uuid,
+                                )
                             )
-                            print(user_exec.send_data(data=data))
                         if not targets:
-                            data = user_exec.format_exec(
-                                verb=key, execute=value
+                            job_to_run.append(
+                                dict(verb=key, execute=value, uuid=job_uuid)
                             )
-                            print(user_exec.send_data(data=data))
+
+                for job in job_to_run:
+                    data = user_exec.format_exec(**job)
+                    print(user_exec.send_data(data=data))
 
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
