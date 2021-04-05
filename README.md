@@ -51,20 +51,43 @@ to only run the **Server** component within a container in production scenarios.
 #### Building the container
 
 ``` shell
-$ podman build -t director.HEAD -f Containerfile
+$ podman build -t director -f Containerfile
 ```
 
 #### Running the container in Server mode
 
 ``` shell
-podman run --env DIRECTOR_MODE=server --detach localhost/director.HEAD director
+podman run --hostname director \
+           --net=host \
+           --env DIRECTOR_MODE=server \
+           --detach \
+           localhost/director director
 ```
 
-#### Running the container in Server mode
+#### Running the container in Client mode
 
 ``` shell
-podman run --env DIRECTOR_SERVER_ADDRESS=172.16.2.2 --detach localhost/director.HEAD director
+podman run --hostname director-client \
+           --net=host \
+           --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
+           --detach \
+           localhost/director director
 ```
 
 > NOTE: the DIRECTOR_SERVER_ADDRESS environment variable needs to point to the
   IP address or Domain name of the Director server.
+
+##### Testing Interactions
+
+Lots of client containers can be created to test full scale interactions. This
+simple example shows how that could be done on a single machine.
+
+``` shell
+for i in {1..10}; do
+  podman run --hostname director-client \
+             --net=host \
+             --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
+             --detach \
+             localhost/director director
+done
+```
