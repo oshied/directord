@@ -24,6 +24,11 @@ def _args():
         type=argparse.FileType(mode="r"),
     )
     parser.add_argument(
+        "--debug",
+        help="Enable debug mode. Default: %(default)s",
+        action="store_true",
+    )
+    parser.add_argument(
         "--job-port",
         help="Job port to bind. Default: %(default)s",
         metavar="INT",
@@ -174,7 +179,7 @@ def main():
                 value["ID"] = key
                 raw_data.append(value)
                 for item in value.keys():
-                    if not item.startswith('_'):
+                    if not item.startswith("_"):
                         if item not in headings:
                             headings.append(item)
 
@@ -196,6 +201,10 @@ def main():
                         arranged_data.append(i)
                 tabulated_data.append(arranged_data)
 
-            print(tabulate.tabulate([i for i in tabulated_data if i], headers=headings))
+            print(
+                tabulate.tabulate(
+                    [i for i in tabulated_data if i], headers=headings
+                )
+            )
     else:
         raise AttributeError("Mode is set to an unsupported value.")

@@ -1,3 +1,5 @@
+import logging
+from logging import handlers
 import socket
 import time
 
@@ -23,6 +25,12 @@ class Interface(director.Processor):
         super(Interface, self).__init__()
 
         self.args = args
+
+        # Set log handlers to debug when enabled.
+        if self.args.debug:
+            self.log.setLevel(logging.DEBUG)
+            for handler in self.log.handlers:
+                handler.setLevel(logging.DEBUG)
 
         if self.args.mode == "client":
             self.bind_address = self.args.server_address

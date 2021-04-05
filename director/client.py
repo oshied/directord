@@ -88,9 +88,9 @@ class Client(manager.Interface):
             else:
                 self.bind_heatbeat.send(self.heartbeat_notice)
                 if time.time() > heartbeat_at:
-                    print("W: Heartbeat failure, can't reach queue")
-                    print(
-                        "W: Reconnecting in {}s...".format(
+                    self.log.warn("Heartbeat failure, can't reach queue")
+                    self.log.warn(
+                        "Reconnecting in {}s...".format(
                             self.heartbeat_failure_interval
                         )
                     )
@@ -117,7 +117,7 @@ class Client(manager.Interface):
         """
 
         if cache.get(job_sha1) == self.job_end:
-            print("Cache hit on {}, task skipped.".format(job_sha1))
+            self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
             return self.nullbyte, True
 
         info, success = utils.run_command(command=command)
@@ -136,7 +136,7 @@ class Client(manager.Interface):
         """
 
         if cache.get(job_sha1) == self.job_end:
-            print("Cache hit on {}, task skipped.".format(job_sha1))
+            self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
             return self.nullbyte, True
 
         os.makedirs(workdir, exist_ok=True)
@@ -217,7 +217,7 @@ class Client(manager.Interface):
             job = json.loads(message[0].decode())
             job_id = job["task"]
             job_sha1 = job.get("task_sha1sum")
-            print("Job received {}".format(job_id))
+            self.log.info("Job received {}".format(job_id))
             self.bind_job.send_multipart(
                 [job_id.encode(), self.job_ack, self.nullbyte]
             )
@@ -238,10 +238,10 @@ class Client(manager.Interface):
 
                 if not success:
                     state = c.job_state = self.job_failed
-                    print("Job failed {}".format(job_id))
+                    self.log.error("Job failed {}".format(job_id))
                 else:
                     state = c.job_state = self.job_end
-                    print("Job complete {}".format(job_id))
+                    self.log.info("Job complete {}".format(job_id))
 
                 cache[job_sha1] = state
 

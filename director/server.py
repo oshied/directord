@@ -86,7 +86,7 @@ class Server(manager.Interface):
             if socks.get(self.bind_heatbeat) == zmq.POLLIN:
                 identity, message = self.bind_heatbeat.recv_multipart()
                 if message in [self.heartbeat_ready, self.heartbeat_notice]:
-                    print(
+                    self.log.debug(
                         "Received Heartbeat from {}, client online".format(
                             identity
                         )
@@ -101,14 +101,16 @@ class Server(manager.Interface):
             # Send heartbeats to idle workers if it's time
             elif time.time() > idel_time and self.workers:
                 for worker in list(self.workers.keys()):
-                    print("Sending idle worker {} a heartbeat".format(worker))
+                    self.log.warn(
+                        "Sending idle worker {} a heartbeat".format(worker)
+                    )
                     expire = self.workers.get(worker) or self.get_expiry
                     data = dict(expire=expire)
                     self.bind_heatbeat.send_multipart(
                         [worker, json.dumps(data).encode()]
                     )
                     if time.time() > idel_time + 3:
-                        print("Removing dead worker {}".format(worker))
+                        self.log.warn("Removing dead worker {}".format(worker))
                         self.workers.pop(worker)
 
             self.wq_prune(workers=self.workers)
@@ -138,21 +140,23 @@ class Server(manager.Interface):
             job_metadata["PROCESSING"] = True
             job_metadata["SUCCESS"] = False
             job_metadata["INFO"] = job_output
-            print("{} processing {}".format(identity, job_id))
+            self.log.info("{} processing {}".format(identity, job_id))
         elif job_status in [self.job_end, self.nullbyte]:
-            print("{} processing {} completed".format(identity, job_id))
+            self.log.info(
+                "{} processing {} completed".format(identity, job_id)
+            )
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = True
             job_metadata["INFO"] = job_output
         elif job_status == self.job_failed:
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = False
-            if 'FAILED' in job_metadata:
+            if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity.decode())
             else:
                 job_metadata["FAILED"] = [identity.decode()]
             job_metadata["INFO"] = job_output
-            print("{} processing {} failed".format(identity, job_id))
+            self.log.error("{} processing {} failed".format(identity, job_id))
 
         self.return_jobs[job_id] = job_metadata
 
@@ -276,7 +280,7 @@ class Server(manager.Interface):
                         if job_target in self.workers:
                             targets.append(job_target)
                         else:
-                            print(
+                            self.log.critical(
                                 "Target {} is in an unknown state.".format(
                                     job_target
                                 )
@@ -300,10 +304,8 @@ class Server(manager.Interface):
                         else:
                             self._run_job(job_item=job_item, identity=identity)
 
-                        print(
-                            "Sent job {} to {}".format(
-                                task, identity
-                            )
+                        self.log.info(
+                            "Sent job {} to {}".format(task, identity)
                         )
 
     def run_socket_server(self):
@@ -342,12 +344,17 @@ class Server(manager.Interface):
                     pass
 
                 data_decoded = data.decode()
-                print("Data recieved {}".format(data))
                 json_data = json.loads(data_decoded)
                 if "manage" in json_data:
                     manage = json_data["manage"]
                     if manage == "list-nodes":
-                        data = [(i.decode(), {'expiry': self.workers[i] - time.time()}) for i in self.workers.keys()]
+                        data = [
+                            (
+                                i.decode(),
+                                {"expiry": self.workers[i] - time.time()},
+                            )
+                            for i in self.workers.keys()
+                        ]
                     elif manage == "list-jobs":
                         data = [
                             (str(k), v) for k, v in self.return_jobs.items()
@@ -375,7 +382,7 @@ class Server(manager.Interface):
                             json_data["task"]
                         ).encode()
                     )
-                    print("Data sent to queue, {}".format(json_data))
+                    self.log.debug("Data sent to queue, {}".format(json_data))
                     self.job_queue.put(json_data)
             finally:
                 conn.close()

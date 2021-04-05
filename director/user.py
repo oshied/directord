@@ -44,6 +44,9 @@ class User(manager.Interface):
         """
 
         parser = argparse.ArgumentParser(description="Process exec commands")
+        self.log.debug(
+            "Executing - VERB:%s, EXEC:%s", self.args.verb, self.args.exec
+        )
         if self.args.verb == "RUN":
             data = {"command": " ".join(self.args.exec)}
         elif self.args.verb in ["COPY", "ADD"]:
@@ -150,4 +153,5 @@ class Manage(User):
         else:
             raise SystemExit("No known management function was defined.")
 
+        self.log.debug("Executing Management Command:%s", manage)
         return self.send_data(data=json.dumps(dict(manage=manage)))

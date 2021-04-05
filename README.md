@@ -48,6 +48,29 @@ Server and Client components within a container. While containerization
 functions and is a great tool for development and test, it is recommended
 to only run the **Server** component within a container in production scenarios.
 
+#### Pre-built containers are available
+
+Pre-built Director images are available on my the major public registries.
+
+##### Github Package
+
+``` shell
+$ podman login https://docker.pkg.github.com -u $USERNAME
+$ podman pull docker.pkg.github.com/cloudnull/director/director:main
+```
+
+##### Quay.io
+
+``` shell
+$ podman pull quay.io/cloudnull/director
+```
+
+##### Dockerhub
+
+``` shell
+$ docker pull cloudnull/director
+```
+
 #### Building the container
 
 ``` shell
@@ -67,7 +90,7 @@ podman run --hostname director \
 #### Running the container in Client mode
 
 ``` shell
-podman run --hostname director-client \
+podman run --hostname $(hostname)-client \
            --net=host \
            --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
            --detach \
@@ -84,7 +107,7 @@ simple example shows how that could be done on a single machine.
 
 ``` shell
 for i in {1..40}; do
-  podman run --hostname director-client-${i} \
+  podman run --hostname $(hostname)-client-${i} \
              --net=host \
              --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
              --detach \
