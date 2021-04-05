@@ -131,27 +131,30 @@ class Server(manager.Interface):
 
         # NOTE(cloudnull): This is where we would need to implement a
         #                  callback plugin for the client.
+        job_metadata = self.return_jobs.get(job_id, {})
+        _time = job_metadata["_time"] = job_metadata.get("_time", time.time())
+        job_metadata["EXECUTION_TIME"] = time.time() - _time
         if job_status in [self.job_ack, self.job_processing]:
-            self.return_jobs[job_id] = {
-                "PROCESSING": True,
-                "INFO": job_output,
-            }
+            job_metadata["PROCESSING"] = True
+            job_metadata["SUCCESS"] = False
+            job_metadata["INFO"] = job_output
             print("{} processing {}".format(identity, job_id))
-        elif job_status == self.job_end:
+        elif job_status in [self.job_end, self.nullbyte]:
             print("{} processing {} completed".format(identity, job_id))
-            try:
-                self.return_jobs[job_id] = {
-                    "SUCCESS": True,
-                    "INFO": job_output,
-                }
-            except KeyError:
-                pass
+            job_metadata["PROCESSING"] = False
+            job_metadata["SUCCESS"] = True
+            job_metadata["INFO"] = job_output
         elif job_status == self.job_failed:
-            self.return_jobs[job_id] = {
-                "FAILED": True,
-                "INFO": job_output,
-            }
+            job_metadata["PROCESSING"] = False
+            job_metadata["SUCCESS"] = False
+            if 'FAILED' in job_metadata:
+                job_metadata["FAILED"].append(identity.decode())
+            else:
+                job_metadata["FAILED"] = [identity.decode()]
+            job_metadata["INFO"] = job_output
             print("{} processing {} failed".format(identity, job_id))
+
+        self.return_jobs[job_id] = job_metadata
 
     def _run_transfer(self, job_item, identity):
         """Run file transfer job.
@@ -184,7 +187,6 @@ class Server(manager.Interface):
             )
             with open(file_path, "rb") as f:
                 for chunk in self.read_in_chunks(file_object=f):
-                    print("sending chunk")
                     self.bind_job.send_multipart(
                         [
                             identity,
@@ -282,10 +284,13 @@ class Server(manager.Interface):
                     else:
                         targets = self.workers.keys()
 
-                    self.return_jobs[job_item["task"]] = {
-                        "ACCEPTED": True,
-                        "INFO": self.nullbyte.decode(),
-                    }
+                    if job_item["task"] not in self.return_jobs:
+                        self.return_jobs[job_item["task"]] = {
+                            "ACCEPTED": True,
+                            "INFO": self.nullbyte.decode(),
+                            "_time": time.time(),
+                        }
+
                     for identity in targets:
                         if "from" in job_item:
                             self._run_transfer(
@@ -341,7 +346,7 @@ class Server(manager.Interface):
                 if "manage" in json_data:
                     manage = json_data["manage"]
                     if manage == "list-nodes":
-                        data = [i.decode() for i in self.workers.keys()]
+                        data = [(i.decode(), {'expiry': self.workers[i] - time.time()}) for i in self.workers.keys()]
                     elif manage == "list-jobs":
                         data = [
                             (str(k), v) for k, v in self.return_jobs.items()

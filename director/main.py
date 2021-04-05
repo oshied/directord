@@ -1,6 +1,9 @@
 import argparse
+import json
 import os
 import yaml
+
+import tabulate
 
 from director import client
 from director import server
@@ -139,7 +142,15 @@ def _args():
 
 
 def main():
-    """Execute the main application."""
+    """Execute the main application.
+
+    * Server|Client operations run within the foreground of the application.
+
+    * Exec will submit a job to be run across the cluster.
+
+    * Manage jobs will return information about the cluster and all executed
+      jobs. This data will be returned in table format for easy consumptions.
+    """
 
     args = _args()
     if args.mode == "server":
@@ -153,6 +164,36 @@ def main():
         print(return_data)
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
-        print(manage_exec.run())
+        tabulated_data = list()
+        data = manage_exec.run()
+        data = json.loads(data)
+        if data and isinstance(data, list):
+            headings = ["ID"]
+            raw_data = list()
+            for key, value in data:
+                value["ID"] = key
+                raw_data.append(value)
+                for item in value.keys():
+                    if not item.startswith('_'):
+                        if item not in headings:
+                            headings.append(item)
+
+            while raw_data:
+                item = raw_data.pop(0)
+                arranged_data = list()
+                for heading in headings:
+                    i = item.get(heading, "N/A")
+                    if i and isinstance(i, list):
+                        list_item = i.pop(0)
+                        arranged_data.append(list_item)
+                        new_item = item.copy()
+                        if i:
+                            new_item[heading] = i
+                            raw_data.insert(0, new_item)
+                    else:
+                        arranged_data.append(i)
+                tabulated_data.append(arranged_data)
+
+            print(tabulate.tabulate([i for i in tabulated_data if i], headers=headings))
     else:
         raise AttributeError("Mode is set to an unsupported value.")

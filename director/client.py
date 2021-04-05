@@ -234,13 +234,12 @@ class Client(manager.Interface):
                 elif "workdir" in job:
                     info, success = self._run_workdir(job=job)
 
-            if info:
                 c.info = info
 
-            if not success:
-                c.job_state = self.job_failed
-            else:
-                c.job_state = self.job_end
+                if not success:
+                    c.job_state = self.job_failed
+                else:
+                    c.job_state = self.job_end
 
             cache[job_sha1] = c.job_state
 

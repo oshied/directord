@@ -28,6 +28,7 @@ setuptools.setup(
         "etcd3",
         "pyyaml",
         "pyzmq",
+        "tabulate",
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

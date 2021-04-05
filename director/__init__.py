@@ -82,10 +82,10 @@ class Processor(object):
             pass
 
     @staticmethod
-    def read_in_chunks(file_object, chunk_size=1024):
+    def read_in_chunks(file_object, chunk_size=10240):
         """Generator to read a file piece by piece.
 
-        Default chunk size: 1K.
+        Default chunk size: 10K.
 
         :param file_object: Open File Object
         :type file_object: Object
@@ -96,11 +96,14 @@ class Processor(object):
             data = file_object.read(chunk_size)
             if not data:
                 break
+            print("Sending Chunk")
             yield data
 
     @staticmethod
-    def file_sha1(file_path, chunk_size=1024):
+    def file_sha1(file_path, chunk_size=10240):
         """Return the SHA1 sum of a given file.
+
+        Default chunk size: 10K.
 
         :param file_path: File path
         :type file_path: String

@@ -59,7 +59,6 @@ def run_command(
     )
 
     output, error = process.communicate()
-
     if process.returncode not in return_codes:
         return error, False
     else:
