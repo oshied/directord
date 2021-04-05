@@ -113,6 +113,103 @@ class Server(manager.Interface):
 
             self.wq_prune(workers=self.workers)
 
+    def _set_job_status(self, job_status, job_id, identity, job_output):
+        """Set job status.
+
+        This will update the manager object for job tracking, allowing the
+        user to know what happened within the environment.
+
+        :param job_status: ASCII Control Character
+        :type job_status: Bytes
+        :param job_id: UUID for job
+        :type job_id: String
+        :param identity: Node name
+        :type identity: String
+        :param job_output: Job output information
+        :type job_output: String
+        """
+
+        # NOTE(cloudnull): This is where we would need to implement a
+        #                  callback plugin for the client.
+        if job_status in [self.job_ack, self.job_processing]:
+            self.return_jobs[job_id] = {
+                "PROCESSING": True,
+                "INFO": job_output,
+            }
+            print("{} processing {}".format(identity, job_id))
+        elif job_status == self.job_end:
+            print("{} processing {} completed".format(identity, job_id))
+            try:
+                self.return_jobs[job_id] = {
+                    "SUCCESS": True,
+                    "INFO": job_output,
+                }
+            except KeyError:
+                pass
+        elif job_status == self.job_failed:
+            self.return_jobs[job_id] = {
+                "FAILED": True,
+                "INFO": job_output,
+            }
+            print("{} processing {} failed".format(identity, job_id))
+
+    def _run_transfer(self, job_item, identity):
+        """Run file transfer job.
+
+        The transfer process will transfer all files from a given meta data
+        set using strict identity targetting.
+
+        When a file is initiated all chunks will be sent over the wire.
+
+        :param job_item: Dictionary item containing job meta data.
+        :type job_item: Dictionary
+        :param identity: Node name
+        :type identity: String
+        """
+
+        for file_path in job_item["from"]:
+            job_item["file_to"] = os.path.join(
+                job_item["to"],
+                os.path.basename(file_path),
+            )
+            # TODO(cloudull): figure out how to shortcircut
+            # the transfer if the SHA1 SUM matches an
+            # existing file.
+            job_item["file_sha1sum"] = self.file_sha1(file_path=file_path)
+            self.bind_job.send_multipart(
+                [
+                    identity,
+                    json.dumps(job_item).encode(),
+                ]
+            )
+            with open(file_path, "rb") as f:
+                for chunk in self.read_in_chunks(file_object=f):
+                    print("sending chunk")
+                    self.bind_job.send_multipart(
+                        [
+                            identity,
+                            chunk,
+                        ]
+                    )
+                else:
+                    self.bind_job.send_multipart(
+                        [
+                            identity,
+                            self.transfer_end,
+                        ]
+                    )
+
+    def _run_job(self, job_item, identity):
+        """Run an encoded job.
+
+        :param job_item: Dictionary item containing job meta data.
+        :type job_item: Dictionary
+        :param identity: Node name
+        :type identity: String
+        """
+
+        self.bind_job.send_multipart([identity, json.dumps(job_item).encode()])
+
     def run_job(self):
         """Execute the job loop.
 
@@ -151,40 +248,18 @@ class Server(manager.Interface):
             socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
             # Handle worker activity on backend
             if socks.get(self.bind_job) == zmq.POLLIN:
-                (
-                    identity,
-                    job_id,
-                    job_status,
-                    job_output,
-                ) = self.bind_job.recv_multipart()
+
+                _recv = self.bind_job.recv_multipart()
+                identity, job_id, job_status, job_output = _recv
                 job_output = job_output.decode()
                 job_id = job_id.decode()
 
-                # NOTE(cloudnull): This is where we would need to implement a
-                #                  callback plugin for the client.
-                if job_status in [self.job_ack, self.job_processing]:
-                    self.return_jobs[job_id] = {
-                        "PROCESSING": True,
-                        "INFO": job_output,
-                    }
-                    print("{} processing {}".format(identity, job_id))
-                elif job_status == self.job_end:
-                    print(
-                        "{} processing {} completed".format(identity, job_id)
-                    )
-                    try:
-                        self.return_jobs[job_id] = {
-                            "SUCCESS": True,
-                            "INFO": job_output,
-                        }
-                    except KeyError:
-                        pass
-                elif job_status == self.job_failed:
-                    self.return_jobs[job_id] = {
-                        "FAILED": True,
-                        "INFO": job_output,
-                    }
-                    print("{} processing {} failed".format(identity, job_id))
+                self._set_job_status(
+                    job_status=job_status,
+                    job_id=job_id,
+                    identity=identity,
+                    job_output=job_output,
+                )
 
             elif self.workers:
                 try:
@@ -213,45 +288,12 @@ class Server(manager.Interface):
                     }
                     for identity in targets:
                         if "from" in job_item:
-                            for file_path in job_item["from"]:
-                                job_item["file_to"] = os.path.join(
-                                    job_item["to"],
-                                    os.path.basename(file_path),
-                                )
-                                # TODO(cloudull): figure out how to shortcircut
-                                # the transfer if the SHA1 SUM matches an
-                                # existing file.
-                                job_item["file_sha1sum"] = self.file_sha1(
-                                    file_path=file_path
-                                )
-                                self.bind_job.send_multipart(
-                                    [
-                                        identity,
-                                        json.dumps(job_item).encode(),
-                                    ]
-                                )
-                                with open(file_path, "rb") as f:
-                                    for chunk in self.read_in_chunks(
-                                        file_object=f
-                                    ):
-                                        print('sending chunk')
-                                        self.bind_job.send_multipart(
-                                            [
-                                                identity,
-                                                chunk,
-                                            ]
-                                        )
-                                    else:
-                                        self.bind_job.send_multipart(
-                                            [
-                                                identity,
-                                                self.transfer_end,
-                                            ]
-                                        )
-                        else:
-                            self.bind_job.send_multipart(
-                                [identity, json.dumps(job_item).encode()]
+                            self._run_transfer(
+                                job_item=job_item, identity=identity
                             )
+                        else:
+                            self._run_job(job_item=job_item, identity=identity)
+
                         print(
                             "Sent job {} to {}".format(
                                 job_item["task"], identity

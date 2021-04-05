@@ -117,12 +117,11 @@ class Client(manager.Interface):
         """
 
         if cache.get(job_sha1) == self.job_end:
-            print('Cache hit on {}, task skipped.'.format(job_sha1))
+            print("Cache hit on {}, task skipped.".format(job_sha1))
             return self.nullbyte, True
 
         info, success = utils.run_command(command=command)
         return info, success
-
 
     def _run_workdir(self, cache, job_sha1, workdir):
         """Run file work directory operation.
@@ -137,11 +136,11 @@ class Client(manager.Interface):
         """
 
         if cache.get(job_sha1) == self.job_end:
-            print('Cache hit on {}, task skipped.'.format(job_sha1))
+            print("Cache hit on {}, task skipped.".format(job_sha1))
             return self.nullbyte, True
 
         os.makedirs(workdir, exist_ok=True)
-        return '', True
+        return "", True
 
     def _run_transfer(self, job):
         """Run file transfer operation.
@@ -217,18 +216,22 @@ class Client(manager.Interface):
             message = self.bind_job.recv_multipart()
             job = json.loads(message[0].decode())
             job_id = job["task"]
-            job_sha1 = job.get('task_sha1sum')
+            job_sha1 = job.get("task_sha1sum")
             print("received job", job_id)
             self.bind_job.send_multipart(
                 [job_id.encode(), self.job_ack, self.nullbyte]
             )
 
-            with utils.ClientStatus(socket=self.bind_job, job_id=job_id.encode(), ctx=self) as c:
-                if 'command' in job:
-                    info, success = self._run_command(cache=cache, job_sha1=job_sha1, command=job['command'])
-                elif 'file_to' in job:
+            with utils.ClientStatus(
+                socket=self.bind_job, job_id=job_id.encode(), ctx=self
+            ) as c:
+                if "command" in job:
+                    info, success = self._run_command(
+                        cache=cache, job_sha1=job_sha1, command=job["command"]
+                    )
+                elif "file_to" in job:
                     info, success = self._run_transfer(job=job)
-                elif 'workdir' in job:
+                elif "workdir" in job:
                     info, success = self._run_workdir(job=job)
 
             if info:
@@ -252,7 +255,6 @@ class Client(manager.Interface):
         with diskcache.Cache(tempfile.gettempdir()) as cache:
             while True:
                 self._job_loop(cache=cache)
-
 
     def worker_run(self):
         """Run all work related threads.
