@@ -217,7 +217,7 @@ class Client(manager.Interface):
             job = json.loads(message[0].decode())
             job_id = job["task"]
             job_sha1 = job.get("task_sha1sum")
-            print("received job", job_id)
+            print("Job received {}".format(job_id))
             self.bind_job.send_multipart(
                 [job_id.encode(), self.job_ack, self.nullbyte]
             )
@@ -238,8 +238,10 @@ class Client(manager.Interface):
 
                 if not success:
                     state = c.job_state = self.job_failed
+                    print("Job failed {}".format(job_id))
                 else:
                     state = c.job_state = self.job_end
+                    print("Job complete {}".format(job_id))
 
                 cache[job_sha1] = state
 

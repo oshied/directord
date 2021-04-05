@@ -72,13 +72,26 @@ class ClientStatus(object):
         """Initialize the UNIX socket connect context manager."""
 
         self.ctx = ctx
-        self.job_id = job_id
+        self.job_id = self.encode_string(item=job_id)
         self.job_state = ctx.nullbyte
         self.info = ctx.nullbyte
         self.socket = socket
         self.socket.send_multipart(
             [self.job_id, ctx.job_processing, self.ctx.nullbyte]
         )
+
+    @staticmethod
+    def encode_string(item):
+        """Inspect a given item and if it is a string type, encode it.
+
+        :param item: Item to inspect, assumes item may be string type
+        :type item: <ANY>
+        :returns: String|<ANY>
+        """
+        if isinstance(item, str):
+            return item.encode()
+        else:
+            return item
 
     def __enter__(self):
         """Upon enter, return the context manager object for future updates.
@@ -89,6 +102,12 @@ class ClientStatus(object):
         return self
 
     def __exit__(self, *args, **kwargs):
-        """Upon exit, close the unix socket."""
+        """Upon exit, send a final status message."""
 
-        self.socket.send_multipart([self.job_id, self.job_state, self.info])
+        exit_return = list()
+        for i in [self.job_id, self.job_state, self.info]:
+            if not i:
+                exit_return.append(self.ctx.nullbyte)
+            else:
+                exit_return.append(bytes(self.encode_string(item=i)))
+        self.socket.send_multipart(exit_return)

@@ -166,7 +166,6 @@ def main():
         manage_exec = user.Manage(args=args)
         tabulated_data = list()
         data = manage_exec.run()
-        print(data)
         data = json.loads(data)
         if data and isinstance(data, list):
             headings = ["ID"]
@@ -184,13 +183,15 @@ def main():
                 arranged_data = list()
                 for heading in headings:
                     i = item.get(heading, "N/A")
-                    if i and isinstance(i, list):
+                    if isinstance(i, list):
                         list_item = i.pop(0)
                         arranged_data.append(list_item)
                         new_item = item.copy()
                         if i:
                             new_item[heading] = i
                             raw_data.insert(0, new_item)
+                    elif isinstance(i, float):
+                        arranged_data.append("{:.2f}".format(i))
                     else:
                         arranged_data.append(i)
                 tabulated_data.append(arranged_data)
