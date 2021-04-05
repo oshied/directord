@@ -1,0 +1,26 @@
+name: Auto-black
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install Black
+        run: pip install black
+      - name: Run formatting check .
+        run: black --line-length 79 --safe --target-version py38 --check .
+      - name: If needed, commit black changes to the pull request
+        if: failure()
+        run: |
+          black --line-length 79 --safe --target-version py38 .
+          git config --global user.name '${{ github.event.pull_request.user.login }}'
+          git config --global user.email '${{ github.event.pull_request.user.login }}@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git commit -am "FIX: Auto format Python code with Black"
+          git push
