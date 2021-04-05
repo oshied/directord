@@ -66,15 +66,6 @@ def run_command(
         return output, True
 
 
-def mkdir_p(path):
-    """Ensure the path exists.
-
-    :param path: ``str``
-    """
-
-    os.makedirs(path, exist_ok=True)
-
-
 class ClientStatus(object):
     """Context manager for transmitting client status."""
 

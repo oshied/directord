@@ -2,8 +2,10 @@ import grp
 import json
 import os
 import pwd
+import tempfile
 import time
 
+import diskcache
 import zmq
 
 from director import manager
@@ -102,7 +104,85 @@ class Client(manager.Interface):
                     self.bind_heatbeat = self.heatbeat_connect()
                     heartbeat_at = self.get_heartbeat
 
-    def run_job(self):
+    def _run_command(self, cache, job_sha1, command):
+        """Run file command operation.
+
+        :param cache: Cached access object.
+        :type cache: Object
+        :param job_sha1: SHA1SUM of the original job schematic.
+        :type job_sha1: String
+        :param command: Work directory path.
+        :type command: String
+        :returns: tuple
+        """
+
+        if cache.get(job_sha1) == self.job_end:
+            print('Cache hit on {}, task skipped.'.format(job_sha1))
+            return self.nullbyte, True
+
+        info, success = utils.run_command(command=command)
+        return info, success
+
+
+    def _run_workdir(self, cache, job_sha1, workdir):
+        """Run file work directory operation.
+
+        :param cache: Cached access object.
+        :type cache: Object
+        :param job_sha1: SHA1SUM of the original job schematic.
+        :type job_sha1: String
+        :param workdir: Work directory path.
+        :type workdir: String
+        :returns: tuple
+        """
+
+        if cache.get(job_sha1) == self.job_end:
+            print('Cache hit on {}, task skipped.'.format(job_sha1))
+            return self.nullbyte, True
+
+        os.makedirs(workdir, exist_ok=True)
+        return '', True
+
+    def _run_transfer(self, job):
+        """Run file transfer operation.
+
+        :param job: Job dictionary containing metadata about a given task.
+        :type job: Dictionary
+        :returns: tuple
+        """
+
+        # TODO: Add short-circut to file transfers.
+        file_to = job["file_to"]
+        with open(file_to, "wb") as f:
+            while True:
+                try:
+                    chunk = self.bind_job.recv()
+                    if chunk == self.transfer_end:
+                        break
+                except Exception:
+                    break
+                else:
+                    f.write(chunk)
+        success = True
+
+        user = job.get("user")
+        group = job.get("group")
+        if user:
+            try:
+                uid = pwd.getpwnam(user).pw_uid
+                if group:
+                    gid = grp.getgrnam(group).gr_gid
+                else:
+                    gid = -1
+            except KeyError:
+                success = False
+            else:
+                os.chown(file_to, uid, gid)
+                success = True
+
+        return self.file_sha1(file_to), success
+
+    def _job_loop(self, cache):
         """Execute the job loop.
 
         The job message from the server will always be a multipart
@@ -126,67 +206,53 @@ class Client(manager.Interface):
 
         > When a file transfer is initiated the client will enter a loop
           waiting for data chunks until an `transfer_end` signal is passed.
+
+        :param cache: Cached access object.
+        :type cache: Object
+        """
+
+        socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
+        if self.bind_job in socks:
+            # This is procecssing the work queue
+            message = self.bind_job.recv_multipart()
+            job = json.loads(message[0].decode())
+            job_id = job["task"]
+            job_sha1 = job.get('task_sha1sum')
+            print("received job", job_id)
+            self.bind_job.send_multipart(
+                [job_id.encode(), self.job_ack, self.nullbyte]
+            )
+
+            with utils.ClientStatus(socket=self.bind_job, job_id=job_id.encode(), ctx=self) as c:
+                if 'command' in job:
+                    info, success = self._run_command(cache=cache, job_sha1=job_sha1, command=job['command'])
+                elif 'file_to' in job:
+                    info, success = self._run_transfer(job=job)
+                elif 'workdir' in job:
+                    info, success = self._run_workdir(job=job)
+
+            if info:
+                c.info = info
+
+            if not success:
+                c.job_state = self.job_failed
+            else:
+                c.job_state = self.job_end
+
+            cache[job_sha1] = c.job_state
+
+    def run_job(self):
+        """Job entry point.
+
+        This creates a cached access object, connects to the socket and begins
+        the loop.
         """
 
         self.bind_job = self.job_connect()
-        while True:
-            socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
-            if self.bind_job in socks:
-                # This is procecssing the work queue
-                message = self.bind_job.recv_multipart()
-                job = json.loads(message[0].decode())
-                job_id = job["task"]
-                print("received job", job_id)
-                self.bind_job.send_multipart(
-                    [job_id.encode(), self.job_ack, self.nullbyte]
-                )
+        with diskcache.Cache(tempfile.gettempdir()) as cache:
+            while True:
+                self._job_loop(cache=cache)
 
-                with utils.ClientStatus(
-                    socket=self.bind_job, job_id=job_id.encode(), ctx=self
-                ) as c:
-                    command = job.get("command")
-                    if command:
-                        info, success = utils.run_command(command=command)
-                        if info:
-                            c.info = info
-
-                        if not success:
-                            c.job_state = self.job_failed
-                        else:
-                            c.job_state = self.job_end
-
-                    file_to = job.get("file_to")
-                    if file_to:
-                        with open(file_to, "wb") as f:
-                            while True:
-                                try:
-                                    chunk = self.bind_job.recv()
-                                    if chunk == self.transfer_end:
-                                        break
-                                except Exception:
-                                    break
-                                else:
-                                    f.write(chunk)
-
-                        user = job.get("user")
-                        group = job.get("group")
-                        try:
-                            uid = pwd.getpwnam(user).pw_uid
-                            if group:
-                                gid = grp.getgrnam(group).gr_gid
-                            else:
-                                gid = -1
-                        except KeyError:
-                            c.job_state = self.job_failed
-                        else:
-                            os.chown(file_to, uid, gid)
-
-                        c.job_state = self.job_end
-
-                    workdir = job.get("workdir")
-                    if workdir:
-                        utils.mkdir_p(workdir)
-                        c.job_state = self.job_end
 
     def worker_run(self):
         """Run all work related threads.

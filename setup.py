@@ -24,6 +24,7 @@ setuptools.setup(
     zip_safe=False,
     test_suite="tests",
     install_requires=[
+        "diskcache",
         "etcd3",
         "pyyaml",
         "pyzmq",
