@@ -237,11 +237,11 @@ class Client(manager.Interface):
                 c.info = info
 
                 if not success:
-                    c.job_state = self.job_failed
+                    state = c.job_state = self.job_failed
                 else:
-                    c.job_state = self.job_end
+                    state = c.job_state = self.job_end
 
-            cache[job_sha1] = c.job_state
+                cache[job_sha1] = state
 
     def run_job(self):
         """Job entry point.

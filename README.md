@@ -83,7 +83,7 @@ Lots of client containers can be created to test full scale interactions. This
 simple example shows how that could be done on a single machine.
 
 ``` shell
-for i in {1..20}; do
+for i in {1..40}; do
   podman run --hostname director-client-${i} \
              --net=host \
              --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \

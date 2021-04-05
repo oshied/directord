@@ -166,6 +166,7 @@ def main():
         manage_exec = user.Manage(args=args)
         tabulated_data = list()
         data = manage_exec.run()
+        print(data)
         data = json.loads(data)
         if data and isinstance(data, list):
             headings = ["ID"]

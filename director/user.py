@@ -116,7 +116,7 @@ class User(manager.Interface):
 
         with director.UNIXSocketConnect(self.args.socket_path) as s:
             s.sendall(data.encode())
-            return s.recv(1024).decode()
+            return s.recv(1024000).decode()
 
 
 class Manage(User):

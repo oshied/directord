@@ -267,7 +267,7 @@ class Server(manager.Interface):
                 try:
                     job_item = self.job_queue.get(block=False, timeout=1)
                 except Exception:
-                    job_item = None
+                    pass
                 else:
                     job_target = job_item.get("target")
                     if job_target:
@@ -284,8 +284,9 @@ class Server(manager.Interface):
                     else:
                         targets = self.workers.keys()
 
-                    if job_item["task"] not in self.return_jobs:
-                        self.return_jobs[job_item["task"]] = {
+                    task = job_item.get("task")
+                    if task and task not in self.return_jobs:
+                        self.return_jobs[task] = {
                             "ACCEPTED": True,
                             "INFO": self.nullbyte.decode(),
                             "_time": time.time(),
@@ -301,7 +302,7 @@ class Server(manager.Interface):
 
                         print(
                             "Sent job {} to {}".format(
-                                job_item["task"], identity
+                                task, identity
                             )
                         )
 
