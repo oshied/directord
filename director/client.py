@@ -232,7 +232,9 @@ class Client(manager.Interface):
                 elif "file_to" in job:
                     info, success = self._run_transfer(job=job)
                 elif "workdir" in job:
-                    info, success = self._run_workdir(job=job)
+                    info, success = self._run_workdir(
+                        cache=cache, job_sha1=job_sha1, workdir=job["workdir"]
+                    )
 
                 c.info = info
 

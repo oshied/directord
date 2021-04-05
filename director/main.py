@@ -68,6 +68,20 @@ def _args():
     subparsers = parser.add_subparsers(
         help="Mode sub-command help", dest="mode"
     )
+    parser_orchestrate = subparsers.add_parser(
+        "orchestrate", help="Orchestration mode help"
+    )
+    parser_orchestrate.add_argument(
+        "--target",
+        help="Worker target to run a particular job against.",
+        metavar="STRING",
+    )
+    parser_orchestrate.add_argument(
+        "orchestrate_files",
+        help="YAML files to use for orchestration.",
+        metavar="STRING",
+        nargs="+",
+    )
     parser_exec = subparsers.add_parser("exec", help="Execution mode help")
     parser_exec.add_argument(
         "--verb",
@@ -164,9 +178,42 @@ def main():
         client.Client(args=args).worker_run()
     elif args.mode == "exec":
         user_exec = user.User(args=args)
-        data = user_exec.format_exec()
+        data = user_exec.format_exec(
+            verb=args.verb, execute=args.exec, target=args.target
+        )
         return_data = user_exec.send_data(data=data)
         print(return_data)
+    elif args.mode == "orchestrate":
+        user_exec = user.User(args=args)
+        for orchestrate_file in args.orchestrate_files:
+            orchestrate_file = os.path.abspath(
+                os.path.expanduser(orchestrate_file)
+            )
+            if not os.path.exists(orchestrate_file):
+                raise FileNotFoundError(
+                    "The [ {} ] file was not found.".format(orchestrate_file)
+                )
+            else:
+                with open(orchestrate_file) as f:
+                    orchestrations = yaml.safe_load(f)
+
+                for orchestrate in orchestrations:
+                    targets = orchestrate.get("targets", list())
+                    jobs = orchestrate["jobs"]
+                    for job in jobs:
+                        key, value = next(iter(job.items()))
+                        value = [value]
+                        for target in targets:
+                            data = user_exec.format_exec(
+                                verb=key, execute=value, target=target
+                            )
+                            print(user_exec.send_data(data=data))
+                        if not targets:
+                            data = user_exec.format_exec(
+                                verb=key, execute=value
+                            )
+                            print(user_exec.send_data(data=data))
+
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
         tabulated_data = list()
@@ -206,6 +253,6 @@ def main():
                     [i for i in tabulated_data if i], headers=headings
                 )
             )
-            print('\nTotal Items: {}\n'.format(len(tabulated_data)))
+            print("\nTotal Items: {}\n".format(len(tabulated_data)))
     else:
         raise AttributeError("Mode is set to an unsupported value.")

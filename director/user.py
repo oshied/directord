@@ -22,37 +22,43 @@ class User(manager.Interface):
 
         super(User, self).__init__(args=args)
 
-    def sanitized_args(self):
+    def sanitized_args(self, execute):
         """Return arguments in a flattened array.
 
         This will inspect the execution arguments and return everything found
         as a flattened array.
 
+        :param execute: Execution string to parse.
+        :type execute: String
         :returns: List
         """
 
-        return [i for g in self.args.exec for i in g.split()]
+        return [i for g in execute for i in g.split()]
 
-    def format_exec(self):
+    def format_exec(self, verb, execute, target=None):
         """Return a JSON encode object for task execution.
 
         While formatting the message, the method will treat each verb as a
         case and parse the underlying sub-command, formatting the information
         into a dictionary.
 
+        :param verb: Action to parse.
+        :type verb: String
+        :param execute: Execution string to parse.
+        :type execute: String
+        :param target: Target argent to send job to.
+        :type target: String
         :returns: String
         """
 
         parser = argparse.ArgumentParser(description="Process exec commands")
-        self.log.debug(
-            "Executing - VERB:%s, EXEC:%s", self.args.verb, self.args.exec
-        )
-        if self.args.verb == "RUN":
-            data = {"command": " ".join(self.args.exec)}
-        elif self.args.verb in ["COPY", "ADD"]:
+        self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
+        if verb == "RUN":
+            data = {"command": " ".join(execute)}
+        elif verb in ["COPY", "ADD"]:
             parser.add_argument("--chown")
             parser.add_argument("file_path", nargs="+")
-            args = parser.parse_args(self.sanitized_args())
+            args = parser.parse_args(self.sanitized_args(execute=execute))
             data = dict()
             if args.chown:
                 chown = args.chown.split(":", 1)
@@ -67,41 +73,41 @@ class User(manager.Interface):
                 raise AttributeError(
                     "The value of {} was not found.".format(file_from)
                 )
-        elif self.args.verb == "FROM":
+        elif verb == "FROM":
             raise NotImplementedError()
-        elif self.args.verb == "ARG":
+        elif verb == "ARG":
             raise NotImplementedError()
-        elif self.args.verb == "ENV":
+        elif verb == "ENV":
             raise NotImplementedError()
-        elif self.args.verb == "LABEL":
+        elif verb == "LABEL":
             raise NotImplementedError()
-        elif self.args.verb == "USER":
+        elif verb == "USER":
             raise NotImplementedError()
             parser.add_argument("user")
-            args = parser.parse_args(self.sanitized_args())
+            args = parser.parse_args(self.sanitized_args(execute=execute))
             user = args.user.split(":", 1)
             data = dict()
             if len(user) == 1:
                 user.append(None)
             data["user"], data["group"] = user
-        elif self.args.verb == "EXPOSE":
+        elif verb == "EXPOSE":
             raise NotImplementedError()
             parser.add_argument("expose")
-            args = parser.parse_args(self.sanitized_args())
+            args = parser.parse_args(self.sanitized_args(execute=execute))
             expose = args.expose.split("/", 1)
             data = dict()
             if len(expose) == 1:
                 expose.append("tcp")
             data["port"], data["proto"] = expose
-        elif self.args.verb == "WORKDIR":
+        elif verb == "WORKDIR":
             parser.add_argument("workdir")
-            args = parser.parse_args(self.sanitized_args())
+            args = parser.parse_args(self.sanitized_args(execute=execute))
             data = dict(workdir=args.workdir)
         else:
             raise SystemExit("No known verb defined.")
 
-        if self.args.target:
-            data["target"] = self.args.target
+        if target:
+            data["target"] = target
 
         return json.dumps(data)
 
