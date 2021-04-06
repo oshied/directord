@@ -40,5 +40,11 @@ setuptools.setup(
         "Topic :: Utilities",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    entry_points={"console_scripts": ["director = director.main:main"]},
+    entry_points={
+        "console_scripts": [
+            "director = director.main:main",
+            "director-server-systemd = director.main:_systemd_server",
+            "director-client-systemd = director.main:_systemd_client",
+        ]
+    },
 )

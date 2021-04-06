@@ -19,7 +19,6 @@ Director is a single application which consists of three parts:
 * **User** - CLI utility which interfaces with the server over a local socket
   connect.
 
-
 Director allows for the user to configure the application using environment
 variables, a configurations file, or command line switches.
 
@@ -99,6 +98,28 @@ three noted targets, `wget` will be installed.
 Upon the execution of each job, a new UUID will be presented to you for
 tracking purposes. This information can be used with the manage commands.
 
+## Service setup
+
+Director comes with the ability to pre-create systemd service unit files when
+required. When director is installed two additional entrypoints are created for
+`director-server-systemd` and `director-client-systemd`. These utilities will
+create relevant service unit files and ensure the execution path is set
+correctly. This allows operators to easily install and run Director, even when
+executing from a virtual-environment.
+
+The service unit, for both server and client, assumes that all configuration
+will be performed through the `/etc/director/config.yaml` file. This
+configuration file maps all arguments that can be defined on the CLI to is a
+simple key=value pair.
+
+##### Example configuration file
+
+``` yaml
+---
+heartbeat_interval: 1
+debug: true
+```
+
 ## Containerization
 
 A Containerfile and image has been provided allowing operators to run the
@@ -138,21 +159,21 @@ $ podman build -t director -f Containerfile
 #### Running the container in Server mode
 
 ``` shell
-podman run --hostname director \
-           --net=host \
-           --env DIRECTOR_MODE=server \
-           --detach \
-           localhost/director director
+$ podman run --hostname director \
+             --net=host \
+             --env DIRECTOR_MODE=server \
+             --detach \
+             localhost/director director
 ```
 
 #### Running the container in Client mode
 
 ``` shell
-podman run --hostname $(hostname)-client \
-           --net=host \
-           --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
-           --detach \
-           localhost/director director
+$ podman run --hostname $(hostname)-client \
+             --net=host \
+             --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
+             --detach \
+             localhost/director director
 ```
 
 > NOTE: the DIRECTOR_SERVER_ADDRESS environment variable needs to point to the
@@ -164,7 +185,7 @@ Lots of client containers can be created to test full scale interactions. This
 simple example shows how that could be done on a single machine.
 
 ``` shell
-for i in {1..40}; do
+$ for i in {1..40}; do
   podman run --hostname $(hostname)-client-${i} \
              --net=host \
              --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \

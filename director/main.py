@@ -1,14 +1,17 @@
 import argparse
 import json
 import os
-import yaml
+from os.path import dirname
+import sys
 import uuid
+import yaml
 
 import tabulate
 
 from director import client
 from director import server
 from director import user
+import director
 
 
 def _args():
@@ -159,6 +162,85 @@ def _args():
                 args.__dict__[key] = value
 
     return args
+
+
+class SystemdInstall(object):
+    """Simple system service unit creation class."""
+
+    def __init__(self):
+        """Class to create systemd service units.
+
+        This class is used with the director-server-systemd and
+        director-client-systemd entrypoints.
+        """
+
+        self.config_path = "/etc/director"
+
+    def path_setup(self):
+        """Create the configuration path and basic configuration file."""
+
+        if not os.path.isdir(self.config_path):
+            os.makedirs(self.config_path)
+            print("[+] Created director configuration path")
+
+        if not os.path.exists("/etc/director/config.yaml"):
+            with open("/etc/director/config.yaml", "w") as f:
+                f.write("---\nreplaceMe: true\n")
+            print("[+] Created empty configuration file")
+
+    def writer(self, service_file):
+        """Write a given systemd service unit file.
+
+        :param service_file: Name of the embedded service file to interact with.
+        :type service_file: String
+        """
+
+        path = os.path.abspath(os.path.dirname(sys.argv[0]))
+        self.path_setup()
+        base = os.path.dirname(director.__file__)
+        service_file_path = "/etc/systemd/system/{}".format(service_file)
+        if os.path.exists(service_file_path):
+            print(
+                "[-] Service file was not created because it already exists."
+            )
+            return
+        with open(os.path.join(base, "static", service_file)) as f:
+            with open(service_file_path, "w") as l:
+                for line in f.readlines():
+                    l.write(
+                        line.replace(
+                            "/usr/bin/director", os.path.join(path, "director")
+                        )
+                    )
+
+        print("[+] Installed {} service unit file".format(service_file))
+        print(
+            "[?] Run `systemctl daemon-reload` for unit file to take effect."
+        )
+
+    def server(self):
+        """Run the server systemd service unit file creation process."""
+
+        self.writer(service_file="director-server.service")
+
+    def client(self):
+        """Run the client systemd service unit file creation process."""
+
+        self.writer(service_file="director-client.service")
+
+
+def _systemd_server():
+    """Execute the systemd server unit file creation process."""
+
+    _systemd = SystemdInstall()
+    _systemd.server()
+
+
+def _systemd_client():
+    """Execute the systemd client unit file creation process."""
+
+    _systemd = SystemdInstall()
+    _systemd.client()
 
 
 def main():
