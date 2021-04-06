@@ -76,8 +76,10 @@ class ClientStatus(object):
         self.job_state = ctx.nullbyte
         self.info = ctx.nullbyte
         self.socket = socket
-        self.socket.send_multipart(
-            [self.job_id, ctx.job_processing, self.ctx.nullbyte]
+        self.ctx.socket_multipart_send(
+            zsocket=self.socket,
+            msg_id=bytes(self.encode_string(item=self.job_id)),
+            control=ctx.job_processing,
         )
 
     @staticmethod
@@ -104,10 +106,9 @@ class ClientStatus(object):
     def __exit__(self, *args, **kwargs):
         """Upon exit, send a final status message."""
 
-        exit_return = list()
-        for i in [self.job_id, self.job_state, self.info]:
-            if not i:
-                exit_return.append(self.ctx.nullbyte)
-            else:
-                exit_return.append(bytes(self.encode_string(item=i)))
-        self.socket.send_multipart(exit_return)
+        self.ctx.socket_multipart_send(
+            zsocket=self.socket,
+            msg_id=bytes(self.encode_string(item=self.job_id)),
+            control=bytes(self.encode_string(item=self.job_state)),
+            info=bytes(self.encode_string(item=self.info)),
+        )

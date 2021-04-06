@@ -56,22 +56,6 @@ class Client(manager.Interface):
     def run_heartbeat(self):
         """Execute the heartbeat loop.
 
-        The heartbeat message from the server will always be a multipart
-        message conainting the following information.
-
-            [
-                {"valid_json": true}
-            ]
-
-        The heartbeat message to the server will always be a single
-        message containing the following information.
-
-            b"ASCII Control Characters"
-
-        All of the supported controll characters are defined within the
-        Interface class. For more on control characters review the following
-        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
-
         If the heartbeat loop detects a problem, the connection will be
         reset using a backoff, with a max wait of up to 32 seconds.
         """
@@ -81,12 +65,18 @@ class Client(manager.Interface):
         while True:
             socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
             if socks.get(self.bind_heatbeat) == zmq.POLLIN:
-                message = self.bind_heatbeat.recv_multipart()
-                message = json.loads(message[0].decode())
-                heartbeat_at = message["expire"]
+                (
+                    _,
+                    _,
+                    _,
+                    data,
+                    _,
+                ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
+
+                data = json.loads(data.decode())
+                heartbeat_at = data["expire"]
                 self.heartbeat_failure_interval = 2
             else:
-                self.bind_heatbeat.send(self.heartbeat_notice)
                 if time.time() > heartbeat_at:
                     self.log.warn("Heartbeat failure, can't reach queue")
                     self.log.warn(
@@ -103,6 +93,11 @@ class Client(manager.Interface):
                     self.bind_heatbeat.close()
                     self.bind_heatbeat = self.heatbeat_connect()
                     heartbeat_at = self.get_heartbeat
+                else:
+                    self.socket_multipart_send(
+                        zsocket=self.bind_heatbeat,
+                        control=self.heartbeat_notice,
+                    )
 
     def _run_command(self, cache, job_sha1, command):
         """Run file command operation.
@@ -155,15 +150,20 @@ class Client(manager.Interface):
         with open(file_to, "wb") as f:
             while True:
                 try:
-                    chunk = self.bind_job.recv()
-                    if chunk == self.transfer_end:
+                    (
+                        _,
+                        control,
+                        _,
+                        data,
+                        _,
+                    ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                    if control == self.transfer_end:
                         break
                 except Exception:
                     break
                 else:
-                    f.write(chunk)
+                    f.write(data)
         success = True
-
         user = job.get("user")
         group = job.get("group")
         if user:
@@ -184,25 +184,6 @@ class Client(manager.Interface):
     def _job_loop(self, cache):
         """Execute the job loop.
 
-        The job message from the server will always be a multipart
-        message conainting the following information.
-
-            [
-                {"valid_json": true}
-            ]
-
-        The job message to the server will always be a multipart
-        message conainting the following information.
-
-            [
-                b"UUID",
-                b"ASCII Control Characters"
-            ]
-
-        All of the supported controll characters are defined within the
-        Interface class. For more on control characters review the following
-        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
-
         > When a file transfer is initiated the client will enter a loop
           waiting for data chunks until an `transfer_end` signal is passed.
 
@@ -213,13 +194,21 @@ class Client(manager.Interface):
         socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
         if self.bind_job in socks:
             # This is procecssing the work queue
-            message = self.bind_job.recv_multipart()
-            job = json.loads(message[0].decode())
+            (
+                _,
+                _,
+                _,
+                data,
+                _,
+            ) = self.socket_multipart_recv(zsocket=self.bind_job)
+            job = json.loads(data.decode())
             job_id = job["task"]
             job_sha1 = job.get("task_sha1sum")
             self.log.info("Job received {}".format(job_id))
-            self.bind_job.send_multipart(
-                [job_id.encode(), self.job_ack, self.nullbyte]
+            self.socket_multipart_send(
+                zsocket=self.bind_job,
+                msg_id=job_id.encode(),
+                control=self.job_ack,
             )
 
             with utils.ClientStatus(

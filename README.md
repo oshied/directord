@@ -22,6 +22,10 @@ Director is a single application which consists of three parts:
 Director allows for the user to configure the application using environment
 variables, a configurations file, or command line switches.
 
+> NOTE: Because the user interface communicates with the server over a UNIX
+  socket, the User and Server components are assumed to exist on the same
+  machine.
+
 ### Messaging
 
 The cluster messaging is provided by ZeroMQ in a router format which ensures

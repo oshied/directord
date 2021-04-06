@@ -4,7 +4,6 @@ import json
 import os
 import socket
 import time
-import uuid
 
 import zmq
 
@@ -52,26 +51,6 @@ class Server(manager.Interface):
     def run_heartbeat(self):
         """Execute the heartbeat loop.
 
-        The heartbeat message from the client will always be a multipart
-        message conainting the following information.
-
-            [
-                b"Identity",
-                b"ASCII Control Characters"
-            ]
-
-        The heartbeat message to the client will always be a multipart
-        message containing the following information.
-
-            [
-                b"Identity",
-                {"valid_json": true}
-            ]
-
-        All of the supported controll characters are defined within the
-        Interface class. For more on control characters review the following
-        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
-
         If the heartbeat loop detects a problem, the server will send a
         heartbeat probe to the client to ensure that it is alive. At the
         end of the loop workers without a valid heartbeat will be pruned
@@ -84,8 +63,16 @@ class Server(manager.Interface):
             idel_time = heartbeat_at + (self.heartbeat_interval * 3)
             socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
             if socks.get(self.bind_heatbeat) == zmq.POLLIN:
-                identity, message = self.bind_heatbeat.recv_multipart()
-                if message in [self.heartbeat_ready, self.heartbeat_notice]:
+                (
+                    identity,
+                    _,
+                    control,
+                    _,
+                    _,
+                    _,
+                ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
+
+                if control in [self.heartbeat_ready, self.heartbeat_notice]:
                     self.log.debug(
                         "Received Heartbeat from {}, client online".format(
                             identity
@@ -94,8 +81,10 @@ class Server(manager.Interface):
                     expire = self.workers[identity] = self.get_expiry
                     heartbeat_at = self.get_heartbeat
                     data = dict(expire=expire)
-                    self.bind_heatbeat.send_multipart(
-                        [identity, json.dumps(data).encode()]
+                    self.socket_multipart_send(
+                        zsocket=self.bind_heatbeat,
+                        identity=identity,
+                        data=json.dumps(data).encode(),
                     )
 
             # Send heartbeats to idle workers if it's time
@@ -106,8 +95,10 @@ class Server(manager.Interface):
                     )
                     expire = self.workers.get(worker) or self.get_expiry
                     data = dict(expire=expire)
-                    self.bind_heatbeat.send_multipart(
-                        [worker, json.dumps(data).encode()]
+                    self.socket_multipart_send(
+                        zsocket=self.bind_heatbeat,
+                        identity=worker,
+                        data=json.dumps(data).encode(),
                     )
                     if time.time() > idel_time + 3:
                         self.log.warn("Removing dead worker {}".format(worker))
@@ -152,9 +143,9 @@ class Server(manager.Interface):
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = False
             if "FAILED" in job_metadata:
-                job_metadata["FAILED"].append(identity.decode())
+                job_metadata["FAILED"].append(identity)
             else:
-                job_metadata["FAILED"] = [identity.decode()]
+                job_metadata["FAILED"] = [identity]
             job_metadata["INFO"] = job_output
             self.log.error("{} processing {} failed".format(identity, job_id))
 
@@ -183,26 +174,21 @@ class Server(manager.Interface):
             # the transfer if the SHA1 SUM matches an
             # existing file.
             job_item["file_sha1sum"] = self.file_sha1(file_path=file_path)
-            self.bind_job.send_multipart(
-                [
-                    identity,
-                    json.dumps(job_item).encode(),
-                ]
+            self.socket_multipart_send(
+                zsocket=self.bind_job,
+                identity=identity,
+                data=json.dumps(job_item).encode(),
             )
             with open(file_path, "rb") as f:
                 for chunk in self.read_in_chunks(file_object=f):
-                    self.bind_job.send_multipart(
-                        [
-                            identity,
-                            chunk,
-                        ]
+                    self.socket_multipart_send(
+                        zsocket=self.bind_job, identity=identity, data=chunk
                     )
                 else:
-                    self.bind_job.send_multipart(
-                        [
-                            identity,
-                            self.transfer_end,
-                        ]
+                    self.socket_multipart_send(
+                        zsocket=self.bind_job,
+                        identity=identity,
+                        control=self.transfer_end,
                     )
 
     def _run_job(self, job_item, identity):
@@ -214,32 +200,14 @@ class Server(manager.Interface):
         :type identity: String
         """
 
-        self.bind_job.send_multipart([identity, json.dumps(job_item).encode()])
+        self.socket_multipart_send(
+            zsocket=self.bind_job,
+            identity=identity,
+            data=json.dumps(job_item).encode(),
+        )
 
     def run_job(self):
         """Execute the job loop.
-
-        The job message from the client will always be a multipart
-        message conainting the following information.
-
-            [
-                b"Identity",
-                b"Job ID",
-                b"ASCII Control Characters",
-                b"Task Output"
-            ]
-
-        The job message to the client will always be a multipart
-        message conainting the following information.
-
-            [
-                b"Identity",
-                {"valid_json": true}
-            ]
-
-        All of the supported controll characters are defined within the
-        Interface class. For more on control characters review the following
-        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
 
         As the job loop executes it will interrogate the job item as returned
         from the queue. If the item contains a "target" definition the
@@ -254,19 +222,20 @@ class Server(manager.Interface):
             socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
             # Handle worker activity on backend
             if socks.get(self.bind_job) == zmq.POLLIN:
-
-                _recv = self.bind_job.recv_multipart()
-                identity, job_id, job_status, job_output = _recv
-                job_output = job_output.decode()
-                job_id = job_id.decode()
-
+                (
+                    identity,
+                    msg_id,
+                    control,
+                    _,
+                    _,
+                    info,
+                ) = self.socket_multipart_recv(zsocket=self.bind_job)
                 self._set_job_status(
-                    job_status=job_status,
-                    job_id=job_id,
-                    identity=identity,
-                    job_output=job_output,
+                    job_status=control,
+                    job_id=msg_id.decode(),
+                    identity=identity.decode(),
+                    job_output=info.decode(),
                 )
-
             elif self.workers:
                 try:
                     job_item = self.job_queue.get(block=False, timeout=1)
@@ -372,7 +341,7 @@ class Server(manager.Interface):
                 else:
                     json_data["task_sha1sum"] = hashlib.sha1(data).hexdigest()
                     if "task" not in json_data:
-                        json_data["task"] = str(uuid.uuid4())
+                        json_data["task"] = self.get_uuid
 
                     # Returns the message in reverse to show a return. This will
                     # be a standard client return in JSON format under normal

@@ -1,7 +1,10 @@
 import logging
-from logging import handlers
+from os import stat
 import socket
 import time
+import uuid
+
+from logging import handlers
 
 import zmq
 
@@ -73,6 +76,10 @@ class Interface(director.Processor):
         """Return a new expiry time."""
 
         return time.time() + self.heartbeat_interval * self.heartbeat_liveness
+
+    @property
+    def get_uuid(self):
+        return str(uuid.uuid4())
 
     def socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN
@@ -154,7 +161,9 @@ class Interface(director.Processor):
         )
 
         if send_ready and socket_type not in [zmq.SUB, zmq.PULL]:
-            bind.send(self.heartbeat_ready)
+            self.socket_multipart_send(
+                zsocket=bind, control=self.heartbeat_ready
+            )
 
         return bind
 
@@ -177,3 +186,144 @@ class Interface(director.Processor):
 
         for t in cleanup_threads:
             t.join()
+
+    def socket_multipart_send(
+        self,
+        zsocket,
+        identity=None,
+        msg_id=None,
+        control=None,
+        command=None,
+        data=None,
+        info=None,
+        timeout=60,
+    ):
+        """Send a message over a ZM0 socket.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info"
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info"
+            ]
+
+        All message information is assumed to be byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param zsocket: ZeroMQ socket object.
+        :type zsocket: Object
+        :param identity: Target where message will be sent.
+        :type identity: Bytes
+        :param msg_id: ID information for a given message. If no ID is
+                       provided a UUID will be generated.
+        :type msg_id: Bytes
+        :param control: ASCII control charaters.
+        :type control: Bytes
+        :param command: Command definition for a given message.
+        :type command: Bytes
+        :param data: Encoded data that will be transmitted.
+        :type data: Bytes
+        :param info: Encoded information that will be transmitted.
+        :type info: Bytes
+        :param timeout: Timeout when waiting for a tracked message to be sent.
+        :type timeout: Int
+        """
+
+        if not msg_id:
+            msg_id = self.get_uuid.encode()
+
+        if not control:
+            control = self.nullbyte
+
+        if not command:
+            command = self.nullbyte
+
+        if not data:
+            data = self.nullbyte
+
+        if not info:
+            info = self.nullbyte
+
+        message_parts = [msg_id, control, command, data, info]
+
+        if identity:
+            message_parts.insert(0, identity)
+
+        msg = zsocket.send_multipart(
+            message_parts,
+            copy=False,
+            track=True,
+        )
+
+        count = 0
+        while msg is not zmq._FINISHED_TRACKER:
+            count += 1
+            if count > timeout:
+                self.log.error(
+                    (
+                        "Message failed to ACK - IDENTITY:%s, ID:%s,"
+                        " CONTROL:%s, COMMAND:%s, DATA:%s, INFO:%s"
+                    ),
+                    identity,
+                    msg_id,
+                    control,
+                    command,
+                    data,
+                    info,
+                )
+            else:
+                time.sleep(1)
+
+    @staticmethod
+    def socket_multipart_recv(zsocket):
+        """Receive a message over a ZM0 socket.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info"
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info"
+            ]
+
+        All message parts are byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param zsocket: ZeroMQ socket object.
+        :type zsocket: Object
+        """
+
+        return zsocket.recv_multipart()
