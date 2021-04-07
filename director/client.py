@@ -43,6 +43,20 @@ class Client(manager.Interface):
             send_ready=False,
         )
 
+    def transfer_connect(self):
+        """Connect to a transfer socket and return the socket.
+
+        :returns: Object
+        """
+
+        self.log.debug("Establishing transfer connection.")
+        return self.socket_connect(
+            socket_type=zmq.DEALER,
+            connection=self.connection_string,
+            port=self.args.transfer_port,
+            send_ready=False,
+        )
+
     def heatbeat_connect(self):
         """Connect to a heartbeat socket and return the socket.
 
@@ -173,7 +187,6 @@ class Client(manager.Interface):
         source_file,
         user=None,
         group=None,
-        cached=False,
         file_sha1=None,
     ):
         """Run file transfer operation.
@@ -196,29 +209,28 @@ class Client(manager.Interface):
         :type user: String
         :param group: Group name
         :type group: String
-        :param cached: If there is a cache hit.
-        :type cached: String
         :param file_sha1: Original file SHA1
         :type file_sha1: String
         :returns: tuple
         """
 
-        if (
-            cached
-            and os.path.isfile(file_to)
-            and self.file_sha1(file_to) == file_sha1
-        ):
-            info = "Cache hit. File SHA1 exists {}".format(file_sha1)
+        if os.path.isfile(file_to) and self.file_sha1(file_to) == file_sha1:
+            info = "File exists {} and SHA1 {} matches, nothing to transfer".format(
+                file_to, file_sha1
+            )
             self.log.info(info)
             self.socket_multipart_send(
-                zsocket=self.bind_job,
+                zsocket=self.bind_transfer,
                 msg_id=job_id.encode(),
                 control=self.transfer_end,
             )
             return info, True
         else:
+            self.log.debug(
+                "Requesting transfer of source file:%s", source_file
+            )
             self.socket_multipart_send(
-                zsocket=self.bind_job,
+                zsocket=self.bind_transfer,
                 msg_id=job_id.encode(),
                 control=self.job_ack,
                 command=b"transfer",
@@ -233,8 +245,8 @@ class Client(manager.Interface):
                             control,
                             _,
                             data,
-                            _,
-                        ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                            info,
+                        ) = self.socket_multipart_recv(zsocket=self.bind_transfer)
                         if control == self.transfer_end:
                             break
                     except Exception:
@@ -325,7 +337,6 @@ class Client(manager.Interface):
                         job_id=job_id,
                         user=job.get("user"),
                         group=job.get("group"),
-                        cached=_cache_hit,
                         file_sha1=job.get("file_sha1sum"),
                         source_file=info,
                     )
@@ -361,6 +372,7 @@ class Client(manager.Interface):
         """
 
         self.bind_job = self.job_connect()
+        self.bind_transfer = self.transfer_connect()
         with diskcache.Cache(tempfile.gettempdir()) as cache:
             while True:
                 self._job_loop(cache=cache)

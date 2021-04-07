@@ -297,29 +297,8 @@ class Interface(director.Processor):
             message_parts.insert(0, identity)
 
         msg = zsocket.send_multipart(
-            message_parts,
-            copy=False,
-            track=True,
+            message_parts
         )
-
-        count = 0
-        while msg is not zmq._FINISHED_TRACKER:
-            count += 1
-            if count > timeout:
-                self.log.error(
-                    (
-                        "Message failed to ACK - IDENTITY:%s, ID:%s,"
-                        " CONTROL:%s, COMMAND:%s, DATA:%s, INFO:%s"
-                    ),
-                    identity,
-                    msg_id,
-                    control,
-                    command,
-                    data,
-                    info,
-                )
-            else:
-                time.sleep(1)
 
     @staticmethod
     def socket_multipart_recv(zsocket):

@@ -49,6 +49,18 @@ class Server(manager.Interface):
             port=self.args.job_port,
         )
 
+    def transfer_bind(self):
+        """Bind an address to a transfer socket and return the socket.
+
+        :returns: Object
+        """
+
+        return self.socket_bind(
+            socket_type=zmq.ROUTER,
+            connection=self.connection_string,
+            port=self.args.transfer_port,
+        )
+
     def run_heartbeat(self):
         """Execute the heartbeat loop.
 
@@ -173,21 +185,21 @@ class Server(manager.Interface):
 
         self.log.debug("Processing file [ %s ]", file_path)
         if not os.path.isfile(file_path):
-            self.log.warn("File was not found. File path:%s", file_path)
+            self.log.error("File was not found. File path:%s", file_path)
             return
 
         self.log.info("File transfer for [ %s ] starting", file_path)
         with open(file_path, "rb") as f:
             for chunk in self.read_in_chunks(file_object=f):
                 self.socket_multipart_send(
-                    zsocket=self.bind_job,
+                    zsocket=self.bind_transfer,
                     identity=identity,
                     command=verb,
                     data=chunk,
                 )
             else:
                 self.socket_multipart_send(
-                    zsocket=self.bind_job,
+                    zsocket=self.bind_transfer,
                     identity=identity,
                     control=self.transfer_end,
                     command=verb,
@@ -221,10 +233,11 @@ class Server(manager.Interface):
         """
 
         self.bind_job = self.job_bind()
+        self.bind_transfer = self.transfer_bind()
         while True:
             socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
             # Handle worker activity on backend
-            if socks.get(self.bind_job) == zmq.POLLIN:
+            if socks.get(self.bind_transfer) == zmq.POLLIN:
                 (
                     identity,
                     msg_id,
@@ -232,7 +245,7 @@ class Server(manager.Interface):
                     command,
                     _,
                     info,
-                ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                ) = self.socket_multipart_recv(zsocket=self.bind_transfer)
                 if command == b"transfer":
                     self.log.debug(
                         "Executing transfer for [ %s ]", info.decode()
@@ -244,6 +257,22 @@ class Server(manager.Interface):
                             os.path.expanduser(info.decode())
                         ),
                     )
+                elif control == self.transfer_end:
+                    self._set_job_status(
+                        job_status=control,
+                        job_id=msg_id.decode(),
+                        identity=identity.decode(),
+                        job_output=info.decode(),
+                    )
+            elif socks.get(self.bind_job) == zmq.POLLIN:
+                (
+                    identity,
+                    msg_id,
+                    control,
+                    command,
+                    _,
+                    info,
+                ) = self.socket_multipart_recv(zsocket=self.bind_job)
                 self._set_job_status(
                     job_status=control,
                     job_id=msg_id.decode(),
@@ -298,6 +327,12 @@ class Server(manager.Interface):
                                 )
                                 if job_item["file_to"] not in transfers:
                                     transfers.append(job_item["file_to"])
+                                self.log.debug(
+                                    "Sending file transfer message for"
+                                    " file_path:%s to identity:%s",
+                                    file_path,
+                                    identity.decode(),
+                                )
                                 self.socket_multipart_send(
                                     zsocket=self.bind_job,
                                     identity=identity,
@@ -305,6 +340,7 @@ class Server(manager.Interface):
                                     data=json.dumps(job_item).encode(),
                                     info=file_path.encode(),
                                 )
+                                time.sleep(.25)
                         else:
                             self._run_job(job_item=job_item, identity=identity)
 

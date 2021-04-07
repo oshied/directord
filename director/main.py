@@ -46,10 +46,10 @@ def _args():
         type=int,
     )
     parser.add_argument(
-        "--status-port",
-        help="status port to bind. Default: %(default)s",
+        "--transfer-port",
+        help="Transfer port to bind. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_STATUS_PORT", 5556)),
+        default=int(os.getenv("DIRECTOR_TRANSFER_PORT", 5556)),
         type=int,
     )
     parser.add_argument(
