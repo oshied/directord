@@ -148,35 +148,65 @@ class Client(manager.Interface):
         else:
             return "", True
 
-    def _run_transfer(self, job):
+    def _run_transfer(
+        self,
+        file_to,
+        job_id,
+        user=None,
+        group=None,
+        cached=False,
+        file_sha1=None,
+    ):
         """Run file transfer operation.
 
-        :param job: Job dictionary containing metadata about a given task.
-        :type job: Dictionary
         :returns: tuple
         """
 
-        # TODO: Add short-circut to file transfers.
-        file_to = job["file_to"]
-        with open(file_to, "wb") as f:
-            while True:
-                try:
-                    (
-                        _,
-                        control,
-                        _,
-                        data,
-                        _,
-                    ) = self.socket_multipart_recv(zsocket=self.bind_job)
-                    if control == self.transfer_end:
+        if (
+            cached
+            and os.path.isfile(file_to)
+            and self.file_sha1(file_to) == file_sha1
+        ):
+            info = "Cache hit. File SHA1 exists {}, task would be skipped but this is broken for now...".format(
+                file_sha1
+            )
+            self.log.info(info)
+        #     self.socket_multipart_send(
+        #         zsocket=self.bind_job,
+        #         msg_id=job_id.encode(),
+        #         control=self.transfer_end,
+        #     )
+        #     return info, True
+        # else:
+        #     self.socket_multipart_send(
+        #         zsocket=self.bind_job,
+        #         msg_id=job_id.encode(),
+        #         control=self.job_ack,
+        #     )
+
+        try:
+            with open(file_to, "wb") as f:
+                while True:
+                    try:
+                        (
+                            _,
+                            control,
+                            _,
+                            data,
+                            _,
+                        ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                        if control == self.transfer_end:
+                            break
+                    except Exception:
                         break
-                except Exception:
-                    break
-                else:
-                    f.write(data)
+                    else:
+                        f.write(data)
+        except (FileNotFoundError, NotADirectoryError) as e:
+            self.log.critical("Failure when creating file. FAILURE:%s", e)
+            return "Failure when creating file", False
+
+        info = self.file_sha1(file_to)
         success = True
-        user = job.get("user")
-        group = job.get("group")
         if user:
             try:
                 uid = pwd.getpwnam(user).pw_uid
@@ -186,11 +216,16 @@ class Client(manager.Interface):
                     gid = -1
             except KeyError:
                 success = False
+                info = (
+                    "Failed to set ownership properties."
+                    " USER:{} GROUP:{}".format(user, group)
+                )
+                self.log.warn(info)
             else:
                 os.chown(file_to, uid, gid)
                 success = True
 
-        return self.file_sha1(file_to), success
+        return info, success
 
     def _job_loop(self, cache):
         """Execute the job loop.
@@ -221,28 +256,39 @@ class Client(manager.Interface):
                 control=self.job_ack,
             )
 
-            # Caching does not work in file transfer commands.
             # TODO: Figure out a way to make this work.
             job_skip_cache = job.get("skip_cache", False)
             if job_skip_cache and command in [b"ADD", b"COPY"]:
                 job_skip_cache = False
 
+            _cache_hit = (
+                not job_skip_cache and cache.get(job_sha1) == self.job_end
+            )
+            # Caching does not work in file transfer commands.
+            _cache_allowed = command not in [b"ADD", b"COPY"]
+
             with utils.ClientStatus(
                 socket=self.bind_job, job_id=job_id.encode(), ctx=self
             ) as c:
-                if not job_skip_cache and cache.get(job_sha1) == self.job_end:
-                    # TODO: Figure out how to skip this cache.
-                    if not command in [b"ADD", b"COPY"]:
-                        self.log.debug(
-                            "Cache hit on {}, task skipped.".format(job_sha1)
-                        )
-                        c.info = b"job skipped"
-                        c.job_state = self.job_end
-                        return
+                if _cache_hit and _cache_allowed:
+                    # TODO: Figure out how to skip cache when file transfering.
+                    self.log.debug(
+                        "Cache hit on {}, task skipped.".format(job_sha1)
+                    )
+                    c.info = b"job skipped"
+                    c.job_state = self.job_end
+                    return
                 elif command == b"RUN":
                     info, success = self._run_command(command=job["command"])
                 elif command in [b"ADD", b"COPY"]:
-                    info, success = self._run_transfer(job=job)
+                    info, success = self._run_transfer(
+                        file_to=job["file_to"],
+                        job_id=job_id,
+                        user=job.get("user"),
+                        group=job.get("group"),
+                        cached=_cache_hit,
+                        file_sha1=job.get("file_sha1sum"),
+                    )
                 elif command == b"WORKDIR":
                     info, success = self._run_workdir(workdir=job["workdir"])
                 else:

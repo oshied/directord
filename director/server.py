@@ -152,7 +152,7 @@ class Server(manager.Interface):
 
         self.return_jobs[job_id] = job_metadata
 
-    def _run_transfer(self, job_item, identity):
+    def _run_transfer(self, identity, verb, file_path, job_item):
         """Run file transfer job.
 
         The transfer process will transfer all files from a given meta data
@@ -166,41 +166,33 @@ class Server(manager.Interface):
         :type identity: String
         """
 
-        verb = job_item["verb"].encode()
-        for file_path in job_item["from"]:
-            file_path = os.path.abspath(os.path.expanduser(file_path))
-            if not os.path.isfile(file_path):
-                self.log.warn('File was not found. File path:%s', file_path)
-                return
-            job_item["file_to"] = os.path.join(
-                job_item["to"],
-                os.path.basename(file_path),
-            )
-            # TODO(cloudull): figure out how to shortcircut
-            # the transfer if the SHA1 SUM matches an
-            # existing file.
-            job_item["file_sha1sum"] = self.file_sha1(file_path=file_path)
-            self.socket_multipart_send(
-                zsocket=self.bind_job,
-                identity=identity,
-                command=verb,
-                data=json.dumps(job_item).encode(),
-            )
-            with open(file_path, "rb") as f:
-                for chunk in self.read_in_chunks(file_object=f):
-                    self.socket_multipart_send(
-                        zsocket=self.bind_job,
-                        identity=identity,
-                        command=verb,
-                        data=chunk,
-                    )
-                else:
-                    self.socket_multipart_send(
-                        zsocket=self.bind_job,
-                        identity=identity,
-                        control=self.transfer_end,
-                        command=verb,
-                    )
+        self.log.debug('Processing file [ %s ]', file_path)
+        if not os.path.isfile(file_path):
+            self.log.warn("File was not found. File path:%s", file_path)
+            return
+
+        self.socket_multipart_send(
+            zsocket=self.bind_job,
+            identity=identity,
+            command=verb,
+            data=json.dumps(job_item).encode(),
+        )
+        self.log.info("File transfer for [ %s ] starting", file_path)
+        with open(file_path, "rb") as f:
+            for chunk in self.read_in_chunks(file_object=f):
+                self.socket_multipart_send(
+                    zsocket=self.bind_job,
+                    identity=identity,
+                    command=verb,
+                    data=chunk,
+                )
+            else:
+                self.socket_multipart_send(
+                    zsocket=self.bind_job,
+                    identity=identity,
+                    control=self.transfer_end,
+                    command=verb,
+                )
 
     def _run_job(self, job_item, identity):
         """Run an encoded job.
@@ -279,9 +271,22 @@ class Server(manager.Interface):
 
                     for identity in targets:
                         if job_item["verb"] in ["ADD", "COPY"]:
-                            self._run_transfer(
-                                job_item=job_item, identity=identity
-                            )
+                            for file_path in job_item["from"]:
+                                job_item["file_sha1sum"] = self.file_sha1(
+                                    file_path=file_path
+                                )
+                                job_item["file_to"] = os.path.join(
+                                    job_item["to"],
+                                    os.path.basename(file_path),
+                                )
+                                self._run_transfer(
+                                    identity=identity,
+                                    verb=job_item["verb"].encode(),
+                                    file_path=os.path.abspath(
+                                        os.path.expanduser(file_path)
+                                    ),
+                                    job_item=job_item,
+                                )
                         else:
                             self._run_job(job_item=job_item, identity=identity)
 
