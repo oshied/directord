@@ -147,10 +147,27 @@ def _args():
         "manage", help="Server management mode help"
     )
     manage_group = parser_manage.add_mutually_exclusive_group(required=True)
-    manage_group.add_argument("--list-jobs", action="store_true")
-    manage_group.add_argument("--list-nodes", action="store_true")
-    manage_group.add_argument("--purge-jobs", action="store_true")
-    manage_group.add_argument("--purge-nodes", action="store_true")
+    manage_group.add_argument(
+        "--list-jobs", action="store_true", help="List all known jobs."
+    )
+    manage_group.add_argument(
+        "--list-nodes", action="store_true", help="List all available nodes."
+    )
+    manage_group.add_argument(
+        "--purge-jobs",
+        action="store_true",
+        help="Purge all jobs from the server.",
+    )
+    manage_group.add_argument(
+        "--purge-nodes",
+        action="store_true",
+        help="Purge all nodes from the server.",
+    )
+    manage_group.add_argument(
+        "--job-info",
+        help="Pull information on a specific job ID.",
+        metavar="STRING",
+    )
     args = parser.parse_args()
     # Check for configuration file and load it if found.
     if args.config_file:
@@ -308,38 +325,47 @@ def main():
 
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
-        tabulated_data = list()
+
         data = manage_exec.run()
         data = json.loads(data)
+        tabulated_data = list()
         if data and isinstance(data, list):
-            headings = ["ID"]
-            raw_data = list()
-            for key, value in data:
-                value["ID"] = key
-                raw_data.append(value)
-                for item in value.keys():
-                    if not item.startswith("_"):
-                        if item not in headings:
-                            headings.append(item)
-
-            while raw_data:
-                item = raw_data.pop(0)
-                arranged_data = list()
-                for heading in headings:
-                    i = item.get(heading, "N/A")
-                    if isinstance(i, list):
-                        list_item = i.pop(0)
-                        arranged_data.append(list_item)
-                        new_item = item.copy()
-                        if i:
-                            new_item[heading] = i
-                            raw_data.insert(0, new_item)
-                    elif isinstance(i, float):
-                        arranged_data.append("{:.2f}".format(i))
-                    else:
-                        arranged_data.append(i)
-                tabulated_data.append(arranged_data)
-
+            if args.job_info:
+                headings = ["KEY", "VALUE"]
+                item = dict(data).get(args.job_info)
+                tabulated_data.append(["ID", args.job_info])
+                for k, v in item.items():
+                    if k.startswith("_"):
+                        continue
+                    if isinstance(v, list):
+                        v = "\n".join(v)
+                    tabulated_data.append([k.upper(), v])
+            else:
+                headings = [
+                    "ID",
+                    "EXECUTION_TIME",
+                    "SUCCESS",
+                    "FAILED",
+                    "EXPIRY",
+                ]
+                original_data = list(dict(data).items())
+                for key, value in original_data:
+                    arranged_data = list()
+                    arranged_data.append(key)
+                    raw_data = list(value.items())
+                    for k, v in raw_data:
+                        if k.startswith("_"):
+                            continue
+                        if k in headings:
+                            if isinstance(v, list):
+                                arranged_data.append(v.pop(0))
+                                if v:
+                                    original_data.insert(0, (key, value))
+                            elif isinstance(v, float):
+                                arranged_data.append("{:.2f}".format(v))
+                            else:
+                                arranged_data.append(v)
+                    tabulated_data.append(arranged_data)
             print(
                 tabulate.tabulate(
                     [i for i in tabulated_data if i], headers=headings

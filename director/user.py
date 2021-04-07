@@ -171,7 +171,7 @@ class Manage(User):
         :returns: String
         """
 
-        if self.args.list_jobs:
+        if self.args.list_jobs or self.args.job_info:
             manage = "list-jobs"
         elif self.args.list_nodes:
             manage = "list-nodes"
