@@ -54,6 +54,7 @@ class User(manager.Interface):
         """
 
         args = None
+        data = dict()
         parser = argparse.ArgumentParser(description="Process exec commands")
         parser.add_argument("--skip-cache", action="store_true")
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
@@ -61,13 +62,12 @@ class User(manager.Interface):
             args, command = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
-            data = {"command": " ".join(command)}
+            data["command"] = " ".join(command)
         elif verb in ["COPY", "ADD"]:
             parser.add_argument("--chown")
             args, file_path = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
-            data = dict()
             if args.chown:
                 chown = args.chown.split(":", 1)
                 if len(chown) == 1:
@@ -84,7 +84,11 @@ class User(manager.Interface):
         elif verb == "FROM":
             raise NotImplementedError()
         elif verb == "ARG":
-            raise NotImplementedError()
+            parser.add_argument("args", nargs="+", action="append")
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["args"] = dict([" ".join(args.args[0]).split(" ", 1)])
         elif verb == "ENV":
             raise NotImplementedError()
         elif verb == "LABEL":
@@ -96,7 +100,6 @@ class User(manager.Interface):
                 self.sanitized_args(execute=execute)
             )
             user = args.user.split(":", 1)
-            data = dict()
             if len(user) == 1:
                 user.append(None)
             data["user"], data["group"] = user
@@ -107,7 +110,6 @@ class User(manager.Interface):
                 self.sanitized_args(execute=execute)
             )
             expose = args.expose.split("/", 1)
-            data = dict()
             if len(expose) == 1:
                 expose.append("tcp")
             data["port"], data["proto"] = expose
@@ -116,7 +118,7 @@ class User(manager.Interface):
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
-            data = dict(workdir=args.workdir)
+            data["workdir"] = args.workdir
         else:
             raise SystemExit("No known verb defined.")
 

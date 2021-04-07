@@ -152,26 +152,39 @@ class Client(manager.Interface):
                         self.connection_string,
                     )
 
-    @staticmethod
-    def _run_command(command):
+    def _run_command(self, command, cache):
         """Run file command operation.
+
+        Command operations are rendered with cached data from the args dict.
 
         :param command: Work directory path.
         :type command: String
+        :param cache: Caching object used to template items within a command.
+        :type cache: Object
         :returns: tuple
         """
 
-        info, success = utils.run_command(command=command)
+        if "args" in cache:
+            t_command = self.template.from_string(command)
+            r_command = t_command.render(**cache["args"])
+            info, success = utils.run_command(command=r_command)
+        else:
+            info, success = utils.run_command(command=command)
         return info, success
 
-    @staticmethod
-    def _run_workdir(workdir):
+    def _run_workdir(self, workdir, cache):
         """Run file work directory operation.
 
         :param workdir: Work directory path.
         :type workdir: String
+        :param cache: Caching object used to template items within a command.
+        :type cache: Object
         :returns: tuple
         """
+
+        if "args" in cache:
+            t_workdir = self.template.from_string(workdir)
+            workdir = t_workdir.render(**cache["args"])
 
         try:
             os.makedirs(workdir, exist_ok=True)
@@ -246,7 +259,9 @@ class Client(manager.Interface):
                             _,
                             data,
                             info,
-                        ) = self.socket_multipart_recv(zsocket=self.bind_transfer)
+                        ) = self.socket_multipart_recv(
+                            zsocket=self.bind_transfer
+                        )
                         if control == self.transfer_end:
                             break
                     except Exception:
@@ -316,7 +331,7 @@ class Client(manager.Interface):
                 not job_skip_cache and cache.get(job_sha1) == self.job_end
             )
             # Caching does not work for transfers at this stage.
-            _cache_allowed = command not in [b"ADD", b"COPY"]
+            _cache_allowed = command not in [b"ADD", b"COPY", b"ARG", b"ENV"]
 
             with utils.ClientStatus(
                 socket=self.bind_job, job_id=job_id.encode(), ctx=self
@@ -330,7 +345,9 @@ class Client(manager.Interface):
                     c.job_state = self.job_end
                     return
                 elif command == b"RUN":
-                    status, success = self._run_command(command=job["command"])
+                    status, success = self._run_command(
+                        command=job["command"], cache=cache
+                    )
                 elif command in [b"ADD", b"COPY"]:
                     status, success = self._run_transfer(
                         file_to=job["file_to"],
@@ -341,7 +358,19 @@ class Client(manager.Interface):
                         source_file=info,
                     )
                 elif command == b"WORKDIR":
-                    status, success = self._run_workdir(workdir=job["workdir"])
+                    status, success = self._run_workdir(
+                        workdir=job["workdir"], cache=cache
+                    )
+                elif command == b"ARG":
+                    cache_args = dict()
+                    if "args" in cache:
+                        cache_args = cache["args"]
+                    for k, v in job["args"].items():
+                        cache_args[k] = v
+                    else:
+                        cache["args"] = cache_args
+
+                    status, success = (b"ARG(s) added to Cache", True)
                 else:
                     self.log.warn(
                         "Unknown command - COMMAND:%s ID:%s",

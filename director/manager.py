@@ -1,3 +1,4 @@
+import jinja2
 import logging
 from os import stat
 import socket
@@ -64,6 +65,8 @@ class Interface(director.Processor):
 
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
+
+        self.template = jinja2.Environment(loader=jinja2.BaseLoader())
 
     @property
     def get_heartbeat(self):
@@ -296,9 +299,7 @@ class Interface(director.Processor):
         if identity:
             message_parts.insert(0, identity)
 
-        msg = zsocket.send_multipart(
-            message_parts
-        )
+        msg = zsocket.send_multipart(message_parts)
 
     @staticmethod
     def socket_multipart_recv(zsocket):

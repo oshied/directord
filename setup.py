@@ -26,6 +26,7 @@ setuptools.setup(
     install_requires=[
         "diskcache",
         "etcd3",
+        "jinja2",
         "pyyaml",
         "pyzmq",
         "tabulate",
