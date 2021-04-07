@@ -64,8 +64,7 @@ class User(manager.Interface):
             data = {"command": " ".join(command)}
         elif verb in ["COPY", "ADD"]:
             parser.add_argument("--chown")
-            parser.add_argument("file_path", nargs="+")
-            args = parser.parse_known_args(
+            args, file_path = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             data = dict()
@@ -74,7 +73,7 @@ class User(manager.Interface):
                 if len(chown) == 1:
                     chown.append(None)
                 data["user"], data["group"] = chown
-            file_from, data["to"] = args.file_path
+            file_from, data["to"] = file_path
             data["from"] = [
                 i for i in glob.glob(file_from) if os.path.isfile(i)
             ]
@@ -114,7 +113,7 @@ class User(manager.Interface):
             data["port"], data["proto"] = expose
         elif verb == "WORKDIR":
             parser.add_argument("workdir")
-            args = parser.parse_known_args(
+            args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             data = dict(workdir=args.workdir)
