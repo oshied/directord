@@ -168,6 +168,10 @@ class Server(manager.Interface):
 
         verb = job_item["verb"].encode()
         for file_path in job_item["from"]:
+            file_path = os.path.abspath(os.path.expanduser(file_path))
+            if not os.path.isfile(file_path):
+                self.log.warn('File was not found. File path:%s', file_path)
+                return
             job_item["file_to"] = os.path.join(
                 job_item["to"],
                 os.path.basename(file_path),

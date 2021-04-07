@@ -92,7 +92,7 @@ class User(manager.Interface):
         elif verb == "USER":
             raise NotImplementedError()
             parser.add_argument("user")
-            args = parser.parse_known_args(
+            args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             user = args.user.split(":", 1)
@@ -103,7 +103,7 @@ class User(manager.Interface):
         elif verb == "EXPOSE":
             raise NotImplementedError()
             parser.add_argument("expose")
-            args = parser.parse_known_args(
+            args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             expose = args.expose.split("/", 1)
