@@ -294,9 +294,7 @@ class Server(manager.Interface):
                                     os.path.basename(file_path),
                                 )
                                 if job_item["file_to"] not in transfers:
-                                    transfers.append(
-                                        job_item["file_to"]
-                                    )
+                                    transfers.append(job_item["file_to"])
                                 self.socket_multipart_send(
                                     zsocket=self.bind_job,
                                     identity=identity,
