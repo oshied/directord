@@ -67,18 +67,29 @@ class Interface(director.Processor):
 
     @property
     def get_heartbeat(self):
-        """Return a new hearbeat interval time."""
+        """Return a new hearbeat interval time.
+
+        :returns: Float
+        """
 
         return time.time() + self.args.heartbeat_interval
 
     @property
     def get_expiry(self):
-        """Return a new expiry time."""
+        """Return a new expiry time.
+
+        :returns: Float
+        """
 
         return time.time() + self.heartbeat_interval * self.heartbeat_liveness
 
     @property
     def get_uuid(self):
+        """Return a new UUID in String format.
+
+        :returns: String
+        """
+
         return str(uuid.uuid4())
 
     def socket_bind(

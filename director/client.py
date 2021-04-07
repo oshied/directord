@@ -34,6 +34,7 @@ class Client(manager.Interface):
         :returns: Object
         """
 
+        self.log.debug("Establishing Job connection.")
         return self.socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
@@ -47,11 +48,27 @@ class Client(manager.Interface):
         :returns: Object
         """
 
+        self.log.debug("Establishing Heartbeat connection.")
         return self.socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
         )
+
+    def reset_heartbeat(self):
+        """Reset the connection on the heartbeat socket.
+
+        Returns a new ttl after reconnect.
+
+        :returns: Float
+        """
+
+        self.poller.unregister(self.bind_heatbeat)
+        self.log.debug("Unregistered heartbeat.")
+        self.bind_heatbeat.close()
+        self.log.debug("Heartbeat connection closed.")
+        self.bind_heatbeat = self.heatbeat_connect()
+        return self.get_heartbeat
 
     def run_heartbeat(self):
         """Execute the heartbeat loop.
@@ -68,13 +85,20 @@ class Client(manager.Interface):
                 (
                     _,
                     _,
-                    _,
+                    command,
                     data,
                     _,
                 ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
 
-                data = json.loads(data.decode())
-                heartbeat_at = data["expire"]
+                if command == b"reset":
+                    self.log.warn(
+                        "Received heartbeat reset command. Connection resetting."
+                    )
+                    heartbeat_at = self.reset_heartbeat()
+                else:
+                    data = json.loads(data.decode())
+                    heartbeat_at = data["expire"]
+
                 self.heartbeat_failure_interval = 2
             else:
                 if time.time() > heartbeat_at:
@@ -89,53 +113,40 @@ class Client(manager.Interface):
                     if self.heartbeat_failure_interval < 32:
                         self.heartbeat_failure_interval *= 2
 
-                    self.poller.unregister(self.bind_heatbeat)
-                    self.bind_heatbeat.close()
-                    self.bind_heatbeat = self.heatbeat_connect()
-                    heartbeat_at = self.get_heartbeat
+                    heartbeat_at = self.reset_heartbeat()
                 else:
                     self.socket_multipart_send(
                         zsocket=self.bind_heatbeat,
                         control=self.heartbeat_notice,
                     )
 
-    def _run_command(self, cache, job_sha1, command):
+    @staticmethod
+    def _run_command(command):
         """Run file command operation.
 
-        :param cache: Cached access object.
-        :type cache: Object
-        :param job_sha1: SHA1SUM of the original job schematic.
-        :type job_sha1: String
         :param command: Work directory path.
         :type command: String
         :returns: tuple
         """
 
-        if cache.get(job_sha1) == self.job_end:
-            self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
-            return self.nullbyte, True
-
         info, success = utils.run_command(command=command)
         return info, success
 
-    def _run_workdir(self, cache, job_sha1, workdir):
+    @staticmethod
+    def _run_workdir(workdir):
         """Run file work directory operation.
 
-        :param cache: Cached access object.
-        :type cache: Object
-        :param job_sha1: SHA1SUM of the original job schematic.
-        :type job_sha1: String
         :param workdir: Work directory path.
         :type workdir: String
         :returns: tuple
         """
 
-        if cache.get(job_sha1) == self.job_end:
-            self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
-            return self.nullbyte, True
-
-        os.makedirs(workdir, exist_ok=True)
-        return "", True
+        try:
+            os.makedirs(workdir, exist_ok=True)
+        except FileExistsError as e:
+            return str(e), False
+        else:
+            return "", True
 
     def _run_transfer(self, job):
         """Run file transfer operation.
@@ -193,15 +204,21 @@ class Client(manager.Interface):
 
         socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
         if self.bind_job in socks:
-            # This is procecssing the work queue
             (
                 _,
                 _,
-                _,
+                command,
                 data,
                 _,
             ) = self.socket_multipart_recv(zsocket=self.bind_job)
             job = json.loads(data.decode())
+            job_skip_cache = job.get("skip_cache", False)
+
+            # Caching does not work in file transfer commands.
+            # TODO: Figure out a way to make this work.
+            if job_skip_cache and command in [b"ADD", b"COPY"]:
+                job_skip_cache = False
+
             job_id = job["task"]
             job_sha1 = job.get("task_sha1sum")
             self.log.info("Job received {}".format(job_id))
@@ -211,21 +228,35 @@ class Client(manager.Interface):
                 control=self.job_ack,
             )
 
+            if job_skip_cache and cache.get(job_sha1) == self.job_end:
+                # TODO: Figure out how to skip this cache.
+                if not command in [b"ADD", b"COPY"]:
+                    self.log.debug(
+                        "Cache hit on {}, task skipped.".format(job_sha1)
+                    )
+                    return
+
             with utils.ClientStatus(
                 socket=self.bind_job, job_id=job_id.encode(), ctx=self
             ) as c:
-                if "command" in job:
-                    info, success = self._run_command(
-                        cache=cache, job_sha1=job_sha1, command=job["command"]
-                    )
-                elif "file_to" in job:
+                if command == b"RUN":
+                    info, success = self._run_command(command=job["command"])
+                elif command in [b"ADD", b"COPY"]:
                     info, success = self._run_transfer(job=job)
-                elif "workdir" in job:
-                    info, success = self._run_workdir(
-                        cache=cache, job_sha1=job_sha1, workdir=job["workdir"]
+                elif command == b"WORKDIR":
+                    info, success = self._run_workdir(workdir=job["workdir"])
+                else:
+                    self.log.warn(
+                        "Unknown command - COMMAND:%s ID:%s",
+                        command.decode(),
+                        job_id,
                     )
+                    return
 
-                c.info = info
+                if info:
+                    if not isinstance(info, bytes):
+                        info = info.encode()
+                    c.info = info
 
                 if not success:
                     state = c.job_state = self.job_failed

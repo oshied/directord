@@ -4,7 +4,6 @@ import subprocess
 
 def run_command(
     command,
-    debug=False,
     shell=True,
     env=None,
     execute="/bin/bash",
@@ -40,10 +39,7 @@ def run_command(
     if env is None:
         env = os.environ
 
-    if debug is False:
-        stdout = open(os.devnull, "wb")
-    else:
-        stdout = subprocess.PIPE
+    stdout = subprocess.PIPE
 
     if return_codes is None:
         return_codes = [0]
@@ -72,7 +68,7 @@ class ClientStatus(object):
         """Initialize the UNIX socket connect context manager."""
 
         self.ctx = ctx
-        self.job_id = self.encode_string(item=job_id)
+        self.job_id = job_id
         self.job_state = ctx.nullbyte
         self.info = ctx.nullbyte
         self.socket = socket
@@ -108,7 +104,7 @@ class ClientStatus(object):
 
         self.ctx.socket_multipart_send(
             zsocket=self.socket,
-            msg_id=bytes(self.encode_string(item=self.job_id)),
-            control=bytes(self.encode_string(item=self.job_state)),
-            info=bytes(self.encode_string(item=self.info)),
+            msg_id=self.job_id,
+            control=self.job_state,
+            info=self.info,
         )

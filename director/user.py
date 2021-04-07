@@ -53,14 +53,21 @@ class User(manager.Interface):
         :returns: String
         """
 
+        args = None
         parser = argparse.ArgumentParser(description="Process exec commands")
+        parser.add_argument("--skip-cache", action="store_true")
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         if verb == "RUN":
-            data = {"command": " ".join(execute)}
+            args, command = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data = {"command": " ".join(command)}
         elif verb in ["COPY", "ADD"]:
             parser.add_argument("--chown")
             parser.add_argument("file_path", nargs="+")
-            args = parser.parse_args(self.sanitized_args(execute=execute))
+            args = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
             data = dict()
             if args.chown:
                 chown = args.chown.split(":", 1)
@@ -86,7 +93,9 @@ class User(manager.Interface):
         elif verb == "USER":
             raise NotImplementedError()
             parser.add_argument("user")
-            args = parser.parse_args(self.sanitized_args(execute=execute))
+            args = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
             user = args.user.split(":", 1)
             data = dict()
             if len(user) == 1:
@@ -95,7 +104,9 @@ class User(manager.Interface):
         elif verb == "EXPOSE":
             raise NotImplementedError()
             parser.add_argument("expose")
-            args = parser.parse_args(self.sanitized_args(execute=execute))
+            args = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
             expose = args.expose.split("/", 1)
             data = dict()
             if len(expose) == 1:
@@ -103,7 +114,9 @@ class User(manager.Interface):
             data["port"], data["proto"] = expose
         elif verb == "WORKDIR":
             parser.add_argument("workdir")
-            args = parser.parse_args(self.sanitized_args(execute=execute))
+            args = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
             data = dict(workdir=args.workdir)
         else:
             raise SystemExit("No known verb defined.")
@@ -113,6 +126,11 @@ class User(manager.Interface):
 
         if uuid:
             data["task"] = uuid
+
+        data["verb"] = verb
+
+        if args:
+            data["skip_cache"] = args.skip_cache
 
         return json.dumps(data)
 

@@ -38,6 +38,29 @@ delivering content as fast as possible.
 When interacting with the **User** CLI utility executive and orchestration
 operations follow a simple DSL inspired by the `Containerfile` specification.
 
+Every job has the ability to skip a cache hit should one be present on the
+client node. To instruct the system to ignore all forms of cache, add the
+`--skip-cache` to the job definition.
+
+``` shell
+$ director exec --verb RUN '--skip-cache echo -e "hello world"'
+```
+
+#### Verbs
+
+This is a short list of the available verbs.
+
+* `RUN` - Execute a command. The client terminal will execute using `/bin/sh`.
+
+* `WORKDIR` - Create a directory on the client system.
+
+* `ADD` - Copy a file or glob of files to a remote system. This method allows
+  operators to define multiple files on the CLI using the specific file, or a
+  glob of files within a given path. Optionally this takes the
+  `--chown user[:group]`.
+
+* `COPY` - The same as `ADD`.
+
 ### Management
 
 The **User** CLI provides for cluster management and insight into operations.

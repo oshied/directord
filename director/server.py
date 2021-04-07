@@ -98,6 +98,7 @@ class Server(manager.Interface):
                     self.socket_multipart_send(
                         zsocket=self.bind_heatbeat,
                         identity=worker,
+                        command=b"reset",
                         data=json.dumps(data).encode(),
                     )
                     if time.time() > idel_time + 3:
@@ -165,6 +166,7 @@ class Server(manager.Interface):
         :type identity: String
         """
 
+        verb = job_item["verb"].encode()
         for file_path in job_item["from"]:
             job_item["file_to"] = os.path.join(
                 job_item["to"],
@@ -177,18 +179,23 @@ class Server(manager.Interface):
             self.socket_multipart_send(
                 zsocket=self.bind_job,
                 identity=identity,
+                command=verb,
                 data=json.dumps(job_item).encode(),
             )
             with open(file_path, "rb") as f:
                 for chunk in self.read_in_chunks(file_object=f):
                     self.socket_multipart_send(
-                        zsocket=self.bind_job, identity=identity, data=chunk
+                        zsocket=self.bind_job,
+                        identity=identity,
+                        command=verb,
+                        data=chunk,
                     )
                 else:
                     self.socket_multipart_send(
                         zsocket=self.bind_job,
                         identity=identity,
                         control=self.transfer_end,
+                        command=verb,
                     )
 
     def _run_job(self, job_item, identity):
@@ -203,6 +210,7 @@ class Server(manager.Interface):
         self.socket_multipart_send(
             zsocket=self.bind_job,
             identity=identity,
+            command=job_item["verb"].encode(),
             data=json.dumps(job_item).encode(),
         )
 
@@ -266,7 +274,7 @@ class Server(manager.Interface):
                         }
 
                     for identity in targets:
-                        if "from" in job_item:
+                        if job_item["verb"] in ["ADD", "COPY"]:
                             self._run_transfer(
                                 job_item=job_item, identity=identity
                             )
