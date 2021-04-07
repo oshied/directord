@@ -81,7 +81,9 @@ class Interface(director.Processor):
         :returns: Float
         """
 
-        return time.time() + self.heartbeat_interval * self.heartbeat_liveness
+        return time.time() + (
+            self.heartbeat_interval * self.heartbeat_liveness
+        )
 
     @property
     def get_uuid(self):

@@ -2,6 +2,7 @@ import grp
 import json
 import os
 import pwd
+import struct
 import tempfile
 import time
 
@@ -75,49 +76,66 @@ class Client(manager.Interface):
 
         If the heartbeat loop detects a problem, the connection will be
         reset using a backoff, with a max wait of up to 32 seconds.
+
+        This loop tracks heartbeat messages and should the heartbeat
+        interval take longer than the expire time, and fail more than 5
+        times the connection will be reset after a failure cooldown.
         """
 
         self.bind_heatbeat = self.heatbeat_connect()
         heartbeat_at = self.get_heartbeat
+        heartbeat_misses = 0
         while True:
+            self.log.debug("Heartbeat misses [ %s ]", heartbeat_misses)
             socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
             if socks.get(self.bind_heatbeat) == zmq.POLLIN:
                 (
                     _,
                     _,
                     command,
-                    data,
                     _,
+                    info,
                 ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
-
+                self.log.debug(
+                    "Heartbeat received from server [ %s ]",
+                    self.connection_string,
+                )
                 if command == b"reset":
                     self.log.warn(
                         "Received heartbeat reset command. Connection resetting."
                     )
-                    heartbeat_at = self.reset_heartbeat()
+                    self.reset_heartbeat()
+                    heartbeat_at = self.get_expiry
                 else:
-                    data = json.loads(data.decode())
-                    heartbeat_at = data["expire"]
+                    heartbeat_at = struct.unpack("<f", info)[0]
+                    heartbeat_misses = 0
 
                 self.heartbeat_failure_interval = 2
             else:
-                if time.time() > heartbeat_at:
-                    self.log.warn("Heartbeat failure, can't reach queue")
+                if time.time() > heartbeat_at and heartbeat_misses > 5:
+                    self.log.error("Heartbeat failure, can't reach server")
                     self.log.warn(
                         "Reconnecting in {}s...".format(
                             self.heartbeat_failure_interval
                         )
                     )
-                    time.sleep(self.heartbeat_failure_interval)
 
+                    time.sleep(self.heartbeat_failure_interval)
                     if self.heartbeat_failure_interval < 32:
                         self.heartbeat_failure_interval *= 2
 
-                    heartbeat_at = self.reset_heartbeat()
+                    self.log.debug("Running reconnection.")
+                    self.reset_heartbeat()
+                    heartbeat_at = self.get_expiry
                 else:
+                    heartbeat_misses += 1
                     self.socket_multipart_send(
                         zsocket=self.bind_heatbeat,
                         control=self.heartbeat_notice,
+                    )
+                    self.log.debug(
+                        "Sent heartbeat to server [ %s ]",
+                        self.connection_string,
                     )
 
     @staticmethod

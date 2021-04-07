@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import socket
+import struct
 import time
 
 import zmq
@@ -74,38 +75,40 @@ class Server(manager.Interface):
 
                 if control in [self.heartbeat_ready, self.heartbeat_notice]:
                     self.log.debug(
-                        "Received Heartbeat from {}, client online".format(
-                            identity
+                        "Received Heartbeat from [ {} ], client online".format(
+                            identity.decode()
                         )
                     )
                     expire = self.workers[identity] = self.get_expiry
                     heartbeat_at = self.get_heartbeat
-                    data = dict(expire=expire)
                     self.socket_multipart_send(
                         zsocket=self.bind_heatbeat,
                         identity=identity,
-                        data=json.dumps(data).encode(),
+                        control=self.heartbeat_notice,
+                        info=struct.pack("<f", expire),
+                    )
+                    self.log.debug(
+                        "Sent Heartbeat to [ {} ]".format(identity.decode())
                     )
 
             # Send heartbeats to idle workers if it's time
             elif time.time() > idel_time and self.workers:
                 for worker in list(self.workers.keys()):
                     self.log.warn(
-                        "Sending idle worker {} a heartbeat".format(worker)
+                        "Sending idle worker [ {} ] a heartbeat".format(worker)
                     )
-                    expire = self.workers.get(worker) or self.get_expiry
-                    data = dict(expire=expire)
                     self.socket_multipart_send(
                         zsocket=self.bind_heatbeat,
                         identity=worker,
+                        control=self.heartbeat_notice,
                         command=b"reset",
-                        data=json.dumps(data).encode(),
+                        info=struct.pack("<f", self.get_expiry),
                     )
                     if time.time() > idel_time + 3:
                         self.log.warn("Removing dead worker {}".format(worker))
                         self.workers.pop(worker)
-
-            self.wq_prune(workers=self.workers)
+            else:
+                self.wq_prune(workers=self.workers)
 
     def _set_job_status(self, job_status, job_id, identity, job_output):
         """Set job status.
@@ -381,7 +384,7 @@ class Server(manager.Interface):
                     # be a standard client return in JSON format under normal
                     # circomstances.
                     conn.sendall(
-                        "Job recieved. Task ID: {}".format(
+                        "Job received. Task ID: {}".format(
                             json_data["task"]
                         ).encode()
                     )
