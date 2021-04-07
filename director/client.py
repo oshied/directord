@@ -143,7 +143,7 @@ class Client(manager.Interface):
 
         try:
             os.makedirs(workdir, exist_ok=True)
-        except FileExistsError as e:
+        except (FileExistsError, PermissionError) as e:
             return str(e), False
         else:
             return "", True

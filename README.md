@@ -112,8 +112,8 @@ three noted targets, `wget` will be installed.
 ---
 - jobs:
   - WORKDIR: /home/centos/.ssh
-  - ADD: --chown=centos:centos /home/centos/.ssh/* /home/centos/.ssh/
   - RUN: chmod 600 /home/centos/.ssh/* && chmod 700 /home/centos/.ssh
+  - ADD: --chown=centos:centos /home/centos/.ssh/* /home/centos/.ssh/
 - targets:
   - df.next-c1.localdomain-client-1
   - df.next-c2.localdomain-client-1
@@ -189,6 +189,7 @@ $ podman build -t director -f Containerfile
 $ podman run --hostname director \
              --net=host \
              --env DIRECTOR_MODE=server \
+             --env DIRECTOR_SHARED_KEY=secrete \
              --detach \
              localhost/director director
 ```
@@ -199,6 +200,8 @@ $ podman run --hostname director \
 $ podman run --hostname $(hostname)-client \
              --net=host \
              --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
+             --env DIRECTOR_SHARED_KEY=secrete \
+             --user 0 \
              --detach \
              localhost/director director
 ```
@@ -216,6 +219,8 @@ $ for i in {1..40}; do
   podman run --hostname $(hostname)-client-${i} \
              --net=host \
              --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
+             --env DIRECTOR_SHARED_KEY=secrete \
+             --user 0 \
              --detach \
              director director
 done

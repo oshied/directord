@@ -265,6 +265,7 @@ class Server(manager.Interface):
                                     job_target
                                 )
                             )
+                            return
                     else:
                         targets = self.workers.keys()
 
@@ -281,6 +282,7 @@ class Server(manager.Interface):
                     else:
                         job_info = dict()
 
+                    transfers = job_info.get("TRANSFERS", list())
                     for identity in targets:
                         if job_item["verb"] in ["ADD", "COPY"]:
                             for file_path in job_item["from"]:
@@ -291,9 +293,10 @@ class Server(manager.Interface):
                                     job_item["to"],
                                     os.path.basename(file_path),
                                 )
-                                job_info["TRANSFERS"].append(
-                                    job_item["file_to"]
-                                )
+                                if job_item["file_to"] not in transfers:
+                                    transfers.append(
+                                        job_item["file_to"]
+                                    )
                                 self.socket_multipart_send(
                                     zsocket=self.bind_job,
                                     identity=identity,
