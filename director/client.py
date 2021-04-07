@@ -152,6 +152,7 @@ class Client(manager.Interface):
         self,
         file_to,
         job_id,
+        source_file,
         user=None,
         group=None,
         cached=False,
@@ -159,6 +160,28 @@ class Client(manager.Interface):
     ):
         """Run file transfer operation.
 
+        File transfer operations will look at the cache, then look for an
+        existing file, and finally compare the original SHA1 to what is on
+        disk. If everything checks out the client will request the file
+        from the server.
+
+        If the user and group arguments are defined the file ownership
+        will be set accordingly.
+
+        :param file_to: Location where the file will be transferred to.
+        :type file_to: String
+        :param job_id: Job information marker.
+        :type job_id: String
+        :param source_file: Original file location on server.
+        :type source_file: String
+        :param user: User name
+        :type user: String
+        :param group: Group name
+        :type group: String
+        :param cached: If there is a cache hit.
+        :type cached: String
+        :param file_sha1: Original file SHA1
+        :type file_sha1: String
         :returns: tuple
         """
 
@@ -167,23 +190,22 @@ class Client(manager.Interface):
             and os.path.isfile(file_to)
             and self.file_sha1(file_to) == file_sha1
         ):
-            info = "Cache hit. File SHA1 exists {}, task would be skipped but this is broken for now...".format(
-                file_sha1
-            )
+            info = "Cache hit. File SHA1 exists {}".format(file_sha1)
             self.log.info(info)
-        #     self.socket_multipart_send(
-        #         zsocket=self.bind_job,
-        #         msg_id=job_id.encode(),
-        #         control=self.transfer_end,
-        #     )
-        #     return info, True
-        # else:
-        #     self.socket_multipart_send(
-        #         zsocket=self.bind_job,
-        #         msg_id=job_id.encode(),
-        #         control=self.job_ack,
-        #     )
-
+            self.socket_multipart_send(
+                zsocket=self.bind_job,
+                msg_id=job_id.encode(),
+                control=self.transfer_end,
+            )
+            return info, True
+        else:
+            self.socket_multipart_send(
+                zsocket=self.bind_job,
+                msg_id=job_id.encode(),
+                control=self.job_ack,
+                command=b"transfer",
+                info=source_file,
+            )
         try:
             with open(file_to, "wb") as f:
                 while True:
@@ -244,7 +266,7 @@ class Client(manager.Interface):
                 _,
                 command,
                 data,
-                _,
+                info,
             ) = self.socket_multipart_recv(zsocket=self.bind_job)
             job = json.loads(data.decode())
             job_id = job["task"]
@@ -256,7 +278,6 @@ class Client(manager.Interface):
                 control=self.job_ack,
             )
 
-            # TODO: Figure out a way to make this work.
             job_skip_cache = job.get("skip_cache", False)
             if job_skip_cache and command in [b"ADD", b"COPY"]:
                 job_skip_cache = False
@@ -264,7 +285,7 @@ class Client(manager.Interface):
             _cache_hit = (
                 not job_skip_cache and cache.get(job_sha1) == self.job_end
             )
-            # Caching does not work in file transfer commands.
+            # Caching does not work for transfers at this stage.
             _cache_allowed = command not in [b"ADD", b"COPY"]
 
             with utils.ClientStatus(
@@ -279,18 +300,19 @@ class Client(manager.Interface):
                     c.job_state = self.job_end
                     return
                 elif command == b"RUN":
-                    info, success = self._run_command(command=job["command"])
+                    status, success = self._run_command(command=job["command"])
                 elif command in [b"ADD", b"COPY"]:
-                    info, success = self._run_transfer(
+                    status, success = self._run_transfer(
                         file_to=job["file_to"],
                         job_id=job_id,
                         user=job.get("user"),
                         group=job.get("group"),
                         cached=_cache_hit,
                         file_sha1=job.get("file_sha1sum"),
+                        source_file=info,
                     )
                 elif command == b"WORKDIR":
-                    info, success = self._run_workdir(workdir=job["workdir"])
+                    status, success = self._run_workdir(workdir=job["workdir"])
                 else:
                     self.log.warn(
                         "Unknown command - COMMAND:%s ID:%s",
@@ -299,10 +321,10 @@ class Client(manager.Interface):
                     )
                     return
 
-                if info:
-                    if not isinstance(info, bytes):
-                        info = info.encode()
-                    c.info = info
+                if status:
+                    if not isinstance(status, bytes):
+                        status = status.encode()
+                    c.info = status
 
                 if not success:
                     state = c.job_state = self.job_failed

@@ -152,7 +152,7 @@ class Server(manager.Interface):
 
         self.return_jobs[job_id] = job_metadata
 
-    def _run_transfer(self, identity, verb, file_path, job_item):
+    def _run_transfer(self, identity, verb, file_path):
         """Run file transfer job.
 
         The transfer process will transfer all files from a given meta data
@@ -160,23 +160,19 @@ class Server(manager.Interface):
 
         When a file is initiated all chunks will be sent over the wire.
 
-        :param job_item: Dictionary item containing job meta data.
-        :type job_item: Dictionary
         :param identity: Node name
         :type identity: String
+        :param verb: Action taken
+        :type verb: Bytes
+        :param file_path: Path of file to transfer.
+        :type file_path: String
         """
 
-        self.log.debug('Processing file [ %s ]', file_path)
+        self.log.debug("Processing file [ %s ]", file_path)
         if not os.path.isfile(file_path):
             self.log.warn("File was not found. File path:%s", file_path)
             return
 
-        self.socket_multipart_send(
-            zsocket=self.bind_job,
-            identity=identity,
-            command=verb,
-            data=json.dumps(job_item).encode(),
-        )
         self.log.info("File transfer for [ %s ] starting", file_path)
         with open(file_path, "rb") as f:
             for chunk in self.read_in_chunks(file_object=f):
@@ -230,10 +226,21 @@ class Server(manager.Interface):
                     identity,
                     msg_id,
                     control,
-                    _,
+                    command,
                     _,
                     info,
                 ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                if command == b"transfer":
+                    self.log.debug(
+                        "Executing transfer for [ %s ]", info.decode()
+                    )
+                    self._run_transfer(
+                        identity=identity,
+                        verb=b"ADD",
+                        file_path=os.path.abspath(
+                            os.path.expanduser(info.decode())
+                        ),
+                    )
                 self._set_job_status(
                     job_status=control,
                     job_id=msg_id.decode(),
@@ -279,13 +286,12 @@ class Server(manager.Interface):
                                     job_item["to"],
                                     os.path.basename(file_path),
                                 )
-                                self._run_transfer(
+                                self.socket_multipart_send(
+                                    zsocket=self.bind_job,
                                     identity=identity,
-                                    verb=job_item["verb"].encode(),
-                                    file_path=os.path.abspath(
-                                        os.path.expanduser(file_path)
-                                    ),
-                                    job_item=job_item,
+                                    command=job_item["verb"].encode(),
+                                    data=json.dumps(job_item).encode(),
+                                    info=file_path.encode(),
                                 )
                         else:
                             self._run_job(job_item=job_item, identity=identity)
