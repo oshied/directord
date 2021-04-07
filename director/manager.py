@@ -4,9 +4,9 @@ import socket
 import time
 import uuid
 
-from logging import handlers
-
 import zmq
+import zmq.auth
+from zmq.auth.thread import ThreadAuthenticator
 
 import director
 
@@ -62,7 +62,7 @@ class Interface(director.Processor):
         self.transfer_start = b"\002"  # Signals start file transfer
         self.transfer_end = b"\003"  # Signals start file transfer
 
-        self.ctx = zmq.Context()
+        self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
 
     @property
@@ -115,6 +115,18 @@ class Interface(director.Processor):
         """
 
         bind = self.ctx.socket(socket_type)
+
+        if self.args.shared_key:
+            # Enables basic auth
+            self.auth = ThreadAuthenticator(self.ctx, log=self.log)
+            self.auth.start()
+            self.auth.allow()
+            self.auth.configure_plain(
+                domain="*", passwords={"admin": self.args.shared_key}
+            )
+
+            bind.plain_server = True  # Enable shared key authentication
+
         bind.bind(
             "{connection}:{port}".format(
                 connection=connection,
@@ -158,6 +170,11 @@ class Interface(director.Processor):
         """
 
         bind = self.ctx.socket(socket_type)
+
+        if self.args.shared_key:
+            bind.plain_username = b"admin"  # User is hard coded.
+            bind.plain_password = self.args.shared_key.encode()
+
         if socket_type == zmq.SUB:
             bind.setsockopt_string(zmq.SUBSCRIBE, self.identity)
         else:

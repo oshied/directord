@@ -275,7 +275,7 @@ class Server(manager.Interface):
                             "INFO": self.nullbyte.decode(),
                             "NODES": [i.decode() for i in targets],
                             "_time": time.time(),
-                            'VERB': job_item["verb"],
+                            "VERB": job_item["verb"],
                             "TRANSFERS": list(),
                         }
                     else:
@@ -291,7 +291,9 @@ class Server(manager.Interface):
                                     job_item["to"],
                                     os.path.basename(file_path),
                                 )
-                                job_info["TRANSFERS"].append(job_item["file_to"])
+                                job_info["TRANSFERS"].append(
+                                    job_item["file_to"]
+                                )
                                 self.socket_multipart_send(
                                     zsocket=self.bind_job,
                                     identity=identity,
@@ -368,7 +370,6 @@ class Server(manager.Interface):
                     else:
                         conn.sendall(json.dumps({"failed": True}).encode())
 
-                    print(data)
                     conn.sendall(json.dumps(data).encode())
                 else:
                     json_data["task_sha1sum"] = hashlib.sha1(data).hexdigest()

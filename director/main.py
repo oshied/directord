@@ -28,6 +28,12 @@ def _args():
         type=argparse.FileType(mode="r"),
     )
     parser.add_argument(
+        "--shared-key",
+        help="Shared key used for server client authentication.",
+        metavar="STRING",
+        default=os.getenv("DIRECTOR_SHARED_KEY"),
+    )
+    parser.add_argument(
         "--debug",
         help="Enable debug mode. Default: %(default)s",
         action="store_true",
