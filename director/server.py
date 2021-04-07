@@ -340,7 +340,6 @@ class Server(manager.Interface):
                                     data=json.dumps(job_item).encode(),
                                     info=file_path.encode(),
                                 )
-                                time.sleep(.25)
                         else:
                             self._run_job(job_item=job_item, identity=identity)
 
