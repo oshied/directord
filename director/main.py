@@ -333,8 +333,12 @@ def main():
             if args.job_info:
                 headings = ["KEY", "VALUE"]
                 item = dict(data).get(args.job_info)
+                if not item:
+                    return
                 tabulated_data.append(["ID", args.job_info])
                 for k, v in item.items():
+                    if not v:
+                        continue
                     if k.startswith("_"):
                         continue
                     if isinstance(v, list):

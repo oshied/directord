@@ -269,12 +269,17 @@ class Server(manager.Interface):
                         targets = self.workers.keys()
 
                     task = job_item.get("task")
-                    if task and task not in self.return_jobs:
-                        self.return_jobs[task] = {
+                    if task not in self.return_jobs:
+                        job_info = self.return_jobs[task] = {
                             "ACCEPTED": True,
                             "INFO": self.nullbyte.decode(),
+                            "NODES": [i.decode() for i in targets],
                             "_time": time.time(),
+                            'VERB': job_item["verb"],
+                            "TRANSFERS": list(),
                         }
+                    else:
+                        job_info = dict()
 
                     for identity in targets:
                         if job_item["verb"] in ["ADD", "COPY"]:
@@ -286,6 +291,7 @@ class Server(manager.Interface):
                                     job_item["to"],
                                     os.path.basename(file_path),
                                 )
+                                job_info["TRANSFERS"].append(job_item["file_to"])
                                 self.socket_multipart_send(
                                     zsocket=self.bind_job,
                                     identity=identity,
@@ -299,6 +305,8 @@ class Server(manager.Interface):
                         self.log.info(
                             "Sent job {} to {}".format(task, identity)
                         )
+                    else:
+                        self.return_jobs[task] = job_info
 
     def run_socket_server(self):
         """Start a socket server.
@@ -360,6 +368,7 @@ class Server(manager.Interface):
                     else:
                         conn.sendall(json.dumps({"failed": True}).encode())
 
+                    print(data)
                     conn.sendall(json.dumps(data).encode())
                 else:
                     json_data["task_sha1sum"] = hashlib.sha1(data).hexdigest()
