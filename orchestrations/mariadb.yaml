@@ -1,0 +1,12 @@
+---
+
+- jobs:
+  - ARG: mysql_root_password SuperSecrete
+  - RUN: dnf -y install mariadb mariadb-server
+  - RUN: systemctl enable mariadb.service
+  - RUN: systemctl start mariadb.service
+  - RUN: mysql -e "UPDATE mysql.user SET Password = PASSWORD('{{ mysql_root_password }}') WHERE User = 'root'"
+  - RUN: mysql -e "DROP USER ''@'localhost'"
+  - RUN: mysql -e "DROP USER ''@'$(hostname)'"
+  - RUN: mysql -e "DROP DATABASE test"
+  - RUN: mysql -e "FLUSH PRIVILEGES"

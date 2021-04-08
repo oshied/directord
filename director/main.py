@@ -83,8 +83,9 @@ def _args():
     )
     parser_orchestrate.add_argument(
         "--target",
-        help="Worker target to run a particular job against.",
-        metavar="STRING",
+        help="Worker target(s) to run a particular job against.",
+        metavar="[STRING]",
+        nargs="+",
     )
     parser_orchestrate.add_argument(
         "orchestrate_files",
@@ -113,8 +114,9 @@ def _args():
     )
     parser_exec.add_argument(
         "--target",
-        help="Worker target to run a particular job against.",
-        metavar="STRING",
+        help="Worker target(s) to run a particular job against.",
+        metavar="[STRING]",
+        nargs="+",
     )
     parser_exec.add_argument(
         "exec",
@@ -284,11 +286,20 @@ def main():
         client.Client(args=args).worker_run()
     elif args.mode == "exec":
         user_exec = user.User(args=args)
-        data = user_exec.format_exec(
-            verb=args.verb, execute=args.exec, target=args.target
-        )
-        return_data = user_exec.send_data(data=data)
-        print(return_data)
+        if args.target:
+            for target in set(args.target):
+                print(target)
+                data = user_exec.format_exec(
+                    verb=args.verb, execute=args.exec, target=target
+                )
+                return_data = user_exec.send_data(data=data)
+                print(return_data)
+        else:
+            data = user_exec.format_exec(
+                verb=args.verb, execute=args.exec
+            )
+            return_data = user_exec.send_data(data=data)
+            print(return_data)
     elif args.mode == "orchestrate":
         user_exec = user.User(args=args)
         for orchestrate_file in args.orchestrate_files:
@@ -304,8 +315,11 @@ def main():
                     orchestrations = yaml.safe_load(f)
 
                 job_to_run = list()
+                defined_targets = list()
+                if args.target:
+                    defined_targets = list(set(args.target))
                 for orchestrate in orchestrations:
-                    targets = orchestrate.get("targets", list())
+                    targets = defined_targets or orchestrate.get("targets", list())
                     jobs = orchestrate["jobs"]
                     for job in jobs:
                         job_uuid = str(uuid.uuid4())

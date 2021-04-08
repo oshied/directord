@@ -1,0 +1,23 @@
+---
+# Example orchestration file.
+
+# This orchestration file is simple and used to show how to leverage
+# parts of the Director technology stack.
+
+# This item lists all of the jobs that will be applied globally to all
+# nodes within the stack.
+- jobs:
+  - WORKDIR: /home/centos/.ssh
+  - RUN: chmod 600 /home/centos/.ssh/* && chmod 700 /home/centos/.ssh
+  - ADD: --chown=centos:centos /home/centos/.ssh/* /home/centos/.ssh/
+
+
+# This item lists a limited set of nodes which will run a given set of
+# jobs.
+- targets:
+  - df.next-c1.localdomain-client-1
+  - df.next-c2.localdomain-client-1
+  - df.next-c3.localdomain-client-1
+  - df.next-c2.localdomain
+  jobs:
+  - RUN: dnf install -y wget

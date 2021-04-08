@@ -1,0 +1,51 @@
+# Orchestration file to deploy keystone within a cluster.
+#
+#
+# NOTE(): No "targets" are defined. This is because this is an example. In a
+#         real environment the desired target nodes should be set for a given
+#         set of actions.
+
+---
+
+# Set the args that we know we'll need. These args are available within the
+# client cache.
+- jobs:
+  - ARG: keystone_db_username keystone
+  - ARG: keystone_db_password secrete
+  - ARG: keystone_db_host 127.0.0.1
+  - ARG: keystone_db_name keystone
+  - ARG: mysql_root_password SuperSecrete
+
+# Install all of our packages and do some basic service setup.
+- jobs:
+  - RUN: dnf -y install openstack-keystone httpd mod_wsgi
+  - RUN: >-
+      crudini --set /etc/keystone/keystone.conf database connection
+      'mysql+pymysql://{{ keystone_db_username }}:{{ keystone_db_password }}@{{ keystone_db_host }}/{{ keystone_db_name }}'
+  - RUN: crudini --set /etc/keystone/keystone.conf token provider fernet
+  - RUN: sed -i "s/^#ServerName.*/ServerName $(hostname)/g" /etc/httpd/conf/httpd.conf
+  - RUN: ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
+
+# Perform all the service integration tasks. Note these tasks are all using `--run-once`.
+# In a production environment this could also be done by using a defined set of "targets".
+- jobs:
+  - RUN: --run-once mysql -u root -p{{ mysql_root_password }} -e "CREATE DATABASE keystone;"
+  - RUN: --run-once mysql -u root -p{{ mysql_root_password }} -e "CREATE USER `keystone`@`localhost` IDENTIFIED BY '{{ keystone_db_password }}';"
+  - RUN: --run-once mysql -u root -p{{ mysql_root_password }} -e "GRANT ALL ON keystone.* TO `keystone`@`localhost`;"
+  - RUN: --run-once mysql -u root -p{{ mysql_root_password }} -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '{{ keystone_db_password }}';"
+  - RUN: --run-once mysql -u root -p{{ mysql_root_password }} -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '{{ keystone_db_password }}';"
+  - RUN: --run-once keystone-manage db_sync keystone
+  - RUN: --run-once keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+  - RUN: --run-once keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+  - RUN: >-
+      --run-once
+      keystone-manage bootstrap --bootstrap-password ADMIN_PASS
+      --bootstrap-admin-url http://$(hostname):5000/v3/
+      --bootstrap-internal-url http://$(hostname):5000/v3/
+      --bootstrap-public-url http://$(hostname):5000/v3/
+      --bootstrap-region-id RegionOne
+
+# Service setup complete, now to enable apache and start the server.
+- jobs:
+  - RUN: systemctl enable httpd.service
+  - RUN: systemctl start httpd.service

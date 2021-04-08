@@ -46,6 +46,14 @@ client node. To instruct the system to ignore all forms of cache, add the
 $ director exec --verb RUN '--skip-cache echo -e "hello world"'
 ```
 
+Every job can also be executed only one time. This is useful when orchestrating
+a complex deployment where service setup only needs to be performed once. Use
+the `--run-once` flag in your command to ensure it's only executed one time.
+
+``` shell
+$ director exec --verb RUN '--run-once echo -e "hello world"'
+```
+
 #### Verbs
 
 This is a short list of the available verbs.

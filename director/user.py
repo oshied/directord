@@ -55,8 +55,9 @@ class User(manager.Interface):
 
         args = None
         data = dict()
-        parser = argparse.ArgumentParser(description="Process exec commands")
+        parser = argparse.ArgumentParser(description="Process exec commands", allow_abbrev=False)
         parser.add_argument("--skip-cache", action="store_true")
+        parser.add_argument("--run-once", action="store_true")
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         if verb == "RUN":
             args, command = parser.parse_known_args(
@@ -132,6 +133,7 @@ class User(manager.Interface):
 
         if args:
             data["skip_cache"] = args.skip_cache
+            data["run_once"] = args.run_once
 
         return json.dumps(data)
 

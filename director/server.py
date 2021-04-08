@@ -301,6 +301,10 @@ class Server(manager.Interface):
                     else:
                         targets = self.workers.keys()
 
+                    if job_item.get("run_once", False):
+                        self.log.debug('Run once enabled.')
+                        targets = [targets[0]]
+
                     task = job_item.get("task")
                     if task not in self.return_jobs:
                         job_info = self.return_jobs[task] = {
