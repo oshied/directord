@@ -21,7 +21,7 @@
 
 # Install all of our packages and do some basic service setup.
 - jobs:
-  - RUN: dnf -y install openstack-keystone httpd python3-mod_wsgi
+  - RUN: dnf -y install openstack-keystone httpd python3-mod_wsgi python3-openstackclient
   - RUN: >-
       crudini --set /etc/keystone/keystone.conf database connection
       'mysql+pymysql://{{ keystone_db_username }}:{{ keystone_db_password }}@{{ keystone_db_host }}/{{ keystone_db_name }}'

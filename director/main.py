@@ -82,10 +82,24 @@ def _args():
         "orchestrate", help="Orchestration mode help"
     )
     parser_orchestrate.add_argument(
+        "--restrict",
+        help="Restrict orchestration to a set of Task SHA1(s).",
+        metavar="STRING",
+        nargs="+",
+    )
+    parser_orchestrate.add_argument(
         "--target",
         help="Worker target(s) to run a particular job against.",
-        metavar="[STRING]",
+        metavar="STRING",
         nargs="+",
+    )
+    parser_orchestrate.add_argument(
+        "--ignore-cache",
+        help=(
+            "Instruct the orchestration engine to ignore all"
+            " cache for the entirety of the run."
+        ),
+        action="store_true",
     )
     parser_orchestrate.add_argument(
         "orchestrate_files",
@@ -322,7 +336,6 @@ def main():
                     )
                     jobs = orchestrate["jobs"]
                     for job in jobs:
-                        job_uuid = str(uuid.uuid4())
                         key, value = next(iter(job.items()))
                         value = [value]
                         for target in targets:
@@ -331,17 +344,24 @@ def main():
                                     verb=key,
                                     execute=value,
                                     target=target,
-                                    uuid=job_uuid,
+                                    restrict=args.restrict,
+                                    ignore_cache=args.ignore_cache,
                                 )
                             )
                         if not targets:
                             job_to_run.append(
-                                dict(verb=key, execute=value, uuid=job_uuid)
+                                dict(
+                                    verb=key,
+                                    execute=value,
+                                    restrict=args.restrict,
+                                    ignore_cache=args.ignore_cache,
+                                )
                             )
 
                 for job in job_to_run:
-                    data = user_exec.format_exec(**job)
-                    print(user_exec.send_data(data=data))
+                    print(
+                        user_exec.send_data(data=user_exec.format_exec(**job))
+                    )
 
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)

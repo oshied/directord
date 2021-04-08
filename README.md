@@ -131,6 +131,10 @@ the given command and the value is the execution.
   - RUN: "echo hello world"
 ```
 
+> Several CLI options are available when orchestrating a deployment, such as
+  `--restrict` and `--ignore-cache`. These option provide for the ability to
+  replay specific tasks or forcefully ignore the client side cache.
+
 ##### Example Orchestration file
 
 This example orchestration file will copy the local client ssh keys from the

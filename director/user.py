@@ -35,7 +35,9 @@ class User(manager.Interface):
 
         return [i for g in execute for i in g.split()]
 
-    def format_exec(self, verb, execute, target=None, uuid=None):
+    def format_exec(
+        self, verb, execute, target=None, ignore_cache=False, restrict=None
+    ):
         """Return a JSON encode object for task execution.
 
         While formatting the message, the method will treat each verb as a
@@ -48,8 +50,12 @@ class User(manager.Interface):
         :type execute: String
         :param target: Target argent to send job to.
         :type target: String
-        :param uuid: (optional) Set the job id.
-        :type uuid: String
+        :param ignore_cache: Instruct the entire execution to
+                             ignore client caching.
+        :type ignore_cache: Boolean
+        :param restrict: (optional) Restrict job execution based on a
+                         provided task SHA1.
+        :type restrict: List
         :returns: String
         """
 
@@ -134,14 +140,17 @@ class User(manager.Interface):
         if target:
             data["target"] = target
 
-        if uuid:
-            data["task"] = uuid
+        if restrict:
+            data["restrict"] = restrict
 
         data["verb"] = verb
 
         if args:
-            data["skip_cache"] = args.skip_cache
+            data["skip_cache"] = ignore_cache or args.skip_cache
             data["run_once"] = args.run_once
+        else:
+            if ignore_cache:
+                data["skip_cache"] = True
 
         return json.dumps(data)
 

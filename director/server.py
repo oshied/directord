@@ -285,6 +285,11 @@ class Server(manager.Interface):
                 except Exception:
                     pass
                 else:
+                    restrict_sha1 = job_item.get("restrict")
+                    if restrict_sha1:
+                        if job_item["task_sha1sum"] not in restrict_sha1:
+                            return
+
                     job_target = job_item.get("target")
                     if job_target:
                         job_target = job_target.encode()
@@ -314,6 +319,7 @@ class Server(manager.Interface):
                             "_time": time.time(),
                             "VERB": job_item["verb"],
                             "TRANSFERS": list(),
+                            "TASK_SHA1": job_item["task_sha1sum"],
                         }
                     else:
                         job_info = dict()
@@ -415,9 +421,27 @@ class Server(manager.Interface):
 
                     conn.sendall(json.dumps(data).encode())
                 else:
-                    json_data["task_sha1sum"] = hashlib.sha1(data).hexdigest()
-                    if "task" not in json_data:
+                    task_id = json_data.pop("task", None)
+                    ignore_cache = json_data.pop("skip_cache", False)
+
+                    if "restrict" in json_data:
+                        restrict = set(json_data.pop("restrict"))
+                        json_data["task_sha1sum"] = hashlib.sha1(
+                            json.dumps(json_data).encode()
+                        ).hexdigest()
+                        if json_data["task_sha1sum"] not in restrict:
+                            continue
+                        json_data["restrict"] = list(restrict)
+                    else:
+                        json_data["task_sha1sum"] = hashlib.sha1(
+                            json.dumps(json_data).encode()
+                        ).hexdigest()
+
+                    json_data["ignore_cache"] = ignore_cache
+                    if not task_id:
                         json_data["task"] = self.get_uuid
+                    else:
+                        json_data["task"] = task_id
 
                     # Returns the message in reverse to show a return. This will
                     # be a standard client return in JSON format under normal
