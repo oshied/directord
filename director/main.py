@@ -295,9 +295,7 @@ def main():
                 return_data = user_exec.send_data(data=data)
                 print(return_data)
         else:
-            data = user_exec.format_exec(
-                verb=args.verb, execute=args.exec
-            )
+            data = user_exec.format_exec(verb=args.verb, execute=args.exec)
             return_data = user_exec.send_data(data=data)
             print(return_data)
     elif args.mode == "orchestrate":
@@ -319,7 +317,9 @@ def main():
                 if args.target:
                     defined_targets = list(set(args.target))
                 for orchestrate in orchestrations:
-                    targets = defined_targets or orchestrate.get("targets", list())
+                    targets = defined_targets or orchestrate.get(
+                        "targets", list()
+                    )
                     jobs = orchestrate["jobs"]
                     for job in jobs:
                         job_uuid = str(uuid.uuid4())

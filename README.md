@@ -58,16 +58,37 @@ $ director exec --verb RUN '--run-once echo -e "hello world"'
 
 This is a short list of the available verbs.
 
-* `RUN` - Execute a command. The client terminal will execute using `/bin/sh`.
+##### `RUN`
 
-* `WORKDIR` - Create a directory on the client system.
+Execute a command. The client terminal will execute using `/bin/sh`.
 
-* `ADD` - Copy a file or glob of files to a remote system. This method allows
-  operators to define multiple files on the CLI using the specific file, or a
-  glob of files within a given path. Optionally this takes the
-  `--chown user[:group]`.
+Extra arguments available to the `RUN` verb.
 
-* `COPY` - The same as `ADD`.
+`--stdout-arg STRING` - Sets the stdout of a given command to defined cached
+argument.
+
+##### `ARG`
+
+Sets a cached item within the environment. Syntax is `KEY VALUE`.
+
+##### `ADD`
+
+Copy a file or glob of files to a remote system. This method allows
+operators to define multiple files on the CLI using the specific file, or a
+glob of files within a given path.
+
+Extra arguments available to the `ADD` verb.
+
+`--chown user[:group]` - Sets the ownership of a recently transferred file to
+a defined user and group (optionally).
+
+##### `COPY`
+
+The same as `ADD`.
+
+##### `WORKDIR`
+
+Create a directory on the client system.
 
 ### Management
 

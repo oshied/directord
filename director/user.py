@@ -55,14 +55,22 @@ class User(manager.Interface):
 
         args = None
         data = dict()
-        parser = argparse.ArgumentParser(description="Process exec commands", allow_abbrev=False)
+        parser = argparse.ArgumentParser(
+            description="Process exec commands", allow_abbrev=False
+        )
         parser.add_argument("--skip-cache", action="store_true")
         parser.add_argument("--run-once", action="store_true")
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         if verb == "RUN":
+            parser.add_argument(
+                "--stdout-arg",
+                help="Stores the stdout of a given command as a cached argument.",
+            )
             args, command = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
+            if args.stdout_arg:
+                data["stdout_arg"] = args.stdout_arg
             data["command"] = " ".join(command)
         elif verb in ["COPY", "ADD"]:
             parser.add_argument("--chown")

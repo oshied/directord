@@ -302,7 +302,7 @@ class Server(manager.Interface):
                         targets = self.workers.keys()
 
                     if job_item.get("run_once", False):
-                        self.log.debug('Run once enabled.')
+                        self.log.debug("Run once enabled.")
                         targets = [targets[0]]
 
                     task = job_item.get("task")

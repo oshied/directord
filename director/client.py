@@ -152,7 +152,7 @@ class Client(manager.Interface):
                         self.connection_string,
                     )
 
-    def _run_command(self, command, cache):
+    def _run_command(self, command, cache, stdout_arg=None):
         """Run file command operation.
 
         Command operations are rendered with cached data from the args dict.
@@ -161,16 +161,27 @@ class Client(manager.Interface):
         :type command: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
+        :param stdout_arg: Argument name used to store stdout in cache.
+        :type stdout_arg: String
         :returns: tuple
         """
 
         if "args" in cache:
             t_command = self.template.from_string(command)
-            r_command = t_command.render(**cache["args"])
-            info, success = utils.run_command(command=r_command)
-        else:
-            info, success = utils.run_command(command=command)
-        return info, success
+            command = t_command.render(**cache["args"])
+
+        info, success = utils.run_command(command=command)
+
+        if stdout_arg:
+            clean_info = info.decode().strip()
+            if "args" in cache:
+                cache_args = cache["args"]
+                cache_args[stdout_arg] = clean_info
+                cache["args"] = cache_args
+            else:
+                cache["args"] = {stdout_arg: clean_info}
+
+        return info.strip() or command, success
 
     def _run_workdir(self, workdir, cache):
         """Run file work directory operation.
@@ -346,7 +357,9 @@ class Client(manager.Interface):
                     return
                 elif command == b"RUN":
                     status, success = self._run_command(
-                        command=job["command"], cache=cache
+                        command=job["command"],
+                        cache=cache,
+                        stdout_arg=job.get("stdout_arg"),
                     )
                 elif command in [b"ADD", b"COPY"]:
                     status, success = self._run_transfer(

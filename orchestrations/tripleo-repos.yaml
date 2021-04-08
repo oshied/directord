@@ -1,8 +1,9 @@
 ---
 
 - jobs:
-  - RUN: dnf install -y lynx
+  - RUN: --skip-cache dnf install -y lynx
   - RUN: >-
-      URL=$(lynx -dump -hiddenlinks=listonly https://trunk.rdoproject.org/centos8/component/tripleo/current/ | awk '/python3-tripleo-repos.*rpm$/ {print $2}')
-      dnf install -y ${URL}
-  - RUN: tripleo-repos --stream -b master current-tripleo ceph
+      --skip-cache --stdout-arg tripleo_repo_rpm
+      lynx -dump -hiddenlinks=listonly https://trunk.rdoproject.org/centos8/component/tripleo/current/ | awk '/python3-tripleo-repos.*rpm$/ {print $2}'
+  - RUN: --skip-cache dnf install -y {{ tripleo_repo_rpm }}
+  - RUN: --skip-cache tripleo-repos --stream -b master current-tripleo ceph
