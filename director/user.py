@@ -91,7 +91,9 @@ class User(manager.Interface):
                 data["user"], data["group"] = chown
             file_from, data["to"] = file_path
             data["from"] = [
-                i for i in glob.glob(file_from) if os.path.isfile(i)
+                os.path.abspath(os.path.expanduser(i))
+                for i in glob.glob(file_from)
+                if os.path.isfile(os.path.expanduser(i))
             ]
             if not data["from"]:
                 raise AttributeError(

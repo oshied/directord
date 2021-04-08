@@ -1,0 +1,9 @@
+---
+test_string_args: test
+test_integer_args: 9000
+test_float_args: 51.50
+test_boolean_args: true
+test_nested_args:
+  test: true
+test_array_args:
+- test

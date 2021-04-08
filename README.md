@@ -60,6 +60,8 @@ This is a short list of the available verbs.
 
 ##### `RUN`
 
+Syntax: `STRING`
+
 Execute a command. The client terminal will execute using `/bin/sh`.
 
 Extra arguments available to the `RUN` verb.
@@ -69,7 +71,9 @@ argument.
 
 ##### `ARG`
 
-Sets a cached item within the environment. Syntax is `KEY VALUE`.
+Syntax: `KEY VALUE`
+
+Sets a cached item within the environment.
 
 ##### `ENV`
 
@@ -77,9 +81,14 @@ The same as `ARG`.
 
 ##### `ADD`
 
+syntax: `SOURCE DESTINATION`
+
 Copy a file or glob of files to a remote system. This method allows
 operators to define multiple files on the CLI using the specific file, or a
 glob of files within a given path.
+
+> When copying multiple files, ensure that the destination path ends with an
+  operating system separator.
 
 Extra arguments available to the `ADD` verb.
 
@@ -95,9 +104,13 @@ The same as `ADD`.
 
 ##### `WORKDIR`
 
+Syntax: `STRING`
+
 Create a directory on the client system.
 
 ##### `CACHEFILE`
+
+Syntax: `STRING`
 
 Read a **JSON** or **YAML** file on the client side and load the contents into
 argument cache. While cached arguments can easily be defined using the `ARG` or

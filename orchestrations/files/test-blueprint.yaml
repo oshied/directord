@@ -1,0 +1,13 @@
+---
+# Render runtime args
+test_stdout_arg: "{{ test_stdout_arg }}"
+test_runtime_arg: "{{ test_runtime_arg }}"
+test_runtime_arg_as_env: "{{ test_runtime_arg_as_env }}"
+
+# Render cachefile args
+test_string_args: "{{ test_string_args }}"
+test_integer_args: "{{ test_integer_args }}"
+test_float_args: "{{ test_float_args }}"
+test_boolean_args: "{{ test_boolean_args }}"
+test_nested_args: {{ test_nested_args }}
+test_array_args: {{ test_array_args }}

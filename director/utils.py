@@ -6,7 +6,7 @@ def run_command(
     command,
     shell=True,
     env=None,
-    execute="/bin/bash",
+    execute="/bin/sh",
     return_codes=None,
 ):
     """Run a shell command.

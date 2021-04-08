@@ -332,10 +332,14 @@ class Server(manager.Interface):
                                 job_item["file_sha1sum"] = self.file_sha1(
                                     file_path=file_path
                                 )
-                                job_item["file_to"] = os.path.join(
-                                    job_item["to"],
-                                    os.path.basename(file_path),
-                                )
+                                if job_item["to"].endswith(os.sep):
+                                    job_item["file_to"] = os.path.join(
+                                        job_item["to"],
+                                        os.path.basename(file_path),
+                                    )
+                                else:
+                                    job_item["file_to"] = job_item["to"]
+
                                 if job_item["file_to"] not in transfers:
                                     transfers.append(job_item["file_to"])
                                 self.log.debug(
