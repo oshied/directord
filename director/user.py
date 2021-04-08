@@ -80,6 +80,7 @@ class User(manager.Interface):
             data["command"] = " ".join(command)
         elif verb in ["COPY", "ADD"]:
             parser.add_argument("--chown")
+            parser.add_argument("--blueprint", action="store_true")
             args, file_path = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
@@ -96,16 +97,15 @@ class User(manager.Interface):
                 raise AttributeError(
                     "The value of {} was not found.".format(file_from)
                 )
+            data["blueprint"] = args.blueprint
         elif verb == "FROM":
             raise NotImplementedError()
-        elif verb == "ARG":
+        elif verb in ["ARG", "ENV"]:
             parser.add_argument("args", nargs="+", action="append")
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             data["args"] = dict([" ".join(args.args[0]).split(" ", 1)])
-        elif verb == "ENV":
-            raise NotImplementedError()
         elif verb == "LABEL":
             raise NotImplementedError()
         elif verb == "USER":
@@ -134,6 +134,12 @@ class User(manager.Interface):
                 self.sanitized_args(execute=execute)
             )
             data["workdir"] = args.workdir
+        elif verb == "CACHEFILE":
+            parser.add_argument("cachefile")
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["cachefile"] = args.cachefile
         else:
             raise SystemExit("No known verb defined.")
 

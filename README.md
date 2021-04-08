@@ -71,6 +71,10 @@ argument.
 
 Sets a cached item within the environment. Syntax is `KEY VALUE`.
 
+##### `ENV`
+
+The same as `ARG`.
+
 ##### `ADD`
 
 Copy a file or glob of files to a remote system. This method allows
@@ -82,6 +86,9 @@ Extra arguments available to the `ADD` verb.
 `--chown user[:group]` - Sets the ownership of a recently transferred file to
 a defined user and group (optionally).
 
+`--blueprint` - The blueprint option instructs the client to read and render
+a copied file. The file will be rendered using cached arguments.
+
 ##### `COPY`
 
 The same as `ADD`.
@@ -89,6 +96,13 @@ The same as `ADD`.
 ##### `WORKDIR`
 
 Create a directory on the client system.
+
+##### `CACHEFILE`
+
+Read a **JSON** or **YAML** file on the client side and load the contents into
+argument cache. While cached arguments can easily be defined using the `ARG` or
+`ENV` verb, the `CACHEFILE` verb provides a way to load thousands of arguments
+using a single action.
 
 ### Management
 

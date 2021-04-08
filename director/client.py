@@ -5,6 +5,7 @@ import pwd
 import struct
 import tempfile
 import time
+import yaml
 
 import diskcache
 import zmq
@@ -209,9 +210,11 @@ class Client(manager.Interface):
         file_to,
         job_id,
         source_file,
+        cache,
         user=None,
         group=None,
         file_sha1=None,
+        blueprint=False,
     ):
         """Run file transfer operation.
 
@@ -229,14 +232,30 @@ class Client(manager.Interface):
         :type job_id: String
         :param source_file: Original file location on server.
         :type source_file: String
+        :param cache: Caching object used to template items within a command.
+        :type cache: Object
         :param user: User name
         :type user: String
         :param group: Group name
         :type group: String
         :param file_sha1: Original file SHA1
         :type file_sha1: String
+        :param blueprint: Enable|Disable blueprinting a given file.
+        :type blueprint: Boolean
         :returns: tuple
         """
+
+        def blueprinter():
+            if blueprint and "args" in cache:
+                with open(file_to) as f:
+                    file_contents = f.read()
+
+                t_file_contents = self.template.from_string(file_contents)
+                file_contents = t_file_contents.render(**cache["args"])
+                with open(file_to, "w") as f:
+                    f.write(file_contents)
+
+                self.log.info("File %s has been blueprinted.", file_to)
 
         if os.path.isfile(file_to) and self.file_sha1(file_to) == file_sha1:
             info = "File exists {} and SHA1 {} matches, nothing to transfer".format(
@@ -248,6 +267,7 @@ class Client(manager.Interface):
                 msg_id=job_id.encode(),
                 control=self.transfer_end,
             )
+            blueprinter()
             return info, True
         else:
             self.log.debug(
@@ -283,6 +303,7 @@ class Client(manager.Interface):
             self.log.critical("Failure when creating file. FAILURE:%s", e)
             return "Failure when creating file", False
 
+        blueprinter()
         info = self.file_sha1(file_to)
         success = True
         if user:
@@ -369,12 +390,14 @@ class Client(manager.Interface):
                         group=job.get("group"),
                         file_sha1=job.get("file_sha1sum"),
                         source_file=info,
+                        cache=cache,
+                        blueprint=job.get("blueprint", False),
                     )
                 elif command == b"WORKDIR":
                     status, success = self._run_workdir(
                         workdir=job["workdir"], cache=cache
                     )
-                elif command == b"ARG":
+                elif command in [b"ARG", b"ENV"]:
                     cache_args = dict()
                     if "args" in cache:
                         cache_args = cache["args"]
@@ -384,6 +407,22 @@ class Client(manager.Interface):
                         cache["args"] = cache_args
 
                     status, success = (b"ARG(s) added to Cache", True)
+                elif command == b"CACHEFILE":
+                    try:
+                        with open(job["cachefile"]) as f:
+                            cachefile_args = yaml.safe_load(f)
+                    except Exception as e:
+                        status = str(e)
+                        success = False
+                    else:
+                        if "args" in cache:
+                            cache_args = cache["args"]
+                            cache_args.update(cachefile_args)
+                            cache["args"] = cache_args
+                        else:
+                            cache["args"] = cachefile_args
+
+                        status, success = (b"Cache file loaded", True)
                 else:
                     self.log.warn(
                         "Unknown command - COMMAND:%s ID:%s",

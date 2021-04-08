@@ -123,6 +123,7 @@ def _args():
             "USER",
             "EXPOSE",
             "WORKDIR",
+            "CACHEFILE",
         ],
         required=True,
     )
@@ -376,14 +377,22 @@ def main():
                 if not item:
                     return
                 tabulated_data.append(["ID", args.job_info])
-                for k, v in item.items():
-                    if not v:
+                for key, value in item.items():
+                    if not value:
                         continue
-                    if k.startswith("_"):
+                    if key.startswith("_"):
                         continue
-                    if isinstance(v, list):
-                        v = "\n".join(v)
-                    tabulated_data.append([k.upper(), v])
+                    if isinstance(value, list):
+                        value = "\n".join(value)
+                    elif isinstance(value, dict):
+                        value = "\n".join(
+                            [
+                                "{} = {}".format(k, v)
+                                for k, v in value.items()
+                                if v
+                            ]
+                        )
+                    tabulated_data.append([key.upper(), value])
             else:
                 headings = [
                     "ID",

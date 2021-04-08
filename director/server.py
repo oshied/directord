@@ -320,6 +320,7 @@ class Server(manager.Interface):
                             "VERB": job_item["verb"],
                             "TRANSFERS": list(),
                             "TASK_SHA1": job_item["task_sha1sum"],
+                            "JOB_DEFINITION": job_item,
                         }
                     else:
                         job_info = dict()
