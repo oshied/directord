@@ -362,20 +362,19 @@ class Client(manager.Interface):
                 control=self.job_ack,
             )
 
-            job_skip_cache = job.get("skip_cache", False)
-            if job_skip_cache and command in [b"ADD", b"COPY"]:
-                job_skip_cache = False
+            job_skip_cache = job.get("skip_cache", job.get("ignore_cache", False))
 
-            _cache_hit = (
+            cache_hit = (
                 not job_skip_cache and cache.get(job_sha1) == self.job_end
             )
+
             # Caching does not work for transfers at this stage.
-            _cache_allowed = command not in [b"ADD", b"COPY", b"ARG", b"ENV"]
+            cache_allowed = command not in [b"ADD", b"COPY", b"ARG", b"ENV"]
 
             with utils.ClientStatus(
                 socket=self.bind_job, job_id=job_id.encode(), ctx=self
             ) as c:
-                if _cache_hit and _cache_allowed:
+                if cache_hit and cache_allowed:
                     # TODO: Figure out how to skip cache when file transfering.
                     self.log.debug(
                         "Cache hit on {}, task skipped.".format(job_sha1)
