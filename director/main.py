@@ -191,6 +191,16 @@ def _args():
         help="Pull information on a specific job ID.",
         metavar="STRING",
     )
+    manage_group.add_argument(
+        "--export-jobs",
+        help="Exports all job records as YAML and dumps them to a file.",
+        metavar="STRING",
+    )
+    manage_group.add_argument(
+        "--export-nodes",
+        help="Exports all node records as YAML and dumps them to a file.",
+        metavar="STRING",
+    )
     args = parser.parse_args()
     # Check for configuration file and load it if found.
     if args.config_file:
@@ -369,6 +379,16 @@ def main():
 
         data = manage_exec.run()
         data = json.loads(data)
+        if args.export_jobs or args.export_nodes:
+            with open(args.export_jobs or args.export_nodes, "w") as f:
+                yaml.safe_dump(dict(data), f, default_flow_style=False)
+            print(
+                "Exported data to [ {} ]".format(
+                    args.export_jobs or args.export_nodes
+                )
+            )
+            return
+
         tabulated_data = list()
         if data and isinstance(data, list):
             if args.job_info:

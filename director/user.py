@@ -22,7 +22,8 @@ class User(manager.Interface):
 
         super(User, self).__init__(args=args)
 
-    def sanitized_args(self, execute):
+    @staticmethod
+    def sanitized_args(execute):
         """Return arguments in a flattened array.
 
         This will inspect the execution arguments and return everything found
@@ -199,9 +200,9 @@ class Manage(User):
         :returns: String
         """
 
-        if self.args.list_jobs or self.args.job_info:
+        if self.args.list_jobs or self.args.job_info or self.args.export_jobs:
             manage = "list-jobs"
-        elif self.args.list_nodes:
+        elif self.args.list_nodes or self.args.export_nodes:
             manage = "list-nodes"
         elif self.args.purge_jobs:
             manage = "purge-jobs"
