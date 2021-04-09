@@ -383,7 +383,8 @@ class Server(manager.Interface):
         except OSError:
             if os.path.exists(self.args.socket_path):
                 raise SystemExit(
-                    "Socket path already exists: {}".format(
+                    "Socket path already exists and wasn't able to be"
+                    " cleaned up: {}".format(
                         self.args.socket_path
                     )
                 )
