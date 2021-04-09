@@ -1,14 +1,12 @@
 import argparse
 import json
 import os
-from os.path import dirname
 import sys
-import uuid
 import yaml
 
 import tabulate
 
-from director import client
+from director import client, mixin, utils
 from director import server
 from director import user
 import director
@@ -305,114 +303,44 @@ def main():
     """
 
     args = _args()
+    _mixin = mixin.Mixin(args=args)
+
     if args.mode == "server":
-        server.Server(args=args).worker_run()
+        _mixin.start_server()
     elif args.mode == "client":
-        client.Client(args=args).worker_run()
+        _mixin.start_client()
     elif args.mode == "exec":
-        user_exec = user.User(args=args)
-        if args.target:
-            for target in set(args.target):
-                print(target)
-                data = user_exec.format_exec(
-                    verb=args.verb, execute=args.exec, target=target
-                )
-                return_data = user_exec.send_data(data=data)
-                print(return_data)
-        else:
-            data = user_exec.format_exec(verb=args.verb, execute=args.exec)
-            return_data = user_exec.send_data(data=data)
-            print(return_data)
+        return_data = _mixin.run_exec()
+        for item in return_data:
+            print(item)
     elif args.mode == "orchestrate":
-        user_exec = user.User(args=args)
-        for orchestrate_file in args.orchestrate_files:
-            orchestrate_file = os.path.abspath(
-                os.path.expanduser(orchestrate_file)
-            )
-            if not os.path.exists(orchestrate_file):
-                raise FileNotFoundError(
-                    "The [ {} ] file was not found.".format(orchestrate_file)
-                )
-            else:
-                with open(orchestrate_file) as f:
-                    orchestrations = yaml.safe_load(f)
-
-                job_to_run = list()
-                defined_targets = list()
-                if args.target:
-                    defined_targets = list(set(args.target))
-                for orchestrate in orchestrations:
-                    targets = defined_targets or orchestrate.get(
-                        "targets", list()
-                    )
-                    jobs = orchestrate["jobs"]
-                    for job in jobs:
-                        key, value = next(iter(job.items()))
-                        value = [value]
-                        for target in targets:
-                            job_to_run.append(
-                                dict(
-                                    verb=key,
-                                    execute=value,
-                                    target=target,
-                                    restrict=args.restrict,
-                                    ignore_cache=args.ignore_cache,
-                                )
-                            )
-                        if not targets:
-                            job_to_run.append(
-                                dict(
-                                    verb=key,
-                                    execute=value,
-                                    restrict=args.restrict,
-                                    ignore_cache=args.ignore_cache,
-                                )
-                            )
-
-                for job in job_to_run:
-                    print(
-                        user_exec.send_data(data=user_exec.format_exec(**job))
-                    )
-
+        return_data = _mixin.run_orchestration()
+        for item in return_data:
+            print(item)
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
 
         data = manage_exec.run()
         data = json.loads(data)
         if args.export_jobs or args.export_nodes:
-            with open(args.export_jobs or args.export_nodes, "w") as f:
-                yaml.safe_dump(dict(data), f, default_flow_style=False)
-            print(
-                "Exported data to [ {} ]".format(
-                    args.export_jobs or args.export_nodes
-                )
+            export_file = utils.dump_yaml(
+                file_path=(args.export_jobs or args.export_nodes),
+                data=dict(data),
             )
+            print("Exported data to [ {} ]".format(export_file))
             return
 
-        tabulated_data = list()
+        _mixin = mixin.Mixin(args=args)
+
         if data and isinstance(data, list):
             if args.job_info:
                 headings = ["KEY", "VALUE"]
+
                 item = dict(data).get(args.job_info)
                 if not item:
                     return
-                tabulated_data.append(["ID", args.job_info])
-                for key, value in item.items():
-                    if not value:
-                        continue
-                    if key.startswith("_"):
-                        continue
-                    if isinstance(value, list):
-                        value = "\n".join(value)
-                    elif isinstance(value, dict):
-                        value = "\n".join(
-                            [
-                                "{} = {}".format(k, v)
-                                for k, v in value.items()
-                                if v
-                            ]
-                        )
-                    tabulated_data.append([key.upper(), value])
+
+                tabulated_data = _mixin.return_tabulated_info(data=item)
             else:
                 headings = [
                     "ID",
@@ -421,24 +349,10 @@ def main():
                     "FAILED",
                     "EXPIRY",
                 ]
-                original_data = list(dict(data).items())
-                for key, value in original_data:
-                    arranged_data = list()
-                    arranged_data.append(key)
-                    raw_data = list(value.items())
-                    for k, v in raw_data:
-                        if k.startswith("_"):
-                            continue
-                        if k in headings:
-                            if isinstance(v, list):
-                                arranged_data.append(v.pop(0))
-                                if v:
-                                    original_data.insert(0, (key, value))
-                            elif isinstance(v, float):
-                                arranged_data.append("{:.2f}".format(v))
-                            else:
-                                arranged_data.append(v)
-                    tabulated_data.append(arranged_data)
+                tabulated_data = _mixin.return_tabulated_data(
+                    data=data, headings=headings
+                )
+
             print(
                 tabulate.tabulate(
                     [i for i in tabulated_data if i], headers=headings

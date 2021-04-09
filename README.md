@@ -27,31 +27,18 @@ variables, a configurations file, or command line switches.
 
 ### Messaging
 
-The cluster messaging is provided by ZeroMQ in a router format which ensures
-that we have bi-directional communication to and from the nodes. The use of
-ZeroMQ allows us to create low latency mesh which is highly responsive and
-delivering content as fast as possible.
+The cluster messaging uses a router format which ensures it has bi-directional
+communication to and from the nodes. The router allows us to create a low
+latency mesh which monitors node health and ensures is highly responsive
+instruction delivery network.
 
 ### User facing DSL
 
 When interacting with the **User** CLI utility executive and orchestration
 operations follow a simple DSL inspired by the `Containerfile` specification.
 
-Every job has the ability to skip a cache hit should one be present on the
-client node. To instruct the system to ignore all forms of cache, add the
-`--skip-cache` to the job definition.
-
-``` shell
-$ director exec --verb RUN '--skip-cache echo -e "hello world"'
-```
-
-Every job can also be executed only one time. This is useful when orchestrating
-a complex deployment where service setup only needs to be performed once. Use
-the `--run-once` flag in your command to ensure it's only executed one time.
-
-``` shell
-$ director exec --verb RUN '--run-once echo -e "hello world"'
-```
+> The AIM of Director isn't to create a new programing language, it is to get
+  things done, and then get out of the way.
 
 #### Verbs
 
@@ -115,6 +102,24 @@ Read a **JSON** or **YAML** file on the client side and load the contents into
 argument cache. While cached arguments can easily be defined using the `ARG` or
 `ENV` verb, the `CACHEFILE` verb provides a way to load thousands of arguments
 using a single action.
+
+#### Extra options
+
+Every job has the ability to skip a cache hit should one be present on the
+client node. To instruct the system to ignore all forms of cache, add the
+`--skip-cache` to the job definition.
+
+``` shell
+$ director exec --verb RUN '--skip-cache echo -e "hello world"'
+```
+
+Every job can also be executed only one time. This is useful when orchestrating
+a complex deployment where service setup only needs to be performed once. Use
+the `--run-once` flag in your command to ensure it's only executed one time.
+
+``` shell
+$ director exec --verb RUN '--run-once echo -e "hello world"'
+```
 
 ### Management
 
@@ -309,3 +314,17 @@ $ director orchestrate functional-tests.yaml --ignore-cache
 This will run the functional tests and ignore all caching all client nodes when
 executing. The reason all caching is ignored is to ensure that the application
 is executing what we expect on successive test runs.
+
+Once the test execution is complete, the following oneliner can be used to
+check for failure and then dump the jobs data to further diagnose problems.
+
+``` shell
+$ (director manage --list-jobs | grep False) && director manage --export-jobs jobs-failure-information.yaml
+```
+
+Run the `--purge-jobs` management command to easily clear the job information
+before testing again.
+
+``` shell
+director manage --purge-jobs
+```

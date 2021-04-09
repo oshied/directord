@@ -1,5 +1,6 @@
 import os
 import subprocess
+import yaml
 
 
 def run_command(
@@ -59,6 +60,21 @@ def run_command(
         return error, False
     else:
         return output, True
+
+
+def dump_yaml(file_path, data):
+    """Dump data to a file.
+
+    :param file_path: File path to dump data to
+    :type file_path: String
+    :param data: Dictionary|List data to dump
+    :type data: Dictionary|List
+    """
+
+    with open(os.path.abspath(os.path.expanduser(file_path)), "w") as f:
+        yaml.safe_dump(data, f, default_flow_style=False)
+
+    return file_path
 
 
 class ClientStatus(object):
