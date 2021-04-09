@@ -308,15 +308,15 @@ class Client(manager.Interface):
         success = True
         if user:
             try:
-                if isinstance(user, int):
-                    uid = user
-                else:
+                try:
+                    uid = int(user)
+                except ValueError:
                     uid = pwd.getpwnam(user).pw_uid
 
                 if group:
-                    if isinstance(group, int):
-                        gid = group
-                    else:
+                    try:
+                        gid = int(group)
+                    except ValueError:
                         gid = grp.getgrnam(group).gr_gid
                 else:
                     gid = -1

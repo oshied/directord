@@ -22,23 +22,23 @@
 
   # Test copying a file.
   - COPY: files/test-cache.yaml /tmp/test/test-cache.yaml
-  - RUN: grep test_array_args /tmp/test/test-cache.yaml-1001
+  - RUN: grep test_array_args /tmp/test/test-cache.yaml-0
 
   # Test with --chown user to copying a file.
-  - COPY: --chown=1001 files/test-cache.yaml /tmp/test/test-cache.yaml-1001
-  - RUN: grep test_array_args /tmp/test/test-cache.yaml-1001
+  - COPY: --chown=0 files/test-cache.yaml /tmp/test/test-cache.yaml-0
+  - RUN: grep test_array_args /tmp/test/test-cache.yaml-0
 
   # Test with --chown user:group to copying a file.
-  - COPY: --chown=1001:1000 files/test-cache.yaml /tmp/test/test-cache.yaml-1001-1001
-  - RUN: grep test_array_args /tmp/test/test-cache.yaml-1001-1001
+  - COPY: --chown=0:0 files/test-cache.yaml /tmp/test/test-cache.yaml-0-0
+  - RUN: grep test_array_args /tmp/test/test-cache.yaml-0-0
 
   # Test with --run-once and --chown user to copying a file.
-  - COPY: --run-once --chown=1001 files/test-cache.yaml /tmp/test/test-cache.yaml-once-1001
-  - RUN: --run-once grep test_array_args /tmp/test/test-cache.yaml-once-1001
+  - COPY: --run-once --chown=0 files/test-cache.yaml /tmp/test/test-cache.yaml-once-0
+  - RUN: --run-once grep test_array_args /tmp/test/test-cache.yaml-once-0
 
   # Test with --run-once and --chown user:group to copying a file.
-  - COPY: --run-once --chown=1001:1000 files/test-cache.yaml /tmp/test/test-cache.yaml-once-1001-1001
-  - RUN: --run-once grep test_array_args /tmp/test/test-cache.yaml-once-1001-1001
+  - COPY: --run-once --chown=0:0 files/test-cache.yaml /tmp/test/test-cache.yaml-once-0-0
+  - RUN: --run-once grep test_array_args /tmp/test/test-cache.yaml-once-0-0
 
   # Test loading a cache file.
   - CACHEFILE: /tmp/test/test-cache.yaml
@@ -48,17 +48,17 @@
   - RUN: grep test_stdout_arg /tmp/test/test-blueprint.yaml | grep "hello world 2"
 
   # Test ADD with --chown user and --blueprint and test for blueprinted argument.
-  - ADD: --chown=1001 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-1001
-  - RUN: grep test_runtime_arg /tmp/test/test-blueprint.yaml-1001 | grep "argument"
+  - ADD: --chown=0 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-0
+  - RUN: grep test_runtime_arg /tmp/test/test-blueprint.yaml-0 | grep "argument"
 
   # Test ADD with --chown user:group and --blueprint and test for blueprinted environment argument.
-  - ADD: --chown=1001:1000 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-1001-1001
-  - RUN: grep test_runtime_arg_as_env /tmp/test/test-blueprint.yaml-1001-1001 | grep "environment"
+  - ADD: --chown=0:0 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-0-0
+  - RUN: grep test_runtime_arg_as_env /tmp/test/test-blueprint.yaml-0-0 | grep "environment"
 
   # Test ADD with --run-once and --chown user and --blueprint and test for blueprinted integer.
-  - ADD: --run-once --chown=1001 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-once-1001
-  - RUN: grep test_integer_args /tmp/test/test-blueprint.yaml-once-1001 | grep "9000"
+  - ADD: --run-once --chown=0 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-once-0
+  - RUN: grep test_integer_args /tmp/test/test-blueprint.yaml-once-0 | grep "9000"
 
   # Test ADD with --run-once and --chown user:group and --blueprint and test for blueprinted string.
-  - ADD: --run-once --chown=1001:1000 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-once-1001-1001
-  - RUN: grep test_string_args /tmp/test/test-blueprint.yaml-once-1001-1001 | grep "test"
+  - ADD: --run-once --chown=0:0 --blueprint files/test-blueprint.yaml /tmp/test/test-blueprint.yaml-once-0-0
+  - RUN: grep test_string_args /tmp/test/test-blueprint.yaml-once-0-0 | grep "test"
