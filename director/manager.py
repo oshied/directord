@@ -229,7 +229,6 @@ class Interface(director.Processor):
         command=None,
         data=None,
         info=None,
-        timeout=60,
     ):
         """Send a message over a ZM0 socket.
 
@@ -275,8 +274,6 @@ class Interface(director.Processor):
         :type data: Bytes
         :param info: Encoded information that will be transmitted.
         :type info: Bytes
-        :param timeout: Timeout when waiting for a tracked message to be sent.
-        :type timeout: Int
         """
 
         if not msg_id:

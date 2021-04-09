@@ -74,7 +74,7 @@ class Server(manager.Interface):
         heartbeat_at = self.get_heartbeat
         while True:
             idel_time = heartbeat_at + (self.heartbeat_interval * 3)
-            socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
+            socks = dict(self.poller.poll(1000))
             if socks.get(self.bind_heatbeat) == zmq.POLLIN:
                 (
                     identity,
@@ -235,7 +235,7 @@ class Server(manager.Interface):
         self.bind_job = self.job_bind()
         self.bind_transfer = self.transfer_bind()
         while True:
-            socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
+            socks = dict(self.poller.poll(1000))
             # Handle worker activity on backend
             if socks.get(self.bind_transfer) == zmq.POLLIN:
                 (

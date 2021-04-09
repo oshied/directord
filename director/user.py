@@ -160,7 +160,6 @@ class User(manager.Interface):
             if ignore_cache:
                 data["skip_cache"] = True
 
-        print(data)
         return json.dumps(data)
 
     def send_data(self, data):
