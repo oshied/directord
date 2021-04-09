@@ -1,0 +1,66 @@
+<div class="pt-5">
+    <div class="row-fluid shadow p-3 mb-5 bg-white rounded-3">
+        <div class="span9">
+            <p class="lead pt-3 ps-2">
+                <span class="text-dark">Director</span>, simplified cluster management
+            </p>
+        </div>
+    </div>
+</div>
+<p class="lead border-bottom ps-3 pt-5 rounded-3">
+    Cluster Nodes <span style="color:rgb(143, 93, 0)">{{ nodes | length }}</span>
+</p>
+<p class="lead border-bottom ps-3 rounded-3">
+    Jobs Executed <span style="color:rgb(143, 93, 0)">{{ jobs | length }}</span>
+</p>
+<div class="row-fluid shadow-lg">
+    <div class="accordion accordion-flush" id="accordionStats">
+{% for key, value in jobs %}
+{%   if value.get('PROCESSING') == True %}
+{%     set badge = "bg-info" %}
+{%   elif value.get('SUCCESS') == True %}
+{%     set badge = "bg-success" %}
+{%   else %}
+{%     set badge = "bg-danger" %}
+{%   endif %}
+{%   if "EXECUTION_TIME" in value %}
+{%     set badge_value = value["EXECUTION_TIME"] | round(2, 'floor') %}
+{%   else %}
+{%     set badge_value = value.get('SUCCESS', "Unknown") %}
+{%   endif %}
+        <div class="accordion-item">
+            <div class="accordion-header font-monospace" id="flush-heading{{ loop.index }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#flush-collapse{{ loop.index }}" aria-expanded="false"
+                    aria-controls="flush-collapse{{ loop.index }}" style="font-size: 90%;">
+                    <span class="badge d-none d-md-block {{ badge }} me-2">{{ badge_value }}</span>{{ key }}
+                </button>
+            </div>
+            <div id="flush-collapse{{ loop.index }}" class="accordion-collapse collapse align-middle"
+                aria-labelledby="flush-heading{{ loop.index }}" data-bs-parent="#accordionStats">
+                <div class="accordion-body d-flex">
+                    <div class="card col">
+                        <div class="card-body font-monospace" style="font-size: 75%;">
+                            <table class="table table-striped">
+                                <tbody class="align-middle">
+{%   for k, v in value.items() %}
+{%     if v is iterable and (v is not string and v is not mapping) %}
+{%       set row_value = v | join(', ') %}
+{%     else %}
+{%       set row_value = v %}
+{%     endif %}
+                                    <tr>
+                                        <th scope="row">{{ k }}</th>
+                                        <td>{{ row_value }}</td>
+                                    </tr>
+{%   endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endfor %}
+    </div>
+</div>

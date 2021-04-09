@@ -1,0 +1,4 @@
+# Welcome to Director!
+# robots welcome;
+User-Agent: *
+Disallow:

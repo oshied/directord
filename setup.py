@@ -26,6 +26,7 @@ setuptools.setup(
     install_requires=[
         "diskcache",
         "etcd3",
+        "flask",
         "jinja2",
         "pyyaml",
         "pyzmq",

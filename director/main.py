@@ -141,7 +141,7 @@ def _args():
     parser_server.add_argument(
         "--bind-address",
         help="IP Address to bind a Director Server. Default: %(default)s",
-        metavar="INT",
+        metavar="STRING",
         default=os.getenv("DIRECTOR_BIND_ADDRESS", "*"),
     )
     parser_server.add_argument(
@@ -155,6 +155,18 @@ def _args():
         help="ETCD server bind port. Default: %(default)s",
         metavar="INT",
         default=int(os.getenv("DIRECTOR_ETCD_PORT", 2379)),
+        type=int,
+    )
+    parser_server.add_argument(
+        "--run-ui",
+        help="Enable the Director UI. Default: %(default)s",
+        action="store_true",
+    )
+    parser_server.add_argument(
+        "--ui-port",
+        help="UI server bind port. Default: %(default)s",
+        metavar="INT",
+        default=int(os.getenv("DIRECTOR_UI_PORT", 9000)),
         type=int,
     )
     parser_client = subparsers.add_parser("client", help="Client mode help")

@@ -1,0 +1,239 @@
+LINKER(8)                                                                     LINKER(8)
+
+NAME
+       linker - Application server which provides a simple
+       return URL for hashed content. Linker return a SHA1
+       response for all simplified URLs.
+
+SYNOPSIS
+       Supported Request Methods
+           GET
+               Return data from a given request.
+
+               Used to create a SHA1 resource through arguments.
+               Creating an a SHA1 resource requires the use of
+               the `link` argument in the request URL.
+
+                   {{ remote_url }}?link=https://peznauts.com
+
+               return information will be the following
+
+                   {{ remote_url }}/be9b8fc6fc5057a7d18c7b6245e3eee2dc5bd544
+
+               Because the hashing algorithm is SHA1 the return
+               data will always remain consistent should another
+               request be made to simplify the same link.
+
+           HEAD
+               Returns information on a given resource.
+
+DESCRIPTION
+       Application server which provides a simple return URL for
+       hashed content. Linker return a SHA1 response for all
+       simplified URLs.
+
+       This application responds to two HTTP methods, GET and
+       HEAD.
+
+EXAMPLES
+       Example usage within a given client or application framework.
+
+       PYTHON
+           >>> import requests
+           >>> payload = {'link': 'https://peznauts.com'}
+           >>> r = requests.get('{{ remote_url }}', params=payload)
+           >>> r.content
+           b'{{ remote_url }}/be9b8fc6fc5057a7d18c7b6245e3eee2dc5bd544'
+
+       GOLANG
+           >>> package main
+           >>> import (
+           ...    "io/ioutil"
+           ...    "log"
+           ...    "net/http"
+           ...    "net/url"
+           ... )
+           >>> func main() {
+           ...    client := &http.Client{}
+           ...    req, err := http.NewRequest("GET", "{{ remote_url }}", nil)
+           ...    parm := url.Values{}
+           ...    parm.Add("link", "https://peznauts.com")
+           ...    req.URL.RawQuery = parm.Encode()
+           ...    resp, err := client.Do(req)
+           ...    if err != nil {
+           ...       log.Fatalln(err)
+           ...    }
+           ...    body, err := ioutil.ReadAll(resp.Body)
+           ...    if err != nil {
+           ...       log.Fatalln(err)
+           ...    }
+           ...    sb := string(body)
+           ...    log.Printf(sb)
+           ... }
+
+           2021/03/26 14:39:43 {{ remote_url }}/be9b8fc6fc5057a7d18c7b6245e3eee2dc5bd544
+
+       SHELL
+           $ curl {{ remote_url }}?link=https://peznauts.com
+           {{ remote_url }}/be9b8fc6fc5057a7d18c7b6245e3eee2dc5bd544
+
+ENDPOINTS
+       /
+           Site index returns LINKER_BASIC_USAGE (String). See
+           CONSTANTS section for more on this option. The index
+           accepts the `link`. When the `link` argument is
+           specified the contents of the argument is validated
+           and hashed.
+
+           The index will interrogate the request to see the
+           request type. If the request is made from a browser
+           without arguments, and the `content_type` isn't set
+           to "text/plain" the index will redirect the request to
+           the web-client. This processing is done to ensure a
+           good user experience for browser based requests, while
+           also ensuring that the API experience for application
+           based workflows isn't impacted.
+
+       /<link_id>
+           When using a GET request this endpoint will lookup and
+           redirect to a hashed URL.
+
+           When using a HEAD request this endpoint will lookup
+           and return information about a hashed URL.
+
+       /stats
+           Basic site and link statistic information.
+
+       /stats/<link_id>
+           Displays information on a specific link hash.
+
+       /robots.txt
+           Returns access information for crawlers.
+
+       /favicon.ico
+           Returns a shortcut icon.
+
+       /api
+           Returns the API man page.
+
+       /link
+           Link web client to create new simplified links.
+
+FILES
+       /etc/linker/linker.conf.py
+           Default config file. Written in Python Constants.
+
+CONSTANTS
+       LINKER_DONATE (Dictionary)
+           default({})
+
+           Key/Value pairs stored in a dictionary which show
+           donation support information as headers.
+
+       LINKER_BASIC_USAGE (String)
+           default(Defined)
+
+           Welcome string. Shown when accessing the index of the
+           API
+
+       LINKER_DB (String)
+           default("sqlite:////tmp/linker.db")
+
+           Database connection string.
+           dialect+driver://username:password@host:port/database
+
+       GOOGLE_ANALYTICS (String)
+           default(None)
+
+           User specific code to provide information to google
+           analytics. This is only used on non-plain/text related
+           pages.
+
+       GOOGLE_ADSENSE (String)
+           default(None)
+
+           User specific code to provide information to google
+           adsense. This is only used on non-plain/text related
+           pages.
+
+       SQLALCHEMY_ENGINE_OPTIONS (Dictionary)
+           default({"pool_pre_ping": True, "pool_recycle": 300,})
+
+           SQLAlchemy specific database engine options written in
+           key/value pairs.
+
+       SECRET_KEY (String)
+           default(random String)
+
+           UUID key used for the server. This value will
+           automatically be generated from a random UUID on
+           server initialization should no value be provided.
+
+       SESSION_COOKIE_SECURE (Boolean)
+           default(True)
+
+           Enable or disable secure cookies. This is only used on
+           non-plain/text related pages.
+
+       SESSION_COOKIE_HTTPONLY (Boolean)
+           default(True)
+
+           Enable or disable HTTP only cookies. This is only used
+           on non-plain/text related pages.
+
+       SESSION_COOKIE_SAMESITE (String)
+           default("Lax")
+
+           Restrict how cookies are sent with requests from
+           external sites.
+
+ENVIRONMENT
+       LINKER_DONATE (String)
+           Key/Value pairs stored in a dictionary which show
+           donation support information as headers. Written
+           as comma separated key=value pairs.
+
+       LINKER_BASIC_USAGE (String)
+           Welcome string. Shown when accessing the index of the
+           API
+
+       LINKER_DB (String)
+           Database connection string.
+           dialect+driver://username:password@host:port/database
+
+       GOOGLE_ANALYTICS (String)
+           User specific code to provide information to google
+           analytics. This is only used on non-plain/text related
+           pages.
+
+       GOOGLE_ADSENSE (String)
+           User specific code to provide information to google
+           adsense. This is only used on non-plain/text related
+           pages.
+
+EXIT CODES
+       200
+           Request succeeded.
+
+       201
+           SHA1 resource created
+
+       308
+           Redirect URL from SHA1 resource lookup
+
+       400
+           Bad request regarding a SHA1 resource
+
+       404
+           Request not found
+
+AUTHOR
+       Kevin Carter (kevin@cloudnull.com)
+
+IMPLEMENTATION
+       Python, version 3.7+
+       Copyright (C) 2021 Peznauts.
+       Apache License Version 2.0
+       <http://www.apache.org/licenses/LICENSE-2.0>
+
+                                                                                      1

@@ -474,4 +474,11 @@ class Server(manager.Interface):
             self.thread(target=self.run_heartbeat),
             self.thread(target=self.run_job),
         ]
+
+        if self.args.run_ui:
+            # low import to ensure nothing flask is loading needlessly.
+            from director import ui  # noqa
+            ui_obj = ui.UI(args=self.args, jobs=self.return_jobs, nodes=self.workers)
+            threads.append(self.thread(target=ui_obj.start_app))
+
         self.run_threads(threads=threads)

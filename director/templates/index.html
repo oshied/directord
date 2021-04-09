@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!doctype html>
+<html lang="en">
+
+<head>
+{% set canonical_url = remote_url %}
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport"
+        content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height, shrink-to-fit=no"" />
+    <meta name=" description" content="Link services for humans" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta property="article:publisher" content="https://cloudnull.io" />
+    <meta property="og:site_name" content="director" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="director" />
+    <meta property="og:description" content="{{ director_page_description | default('Link services for humans') }}" />
+    <meta property="og:url" content="{{ canonical_url }}" />
+    <meta property="og:image" content="{{ url_for('static', filename='img/favicon.png', _external=True) }}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="director" />
+    <meta name="twitter:description" content="{{ director_page_description | default('Link services for humans') }}" />
+    <meta name="twitter:url" content="{{ canonical_url }}" />
+    <meta name="twitter:site" content="@cloudnull" />
+    <title>director</title>
+    <link rel="shortcut icon" href="/favicon.ico" type="image/ico" />
+    <link rel="canonical" href="{{ canonical_url }}" />
+    <link href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}" rel="stylesheet" media="screen">
+    <link href="{{ url_for('static', filename='css/director.css') }}" rel="stylesheet" media="screen">
+    <link href="{{ url_for('static', filename='favicon.ico') }}" rel="shortcut icon">
+</head>
+<body style="background-color: rgb(247, 247, 247)">
+    <main id="site-main" class="site-main outer" role="main">
+{% include "nav.html" %}
+{% include "site-" ~ request.endpoint ~ ".html" %}
+    </main>
+</body>
+<footer>
+    <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+</footer>
+
+</html>
