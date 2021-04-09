@@ -362,7 +362,9 @@ class Client(manager.Interface):
                 control=self.job_ack,
             )
 
-            job_skip_cache = job.get("skip_cache", job.get("ignore_cache", False))
+            job_skip_cache = job.get(
+                "skip_cache", job.get("ignore_cache", False)
+            )
 
             cache_hit = (
                 not job_skip_cache and cache.get(job_sha1) == self.job_end
