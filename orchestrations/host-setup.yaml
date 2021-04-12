@@ -1,6 +1,6 @@
 ---
 
 - jobs:
-  - RUN: dnf -y install chrony
+  - RUN: dnf -y install chrony crudini
   - RUN: systemctl start chronyd
   - RUN: systemctl enable chronyd

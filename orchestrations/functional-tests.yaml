@@ -22,7 +22,7 @@
 
   # Test copying a file.
   - COPY: files/test-cache.yaml /tmp/test/test-cache.yaml
-  - RUN: grep test_array_args /tmp/test/test-cache.yaml-0
+  - RUN: grep test_array_args /tmp/test/test-cache.yaml
 
   # Test with --chown user to copying a file.
   - COPY: --chown=0 files/test-cache.yaml /tmp/test/test-cache.yaml-0

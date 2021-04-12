@@ -27,6 +27,9 @@
 {%     set badge_value = value["EXECUTION_TIME"] | round(2, 'floor') %}
 {%   else %}
 {%     set badge_value = value.get('SUCCESS', "Unknown") %}
+{%     if badge_value == "Unknown" %}
+{%       set badge = "bg-warning" %}
+{%     endif %}
 {%   endif %}
         <div class="accordion-item">
             <div class="accordion-header font-monospace" id="flush-heading{{ loop.index }}">
