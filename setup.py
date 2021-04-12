@@ -31,14 +31,7 @@ setuptools.setup(
         "pyzmq",
         "tabulate",
     ],
-    extras_require={
-        "ui":  [
-            "flask"
-        ],
-        "dev": [
-            "etcd3"
-        ]
-    },
+    extras_require={"ui": ["flask"], "dev": ["etcd3"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Information Technology",

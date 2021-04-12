@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import multiprocessing
 import os
@@ -258,6 +259,8 @@ class Processor(object):
 
         :param file_path: File path
         :type file_path: String
+        :param chunk_size: Set the read chunk size.
+        :type chunk_size: Integer
         :returns: String
         """
 
@@ -272,6 +275,19 @@ class Processor(object):
                         sha1.update(data)
 
             return sha1.hexdigest()
+
+    @staticmethod
+    def object_sha1(obj):
+        """Return the SHA1 sum of a given object.
+
+        The object used for generating a SHA1 must be JSON compatible.
+
+        :param file_path: File path
+        :type file_path: String
+        :returns: String
+        """
+
+        return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
 
 
 class UNIXSocketConnect(object):

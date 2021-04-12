@@ -37,7 +37,13 @@ class User(manager.Interface):
         return [i for g in execute for i in g.split()]
 
     def format_exec(
-        self, verb, execute, target=None, ignore_cache=False, restrict=None
+        self,
+        verb,
+        execute,
+        target=None,
+        ignore_cache=False,
+        restrict=None,
+        parent_id=None,
     ):
         """Return a JSON encode object for task execution.
 
@@ -54,9 +60,10 @@ class User(manager.Interface):
         :param ignore_cache: Instruct the entire execution to
                              ignore client caching.
         :type ignore_cache: Boolean
-        :param restrict: (optional) Restrict job execution based on a
-                         provided task SHA1.
+        :param restrict: Restrict job execution based on a provided task SHA1.
         :type restrict: List
+        :param parent_id: Set the parent UUID for execution jobs.
+        :type parent_id: String
         :returns: String
         """
 
@@ -151,6 +158,9 @@ class User(manager.Interface):
 
         if restrict:
             data["restrict"] = restrict
+
+        if parent_id:
+            data["parent_id"] = parent_id
 
         data["verb"] = verb
 

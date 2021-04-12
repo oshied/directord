@@ -50,6 +50,7 @@ class Mixin(object):
                     defined_targets = list(set(self.args.target))
 
                 for orchestrate in orchestrations:
+                    parent_id = user_exec.get_uuid
                     targets = defined_targets or orchestrate.get(
                         "targets", list()
                     )
@@ -65,6 +66,7 @@ class Mixin(object):
                                     target=target,
                                     restrict=self.args.restrict,
                                     ignore_cache=self.args.ignore_cache,
+                                    parent_id=parent_id,
                                 )
                             )
                         if not targets:
@@ -74,6 +76,7 @@ class Mixin(object):
                                     execute=value,
                                     restrict=self.args.restrict,
                                     ignore_cache=self.args.ignore_cache,
+                                    parent_id=parent_id,
                                 )
                             )
 

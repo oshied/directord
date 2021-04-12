@@ -366,6 +366,8 @@ class Client(manager.Interface):
                 "skip_cache", job.get("ignore_cache", False)
             )
 
+            job_parent_id = job.get("parent_id")
+
             cache_hit = (
                 not job_skip_cache and cache.get(job_sha1) == self.job_end
             )
@@ -376,6 +378,24 @@ class Client(manager.Interface):
             with utils.ClientStatus(
                 socket=self.bind_job, job_id=job_id.encode(), ctx=self
             ) as c:
+                # Set the parent ID value to True, if set False all jobs with
+                # this parent ID will halt and fail.
+                if job_parent_id in cache:
+                    if cache[job_parent_id] is False:
+                        status = (
+                            "Job [ {} ] was not allowed to run because there"
+                            " was a failure under this partent ID"
+                            " [ {} ]".format(job_id, job_parent_id)
+                        )
+                        self.log.error(status)
+                        c.info = status.encode()
+                        c.job_state = cache[job_sha1] = self.job_failed
+                        return
+                else:
+                    # Parent ID information is set to automatically expire
+                    # after 24 hours.
+                    cache.add(key=job_parent_id, value=True, expire=86400)
+
                 if cache_hit and cache_allowed:
                     # TODO: Figure out how to skip cache when file transfering.
                     self.log.debug(
@@ -447,6 +467,7 @@ class Client(manager.Interface):
                 if not success:
                     state = c.job_state = self.job_failed
                     self.log.error("Job failed {}".format(job_id))
+                    cache.set(key=job_parent_id, value=False, expire=86400)
                 else:
                     state = c.job_state = self.job_end
                     self.log.info("Job complete {}".format(job_id))

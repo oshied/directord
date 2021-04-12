@@ -321,6 +321,7 @@ class Server(manager.Interface):
                             "TRANSFERS": list(),
                             "TASK_SHA1": job_item["task_sha1sum"],
                             "JOB_DEFINITION": job_item,
+                            "PARENT_JOB_ID": job_item.get("parent_id"),
                         }
                     else:
                         job_info = dict()
