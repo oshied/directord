@@ -26,13 +26,19 @@ setuptools.setup(
     test_suite="tests",
     install_requires=[
         "diskcache",
-        "etcd3",
-        "flask",
         "jinja2",
         "pyyaml",
         "pyzmq",
         "tabulate",
     ],
+    extras_require={
+        "ui":  [
+            "flask"
+        ],
+        "dev": [
+            "etcd3"
+        ]
+    },
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Information Technology",

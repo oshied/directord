@@ -19,7 +19,7 @@ dnf install -y gcc
 # Create development workspace
 python3 -m venv /opt/director
 /opt/director/bin/pip install --upgrade pip setuptools wheel
-/opt/director/bin/pip install "$(dirname $(readlink -f ${BASH_SOURCE[0]}))"
+/opt/director/bin/pip install "$(dirname $(readlink -f ${BASH_SOURCE[0]}))[ui,dev]"
 
 echo -e "\nDirector is setup and installed within [ /opt/director ]"
 echo "Activate the venv or run director directly."
