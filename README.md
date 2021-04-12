@@ -27,6 +27,12 @@ variables, a configurations file, or command line switches.
 
 ![Director](assets/Director.png)
 
+#### Installation
+
+Director can be installed and used on systems or in containers. If installing
+on a system, the `setup.sh` script can be used to install Director into a
+virtual environment.
+
 ### Messaging
 
 The cluster messaging uses a router format which ensures it has bi-directional
