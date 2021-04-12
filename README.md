@@ -25,6 +25,8 @@ variables, a configurations file, or command line switches.
   socket, the User and Server components are assumed to exist on the same
   machine.
 
+![Director](assets/Director.png)
+
 ### Messaging
 
 The cluster messaging uses a router format which ensures it has bi-directional
