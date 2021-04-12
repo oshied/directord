@@ -40,6 +40,8 @@ communication to and from the nodes. The router allows us to create a low
 latency mesh which monitors node health and ensures is highly responsive
 instruction delivery network.
 
+![Director-Data-flow](assets/Director-Data-flow.png)
+
 ### User facing DSL
 
 When interacting with the **User** CLI utility executive and orchestration
