@@ -384,9 +384,7 @@ class Server(manager.Interface):
             if os.path.exists(self.args.socket_path):
                 raise SystemExit(
                     "Socket path already exists and wasn't able to be"
-                    " cleaned up: {}".format(
-                        self.args.socket_path
-                    )
+                    " cleaned up: {}".format(self.args.socket_path)
                 )
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -478,7 +476,10 @@ class Server(manager.Interface):
         if self.args.run_ui:
             # low import to ensure nothing flask is loading needlessly.
             from director import ui  # noqa
-            ui_obj = ui.UI(args=self.args, jobs=self.return_jobs, nodes=self.workers)
+
+            ui_obj = ui.UI(
+                args=self.args, jobs=self.return_jobs, nodes=self.workers
+            )
             threads.append(self.thread(target=ui_obj.start_app))
 
         self.run_threads(threads=threads)

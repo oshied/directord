@@ -11,7 +11,8 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
-
+import glob
+import os
 import setuptools
 
 
@@ -49,4 +50,18 @@ setuptools.setup(
             "director-client-systemd = director.main:_systemd_client",
         ]
     },
+    data_files=[
+        (
+            "share/director/orchestrations",
+            [i for i in glob.glob("orchestrations/*") if os.path.isfile(i)],
+        ),
+        (
+            "share/director/orchestrations/files",
+            [
+                i
+                for i in glob.glob("orchestrations/files/*")
+                if os.path.isfile(i)
+            ],
+        ),
+    ],
 )
