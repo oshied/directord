@@ -343,7 +343,7 @@ class Client(manager.Interface):
         :type cache: Object
         """
 
-        socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
+        socks = dict(self.poller.poll(128))
         if self.bind_job in socks:
             (
                 _,
@@ -380,7 +380,7 @@ class Client(manager.Interface):
             ) as c:
                 # Set the parent ID value to True, if set False all jobs with
                 # this parent ID will halt and fail.
-                if job_parent_id in cache:
+                if job_parent_id and job_parent_id in cache:
                     if cache[job_parent_id] is False:
                         status = (
                             "Job [ {} ] was not allowed to run because there"

@@ -208,22 +208,6 @@ class Server(manager.Interface):
                     command=verb,
                 )
 
-    def _run_job(self, job_item, identity):
-        """Run an encoded job.
-
-        :param job_item: Dictionary item containing job meta data.
-        :type job_item: Dictionary
-        :param identity: Node name
-        :type identity: String
-        """
-
-        self.socket_multipart_send(
-            zsocket=self.bind_job,
-            identity=identity,
-            command=job_item["verb"].encode(),
-            data=json.dumps(job_item).encode(),
-        )
-
     def run_job(self):
         """Execute the job loop.
 
@@ -238,8 +222,8 @@ class Server(manager.Interface):
         self.bind_job = self.job_bind()
         self.bind_transfer = self.transfer_bind()
         while True:
-            socks = dict(self.poller.poll(1000))
-            # Handle worker activity on backend
+            socks = dict(self.poller.poll(128))
+
             if socks.get(self.bind_transfer) == zmq.POLLIN:
                 (
                     identity,
@@ -267,7 +251,8 @@ class Server(manager.Interface):
                         identity=identity.decode(),
                         job_output=info.decode(),
                     )
-            elif socks.get(self.bind_job) == zmq.POLLIN:
+
+            if socks.get(self.bind_job) == zmq.POLLIN:
                 (
                     identity,
                     msg_id,
@@ -282,7 +267,8 @@ class Server(manager.Interface):
                     identity=identity.decode(),
                     job_output=info.decode(),
                 )
-            elif self.workers:
+
+            if self.workers:
                 try:
                     job_item = self.job_queue.get(block=False, timeout=1)
                 except Exception:
@@ -360,7 +346,12 @@ class Server(manager.Interface):
                                     info=file_path.encode(),
                                 )
                         else:
-                            self._run_job(job_item=job_item, identity=identity)
+                            self.socket_multipart_send(
+                                zsocket=self.bind_job,
+                                identity=identity,
+                                command=job_item["verb"].encode(),
+                                data=json.dumps(job_item).encode(),
+                            )
 
                         self.log.info(
                             "Sent job {} to {}".format(task, identity)
