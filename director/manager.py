@@ -1,6 +1,6 @@
 import jinja2
 import logging
-from os import stat
+import os
 import socket
 import time
 import uuid
@@ -68,6 +68,13 @@ class Interface(director.Processor):
 
         self.template = jinja2.Environment(loader=jinja2.BaseLoader())
 
+        self.base_dir = "/etc/director"
+        self.public_keys_dir = os.path.join(self.base_dir, "public_keys")
+        self.secret_keys_dir = os.path.join(self.base_dir, "private_keys")
+        self.curve_keys_exist = os.path.exists(
+            self.public_keys_dir
+        ) and os.path.exists(self.secret_keys_dir)
+
     @property
     def get_heartbeat(self):
         """Return a new hearbeat interval time.
@@ -121,17 +128,45 @@ class Interface(director.Processor):
 
         bind = self.ctx.socket(socket_type)
 
-        if self.args.shared_key:
-            # Enables basic auth
+        auth_enabled = (
+            self.args.shared_key or self.args.curve_encryption
+        ) or self.curve_keys_exist
+        if auth_enabled:
             self.auth = ThreadAuthenticator(self.ctx, log=self.log)
             self.auth.start()
             self.auth.allow()
-            self.auth.configure_plain(
-                domain="*", passwords={"admin": self.args.shared_key}
-            )
-
-            bind.plain_server = True  # Enable shared key authentication
-
+            if self.args.shared_key:
+                # Enables basic auth
+                self.auth.configure_plain(
+                    domain="*", passwords={"admin": self.args.shared_key}
+                )
+                bind.plain_server = True  # Enable shared key authentication
+                self.log.info("Shared key authentication enabled.")
+            elif self.args.curve_encryption or self.curve_keys_exist:
+                if not self.args.curve_encryption and self.curve_keys_exist:
+                    self.log.info(
+                        "Curve encryption enabled because key components are"
+                        " on the system and no other authentication method"
+                        " was defined."
+                    )
+                for item in [self.public_keys_dir, self.secret_keys_dir]:
+                    if not os.path.exists(item):
+                        raise SystemExit(
+                            "The required path [ {} ] does not exist. Have"
+                            " you generated your keys?".format(item)
+                        )
+                self.auth.configure_curve(
+                    domain="*", location=self.public_keys_dir
+                )
+                server_secret_file = os.path.join(
+                    self.secret_keys_dir, "server.key_secret"
+                )
+                server_public, server_secret = zmq.auth.load_certificate(
+                    server_secret_file
+                )
+                bind.curve_secretkey = server_secret
+                bind.curve_publickey = server_public
+                bind.curve_server = True  # Enable curve authentication
         bind.bind(
             "{connection}:{port}".format(
                 connection=connection,
@@ -179,11 +214,39 @@ class Interface(director.Processor):
         if self.args.shared_key:
             bind.plain_username = b"admin"  # User is hard coded.
             bind.plain_password = self.args.shared_key.encode()
+            self.log.info("Shared key authentication enabled.")
+        elif self.args.curve_encryption or self.curve_keys_exist:
+            if not self.args.curve_encryption and self.curve_keys_exist:
+                self.log.info(
+                    "Curve encryption enabled because key components are"
+                    " on the system and no other authentication method"
+                    " was defined."
+                )
+            client_secret_file = os.path.join(
+                self.secret_keys_dir, "client.key_secret"
+            )
+            for item in [self.public_keys_dir, self.secret_keys_dir]:
+                if not os.path.exists(item):
+                    raise SystemExit(
+                        "The required path [ {} ] does not exist. Have"
+                        " you generated your keys?".format(item)
+                    )
+            client_public, client_secret = zmq.auth.load_certificate(
+                client_secret_file
+            )
+            bind.curve_secretkey = client_secret
+            bind.curve_publickey = client_public
+            server_public_file = os.path.join(
+                self.public_keys_dir, "server.key"
+            )
+            server_public, _ = zmq.auth.load_certificate(server_public_file)
+            bind.curve_serverkey = server_public
 
         if socket_type == zmq.SUB:
             bind.setsockopt_string(zmq.SUBSCRIBE, self.identity)
         else:
             bind.setsockopt_string(zmq.IDENTITY, self.identity)
+
         bind.linger = 0
         self.poller.register(bind, poller_type)
         bind.connect(

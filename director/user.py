@@ -3,6 +3,8 @@ import glob
 import json
 import os
 
+import zmq.auth
+
 import director
 
 from director import manager
@@ -204,6 +206,58 @@ class Manage(User):
 
         super(User, self).__init__(args=args)
 
+    @staticmethod
+    def move_certificates(
+        directory, target_directory=None, backup=False, suffix=".key"
+    ):
+        for item in os.listdir(directory):
+            if backup:
+                target_file = "{}.bak".format(os.path.basename(item))
+            else:
+                target_file = os.path.basename(item)
+
+            if item.endswith(suffix):
+                os.rename(
+                    os.path.join(directory, item),
+                    os.path.join(target_directory or directory, target_file),
+                )
+
+    def generate_certificates(self, base_dir="/etc/director"):
+        """Generate client and server CURVE certificate files.
+
+        :param base_dir: Director configuration path.
+        :type base_dir: String
+        """
+
+        keys_dir = os.path.join(base_dir, "certificates")
+        public_keys_dir = os.path.join(base_dir, "public_keys")
+        secret_keys_dir = os.path.join(base_dir, "private_keys")
+
+        for item in [keys_dir, public_keys_dir, secret_keys_dir]:
+            os.makedirs(item, exist_ok=True)
+
+        # Run certificate backup
+        self.move_certificates(
+            directory=public_keys_dir, backup=True, suffix=".key"
+        )
+        self.move_certificates(
+            directory=secret_keys_dir, backup=True, suffix=".key_secret"
+        )
+
+        # create new keys in certificates dir
+        for item in ["server", "client"]:
+            zmq.auth.create_certificates(keys_dir, item)
+
+        # Move generated certificates in place
+        self.move_certificates(
+            directory=keys_dir, target_directory=public_keys_dir, suffix=".key"
+        )
+        self.move_certificates(
+            directory=keys_dir,
+            target_directory=secret_keys_dir,
+            suffix=".key_secret",
+        )
+
     def run(self):
         """Send the management command to the server.
 
@@ -218,6 +272,8 @@ class Manage(User):
             manage = "purge-jobs"
         elif self.args.purge_nodes:
             manage = "purge-nodes"
+        elif self.args.generate_keys:
+            return self.generate_certificates()
         else:
             raise SystemExit("No known management function was defined.")
 

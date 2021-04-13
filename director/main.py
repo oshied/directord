@@ -25,11 +25,21 @@ def _args():
         default=os.getenv("DIRECTOR_CONFIG_FILE"),
         type=argparse.FileType(mode="r"),
     )
-    parser.add_argument(
+    auth_group = parser.add_mutually_exclusive_group()
+    auth_group.add_argument(
         "--shared-key",
         help="Shared key used for server client authentication.",
         metavar="STRING",
         default=os.getenv("DIRECTOR_SHARED_KEY"),
+    )
+    auth_group.add_argument(
+        "--curve-encryption",
+        action="store_true",
+        help=(
+            "Server and client will connect using Curve authentication"
+            " and encryption. Enabling this option assumes keys have been"
+            " generated. see `manage --generate-keys` for more."
+        ),
     )
     parser.add_argument(
         "--debug",
@@ -211,6 +221,11 @@ def _args():
         help="Exports all node records as YAML and dumps them to a file.",
         metavar="STRING",
     )
+    manage_group.add_argument(
+        "--generate-keys",
+        action="store_true",
+        help="Generate encryption keys for Curve authentication.",
+    )
     args = parser.parse_args()
     # Check for configuration file and load it if found.
     if args.config_file:
@@ -245,7 +260,7 @@ class SystemdInstall(object):
 
         if not os.path.exists("/etc/director/config.yaml"):
             with open("/etc/director/config.yaml", "w") as f:
-                f.write("---\nreplaceMe: true\n")
+                f.write("---\ndebug: false\n")
             print("[+] Created empty configuration file")
 
     def writer(self, service_file):
@@ -331,8 +346,16 @@ def main():
             print(item)
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
-
         data = manage_exec.run()
+        if args.generate_keys:
+            print(
+                "Keys generated. Synchronize the server and client public"
+                " keys to client nodes to enable Curve encryption."
+            )
+
+        if not data:
+            return
+
         data = json.loads(data)
         if args.export_jobs or args.export_nodes:
             export_file = utils.dump_yaml(

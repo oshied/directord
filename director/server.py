@@ -147,10 +147,13 @@ class Server(manager.Interface):
             job_metadata["PROCESSING"] = True
             job_metadata["SUCCESS"] = False
             job_metadata["INFO"] = job_output
-            self.log.info("{} processing {}".format(identity, job_id))
+            if job_status == self.job_ack:
+                self.log.info("{} received job {}".format(identity, job_id))
+            else:
+                self.log.info("{} is processing {}".format(identity, job_id))
         elif job_status in [self.job_end, self.nullbyte]:
             self.log.info(
-                "{} processing {} completed".format(identity, job_id)
+                "{} finished processing {}".format(identity, job_id)
             )
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = True
@@ -163,7 +166,7 @@ class Server(manager.Interface):
             else:
                 job_metadata["FAILED"] = [identity]
             job_metadata["INFO"] = job_output
-            self.log.error("{} processing {} failed".format(identity, job_id))
+            self.log.error("{} failed when processing {}".format(identity, job_id))
 
         self.return_jobs[job_id] = job_metadata
 

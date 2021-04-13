@@ -1,0 +1,7 @@
+---
+
+- jobs:
+  - WORKDIR: /etc/director/private_keys
+  - WORKDIR: /etc/director/public_keys
+  - COPY: /etc/director/private_keys/client.key_secret /etc/director/private_keys/
+  - COPY: /etc/director/public_keys/*.key /etc/director/public_keys/

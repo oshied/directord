@@ -11,14 +11,17 @@ dnf install -y ${TRIPLEO_REPOS}
 
 tripleo-repos --stream -b master current-tripleo ceph
 
-dnf install -y zeromq python3 etcd
-
-# development packages
-dnf install -y gcc
+# Python is required for our application
+# Zeromq is for messaging
+# Libsodium is for ZMQ encryption
+dnf install -y zeromq libsodium python3
 
 # Create development workspace
 python3 -m venv /opt/director
-/opt/director/bin/pip install --upgrade pip setuptools wheel
+/opt/director/bin/pip install --upgrade pip setuptools wheel bindep
+
+# development packages
+dnf install -y $(/build/builder/bin/bindep -b -f /build/bindep.txt test) python3
 /opt/director/bin/pip install "$(dirname $(readlink -f ${BASH_SOURCE[0]}))[ui,dev]"
 
 echo -e "\nDirector is setup and installed within [ /opt/director ]"

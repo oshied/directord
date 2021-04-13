@@ -23,7 +23,7 @@ ADD . /build/
 RUN dnf install -y $(/build/builder/bin/bindep -b -f /build/bindep.txt test) python3
 RUN dnf install -y ${REPOS_PACKAGE}
 RUN tripleo-repos --distro ubi8 -b master current-tripleo ceph
-RUN dnf install -y zeromq
+RUN dnf install -y zeromq libsodium
 
 WORKDIR /director
 RUN /bin/python3.8 -m venv /director
@@ -37,7 +37,7 @@ EXPOSE 5555
 EXPOSE 5556
 EXPOSE 5557
 COPY --from=BUILD /etc/yum.repos.d /etc/yum.repos.d
-RUN microdnf install -y openssh-clients python3.8 zeromq && rm -rf /var/cache/{dnf,yum}
+RUN microdnf install -y openssh-clients python3.8 zeromq libsodium && rm -rf /var/cache/{dnf,yum}
 RUN /bin/python3.8 -m venv --upgrade /director
 COPY --from=BUILD /director /director
 ADD assets/entrypoint /bin/entrypoint
