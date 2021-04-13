@@ -152,9 +152,7 @@ class Server(manager.Interface):
             else:
                 self.log.info("{} is processing {}".format(identity, job_id))
         elif job_status in [self.job_end, self.nullbyte]:
-            self.log.info(
-                "{} finished processing {}".format(identity, job_id)
-            )
+            self.log.info("{} finished processing {}".format(identity, job_id))
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = True
             job_metadata["INFO"] = job_output
@@ -166,7 +164,9 @@ class Server(manager.Interface):
             else:
                 job_metadata["FAILED"] = [identity]
             job_metadata["INFO"] = job_output
-            self.log.error("{} failed when processing {}".format(identity, job_id))
+            self.log.error(
+                "{} failed when processing {}".format(identity, job_id)
+            )
 
         self.return_jobs[job_id] = job_metadata
 

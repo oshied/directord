@@ -359,7 +359,7 @@ class Interface(director.Processor):
         if identity:
             message_parts.insert(0, identity)
 
-        msg = zsocket.send_multipart(message_parts)
+        return zsocket.send_multipart(message_parts)
 
     @staticmethod
     def socket_multipart_recv(zsocket):
