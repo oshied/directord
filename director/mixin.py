@@ -179,14 +179,17 @@ class Mixin(object):
         found_headings = ["ID"]
         original_data = list(dict(data).items())
         for key, value in original_data:
-            arranged_data = list()
-            arranged_data.append(key)
+            arranged_data = [key]
             for item in restrict_headings:
-                found_headings.append(item)
-                if item not in value:
+                if item not in found_headings:
+                    found_headings.append(item)
+                if item.upper() not in value and item.lower() not in value:
                     arranged_data.append(0)
                 else:
-                    report_item = value[item]
+                    try:
+                        report_item = value[item.upper()]
+                    except KeyError:
+                        report_item = value[item.lower()]
                     if not report_item:
                         arranged_data.append(0)
                     else:
@@ -205,5 +208,4 @@ class Mixin(object):
             seen_computed_key.append(key)
             tabulated_data.append(arranged_data)
         else:
-            print(computed_values)
             return tabulated_data, found_headings, computed_values

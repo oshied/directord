@@ -378,7 +378,6 @@ def main():
                 tabulated_data = _mixin.return_tabulated_info(data=item)
             else:
                 restrict_headings = [
-                    "ID",
                     "EXECUTION_TIME",
                     "SUCCESS",
                     "FAILED",

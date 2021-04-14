@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -evo
+set -eo
 
 VENV_PATH="${1:-/opt/director}"
 PYTHON_BIN=${2:-python3}
@@ -42,7 +42,13 @@ ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep
 # development packages
 BASE_PATH="$(dirname $(readlink -f ${BASH_SOURCE[0]}))"
 dnf install -y $(${VENV_PATH}/bin/bindep -b -f ${BASE_PATH}/bindep.txt test) python3
-${VENV_PATH}/bin/pip install "${BASE_PATH}/../[ui,dev]"
+if [[ -f "${BASE_PATH}/../setup.py" ]]; then
+  ${VENV_PATH}/bin/pip install "${BASE_PATH}/../[ui,dev]"
+else
+  rm -rf /opt/director-src
+  git clone https://github.com/cloudnull/director /opt/director-src
+  ${VENV_PATH}/bin/pip install /opt/director-src[ui,dev]
+fi
 
 echo -e "\nDirector is setup and installed within [ ${VENV_PATH} ]"
 echo "Activate the venv or run director directly."

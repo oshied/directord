@@ -7,8 +7,17 @@
   vars:
     director_development_env: true
   tasks:
-    - name: Execute development script
-      script: "{{ playbook_dir }}/dev-setup.sh"
+    - name: Development setup block
+      block:
+      - name: Specifying a destination path
+        copy:
+          src: "{{ item }}"
+          dest: "/opt/{{ item | basename }}"
+        loop:
+        - "{{ playbook_dir }}/dev-setup.sh"
+        - "{{ playbook_dir }}/bindep.txt"
+      - name: Execute development script
+        command: "bash /opt/dev-setup.sh"
       when:
         - director_development_env | bool
 
@@ -28,9 +37,9 @@
         dest: "/tmp/{{ item | basename }}"
         flat: yes
       loop:
-        - /etc/director/private_keys/client.key_secret
-        - /etc/director/public_keys/client.key
-        - /etc/director/public_keys/server.key
+      - /etc/director/private_keys/client.key_secret
+      - /etc/director/public_keys/client.key
+      - /etc/director/public_keys/server.key
     - name: Development server block
       block:
       - name: Setup director server service unit
@@ -48,28 +57,62 @@
   gather_facts: False
   any_errors_fatal: true
   become: true
+  tags:
+    - director-client
   vars:
     director_development_env: true
+  handlers:
+    - name: Key cleanup
+      fetch:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item | basename }}"
+        flat: yes
+      delegate_to: localhost
+      loop:
+      - /tmp/client.key_secret
+      - /tmp/client.key
+      - /tmp/server.key
   tasks:
     - name: Ensure key directories exists
       file:
         path: "{{ item }}"
-        state: director
+        state: directory
       loop:
-        - /etc/director
-        - /etc/director/private_keys
-        - /etc/director/public_keys
-    - name: Specifying a destination path
+      - /etc/director
+      - /etc/director/private_keys
+      - /etc/director/public_keys
+    - name: Copy secret keys
       copy:
         src: "/tmp/client.key_secret"
         dest: "/etc/director/private_keys/client.key_secret"
-    - name: Specifying a destination path
+      notify: Key cleanup
+    - name: Copy public keys
       copy:
         src: "{{ item }}"
         dest: "/etc/director/public_keys/{{ item | basename }}"
       loop:
         - /tmp/client.key
         - /tmp/server.key
+      notify: Key cleanup
+    - name: Read the director config file
+      slurp:
+        path: /etc/director/config.yaml
+      register: config
+    - name: extract the data
+      set_fact:
+        director_config: "{{ config['content'] | b64decode | from_yaml }}"
+    - name: Write the director config file
+      copy:
+        content: >-
+          {{
+            director_config | combine(
+              {
+                'server_address': hostvars[groups['director_server'][0]]['ansible_host'],
+                'curve_encryption': true
+              }
+            ) | to_nice_yaml
+          }}
+        dest: /etc/director/config.yaml
     - name: Development client block
       block:
       - name: Setup director client service unit

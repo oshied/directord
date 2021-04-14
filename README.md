@@ -59,8 +59,42 @@ variables, a configurations file, or command line switches.
 #### Installation
 
 Director can be installed and used on systems or in containers. If installing
-on a system, the `setup.sh` script can be used to install Director into a
-virtual environment.
+on a system, the `toos/dev-setup.sh` script can be used to install Director
+into a virtual environment.
+
+##### Bootstrap with Ansible
+
+It is possible to bootstrap Director with ansible. The following example is
+a minimal inventory which could be used to bootstrap a cluster with Director.
+
+``` yaml
+all:
+  vars:
+    ansible_user: centos
+  children:
+    director_server:
+      hosts:
+        server0:
+          ansible_host: 172.16.27.120
+    director_clients:
+      hosts:
+        client0:
+          ansible_host: 172.16.27.53
+        client1:
+          ansible_host: 172.16.27.58
+        client2:
+          ansible_host: 172.16.27.113
+        client3:
+          ansible_host: 172.16.27.120
+```
+
+With the inventory created, run the bootstrap playbook from the **tools** directory.
+
+``` shell
+$ ansible-playbook --inventory ~/director-inventory.yaml tools/ansible-bootstap.yaml
+```
+
+> The bootstrap playbook will assume the installation is from source.
 
 ### Messaging
 
