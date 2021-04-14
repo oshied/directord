@@ -161,17 +161,17 @@ class Mixin(object):
 
         def _computed_totals(item, value_heading, value):
             if item not in seen_computed_key:
-                if isinstance(value, (int, float)):
-                    if value_heading in computed_values:
-                        computed_values[value_heading] += value
-                    else:
-                        computed_values[value_heading] = value
-                elif isinstance(value, bool):
-                    bool_heading = "{}_{}".format(value_heading, value)
+                if isinstance(value, bool):
+                    bool_heading = "{}_{}".format(value_heading, value).upper()
                     if bool_heading in computed_values:
                         computed_values[bool_heading] += 1
                     else:
                         computed_values[bool_heading] = 1
+                elif isinstance(value, (int, float)):
+                    if value_heading in computed_values:
+                        computed_values[value_heading] += value
+                    else:
+                        computed_values[value_heading] = value
 
         tabulated_data = list()
         computed_values = dict()
@@ -181,23 +181,25 @@ class Mixin(object):
         for key, value in original_data:
             arranged_data = list()
             arranged_data.append(key)
-            raw_data = list(value.items())
-            for k, v in raw_data:
-                if k.startswith("_"):
-                    continue
-                heading = k.upper()
-                if heading in restrict_headings:
-                    if heading not in found_headings:
-                        found_headings.append(heading)
-                    if v and isinstance(v, list):
-                        arranged_data.append(v.pop(0))
-                        if v:
-                            original_data.insert(0, (key, value))
-                    elif isinstance(v, float):
-                        arranged_data.append("{:.2f}".format(v))
+            for item in restrict_headings:
+                found_headings.append(item)
+                if item not in value:
+                    arranged_data.append(0)
+                else:
+                    report_item = value[item]
+                    if not report_item:
+                        arranged_data.append(0)
                     else:
-                        arranged_data.append(v)
-                    _computed_totals(item=key, value_heading=heading, value=v)
+                        if report_item and isinstance(report_item, list):
+                            arranged_data.append(report_item.pop(0))
+                            if report_item:
+                                original_data.insert(0, (key, value))
+                        elif isinstance(report_item, float):
+                            arranged_data.append("{:.2f}".format(report_item))
+                        else:
+                            arranged_data.append(report_item)
+                        _computed_totals(item=key, value_heading=item, value=report_item)
+
             seen_computed_key.append(key)
             tabulated_data.append(arranged_data)
         else:

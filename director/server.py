@@ -141,8 +141,6 @@ class Server(manager.Interface):
         # NOTE(cloudnull): This is where we would need to implement a
         #                  callback plugin for the client.
         job_metadata = self.return_jobs.get(job_id, {})
-        _time = job_metadata["_time"] = job_metadata.get("_time", time.time())
-        job_metadata["EXECUTION_TIME"] = time.time() - _time
         if job_status in [self.job_ack, self.job_processing]:
             job_metadata["PROCESSING"] = True
             job_metadata["SUCCESS"] = False
@@ -151,6 +149,7 @@ class Server(manager.Interface):
                 self.log.info("{} received job {}".format(identity, job_id))
             else:
                 self.log.info("{} is processing {}".format(identity, job_id))
+                _time = job_metadata["_time"] = job_metadata.get("_time", time.time())
         elif job_status in [self.job_end, self.nullbyte]:
             self.log.info("{} finished processing {}".format(identity, job_id))
             job_metadata["PROCESSING"] = False
@@ -167,6 +166,12 @@ class Server(manager.Interface):
             self.log.error(
                 "{} failed when processing {}".format(identity, job_id)
             )
+
+        _time = job_metadata.get("_time")
+        if _time:
+            job_metadata["EXECUTION_TIME"] = time.time() - _time
+        else:
+            job_metadata["EXECUTION_TIME"] = 0
 
         self.return_jobs[job_id] = job_metadata
 
