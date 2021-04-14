@@ -236,7 +236,7 @@ def _args():
             else:
                 args.__dict__[key] = value
 
-    return args
+    return args, parser
 
 
 class SystemdInstall(object):
@@ -329,7 +329,7 @@ def main():
       jobs. This data will be returned in table format for easy consumptions.
     """
 
-    args = _args()
+    args, parser = _args()
     _mixin = mixin.Mixin(args=args)
 
     if args.mode == "server":
@@ -400,4 +400,5 @@ def main():
                 else:
                     print("Total {}: {}".format(k, v))
     else:
-        raise AttributeError("Mode is set to an unsupported value.")
+        parser.print_help(sys.stderr)
+        raise SystemExit("Mode is set to an unsupported value.")
