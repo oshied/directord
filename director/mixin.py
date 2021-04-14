@@ -161,6 +161,7 @@ class Mixin(object):
 
         tabulated_data = list()
         computed_values = dict()
+        seen_computed_key = list()
         found_headings = ["ID"]
         original_data = list(dict(data).items())
         for key, value in original_data:
@@ -180,12 +181,14 @@ class Mixin(object):
                             original_data.insert(0, (key, value))
                     elif isinstance(v, float):
                         arranged_data.append("{:.2f}".format(v))
-                        if heading in computed_values:
-                            computed_values[heading] += v
-                        else:
-                            computed_values[heading] = v
+                        if key not in seen_computed_key:
+                            if heading in computed_values:
+                                computed_values[heading] += v
+                            else:
+                                computed_values[heading] = v
                     else:
                         arranged_data.append(v)
+            seen_computed_key.append(key)
             tabulated_data.append(arranged_data)
         else:
             return tabulated_data, found_headings, computed_values
