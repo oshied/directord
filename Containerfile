@@ -1,8 +1,6 @@
-ARG VERSION=0.0.1
+ARG VERSION=0.1.0
 
 FROM registry.access.redhat.com/ubi8/python-38 as BUILD
-
-ENV REPOS_PACKAGE=https://trunk.rdoproject.org/centos8/component/tripleo/current/python3-tripleo-repos-0.1.1-0.20210118183911.2cfaa48.el8.noarch.rpm
 
 LABEL summary="Director server used to orchestrate system deployments." \
       description="Director server used to orchestrate system deployments." \
@@ -20,13 +18,9 @@ WORKDIR /build
 RUN python3.8 -m venv /build/builder
 RUN /build/builder/bin/pip install --force --upgrade pip setuptools bindep wheel
 ADD . /build/
-RUN dnf install -y $(/build/builder/bin/bindep -b -f /build/bindep.txt test) python3
-RUN dnf install -y ${REPOS_PACKAGE}
-RUN tripleo-repos --distro ubi8 -b master current-tripleo ceph
-RUN dnf install -y zeromq libsodium
+RUN bash -c "/build/setup.sh /director python3.8"
 
 WORKDIR /director
-RUN /bin/python3.8 -m venv /director
 RUN /director/bin/pip install --force --upgrade pip setuptools
 
 WORKDIR /build
