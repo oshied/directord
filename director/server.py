@@ -138,23 +138,42 @@ class Server(manager.Interface):
         :type job_output: String
         """
 
+        def return_exec_time(started):
+            if started:
+                return time.time() - started
+            else:
+                return 0
+
         # NOTE(cloudnull): This is where we would need to implement a
         #                  callback plugin for the client.
         job_metadata = self.return_jobs.get(job_id, {})
-        if job_status in [self.job_ack, self.job_processing]:
+        _starttime = job_metadata.get("_starttime")
+        _createtime = job_metadata.get("_createtime")
+        if job_status == self.job_ack:
+            job_metadata["PROCESSING"] = False
+            job_metadata["SUCCESS"] = False
+            job_metadata["INFO"] = job_output
+            if not _createtime:
+                job_metadata["_createtime"] = time.time()
+            self.log.info("{} received job {}".format(identity, job_id))
+        elif job_status == self.job_processing:
             job_metadata["PROCESSING"] = True
             job_metadata["SUCCESS"] = False
             job_metadata["INFO"] = job_output
-            if job_status == self.job_ack:
-                self.log.info("{} received job {}".format(identity, job_id))
-            else:
-                self.log.info("{} is processing {}".format(identity, job_id))
-                _time = job_metadata["_time"] = job_metadata.get("_time", time.time())
+            if not _starttime:
+                job_metadata["_starttime"] = time.time()
+            self.log.info("{} is processing {}".format(identity, job_id))
         elif job_status in [self.job_end, self.nullbyte]:
             self.log.info("{} finished processing {}".format(identity, job_id))
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = True
             job_metadata["INFO"] = job_output
+            job_metadata["EXECUTION_TIME"] = return_exec_time(
+                started=_starttime
+            )
+            job_metadata["TOTAL_ROUNDTRIP_TIME"] = return_exec_time(
+                started=_createtime
+            )
         elif job_status == self.job_failed:
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = False
@@ -163,15 +182,15 @@ class Server(manager.Interface):
             else:
                 job_metadata["FAILED"] = [identity]
             job_metadata["INFO"] = job_output
+            job_metadata["EXECUTION_TIME"] = return_exec_time(
+                started=_starttime
+            )
+            job_metadata["TOTAL_ROUNDTRIP_TIME"] = return_exec_time(
+                started=_createtime
+            )
             self.log.error(
                 "{} failed when processing {}".format(identity, job_id)
             )
-
-        _time = job_metadata.get("_time")
-        if _time:
-            job_metadata["EXECUTION_TIME"] = time.time() - _time
-        else:
-            job_metadata["EXECUTION_TIME"] = 0
 
         self.return_jobs[job_id] = job_metadata
 
@@ -310,12 +329,12 @@ class Server(manager.Interface):
                             "ACCEPTED": True,
                             "INFO": self.nullbyte.decode(),
                             "NODES": [i.decode() for i in targets],
-                            "_time": time.time(),
                             "VERB": job_item["verb"],
                             "TRANSFERS": list(),
                             "TASK_SHA1": job_item["task_sha1sum"],
                             "JOB_DEFINITION": job_item,
                             "PARENT_JOB_ID": job_item.get("parent_id"),
+                            "_createtime": time.time(),
                         }
                     else:
                         job_info = dict()
@@ -426,7 +445,7 @@ class Server(manager.Interface):
                         self.log.error(
                             "Encountered a broken pipe while sending manage"
                             " data. Error:%s",
-                            str(e)
+                            str(e),
                         )
                 else:
                     task_id = json_data.pop("task", None)
@@ -443,7 +462,7 @@ class Server(manager.Interface):
                                 "Task skipped. Task SHA1 %s doesn't match"
                                 " restriction %s",
                                 json_data["task_sha1sum"],
-                                restrict
+                                restrict,
                             )
                             continue
                         json_data["restrict"] = restrict
@@ -470,10 +489,12 @@ class Server(manager.Interface):
                         self.log.error(
                             "Encountered a broken pipe while sending job"
                             " data. Error:%s",
-                            str(e)
+                            str(e),
                         )
                     else:
-                        self.log.debug("Data sent to queue, {}".format(json_data))
+                        self.log.debug(
+                            "Data sent to queue, {}".format(json_data)
+                        )
                     finally:
                         self.job_queue.put(json_data)
 

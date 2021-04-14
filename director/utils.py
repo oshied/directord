@@ -88,10 +88,12 @@ class ClientStatus(object):
         self.job_state = ctx.nullbyte
         self.info = ctx.nullbyte
         self.socket = socket
+
+    def start_processing(self):
         self.ctx.socket_multipart_send(
             zsocket=self.socket,
             msg_id=bytes(self.encode_string(item=self.job_id)),
-            control=ctx.job_processing,
+            control=self.ctx.job_processing,
         )
 
     @staticmethod

@@ -405,12 +405,14 @@ class Client(manager.Interface):
                     c.job_state = self.job_end
                     return
                 elif command == b"RUN":
+                    c.start_processing()
                     status, success = self._run_command(
                         command=job["command"],
                         cache=cache,
                         stdout_arg=job.get("stdout_arg"),
                     )
                 elif command in [b"ADD", b"COPY"]:
+                    c.start_processing()
                     status, success = self._run_transfer(
                         file_to=job["file_to"],
                         job_id=job_id,
@@ -422,10 +424,12 @@ class Client(manager.Interface):
                         blueprint=job.get("blueprint", False),
                     )
                 elif command == b"WORKDIR":
+                    c.start_processing()
                     status, success = self._run_workdir(
                         workdir=job["workdir"], cache=cache
                     )
                 elif command in [b"ARG", b"ENV"]:
+                    c.start_processing()
                     cache_args = dict()
                     if "args" in cache:
                         cache_args = cache["args"]
@@ -436,6 +440,7 @@ class Client(manager.Interface):
 
                     status, success = (b"ARG(s) added to Cache", True)
                 elif command == b"CACHEFILE":
+                    c.start_processing()
                     try:
                         with open(job["cachefile"]) as f:
                             cachefile_args = yaml.safe_load(f)
@@ -472,7 +477,7 @@ class Client(manager.Interface):
                     state = c.job_state = self.job_end
                     self.log.info("Job complete {}".format(job_id))
 
-                cache[job_sha1] = state
+            cache[job_sha1] = state
 
     def run_job(self):
         """Job entry point.

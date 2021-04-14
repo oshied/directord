@@ -196,7 +196,7 @@ class User(manager.Interface):
                     break
                 else:
                     fragments.append(chunk)
-            return b''.join(fragments)
+            return b"".join(fragments)
 
 
 class Manage(User):

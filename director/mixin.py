@@ -167,7 +167,7 @@ class Mixin(object):
                         computed_values[bool_heading] += 1
                     else:
                         computed_values[bool_heading] = 1
-                elif isinstance(value, (int, float)):
+                elif isinstance(value, (float)):
                     if value_heading in computed_values:
                         computed_values[value_heading] += value
                     else:
@@ -198,9 +198,12 @@ class Mixin(object):
                             arranged_data.append("{:.2f}".format(report_item))
                         else:
                             arranged_data.append(report_item)
-                        _computed_totals(item=key, value_heading=item, value=report_item)
+                        _computed_totals(
+                            item=key, value_heading=item, value=report_item
+                        )
 
             seen_computed_key.append(key)
             tabulated_data.append(arranged_data)
         else:
+            print(computed_values)
             return tabulated_data, found_headings, computed_values
