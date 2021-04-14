@@ -40,10 +40,11 @@
   become: true
   vars:
     director_development_env: true
-  tasks:
     # For now, all installations of director are assumed to be within a virtual environment.
+    director_bin_path: "{{ director_development_env | bool | ternary('/opt/director/bin', '/opt/director/bin') }}"
+  tasks:
     - name: Generate curve keys
-      command: "{{ director_development_env | bool | ternary('/opt/director/bin', '/opt/director/bin') }}/director manage --generate-keys"
+      command: "{{ director_bin_path }}/director manage --generate-keys"
     - name: Specifying a destination path
       fetch:
         src: "{{ item }}"
@@ -53,17 +54,13 @@
       - /etc/director/private_keys/client.key_secret
       - /etc/director/public_keys/client.key
       - /etc/director/public_keys/server.key
-    - name: Development server block
-      block:
-      - name: Setup director server service unit
-        command: /opt/director/bin/director-server-systemd
-      - name: Load director server service unit
-        systemd:
-          state: restarted
-          daemon_reload: yes
-          name: director-server.service
-      when:
-        - director_development_env | bool
+    - name: Setup director server service unit
+      command: "{{ director_bin_path }}/director-server-systemd"
+    - name: Load director server service unit
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: director-server.service
 
 - name: Start director clients
   hosts: director_clients
@@ -74,6 +71,8 @@
     - director-client
   vars:
     director_development_env: true
+    # For now, all installations of director are assumed to be within a virtual environment.
+    director_bin_path: "{{ director_development_env | bool | ternary('/opt/director/bin', '/opt/director/bin') }}"
   handlers:
     - name: Key cleanup
       fetch:
@@ -126,14 +125,10 @@
             ) | to_nice_yaml
           }}
         dest: /etc/director/config.yaml
-    - name: Development client block
-      block:
-      - name: Setup director client service unit
-        command: /opt/director/bin/director-client-systemd
-      - name: Load director client service unit
-        systemd:
-          state: restarted
-          daemon_reload: yes
-          name: director-client.service
-      when:
-        - director_development_env | bool
+    - name: Setup director client service unit
+      command: "{{ director_bin_path }}/bin/director-client-systemd"
+    - name: Load director client service unit
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: director-client.service
