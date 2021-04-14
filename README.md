@@ -228,7 +228,15 @@ will be performed through the `/etc/director/config.yaml` file. This
 configuration file maps all arguments that can be defined on the CLI to is a
 simple key=value pair.
 
-### Setup Authentication
+##### Example configuration file
+
+``` yaml
+---
+heartbeat_interval: 1
+debug: true
+```
+
+### Authentication
 
 Director supports two forms of authentication, **Shared Key** and
 **Curve25519**. Both of these authentication methods enhance the security of an
@@ -315,14 +323,6 @@ $ director orchestrate sync-curve-keys.yaml
   This can be restricted by setting targets within the orchestration file or
   defining a restriction on the CLI. Once files are synchronized the client
   will need to be configured and restarted.
-
-##### Example configuration file
-
-``` yaml
----
-heartbeat_interval: 1
-debug: true
-```
 
 ## Containerization
 

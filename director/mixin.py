@@ -129,7 +129,7 @@ class Mixin(object):
         :returns: List
         """
 
-        tabulated_data = ["ID", self.args.job_info]
+        tabulated_data = [["ID", self.args.job_info]]
         for key, value in data.items():
             if not value:
                 continue
@@ -149,17 +149,19 @@ class Mixin(object):
             return tabulated_data
 
     @staticmethod
-    def return_tabulated_data(data, headings):
+    def return_tabulated_data(data, restrict_headings):
         """Return tabulated data displaying a limited set of information.
 
         :param data: Information to generally parse and return
         :type data: Dictionary
-        :param headings: List of headings in string format to return
-        :type: List
+        :param restrict_headings: List of headings in string format to return
+        :type restrict_headings: List
         :returns: List
         """
 
         tabulated_data = list()
+        computed_values = dict()
+        found_headings = ["ID"]
         original_data = list(dict(data).items())
         for key, value in original_data:
             arranged_data = list()
@@ -168,15 +170,22 @@ class Mixin(object):
             for k, v in raw_data:
                 if k.startswith("_"):
                     continue
-                if k in headings:
-                    if isinstance(v, list):
+                heading = k.upper()
+                if heading in restrict_headings:
+                    if heading not in found_headings:
+                        found_headings.append(heading)
+                    if v and isinstance(v, list):
                         arranged_data.append(v.pop(0))
                         if v:
                             original_data.insert(0, (key, value))
                     elif isinstance(v, float):
                         arranged_data.append("{:.2f}".format(v))
+                        if heading in computed_values:
+                            computed_values[heading] += v
+                        else:
+                            computed_values[heading] = v
                     else:
                         arranged_data.append(v)
             tabulated_data.append(arranged_data)
         else:
-            return tabulated_data
+            return tabulated_data, found_headings, computed_values

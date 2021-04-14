@@ -366,7 +366,7 @@ def main():
             return
 
         _mixin = mixin.Mixin(args=args)
-
+        computed_values = dict()
         if data and isinstance(data, list):
             if args.job_info:
                 headings = ["KEY", "VALUE"]
@@ -377,22 +377,24 @@ def main():
 
                 tabulated_data = _mixin.return_tabulated_info(data=item)
             else:
-                headings = [
+                restrict_headings = [
                     "ID",
                     "EXECUTION_TIME",
                     "SUCCESS",
                     "FAILED",
                     "EXPIRY",
                 ]
-                tabulated_data = _mixin.return_tabulated_data(
-                    data=data, headings=headings
+                _tabulated_data = _mixin.return_tabulated_data(
+                    data=data, restrict_headings=restrict_headings
                 )
-
+                tabulated_data, headings, computed_values = _tabulated_data
             print(
                 tabulate.tabulate(
                     [i for i in tabulated_data if i], headers=headings
                 )
             )
-            print("\nTotal Items: {}\n".format(len(tabulated_data)))
+            print("\nTotal Items: {}".format(len(tabulated_data)))
+            for k, v in computed_values.items():
+                print("Total {}: {:.2f}".format(k, v))
     else:
         raise AttributeError("Mode is set to an unsupported value.")
