@@ -1,0 +1,24 @@
+# The gcc compiler
+gcc
+
+# Base requirements for RPM distros
+gcc-c++           [platform:rpm]
+git               [platform:rpm]
+libffi-devel      [platform:rpm]
+openssl-devel     [platform:rpm]
+python38-devel    [platform:rpm !platform:rhel-7 !platform:centos-7]
+python38-pyyaml   [platform:rpm !platform:rhel-7 !platform:centos-7]
+python3-dnf       [platform:rpm !platform:rhel-7 !platform:centos-7]
+
+# RH Mechanisms
+python-rhsm-certificates                [platform:redhat]
+
+# SELinux cent8
+python3-libselinux  [platform:rpm !platform:rhel-7 !platform:centos-7]
+python3-libsemanage [platform:redhat !platform:rhel-7 !platform:centos-7]
+
+# Required for compressing collected log files in CI
+gzip
+
+# Required to build language docs
+gettext

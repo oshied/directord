@@ -1,0 +1,10 @@
+all:
+  children:
+    director_server:
+      hosts:
+        server.example.com:
+    director_clients:
+      hosts:
+        client.one.example.com:
+        client.two.example.com:
+        client.three.example.com:

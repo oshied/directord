@@ -62,5 +62,9 @@ setuptools.setup(
                 if os.path.isfile(i)
             ],
         ),
+        (
+            "share/director/tools",
+            [i for i in glob.glob("tools/*") if os.path.isfile(i)],
+        ),
     ],
 )
