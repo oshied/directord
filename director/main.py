@@ -339,11 +339,11 @@ def main():
     elif args.mode == "exec":
         return_data = _mixin.run_exec()
         for item in return_data:
-            print(item)
+            print(item.decode())
     elif args.mode == "orchestrate":
         return_data = _mixin.run_orchestration()
-        for item in return_data:
-            print(item)
+        for item in [i for i in return_data if i]:
+            print(item.decode())
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
         data = manage_exec.run()
@@ -395,6 +395,9 @@ def main():
             )
             print("\nTotal Items: {}".format(len(tabulated_data)))
             for k, v in computed_values.items():
-                print("Total {}: {:.2f}".format(k, v))
+                if isinstance(v, float):
+                    print("Total {}: {:.2f}".format(k, v))
+                else:
+                    print("Total {}: {}".format(k, v))
     else:
         raise AttributeError("Mode is set to an unsupported value.")

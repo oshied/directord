@@ -425,20 +425,26 @@ class Server(manager.Interface):
                         )
                 else:
                     task_id = json_data.pop("task", None)
+                    parent_id = json_data.pop("parent_id", None)
                     ignore_cache = json_data.pop("skip_cache", False)
-
-                    if "restrict" in json_data:
-                        restrict = set(json_data.pop("restrict"))
-                        json_data["task_sha1sum"] = hashlib.sha1(
-                            json.dumps(json_data).encode()
-                        ).hexdigest()
+                    restrict = json_data.pop("restrict", None)
+                    self.log.debug("Job definition %s", json_data)
+                    json_data["task_sha1sum"] = hashlib.sha1(
+                        json.dumps(json_data).encode()
+                    ).hexdigest()
+                    if restrict:
                         if json_data["task_sha1sum"] not in restrict:
+                            self.log.debug(
+                                "Task skipped. Task SHA1 %s doesn't match"
+                                " restriction %s",
+                                json_data["task_sha1sum"],
+                                restrict
+                            )
                             continue
-                        json_data["restrict"] = list(restrict)
-                    else:
-                        json_data["task_sha1sum"] = hashlib.sha1(
-                            json.dumps(json_data).encode()
-                        ).hexdigest()
+                        json_data["restrict"] = restrict
+
+                    if parent_id:
+                        json_data["parent_id"] = parent_id
 
                     json_data["ignore_cache"] = ignore_cache
                     if not task_id:

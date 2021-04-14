@@ -159,6 +159,20 @@ class Mixin(object):
         :returns: List
         """
 
+        def _computed_totals(item, value_heading, value):
+            if item not in seen_computed_key:
+                if isinstance(value, (int, float)):
+                    if value_heading in computed_values:
+                        computed_values[value_heading] += value
+                    else:
+                        computed_values[value_heading] = value
+                elif isinstance(value, bool):
+                    bool_heading = "{}_{}".format(value_heading, value)
+                    if bool_heading in computed_values:
+                        computed_values[bool_heading] += 1
+                    else:
+                        computed_values[bool_heading] = 1
+
         tabulated_data = list()
         computed_values = dict()
         seen_computed_key = list()
@@ -181,13 +195,9 @@ class Mixin(object):
                             original_data.insert(0, (key, value))
                     elif isinstance(v, float):
                         arranged_data.append("{:.2f}".format(v))
-                        if key not in seen_computed_key:
-                            if heading in computed_values:
-                                computed_values[heading] += v
-                            else:
-                                computed_values[heading] = v
                     else:
                         arranged_data.append(v)
+                    _computed_totals(item=key, value_heading=heading, value=v)
             seen_computed_key.append(key)
             tabulated_data.append(arranged_data)
         else:
