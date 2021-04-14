@@ -20,6 +20,18 @@
         command: "bash /opt/dev-setup.sh"
       when:
         - director_development_env | bool
+    - name: Production setup block
+      block:
+      - name: Specifying a destination path
+        copy:
+          src: "{{ item }}"
+          dest: "/opt/{{ item | basename }}"
+        loop:
+        - "{{ playbook_dir }}/prod-setup.sh"
+      - name: Execute development script
+        command: "bash /opt/prod-setup.sh"
+      when:
+        - not director_development_env | bool
 
 - name: Start director server
   hosts: director_server
@@ -29,8 +41,9 @@
   vars:
     director_development_env: true
   tasks:
+    # For now, all installations of director are assumed to be within a virtual environment.
     - name: Generate curve keys
-      command: "{{ director_development_env | bool | ternary('/opt/director/bin', '/usr/bin') }}/director manage --generate-keys"
+      command: "{{ director_development_env | bool | ternary('/opt/director/bin', '/opt/director/bin') }}/director manage --generate-keys"
     - name: Specifying a destination path
       fetch:
         src: "{{ item }}"
