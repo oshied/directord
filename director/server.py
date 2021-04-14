@@ -388,11 +388,8 @@ class Server(manager.Interface):
 
         while True:
             conn, _ = sock.accept()
-            try:
-                data = conn.recv(10240000)
-                if not data:
-                    pass
-
+            with conn:
+                data = conn.recv(409600)
                 data_decoded = data.decode()
                 json_data = json.loads(data_decoded)
                 if "manage" in json_data:
@@ -416,9 +413,16 @@ class Server(manager.Interface):
                         self.wq_empty(workers=self.return_jobs)
                         data = {"success": True}
                     else:
-                        conn.sendall(json.dumps({"failed": True}).encode())
+                        data = {"failed": True}
 
-                    conn.sendall(json.dumps(data).encode())
+                    try:
+                        conn.sendall(json.dumps(data).encode())
+                    except BrokenPipeError as e:
+                        self.log.error(
+                            "Encountered a broken pipe while sending manage"
+                            " data. Error:%s",
+                            str(e)
+                        )
                 else:
                     task_id = json_data.pop("task", None)
                     ignore_cache = json_data.pop("skip_cache", False)
@@ -445,15 +449,22 @@ class Server(manager.Interface):
                     # Returns the message in reverse to show a return. This will
                     # be a standard client return in JSON format under normal
                     # circomstances.
-                    conn.sendall(
-                        "Job received. Task ID: {}".format(
-                            json_data["task"]
-                        ).encode()
-                    )
-                    self.log.debug("Data sent to queue, {}".format(json_data))
-                    self.job_queue.put(json_data)
-            finally:
-                conn.close()
+                    try:
+                        conn.sendall(
+                            "Job received. Task ID: {}".format(
+                                json_data["task"]
+                            ).encode()
+                        )
+                    except BrokenPipeError as e:
+                        self.log.error(
+                            "Encountered a broken pipe while sending job"
+                            " data. Error:%s",
+                            str(e)
+                        )
+                    else:
+                        self.log.debug("Data sent to queue, {}".format(json_data))
+                    finally:
+                        self.job_queue.put(json_data)
 
     def worker_run(self):
         """Run all work related threads.

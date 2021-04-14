@@ -189,7 +189,14 @@ class User(manager.Interface):
 
         with director.UNIXSocketConnect(self.args.socket_path) as s:
             s.sendall(data.encode())
-            return s.recv(1024000).decode()
+            fragments = []
+            while True:
+                chunk = s.recv(1024)
+                if not chunk:
+                    break
+                else:
+                    fragments.append(chunk)
+            return b''.join(fragments)
 
 
 class Manage(User):
