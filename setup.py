@@ -27,6 +27,7 @@ setuptools.setup(
     install_requires=[
         "diskcache",
         "jinja2",
+        "paramiko",
         "pyyaml",
         "pyzmq",
         "tabulate",

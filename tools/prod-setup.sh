@@ -2,7 +2,7 @@
 set -eo
 
 . /etc/os-release
-PACKAGES="git python3 python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium"
+PACKAGES="git python3 python3-paramiko python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium"
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
 else

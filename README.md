@@ -353,6 +353,25 @@ Director can be installed and used on systems or in containers. If installing
 on a system, the `toos/dev-setup.sh` script can be used to install Director
 into a virtual environment.
 
+##### Bootstrap natively
+
+Director provides a bootstrap method which uses a **catalog** file to run the
+operations. The catalog file uses a subset of the **orchestration** syntax,
+with slight modifications to the target layout which is done to support extra
+`SSH` information.
+
+You can see an example [**catalog** file here](tools/director-catalog.yaml).
+
+Once the catalog file is setup, running a cluster wide bootstrap is simple.
+
+``` shell
+$ director bootstrap --catalog ${CATALOG_FILE_NAME}
+```
+
+This method will bootstrap any defined servers in serial and all clients in
+parallel with a maximum default thread count of 10; the thread count can be
+modified using the `--thread` switch in the *bootstrap* mode.
+
 ##### Bootstrap with Ansible
 
 It is possible to bootstrap Director with ansible. The following example is

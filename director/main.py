@@ -226,6 +226,36 @@ def _args():
         action="store_true",
         help="Generate encryption keys for Curve authentication.",
     )
+    parser_bootstrap = subparsers.add_parser(
+        "bootstrap",
+        help=(
+            "Bootstrap a director cluster. This uses SSH to connect to remote"
+            " machines and setup Director. Once Director is setup, SSH is no"
+            " longer required."
+        ),
+    )
+    parser_bootstrap.add_argument(
+        "--catalog",
+        help="File path for SSH catalog.",
+        metavar="STRING",
+        type=argparse.FileType(mode="r"),
+    )
+    parser_bootstrap.add_argument(
+        "--key-file",
+        help="SSH Key file to use when connecting to targets. Default: %(default)s",
+        metavar="STRING",
+        default=os.getenv(
+            "DIRECTOR_BOOTSTRAP_SSH_KEY_FILE",
+            os.path.join(os.environ["HOME"], ".ssh", "id_rsa"),
+        ),
+    )
+    parser_server.add_argument(
+        "--threads",
+        help="Client bootstrap threads. Default: %(default)s",
+        metavar="INT",
+        default=int(os.getenv("DIRECTOR_BOOTSTRAP_THREADS", 10)),
+        type=int,
+    )
     args = parser.parse_args()
     # Check for configuration file and load it if found.
     if args.config_file:
@@ -365,7 +395,6 @@ def main():
             print("Exported data to [ {} ]".format(export_file))
             return
 
-        _mixin = mixin.Mixin(args=args)
         computed_values = dict()
         if data and isinstance(data, list):
             if args.job_info:
@@ -398,6 +427,8 @@ def main():
                     print("Total {}: {:.2f}".format(k, v))
                 else:
                     print("Total {}: {}".format(k, v))
+    elif args.mode == "bootstrap":
+        _mixin.bootstrap_cluster()
     else:
         parser.print_help(sys.stderr)
         raise SystemExit("Mode is set to an unsupported value.")

@@ -2,6 +2,9 @@ import os
 import subprocess
 import yaml
 
+import paramiko
+from paramiko import agent
+
 
 def run_command(
     command,
@@ -126,3 +129,56 @@ class ClientStatus(object):
             control=self.job_state,
             info=self.info,
         )
+
+
+class ParamikoConnect(object):
+    """Context manager to remotly connect to servers using paramiko.
+
+    The connection manager requires an SSH key to be defined, and exist,
+    however, upon enter the system will use the SSH agent is defined.
+    """
+
+    def __init__(self, host, username, port, key_file):
+        """Initialize the connection manager.
+
+        :param host: IP or Domain to connect to.
+        :type host: String
+        :param username: Username for the connection.
+        :type username: String
+        :param port: Port number used to connect to the remote server.
+        :type port: Int
+        :param key_file: SSH key file used to connect.
+        :type key_file: String
+        """
+
+        self.key_file = key_file
+        self.ssh = paramiko.SSHClient()
+        self.ssh.load_system_host_keys()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.pkey = paramiko.RSAKey(filename=key_file)
+        self.host = host
+        self.username = username
+        self.port = port
+
+    def __enter__(self):
+        """Connect to the remote node and return the ssh and session objects.
+
+        :returns: Tuple
+        """
+
+        self.ssh.connect(
+            hostname=self.host,
+            username=self.username,
+            port=self.port,
+            pkey=self.pkey,
+            allow_agent=True,
+        )
+        session = self.ssh.get_transport().open_session()
+        agent.AgentRequestHandler(session)
+
+        return self.ssh, session
+
+    def __exit__(self, *args, **kwargs):
+        """Upon exit, close the ssh connection."""
+
+        self.ssh.close()
