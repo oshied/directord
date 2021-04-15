@@ -238,6 +238,7 @@ def _args():
         "--catalog",
         help="File path for SSH catalog.",
         metavar="STRING",
+        action="append",
         type=argparse.FileType(mode="r"),
     )
     parser_bootstrap.add_argument(
@@ -249,7 +250,7 @@ def _args():
             os.path.join(os.environ["HOME"], ".ssh", "id_rsa"),
         ),
     )
-    parser_server.add_argument(
+    parser_bootstrap.add_argument(
         "--threads",
         help="Client bootstrap threads. Default: %(default)s",
         metavar="INT",

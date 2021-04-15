@@ -17,33 +17,11 @@ with slight modifications to the target layout which is done to support extra
 This is a **catalog** example
 
 ``` yaml
-shared_jobs: &shared_jobs
-- ADD: prod-setup.sh prod-setup.sh
-- RUN: sudo bash prod-setup.sh
-
 director_server:
   targets:
   - host: 172.16.27.120
     port: 22
     username: centos
-  jobs:
-  - *shared_jobs
-  - RUN: sudo /opt/director/bin/director manage --generate-keys
-  - RUN: sudo /opt/director/bin/director-server-systemd
-  - RUN: sudo systemctl daemon-reload
-  - RUN: sudo systemctl restart director-server.service
-  - GET: /etc/director/private_keys/client.key_secret /tmp/client.key_secret
-  - GET: /etc/director/public_keys/client.key /tmp/client.key
-  - GET: /etc/director/public_keys/server.key /tmp/server.key
-  - RUN: |-
-      sudo python3 <<EOC
-      import yaml
-      with open('/etc/director/config.yaml') as f:
-          config = yaml.safe_load(f)
-      config["curve_encryption"] = True
-      with open('/etc/director/config.yaml', 'w') as f:
-          f.write(yaml.safe_dump(config, default_flow_style=False))
-      EOC
 
 director_clients:
   args:
@@ -51,35 +29,20 @@ director_clients:
     username: centos
   targets:
   - host: 172.16.27.53
-  jobs:
-  - *shared_jobs
-  - RUN: sudo mkdir -p /etc/director/private_keys /etc/director/public_keys
-  - ADD: /tmp/client.key_secret /tmp/client.key_secret-stash
-  - RUN: sudo mv /tmp/client.key_secret-stash /etc/director/private_keys/client.key_secret
-  - ADD: /tmp/client.key /tmp/client.key-stash
-  - RUN: sudo mv /tmp/client.key-stash /etc/director/public_keys/client.key
-  - ADD: /tmp/server.key /tmp/server.key-stash
-  - RUN: sudo mv /tmp/server.key-stash /etc/director/public_keys/server.key
-  - RUN: sudo /opt/director/bin/director-client-systemd
-  - RUN: sudo systemctl daemon-reload
-  - RUN: |-
-      sudo python3 <<EOC
-      import yaml
-      with open('/etc/director/config.yaml') as f:
-          config = yaml.safe_load(f)
-      config["curve_encryption"] = True
-      config['server_address'] = "172.16.27.120"
-      with open('/etc/director/config.yaml', 'w') as f:
-          f.write(yaml.safe_dump(config, default_flow_style=False))
-      EOC
-  - RUN: sudo systemctl restart director-client.service
 ```
 
 Once the catalog file is setup, running a cluster wide bootstrap is simple.
+In this example the first catalog option is referencing the unique inputs
+that represent a given data center. The second catalog file is referencing
+built-in file maintained by Director to deploy Director.
 
 ``` shell
-$ director bootstrap --catalog ${CATALOG_FILE_NAME}
+$ director bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/director-catalog.yaml
 ```
+
+> The catalog input can be used more than once and can be totally user
+  defined. While a built-in has been provided as an example users are
+  free to do whatever they see fit to achieve their bootstrap goals.
 
 This method will bootstrap any defined servers in serial and all clients in
 parallel with a maximum default thread count of 10; the thread count can be

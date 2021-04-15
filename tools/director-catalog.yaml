@@ -1,17 +1,9 @@
-# NOTE(cloudnull): If no path is provided the system base path to the
-#                  director "tools" directory is used.
-shared_jobs: &shared_jobs
-- ADD: prod-setup.sh prod-setup.sh
-- RUN: sudo bash prod-setup.sh
-
+---
 
 director_server:
-  targets:
-  - host: 172.16.27.120
-    port: 22
-    username: centos
   jobs:
-  - *shared_jobs
+  - ADD: prod-setup.sh prod-setup.sh
+  - RUN: sudo bash prod-setup.sh
   - RUN: sudo /opt/director/bin/director manage --generate-keys
   - RUN: sudo /opt/director/bin/director-server-systemd
   - RUN: sudo systemctl daemon-reload
@@ -29,20 +21,11 @@ director_server:
           f.write(yaml.safe_dump(config, default_flow_style=False))
       EOC
 
+
 director_clients:
-  args:
-    port: 22
-    username: centos
-  targets:
-  - host: 172.16.27.53
-  - host: 172.16.27.58
-  - host: 172.16.27.85
-  - host: 172.16.27.113
-  - host: 172.16.27.120
-  - host: 172.16.27.137
-  - host: 172.16.27.251
   jobs:
-  - *shared_jobs
+  - ADD: prod-setup.sh prod-setup.sh
+  - RUN: sudo bash prod-setup.sh
   - RUN: sudo mkdir -p /etc/director/private_keys /etc/director/public_keys
   - ADD: /tmp/client.key_secret /tmp/client.key_secret-stash
   - RUN: sudo mv /tmp/client.key_secret-stash /etc/director/private_keys/client.key_secret
