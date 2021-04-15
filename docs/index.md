@@ -1,37 +1,44 @@
-## Welcome to GitHub Pages
+# Welcome to Director
 
-You can use the [editor on GitHub](https://github.com/cloudnull/director/edit/main/docs/index.md) to maintain and preview the content for your website in Markdown files.
+Director was created to solve several deployment specific problems which are
+unique to heterogeneous large scale environments. While this application was
+built for scale, easily scaling to thousands of targets, it is also perfectly
+suited for single system environments which can gain the benifits of a simple,
+fast, stable, and unique deployment engine.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## First Principles
 
-### Markdown
+* Director uses well defined interfaces with clear documentation and
+  boundaries.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+* Director implements a fingerprinting system which ensures a deployment is
+  predictable, reproducible, and idempotent at any level.
 
-```markdown
-Syntax highlighted code block
+* Director is platform agnostic and depends on well defined libraries which
+  are generally available on most operating systems.
 
-# Header 1
-## Header 2
-### Header 3
+* Director is an easily debuggable framework with coherent logging and the
+  ability to expose exact job definitions, target operations, and runtime
+  statistics.
 
-- Bulleted
-- List
+* Director is stateless and natively runs within a container management
+  ecosystem or within a traditional operating system.
 
-1. Numbered
-2. List
+* Director is light, and has been designed to use a few resources as possible,
+  optimizing for consistency, stability, and performance; this means Director can
+  be co-located within a cluster's deliverables or external to the environment.
 
-**Bold** and _Italic_ and `Code` text
+### Getting Started
 
-[Link](url) and ![Image](src)
-```
+Getting started is simple, here's the documentation needed to be successful
+with Director.
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/cloudnull/director/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+* [Overview](overview.md)
+* [Installation](installation.md)
+* [Service Setup](service-setup.md)
+* [Containerization](containerization.md)
+* [Authentication](authentication.md)
+* [Management](management.md)
+* [Syntax](syntax.md)
+* [Orchestrations](orchestrations.md)
+* [Testing](testing.md)
