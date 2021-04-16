@@ -37,12 +37,16 @@ that represent a given data center. The second catalog file is referencing
 built-in file maintained by Director to deploy Director.
 
 ``` shell
-$ director bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/director-catalog.yaml
+$ director bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/director-bootstrap-catalog.yaml
 ```
 
 > The catalog input can be used more than once and can be totally user
-  defined. While a built-in has been provided as an example users are
+  defined. While a built-in has been provided as an example, users are
   free to do whatever they see fit to achieve their bootstrap goals.
+
+> In a [touchless](containerization.md#touchless-operations) operations
+  scenario only the `director_clients` would need to be defined for a bootstrap
+  operation as the server would be provided for using the container image.
 
 This method will bootstrap any defined servers in serial and all clients in
 parallel with a maximum default thread count of 10; the thread count can be
@@ -77,12 +81,12 @@ all:
 With the inventory created, run the bootstrap playbook from the **tools** directory.
 
 ``` shell
-$ ansible-playbook --inventory ~/director-inventory.yaml tools/ansible-bootstap.yaml
+$ ansible-playbook --inventory ~/director-inventory.yaml tools/ansible-bootstap-playbook.yaml
 ```
 
 > The bootstrap playbook will assume the installation is from source.
 
-##### Package based Installations
+##### Package based Installations By Hand
 
 At this time Director doesn't have a pre-built package for the purpose of
 installation. However all of the director dependencies can be installed
@@ -140,5 +144,12 @@ python3 -m venv --system-site-packages /opt/director
   accordingly. See [the Service Setup Section](service-setup.md) for more on these
   options.
 
+##### Installations By Script
+
 The script `prod-setup.sh`, within the tools directory, can be used to automate
-the setup of Director using a package based installation.
+the setup of Director using a package based installation which was created to
+provide a means to bootstrap clusters quickly in a production environment.
+
+The script `dev-setup.sh`, within the tools directory can be used to automate
+the setup of Director from source, which was created to allow developers to get
+and running quickly with Director on a development system.
