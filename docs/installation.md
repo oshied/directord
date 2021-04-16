@@ -52,6 +52,21 @@ This method will bootstrap any defined servers in serial and all clients in
 parallel with a maximum default thread count of 10; the thread count can be
 modified using the `--thread` switch in the *bootstrap* mode.
 
+###### Encryption Key Rotation and Restarting
+
+Once Director is up and running, you can restart it across a cluster and
+re-encrypt the environment, just as easily as it was bootstrapped. The
+`director-restart-catalog.yaml` catalog file has been provided as an example of
+running a re-encryption and restart via SSH, which is useful should the cluster
+have been in a downed state.
+
+``` shell
+$ director bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/director-restart-catalog.yaml
+```
+
+> Additional key rotation techniques are covered under the following
+  [Authentication section](authentication.md#key-rotation).
+
 ### Bootstrap with Ansible
 
 It is possible to bootstrap Director with ansible. The following example is

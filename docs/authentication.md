@@ -12,7 +12,7 @@ environment however both methods have some pros and cons.
 | Shared Key  | Plain Text  |
 | Curve25519  | Encryption  |
 
-##### Shared Key
+### Shared Key
 
 **Shared Key** is the easiest method to setup and only requires a shared token
 be generated on all client and server nodes. **Shared Key** is only an
@@ -35,7 +35,7 @@ Client Setup
 $ director --shared-key ${SECRET_TOKEN} client
 ```
 
-##### Curve
+### Curve
 
 **Curve25519** is a more complicated method to setup as keys have to be
 generated and synchronized to all client and server nodes. While generating
@@ -88,3 +88,28 @@ $ director orchestrate sync-curve-keys.yaml
   This can be restricted by setting targets within the orchestration file or
   defining a restriction on the CLI. Once files are synchronized the client
   will need to be configured and restarted.
+
+#### Key Rotation
+
+When encryption is enabled it is important to be able to rotate keys and
+restart services whenever required. Director makes this simple using both its
+built in functions and via a
+[bootstrap catalog](installation.md#encryption-key-rotation-and-restarting).
+
+To rotate encryption keys natively the following execution commands can be
+run, which will first generate new keys on the server and run a simple
+orchestration to rotate the keys across an active cluster.
+
+``` shell
+$ director manage --generate-keys
+$ director orchestrate key-rotation.yaml
+```
+
+After key rotation you can validate that all nodes are checking into the
+cluster using a simple check
+
+``` shell
+$ director manage --list-nodes
+```
+
+> Learn more about [Orchestrations here](orchestrations.md).

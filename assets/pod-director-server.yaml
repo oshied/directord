@@ -1,0 +1,63 @@
+---
+# Generation of Kubernetes YAML is still under development!
+#
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-3.1.0-dev
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2021-04-16T14:49:59Z"
+  labels:
+    app: director-server
+  name: director-server
+spec:
+  containers:
+  - args:
+    - director
+    command:
+    - entrypoint
+    env:
+    - name: PATH
+      value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    - name: TERM
+      value: xterm
+    - name: container
+      value: oci
+    - name: DIRECTOR_MODE
+      value: server
+    - name: HOSTNAME
+      value: director
+    image: director
+    name: director-server
+    resources: {}
+    securityContext:
+      allowPrivilegeEscalation: true
+      capabilities:
+        drop:
+        - CAP_MKNOD
+        - CAP_AUDIT_WRITE
+      privileged: false
+      readOnlyRootFilesystem: false
+      runAsGroup: 0
+      runAsUser: 1001
+      seLinuxOptions: {}
+    volumeMounts:
+    - mountPath: /etc/director
+      name: etc-director-host
+    - mountPath: /usr/local/share/director
+      name: usr-local-share-director
+    workingDir: /
+  dnsConfig: {}
+  hostNetwork: true
+  volumes:
+  - hostPath:
+      path: /etc/director
+      type: Directory
+    name: etc-director-host
+  - hostPath:
+      path: /usr/local/share/director
+      type: Directory
+    name: usr-local-share-director
+status: {}
