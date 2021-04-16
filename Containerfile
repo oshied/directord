@@ -18,7 +18,7 @@ WORKDIR /build
 RUN python3.8 -m venv /build/builder
 RUN /build/builder/bin/pip install --force --upgrade pip setuptools bindep wheel
 ADD . /build/
-RUN bash -c "/build/tools/dev-setup.sh /director python3.8"
+RUN bash -c "/build/tools/dev-setup.sh /director /bin/python3.8"
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 EXPOSE 5555
