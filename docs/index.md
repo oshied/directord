@@ -6,6 +6,9 @@ built for scale, easily scaling to thousands of targets, it is also perfectly
 suited for single system environments which can gain the benifits of a simple,
 fast, stable, and unique deployment engine.
 
+> Direct your deployment instead of being driven insane by elements,
+  ingredients, and attestations.
+
 ## First Principles
 
 * Director uses well defined interfaces with clear documentation and

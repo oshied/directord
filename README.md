@@ -2,6 +2,8 @@
 
 A deployment framework built to manage the data center life cycle.
 
+> Task driven deployment, simplified, directed by you.
+
 Director is an asynchronous deployment and operations platform with the aim to
 better enable simplicity, faster time to delivery, and consistency.
 
