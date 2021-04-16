@@ -52,8 +52,7 @@ $ podman run --hostname director \
              --name director-server \
              --net=host \
              --env DIRECTOR_MODE=server \
-             --env DIRECTOR_SHARED_KEY=secrete \
-             --volume /tmp:/tmp \
+             --volume /etc/director:/etc/director \
              --volume ${HOME}/director:${HOME}/director \
              --detach \
              director director
