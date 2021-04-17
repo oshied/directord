@@ -92,22 +92,9 @@ class ClientStatus(object):
     def start_processing(self):
         self.ctx.socket_multipart_send(
             zsocket=self.socket,
-            msg_id=bytes(self.encode_string(item=self.job_id)),
+            msg_id=self.job_id,
             control=self.ctx.job_processing,
         )
-
-    @staticmethod
-    def encode_string(item):
-        """Inspect a given item and if it is a string type, encode it.
-
-        :param item: Item to inspect, assumes item may be string type
-        :type item: <ANY>
-        :returns: String|<ANY>
-        """
-        if isinstance(item, str):
-            return item.encode()
-        else:
-            return item
 
     def __enter__(self):
         """Upon enter, return the context manager object for future updates.

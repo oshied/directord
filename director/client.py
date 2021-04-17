@@ -117,7 +117,8 @@ class Client(manager.Interface):
                 )
                 if command == b"reset":
                     self.log.warn(
-                        "Received heartbeat reset command. Connection resetting."
+                        "Received heartbeat reset command. Connection"
+                        " resetting."
                     )
                     self.reset_heartbeat()
                     heartbeat_at = self.get_expiry
@@ -258,8 +259,9 @@ class Client(manager.Interface):
                 self.log.info("File %s has been blueprinted.", file_to)
 
         if os.path.isfile(file_to) and self.file_sha1(file_to) == file_sha1:
-            info = "File exists {} and SHA1 {} matches, nothing to transfer".format(
-                file_to, file_sha1
+            info = (
+                "File exists {} and SHA1 {} matches, nothing to"
+                " transfer".format(file_to, file_sha1)
             )
             self.log.info(info)
             self.socket_multipart_send(
