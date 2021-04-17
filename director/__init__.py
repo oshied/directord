@@ -175,27 +175,6 @@ class Processor(object):
         self.return_jobs = self.manager.dict()  # This could likely be etcd
         self.log = getLogger(name="director")
 
-    @staticmethod
-    def wq_next(workers):
-        """Given a queue object return the next valid item.
-
-        Valid items are determined by their value, which is an expiry object.
-
-        :param workers: Hash containing workers.
-        :type workers: Manager.Dictionary()
-        :returns: Tuple
-        """
-
-        while True:
-            try:
-                key, value = workers.popitem()
-            except KeyError:
-                return tuple()
-            else:
-                if time.time() <= value:
-                    workers[key] = value
-                    return key, value
-
     def wq_prune(self, workers):
         """Given a Manager.Dictionary object return a pruned hash.
 
@@ -207,15 +186,16 @@ class Processor(object):
         :returns: Tuple
         """
 
-        workers = {
-            key: value
-            for (key, value) in workers.items()
-            if time.time() <= value
-        }
-        self.log.debug(
-            "workers after prune {workers}".format(workers=len(workers))
-        )
-        return workers
+        try:
+            return {
+                key: value
+                for (key, value) in workers.items()
+                if time.time() <= value
+            }
+        finally:
+            self.log.debug(
+                "workers after prune {workers}".format(workers=len(workers))
+            )
 
     @staticmethod
     def wq_empty(workers):

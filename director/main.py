@@ -6,10 +6,10 @@ import yaml
 
 import tabulate
 
-from director import client, mixin, utils
-from director import server
-from director import user
 import director
+from director import mixin
+from director import user
+from director import utils
 
 
 def _args():
@@ -76,7 +76,10 @@ def _args():
     )
     parser.add_argument(
         "--socket-path",
-        help="Server file socket path for user interactions. Default: %(default)s",
+        help=(
+            "Server file socket path for user interactions."
+            " Default: %(default)s"
+        ),
         metavar="STRING",
         default=str(
             os.getenv("DIRECTOR_SOCKET_PATH", "/var/run/director.sock")
@@ -182,7 +185,10 @@ def _args():
     parser_client = subparsers.add_parser("client", help="Client mode help")
     parser_client.add_argument(
         "--server-address",
-        help="Domain or IP address of the Director server. Default: %(default)s",
+        help=(
+            "Domain or IP address of the Director server."
+            " Default: %(default)s"
+        ),
         metavar="STRING",
         default=os.getenv("DIRECTOR_SERVER_ADDRESS", "localhost"),
     )
@@ -297,7 +303,8 @@ class SystemdInstall(object):
     def writer(self, service_file):
         """Write a given systemd service unit file.
 
-        :param service_file: Name of the embedded service file to interact with.
+        :param service_file: Name of the embedded service file to
+                             interact with.
         :type service_file: String
         """
 
@@ -311,9 +318,9 @@ class SystemdInstall(object):
             )
             return
         with open(os.path.join(base, "static", service_file)) as f:
-            with open(service_file_path, "w") as l:
+            with open(service_file_path, "w") as service_f:
                 for line in f.readlines():
-                    l.write(
+                    service_f.write(
                         line.replace(
                             "/usr/bin/director", os.path.join(path, "director")
                         )

@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import json
 import os
@@ -476,9 +475,9 @@ class Server(manager.Interface):
                     else:
                         json_data["task"] = task_id
 
-                    # Returns the message in reverse to show a return. This will
-                    # be a standard client return in JSON format under normal
-                    # circomstances.
+                    # Returns the message in reverse to show a return. This
+                    # will be a standard client return in JSON format under
+                    # normal circomstances.
                     try:
                         conn.sendall(
                             "Job received. Task ID: {}".format(

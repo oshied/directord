@@ -80,7 +80,10 @@ class User(manager.Interface):
         if verb == "RUN":
             parser.add_argument(
                 "--stdout-arg",
-                help="Stores the stdout of a given command as a cached argument.",
+                help=(
+                    "Stores the stdout of a given command as a cached"
+                    " argument."
+                ),
             )
             args, command = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
