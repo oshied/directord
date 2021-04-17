@@ -1,0 +1,9 @@
+name: Run container build test
+on: [pull_request]
+jobs:
+  container_build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build new director container
+      run: docker build -t director -f Containerfile .
