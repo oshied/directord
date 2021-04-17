@@ -418,8 +418,7 @@ class Mixin(object):
                     base[key] = value
                 elif isinstance(value, dict):
                     base[key] = self._merge_dict(
-                        base=base.get(key, {}),
-                        new=value
+                        base=base.get(key, {}), new=value
                     )
                 elif isinstance(value, list):
                     base[key].extend(value)
@@ -451,16 +450,15 @@ class Mixin(object):
         director_server = catalog.get("director_server")
         if director_server:
             print("Loading server information")
-            for server in self.bootstrap_catalog_entry(entry=director_server):
-                server["key_file"] = self.args.key_file
-
-            self.bootstrap_run(job_def=server)
+            for s in self.bootstrap_catalog_entry(entry=director_server):
+                s["key_file"] = self.args.key_file
+                self.bootstrap_run(job_def=s)
 
         director_clients = catalog.get("director_clients")
         if director_clients:
             print("Loading client information")
-            for client in self.bootstrap_catalog_entry(entry=director_clients):
-                client["key_file"] = self.args.key_file
+            for c in self.bootstrap_catalog_entry(entry=director_clients):
+                c["key_file"] = self.args.key_file
                 q.put(client)
 
         cleanup_threads = list()
