@@ -29,6 +29,7 @@ class Mixin(object):
         defined_targets=None,
         restrict=None,
         ignore_cache=False,
+        return_raw=False
     ):
         """Execute orchestration jobs.
 
@@ -51,6 +52,8 @@ class Mixin(object):
         :param ignore_cache: Instruct the orchestartion job to ignore cached
                              executions.
         :type ignore_cache: Boolean
+        :param return_raw: Enable a raw return from the server.
+        :type return_raw: Boolean
         :returns: List
         """
 
@@ -71,6 +74,7 @@ class Mixin(object):
                             restrict=restrict,
                             ignore_cache=ignore_cache,
                             parent_id=parent_id,
+                            return_raw=return_raw,
                         )
                     )
                 if not targets:
@@ -81,6 +85,7 @@ class Mixin(object):
                             restrict=restrict,
                             ignore_cache=ignore_cache,
                             parent_id=parent_id,
+                            return_raw=return_raw,
                         )
                     )
 

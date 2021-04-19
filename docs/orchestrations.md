@@ -106,7 +106,11 @@ u = user.User(args=args)
 m = mixin.Mixin(args=args)
 
 # Note, many jobs can be defined in an array of orchestrations.
-m.exec_orchestartions(user_exec=u, orchestrations=[job])
+m.exec_orchestartions(
+    user_exec=u,
+    orchestrations=[job],
+    raw_return=True  # Returns just the UUID(s)
+)
 ```
 
 The return from this execution will be an array of byte encoded UUID, which are

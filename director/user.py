@@ -46,6 +46,7 @@ class User(manager.Interface):
         ignore_cache=False,
         restrict=None,
         parent_id=None,
+        return_raw=False,
     ):
         """Return a JSON encode object for task execution.
 
@@ -66,6 +67,8 @@ class User(manager.Interface):
         :type restrict: List
         :param parent_id: Set the parent UUID for execution jobs.
         :type parent_id: String
+        :param return_raw: Enable a raw return from the server.
+        :type return_raw: Boolean
         :returns: String
         """
 
@@ -175,6 +178,8 @@ class User(manager.Interface):
         else:
             if ignore_cache:
                 data["skip_cache"] = True
+
+        data["return_raw"] = return_raw
 
         return json.dumps(data)
 

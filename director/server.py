@@ -478,12 +478,13 @@ class Server(manager.Interface):
                     # Returns the message in reverse to show a return. This
                     # will be a standard client return in JSON format under
                     # normal circomstances.
+                    if json_data.get("return_raw", False):
+                        msg = json_data["task"].encode()
+                    else:
+                        msg = "Job received. Task ID: {}".format(json_data["task"]).encode()
+
                     try:
-                        conn.sendall(
-                            "Job received. Task ID: {}".format(
-                                json_data["task"]
-                            ).encode()
-                        )
+                        conn.sendall(msg)
                     except BrokenPipeError as e:
                         self.log.error(
                             "Encountered a broken pipe while sending job"
