@@ -51,7 +51,7 @@ class Interface(director.Processor):
         self.identity = socket.gethostname()
 
         self.heartbeat_liveness = 3
-        self.heartbeat_interval = 1
+        self.heartbeat_interval = self.args.heartbeat_interval
 
         self.nullbyte = b"\000"  # Signals null
         self.heartbeat_ready = b"\001"  # Signals worker is ready
@@ -127,10 +127,9 @@ class Interface(director.Processor):
         """
 
         bind = self.ctx.socket(socket_type)
-
-        auth_enabled = (
-            self.args.shared_key or self.args.curve_encryption
-        ) or self.curve_keys_exist
+        auth_enabled = self.args.shared_key or (
+            self.args.curve_encryption and self.curve_keys_exist
+        )
         if auth_enabled:
             self.auth = ThreadAuthenticator(self.ctx, log=self.log)
             self.auth.start()

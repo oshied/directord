@@ -22,8 +22,65 @@ class Mixin(object):
 
         self.args = args
 
-    def run_orchestration(self):
+    def exec_orchestartions(
+        self, user_exec, orchestrations, defined_targets=None
+    ):
         """Execute orchestration jobs.
+
+        Iterates over a list of orchestartion blobs, fingerprints the jobs,
+        and then runs them.
+
+        :param user_exec: Intialized user-class, required to prepare jobs and
+                          format execution.
+        :type user_exec: Object
+        :param orchestrations: List of Dictionaries which are run as orchestartion.
+        :type orchestrations: List
+        :param defined_targets: List of targets to limit a given execution to. This
+                                target list provides an override for targets found
+                                within a given orchestation.
+        :type defined_targets: List
+        :returns: List
+        """
+
+        job_to_run = list()
+        for orchestrate in orchestrations:
+            parent_id = user_exec.get_uuid
+            targets = defined_targets or orchestrate.get("targets", list())
+            jobs = orchestrate["jobs"]
+            for job in jobs:
+                key, value = next(iter(job.items()))
+                value = [value]
+                for target in targets:
+                    job_to_run.append(
+                        dict(
+                            verb=key,
+                            execute=value,
+                            target=target,
+                            restrict=self.args.restrict,
+                            ignore_cache=self.args.ignore_cache,
+                            parent_id=parent_id,
+                        )
+                    )
+                if not targets:
+                    job_to_run.append(
+                        dict(
+                            verb=key,
+                            execute=value,
+                            restrict=self.args.restrict,
+                            ignore_cache=self.args.ignore_cache,
+                            parent_id=parent_id,
+                        )
+                    )
+
+        return_data = list()
+        for job in job_to_run:
+            return_data.append(
+                user_exec.send_data(data=user_exec.format_exec(**job))
+            )
+        return return_data
+
+    def run_orchestration(self):
+        """Run orchestration jobs.
 
         When orchestration jobs are executed the files are organized and
         then indexed. Once indexed, the jobs are sent to the server. send
@@ -46,46 +103,17 @@ class Mixin(object):
                 with open(orchestrate_file) as f:
                     orchestrations = yaml.safe_load(f)
 
-                job_to_run = list()
                 defined_targets = list()
                 if self.args.target:
                     defined_targets = list(set(self.args.target))
 
-                for orchestrate in orchestrations:
-                    parent_id = user_exec.get_uuid
-                    targets = defined_targets or orchestrate.get(
-                        "targets", list()
+                return_data.extend(
+                    self.exec_orchestartions(
+                        user_exec=user_exec,
+                        orchestrations=orchestrations,
+                        defined_targets=defined_targets,
                     )
-                    jobs = orchestrate["jobs"]
-                    for job in jobs:
-                        key, value = next(iter(job.items()))
-                        value = [value]
-                        for target in targets:
-                            job_to_run.append(
-                                dict(
-                                    verb=key,
-                                    execute=value,
-                                    target=target,
-                                    restrict=self.args.restrict,
-                                    ignore_cache=self.args.ignore_cache,
-                                    parent_id=parent_id,
-                                )
-                            )
-                        if not targets:
-                            job_to_run.append(
-                                dict(
-                                    verb=key,
-                                    execute=value,
-                                    restrict=self.args.restrict,
-                                    ignore_cache=self.args.ignore_cache,
-                                    parent_id=parent_id,
-                                )
-                            )
-
-                for job in job_to_run:
-                    return_data.append(
-                        user_exec.send_data(data=user_exec.format_exec(**job))
-                    )
+                )
         else:
             return return_data
 
