@@ -127,7 +127,9 @@ class Interface(director.Processor):
         """
 
         bind = self.ctx.socket(socket_type)
-        auth_enabled = self.args.shared_key or (self.args.curve_encryption and self.curve_keys_exist)
+        auth_enabled = self.args.shared_key or (
+            self.args.curve_encryption and self.curve_keys_exist
+        )
         if auth_enabled:
             self.auth = ThreadAuthenticator(self.ctx, log=self.log)
             self.auth.start()

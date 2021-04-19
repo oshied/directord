@@ -2,7 +2,6 @@ import unittest
 import uuid
 
 from unittest.mock import patch
-from unittest.mock import MagicMock
 
 from director import manager
 
@@ -15,20 +14,14 @@ class TestUtils(unittest.TestCase):
         self.interface = manager.Interface(args=args)
 
     def test_get_heartbeat(self):
-        with patch('time.time') as p:
+        with patch("time.time") as p:
             p.return_value = 1000000000.0000001
-            self.assertEqual(
-                self.interface.get_heartbeat,
-                1000000060.0000001
-            )
+            self.assertEqual(self.interface.get_heartbeat, 1000000060.0000001)
 
     def test_get_expiry(self):
-        with patch('time.time') as p:
+        with patch("time.time") as p:
             p.return_value = 1000000000.0000001
-            self.assertEqual(
-                self.interface.get_expiry,
-                1000000180.0000001
-            )
+            self.assertEqual(self.interface.get_expiry, 1000000180.0000001)
 
     def test_get_uuid(self):
         uuid1 = self.interface.get_uuid
@@ -46,7 +39,6 @@ class TestUtils(unittest.TestCase):
             port=9000,
         )
         self.assertIsNotNone(bind.bind)
-
 
     def test_socket_bind_shared_auth(self):
         pass
