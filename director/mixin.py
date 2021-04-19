@@ -23,7 +23,12 @@ class Mixin(object):
         self.args = args
 
     def exec_orchestartions(
-        self, user_exec, orchestrations, defined_targets=None
+        self,
+        user_exec,
+        orchestrations,
+        defined_targets=None,
+        restrict=None,
+        ignore_cache=False,
     ):
         """Execute orchestration jobs.
 
@@ -33,12 +38,19 @@ class Mixin(object):
         :param user_exec: Intialized user-class, required to prepare jobs and
                           format execution.
         :type user_exec: Object
-        :param orchestrations: List of Dictionaries which are run as orchestartion.
+        :param orchestrations: List of Dictionaries which are run as
+                               orchestartion.
         :type orchestrations: List
-        :param defined_targets: List of targets to limit a given execution to. This
-                                target list provides an override for targets found
-                                within a given orchestation.
+        :param defined_targets: List of targets to limit a given execution to.
+                                This target list provides an override for
+                                targets found within a given orchestation.
         :type defined_targets: List
+        :param restrict: Restrict a given orchestration job to a set of SHA1
+                         job fingerprints.
+        :type restrict: Array
+        :param ignore_cache: Instruct the orchestartion job to ignore cached
+                             executions.
+        :type ignore_cache: Boolean
         :returns: List
         """
 
@@ -56,8 +68,8 @@ class Mixin(object):
                             verb=key,
                             execute=value,
                             target=target,
-                            restrict=self.args.restrict,
-                            ignore_cache=self.args.ignore_cache,
+                            restrict=restrict,
+                            ignore_cache=ignore_cache,
                             parent_id=parent_id,
                         )
                     )
@@ -66,8 +78,8 @@ class Mixin(object):
                         dict(
                             verb=key,
                             execute=value,
-                            restrict=self.args.restrict,
-                            ignore_cache=self.args.ignore_cache,
+                            restrict=restrict,
+                            ignore_cache=ignore_cache,
                             parent_id=parent_id,
                         )
                     )
@@ -112,6 +124,8 @@ class Mixin(object):
                         user_exec=user_exec,
                         orchestrations=orchestrations,
                         defined_targets=defined_targets,
+                        restrict=self.args.restrict,
+                        ignore_cache=self.args.ignore_cache,
                     )
                 )
         else:

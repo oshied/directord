@@ -69,3 +69,46 @@ adhoc execution.
 ``` shell
 $ director orchestrate ${ORCHESTRATION_FILE_NAME} [<switches> ...]
 ```
+
+#### Orchestration Library Usage
+
+Running orchestration jobs can also be run using the library. This allows
+operators to define jobs in out of band task flows and provides and interface
+into Director that is not strictly defined by shell interactions.
+
+``` python
+# Import the required modules.
+from director import mixin, user
+
+# Define a minimal set of arguments.
+class args(object):
+    debug=False
+    socket_path='/var/run/director.sock'
+    mode='orchestrate'
+
+# Define your job(s).
+job = {
+    "targets": [
+        "host1",
+        "host2"
+    ],
+    "jobs": [
+        {
+            "RUN": "echo hello world"
+        }
+    ]
+}
+
+# Initialize the user interactions
+u = user.User(args=args)
+
+# Run the orchestration execution
+m = mixin.Mixin(args=args)
+
+# Note, many jobs can be defined in an array of orchestrations.
+m.exec_orchestartions(user_exec=u, orchestrations=[job])
+```
+
+The return from this execution will be an array of byte encoded UUID, which are
+the ID's for the submitted jobs, breaking out as one UUID for each target and
+job combination defined.

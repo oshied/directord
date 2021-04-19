@@ -51,7 +51,10 @@ class Interface(director.Processor):
         self.identity = socket.gethostname()
 
         self.heartbeat_liveness = 3
-        self.heartbeat_interval = self.args.heartbeat_interval
+        try:
+            self.heartbeat_interval = self.args.heartbeat_interval
+        except AttributeError:
+            self.heartbeat_interval = 1
 
         self.nullbyte = b"\000"  # Signals null
         self.heartbeat_ready = b"\001"  # Signals worker is ready
@@ -82,7 +85,7 @@ class Interface(director.Processor):
         :returns: Float
         """
 
-        return time.time() + self.args.heartbeat_interval
+        return time.time() + self.heartbeat_interval
 
     @property
     def get_expiry(self):
