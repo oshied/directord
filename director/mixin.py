@@ -22,8 +22,8 @@ class Mixin(object):
 
         self.args = args
 
+    @staticmethod
     def exec_orchestartions(
-        self,
         user_exec,
         orchestrations,
         defined_targets=None,
