@@ -49,7 +49,8 @@ tasks across a small 6 node test environment.
 
 The director cluster was bootstrapped with the
 [Native Bootstrap](installation.md#bootstrap-natively) process. Before running
-these tests this process had to be completed ahead of time.
+these tests the bootstrap process had to be completed ahead of time. The example
+development bootstrap process took **81.23** seconds (1.5 minutes) to complete.
 
 * Run the Director orchestration command to execute 1000 trivial jobs.
 
@@ -66,6 +67,9 @@ following average profile.
 | EXECUTION_TIME       | TOTAL_ROUNDTRIP_TIME    |
 | -------------------- | ----------------------- |
 | 0.007496356964111328 | 0.01715874671936035     |
+
+Total execution time, including bootstrapping the environment, took **100.64**
+seconds (1.68 minutes).
 
 #### Ansible
 
