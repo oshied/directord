@@ -1,8 +1,10 @@
+import contextlib
 import hashlib
 import json
 import logging
 import multiprocessing
 import os
+import signal
 import socket
 import time
 
@@ -268,6 +270,36 @@ class Processor(object):
         """
 
         return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
+
+    @contextlib.contextmanager
+    def timeout(self, time, job_id):
+        """Registers a context manager to raise whenever a timeout occurs.
+
+        :param time: Time in seconds before an alarm is raised.
+        :type time: Integer
+        :param job_id: Job UUID
+        :type job_id: String
+        :yields:
+        """
+
+        signal.signal(signal.SIGALRM, self.raise_timeout)
+        signal.alarm(time)
+        try:
+            yield
+        except TimeoutError:
+            self.log.warn(
+                "Timeout encountered after {} seconds running {}.".format(
+                    time, job_id
+                )
+            )
+        finally:
+            signal.signal(signal.SIGALRM, signal.SIG_IGN)
+
+    def raise_timeout(self, *args, **kwargs):
+        """Log, then raise a Timeout error."""
+
+        self.log.error("Task timeout encountered.")
+        raise TimeoutError
 
 
 class UNIXSocketConnect(object):

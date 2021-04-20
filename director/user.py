@@ -83,7 +83,15 @@ class User(manager.Interface):
             help="For a task to skip the on client cache.",
         )
         parser.add_argument(
-            "--run-once", action="store_true", help="Force a task to run once."
+            "--run-once",
+            action="store_true",
+            help="Force a given task to run once.",
+        )
+        parser.add_argument(
+            "--timeout",
+            default=600,
+            type=int,
+            help="Set the action timeout. Default %(default)s.",
         )
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         if verb == "RUN":
@@ -189,6 +197,7 @@ class User(manager.Interface):
             data["parent_id"] = parent_id
 
         data["verb"] = verb
+        data["timeout"] = args.timeout
 
         if args:
             data["skip_cache"] = ignore_cache or args.skip_cache

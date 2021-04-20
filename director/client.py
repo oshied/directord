@@ -335,6 +335,122 @@ class Client(manager.Interface):
 
         return info, success
 
+    def _job_executor(
+        self,
+        conn,
+        cache,
+        info,
+        job,
+        job_parent_id,
+        job_id,
+        job_sha1,
+        cached,
+        command,
+    ):
+        """Execute a given job.
+
+        :param conn: Connection object used to store information used in a return message.
+        :type conn: Object
+        :param cache: Cached access object.
+        :type cache: Object
+        :param info: Information that was sent over with the original message.
+        :type info: Bytes
+        :param job: Information containing the original job specification.
+        :type job: Dictionary
+        :param job_parent_id: Parent UUID for a given job.
+        :type job_parent_id: String
+        :param job_id: Job UUID
+        :type job_id: String
+        :param job_sha1: Job fingerprint in SHA1 format.
+        :type job_sha1: String
+        :param cached: Boolean option to determin if a command is to be treated as cached.
+        :type cached: Boolean
+        :param command: Byte encoded command used to run a given job.
+        :type command: Bytes
+        :returns: Tuple
+        """
+
+        # Set the parent ID value to True, if set False all jobs with
+        # this parent ID will halt and fail.
+        if job_parent_id and job_parent_id in cache:
+            if cache[job_parent_id] is False:
+                status = (
+                    "Job [ {} ] was not allowed to run because there"
+                    " was a failure under this partent ID"
+                    " [ {} ]".format(job_id, job_parent_id)
+                )
+                self.log.error(status)
+                conn.info = status.encode()
+                conn.job_state = cache[job_sha1] = self.job_failed
+                return None, None
+        else:
+            # Parent ID information is set to automatically expire
+            # after 24 hours.
+            cache.add(key=job_parent_id, value=True, expire=86400)
+
+        if cached:
+            # TODO: Figure out how to skip cache when file transfering.
+            self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
+            conn.info = b"job skipped"
+            conn.job_state = self.job_end
+            return None, None
+        elif command == b"RUN":
+            conn.start_processing()
+            return self._run_command(
+                command=job["command"],
+                cache=cache,
+                stdout_arg=job.get("stdout_arg"),
+            )
+        elif command in [b"ADD", b"COPY"]:
+            conn.start_processing()
+            return self._run_transfer(
+                file_to=job["file_to"],
+                job_id=job_id,
+                user=job.get("user"),
+                group=job.get("group"),
+                file_sha1=job.get("file_sha1sum"),
+                source_file=info,
+                cache=cache,
+                blueprint=job.get("blueprint", False),
+            )
+        elif command == b"WORKDIR":
+            conn.start_processing()
+            return self._run_workdir(workdir=job["workdir"], cache=cache)
+        elif command in [b"ARG", b"ENV"]:
+            conn.start_processing()
+            cache_args = dict()
+            if "args" in cache:
+                cache_args = cache["args"]
+            for k, v in job["args"].items():
+                cache_args[k] = v
+            else:
+                cache["args"] = cache_args
+
+            return (b"ARG(s) added to Cache", True)
+        elif command == b"CACHEFILE":
+            conn.start_processing()
+            try:
+                with open(job["cachefile"]) as f:
+                    cachefile_args = yaml.safe_load(f)
+            except Exception as e:
+                return str(e), False
+            else:
+                if "args" in cache:
+                    cache_args = cache["args"]
+                    cache_args.update(cachefile_args)
+                    cache["args"] = cache_args
+                else:
+                    cache["args"] = cachefile_args
+
+                return b"Cache file loaded", True
+        else:
+            self.log.warn(
+                "Unknown command - COMMAND:%s ID:%s",
+                command.decode(),
+                job_id,
+            )
+            return None, None
+
     def _job_loop(self, cache):
         """Execute the job loop.
 
@@ -376,106 +492,34 @@ class Client(manager.Interface):
 
             # Caching does not work for transfers at this stage.
             cache_allowed = command not in [b"ADD", b"COPY", b"ARG", b"ENV"]
-
+            cached = cache_hit and cache_allowed
+            success, status, state = False, None, self.nullbyte
             with utils.ClientStatus(
                 socket=self.bind_job, job_id=job_id.encode(), ctx=self
             ) as c:
-                # Set the parent ID value to True, if set False all jobs with
-                # this parent ID will halt and fail.
-                if job_parent_id and job_parent_id in cache:
-                    if cache[job_parent_id] is False:
-                        status = (
-                            "Job [ {} ] was not allowed to run because there"
-                            " was a failure under this partent ID"
-                            " [ {} ]".format(job_id, job_parent_id)
-                        )
-                        self.log.error(status)
-                        c.info = status.encode()
-                        c.job_state = cache[job_sha1] = self.job_failed
-                        return
-                else:
-                    # Parent ID information is set to automatically expire
-                    # after 24 hours.
-                    cache.add(key=job_parent_id, value=True, expire=86400)
-
-                if cache_hit and cache_allowed:
-                    # TODO: Figure out how to skip cache when file transfering.
-                    self.log.debug(
-                        "Cache hit on {}, task skipped.".format(job_sha1)
-                    )
-                    c.info = b"job skipped"
-                    c.job_state = self.job_end
-                    return
-                elif command == b"RUN":
-                    c.start_processing()
-                    status, success = self._run_command(
-                        command=job["command"],
+                with self.timeout(time=job.get("timeout", 600), job_id=job_id):
+                    status, success = self._job_executor(
+                        conn=c,
                         cache=cache,
-                        stdout_arg=job.get("stdout_arg"),
-                    )
-                elif command in [b"ADD", b"COPY"]:
-                    c.start_processing()
-                    status, success = self._run_transfer(
-                        file_to=job["file_to"],
+                        info=info,
+                        job=job,
+                        job_parent_id=job_parent_id,
                         job_id=job_id,
-                        user=job.get("user"),
-                        group=job.get("group"),
-                        file_sha1=job.get("file_sha1sum"),
-                        source_file=info,
-                        cache=cache,
-                        blueprint=job.get("blueprint", False),
+                        job_sha1=job_sha1,
+                        cached=cached,
+                        command=command,
                     )
-                elif command == b"WORKDIR":
-                    c.start_processing()
-                    status, success = self._run_workdir(
-                        workdir=job["workdir"], cache=cache
-                    )
-                elif command in [b"ARG", b"ENV"]:
-                    c.start_processing()
-                    cache_args = dict()
-                    if "args" in cache:
-                        cache_args = cache["args"]
-                    for k, v in job["args"].items():
-                        cache_args[k] = v
-                    else:
-                        cache["args"] = cache_args
-
-                    status, success = (b"ARG(s) added to Cache", True)
-                elif command == b"CACHEFILE":
-                    c.start_processing()
-                    try:
-                        with open(job["cachefile"]) as f:
-                            cachefile_args = yaml.safe_load(f)
-                    except Exception as e:
-                        status = str(e)
-                        success = False
-                    else:
-                        if "args" in cache:
-                            cache_args = cache["args"]
-                            cache_args.update(cachefile_args)
-                            cache["args"] = cache_args
-                        else:
-                            cache["args"] = cachefile_args
-
-                        status, success = (b"Cache file loaded", True)
-                else:
-                    self.log.warn(
-                        "Unknown command - COMMAND:%s ID:%s",
-                        command.decode(),
-                        job_id,
-                    )
-                    return
 
                 if status:
                     if not isinstance(status, bytes):
                         status = status.encode()
                     c.info = status
 
-                if not success:
+                if success is False:
                     state = c.job_state = self.job_failed
                     self.log.error("Job failed {}".format(job_id))
                     cache.set(key=job_parent_id, value=False, expire=86400)
-                else:
+                elif success is True:
                     state = c.job_state = self.job_end
                     self.log.info("Job complete {}".format(job_id))
 
