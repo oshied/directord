@@ -29,7 +29,7 @@ class Mixin(object):
         defined_targets=None,
         restrict=None,
         ignore_cache=False,
-        return_raw=False
+        return_raw=False,
     ):
         """Execute orchestration jobs.
 

@@ -499,7 +499,9 @@ class Server(manager.Interface):
                     if json_data.get("return_raw", False):
                         msg = json_data["task"].encode()
                     else:
-                        msg = "Job received. Task ID: {}".format(json_data["task"]).encode()
+                        msg = "Job received. Task ID: {}".format(
+                            json_data["task"]
+                        ).encode()
 
                     try:
                         conn.sendall(msg)
