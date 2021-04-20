@@ -11,7 +11,16 @@ operations follow a simple DSL inspired by the `Containerfile` specification.
 
 ### Verbs
 
-This is a short list of the available verbs.
+This is a short list of the available verbs. While this list includes all known
+options at the time of this writing, the actual verb and switches all provide
+help information regarding their usage. To access verb specific help information
+the `--exec-help` flag can be used.
+
+* Example
+
+``` shell
+$ director exec --verb ${VERB} '--exec-help true'
+```
 
 ##### `RUN`
 

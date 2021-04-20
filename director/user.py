@@ -75,7 +75,14 @@ class User(manager.Interface):
         args = None
         data = dict()
         parser = argparse.ArgumentParser(
-            description="Process exec commands", allow_abbrev=False
+            description="Process exec commands",
+            allow_abbrev=False,
+            add_help=False,
+        )
+        parser.add_argument(
+            "--exec-help",
+            action="help",
+            help="Show this execution help message.",
         )
         parser.add_argument(
             "--skip-cache",
@@ -187,28 +194,31 @@ class User(manager.Interface):
         else:
             raise SystemExit("No known verb defined.")
 
-        if target:
-            data["target"] = target
-
-        if restrict:
-            data["restrict"] = restrict
-
-        if parent_id:
-            data["parent_id"] = parent_id
-
-        data["verb"] = verb
-        data["timeout"] = args.timeout
-
-        if args:
-            data["skip_cache"] = ignore_cache or args.skip_cache
-            data["run_once"] = args.run_once
+        if args.exec_help:
+            return parser.print_help(1)
         else:
-            if ignore_cache:
-                data["skip_cache"] = True
+            if target:
+                data["target"] = target
 
-        data["return_raw"] = return_raw
+            if restrict:
+                data["restrict"] = restrict
 
-        return json.dumps(data)
+            if parent_id:
+                data["parent_id"] = parent_id
+
+            data["verb"] = verb
+            data["timeout"] = args.timeout
+
+            if args:
+                data["skip_cache"] = ignore_cache or args.skip_cache
+                data["run_once"] = args.run_once
+            else:
+                if ignore_cache:
+                    data["skip_cache"] = True
+
+            data["return_raw"] = return_raw
+
+            return json.dumps(data)
 
     def send_data(self, data):
         """Send data to the socket path.
