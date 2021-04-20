@@ -240,6 +240,13 @@ class Server(manager.Interface):
         target is known within the workers object, otherwise all targets will
         receive the message. If a defined target is not found within the
         workers object no job will be executed.
+
+        Director's job executor will slow down the poll interval when no work
+        is present. This means Director will ramp-up resource utilization when
+        required and become virtually idle when there's nothing to do.
+
+        * Initial poll interval is 1024, maxing out at 2048. When work is
+          present, the poll interval is 128.
         """
 
         self.bind_job = self.job_bind()
@@ -250,6 +257,8 @@ class Server(manager.Interface):
         while True:
             if poller_time > poller_time + 32:
                 poller_interval = 1024
+            elif poller_time > poller_time + 64:
+                poller_interval = 2048
 
             socks = dict(self.poller.poll(poller_interval))
 
