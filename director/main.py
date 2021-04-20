@@ -391,25 +391,16 @@ def main():
         else:
             return_data = _mixin.run_orchestration()
 
-        for item in [i for i in return_data if i]:
-            data_item = item.decode()
-            if args.poll:
-                setattr(args, "list_jobs", True)
-                manage = user.Manage(args=args)
-                with manage.timeout(time=600, job_id=data_item):
-                    while True:
-                        data = dict(json.loads(manage.run()))
-                        data_return = data.get(data_item)
-                        if data_return:
-                            if data_return.get("SUCCESS"):
-                                print('Job Success: {}'.format(data_item))
-                                break
-                            elif data_return.get("FAILURE"):
-                                print('Job Failed: {}'.format(data_item))
-                                break
-                        time.sleep(1)
-            else:
-                print(data_item)
+        job_items = [i.decode() for i in return_data if i]
+
+        if args.poll:
+            manage = user.Manage(args=args)
+            for item in job_items:
+                _, status = manage.poll_job(job_id=item)
+                print(status)
+        else:
+            for item in job_items:
+                print(item)
 
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)

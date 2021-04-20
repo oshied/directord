@@ -151,12 +151,17 @@ class Mixin(object):
         if self.args.target:
             for target in set(self.args.target):
                 data = user_exec.format_exec(
-                    verb=self.args.verb, execute=self.args.exec, target=target, return_raw=getattr(self.args, "poll", False)
+                    verb=self.args.verb,
+                    execute=self.args.exec,
+                    target=target,
+                    return_raw=getattr(self.args, "poll", False),
                 )
                 return_data.append(user_exec.send_data(data=data))
         else:
             data = user_exec.format_exec(
-                verb=self.args.verb, execute=self.args.exec, return_raw=getattr(self.args, "poll", False)
+                verb=self.args.verb,
+                execute=self.args.exec,
+                return_raw=getattr(self.args, "poll", False),
             )
             return_data.append(user_exec.send_data(data=data))
         return return_data

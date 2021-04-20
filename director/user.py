@@ -2,6 +2,7 @@ import argparse
 import glob
 import json
 import os
+import time
 
 import zmq.auth
 
@@ -310,21 +311,55 @@ class Manage(User):
             suffix=".key_secret",
         )
 
-    def run(self):
+    def poll_job(self, job_id):
+        """Given a job poll for its completion and return status.
+
+        > The status return is (Boolean, String)
+
+        :param job_id: UUID for job
+        :type job_id: String
+        :returns: Tuple
+        """
+        with self.timeout(
+            time=getattr(self.args, "timeout", 240), job_id=job_id
+        ):
+            while True:
+                data = dict(json.loads(self.run(override="list-jobs")))
+                data_return = data.get(job_id)
+                if data_return:
+                    if data_return.get("SUCCESS"):
+                        return True, "Job Success: {}".format(job_id)
+                    elif data_return.get("FAILED"):
+                        return False, "Job Failed: {}".format(job_id)
+                    else:
+                        time.sleep(1)
+
+    def run(self, override=None):
         """Send the management command to the server.
 
+        :param override: Set the job function regardless of args.
+        :type override: String
         :returns: String
         """
 
-        if self.args.list_jobs or self.args.job_info or self.args.export_jobs:
+        if (
+            override == "list-jobs"
+            or self.args.list_jobs
+            or self.args.job_info
+            or self.args.export_jobs
+        ):
             manage = "list-jobs"
-        elif self.args.list_nodes or self.args.export_nodes:
+        elif (
+            override == "list-nodes"
+            or self.args.list_nodes
+            or self.args.export_nodes
+        ):
             manage = "list-nodes"
-        elif self.args.purge_jobs:
+        elif override == "purge-jobs" or self.args.purge_jobs:
             manage = "purge-jobs"
-        elif self.args.purge_nodes:
+        elif override == "purge-nodes" or self.args.purge_nodes:
             manage = "purge-nodes"
-        elif self.args.generate_keys:
+        elif override == "generate-keys" or self.args.generate_keys:
             return self.generate_certificates()
         else:
             raise SystemExit("No known management function was defined.")
