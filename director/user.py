@@ -77,8 +77,14 @@ class User(manager.Interface):
         parser = argparse.ArgumentParser(
             description="Process exec commands", allow_abbrev=False
         )
-        parser.add_argument("--skip-cache", action="store_true")
-        parser.add_argument("--run-once", action="store_true")
+        parser.add_argument(
+            "--skip-cache",
+            action="store_true",
+            help="For a task to skip the on client cache.",
+        )
+        parser.add_argument(
+            "--run-once", action="store_true", help="Force a task to run once."
+        )
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         if verb == "RUN":
             parser.add_argument(
@@ -95,8 +101,12 @@ class User(manager.Interface):
                 data["stdout_arg"] = args.stdout_arg
             data["command"] = " ".join(command)
         elif verb in ["COPY", "ADD"]:
-            parser.add_argument("--chown")
-            parser.add_argument("--blueprint", action="store_true")
+            parser.add_argument("--chown", help="Set the file ownership")
+            parser.add_argument(
+                "--blueprint",
+                action="store_true",
+                help="Instruct the remote file to be blueprinted.",
+            )
             args, file_path = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
@@ -119,7 +129,12 @@ class User(manager.Interface):
         elif verb == "FROM":
             raise NotImplementedError()
         elif verb in ["ARG", "ENV"]:
-            parser.add_argument("args", nargs="+", action="append")
+            parser.add_argument(
+                "args",
+                nargs="+",
+                action="append",
+                help="Set a given argument. KEY VALUE",
+            )
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
@@ -147,13 +162,16 @@ class User(manager.Interface):
                 expose.append("tcp")
             data["port"], data["proto"] = expose
         elif verb == "WORKDIR":
-            parser.add_argument("workdir")
+            parser.add_argument("workdir", help="Create a directory.")
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             data["workdir"] = args.workdir
         elif verb == "CACHEFILE":
-            parser.add_argument("cachefile")
+            parser.add_argument(
+                "cachefile",
+                help="Load a cached file and store it as an update to ARGs.",
+            )
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
