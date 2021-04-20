@@ -506,7 +506,7 @@ class Mixin(object):
             print("Loading client information")
             for c in self.bootstrap_catalog_entry(entry=director_clients):
                 c["key_file"] = self.args.key_file
-                q.put(client)
+                q.put(c)
 
         cleanup_threads = list()
         for _ in range(self.args.threads):

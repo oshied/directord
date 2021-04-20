@@ -113,6 +113,6 @@ m.exec_orchestartions(
 )
 ```
 
-The return from this execution will be an array of byte encoded UUID, which are
-the ID's for the submitted jobs, breaking out as one UUID for each target and
-job combination defined.
+The return from `exec_orchestartions` is an array of byte encoded UUID, which
+are the ID's for the submitted jobs, breaking out as one UUID for each target
+and job combination.

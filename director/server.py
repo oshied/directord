@@ -244,10 +244,17 @@ class Server(manager.Interface):
 
         self.bind_job = self.job_bind()
         self.bind_transfer = self.transfer_bind()
+        poller_time = time.time()
+        poller_interval = 1024
+
         while True:
-            socks = dict(self.poller.poll(128))
+            if poller_time > poller_time + 32:
+                poller_interval = 1024
+
+            socks = dict(self.poller.poll(poller_interval))
 
             if socks.get(self.bind_transfer) == zmq.POLLIN:
+                poller_interval, poller_time = 128, time.time()
                 (
                     identity,
                     msg_id,
@@ -276,6 +283,7 @@ class Server(manager.Interface):
                     )
 
             if socks.get(self.bind_job) == zmq.POLLIN:
+                poller_interval, poller_time = 128, time.time()
                 (
                     identity,
                     msg_id,
@@ -292,6 +300,7 @@ class Server(manager.Interface):
                 )
 
             if self.workers:
+                poller_interval, poller_time = 128, time.time()
                 try:
                     job_item = self.job_queue.get(block=False, timeout=1)
                 except Exception:

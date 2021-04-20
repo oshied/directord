@@ -13,6 +13,12 @@ all:
         client1:
           ansible_host: 172.16.27.58
         client2:
-          ansible_host: 172.16.27.113
+          ansible_host: 172.16.27.85
         client3:
+          ansible_host: 172.16.27.113
+        client4:
           ansible_host: 172.16.27.120
+        client5:
+          ansible_host: 172.16.27.137
+        client6:
+          ansible_host: 172.16.27.251
