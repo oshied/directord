@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import yaml
 
 import tabulate
@@ -113,6 +114,11 @@ def _args():
         action="store_true",
     )
     parser_orchestrate.add_argument(
+        "--poll",
+        help="Block on client return for the completion of executed jobs.",
+        action="store_true",
+    )
+    parser_orchestrate.add_argument(
         "orchestrate_files",
         help="YAML files to use for orchestration.",
         metavar="STRING",
@@ -149,6 +155,11 @@ def _args():
         help="Freeform command. Use quotes for complex commands.",
         metavar="STRING",
         nargs="+",
+    )
+    parser_exec.add_argument(
+        "--poll",
+        help="Block on client return for the completion of executed jobs.",
+        action="store_true",
     )
     parser_server = subparsers.add_parser("server", help="Server mode help")
     parser_server.add_argument(
@@ -374,14 +385,32 @@ def main():
         _mixin.start_server()
     elif args.mode == "client":
         _mixin.start_client()
-    elif args.mode == "exec":
-        return_data = _mixin.run_exec()
-        for item in return_data:
-            print(item.decode())
-    elif args.mode == "orchestrate":
-        return_data = _mixin.run_orchestration()
+    elif args.mode in ["exec", "orchestrate"]:
+        if args.mode == "exec":
+            return_data = _mixin.run_exec()
+        else:
+            return_data = _mixin.run_orchestration()
+
         for item in [i for i in return_data if i]:
-            print(item.decode())
+            data_item = item.decode()
+            if args.poll:
+                setattr(args, "list_jobs", True)
+                manage = user.Manage(args=args)
+                with manage.timeout(time=600, job_id=data_item):
+                    while True:
+                        data = dict(json.loads(manage.run()))
+                        data_return = data.get(data_item)
+                        if data_return:
+                            if data_return.get("SUCCESS"):
+                                print('Job Success: {}'.format(data_item))
+                                break
+                            elif data_return.get("FAILURE"):
+                                print('Job Failed: {}'.format(data_item))
+                                break
+                        time.sleep(1)
+            else:
+                print(data_item)
+
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
         data = manage_exec.run()

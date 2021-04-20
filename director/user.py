@@ -194,7 +194,7 @@ class User(manager.Interface):
         else:
             raise SystemExit("No known verb defined.")
 
-        if args.exec_help:
+        if hasattr(args, "exec_help") and args.exec_help:
             return parser.print_help(1)
         else:
             if target:
