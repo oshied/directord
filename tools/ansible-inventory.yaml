@@ -5,20 +5,22 @@ all:
     director_server:
       hosts:
         server0:
-          ansible_host: 172.16.27.120
+          ansible_host: 172.16.27.108
     director_clients:
       hosts:
         client0:
-          ansible_host: 172.16.27.53
+          ansible_host: 172.16.27.108
         client1:
-          ansible_host: 172.16.27.58
+          ansible_host: 172.16.27.129
         client2:
-          ansible_host: 172.16.27.85
+          ansible_host: 172.16.27.99
         client3:
-          ansible_host: 172.16.27.113
+          ansible_host: 172.16.27.242
         client4:
-          ansible_host: 172.16.27.120
+          ansible_host: 172.16.27.200
         client5:
-          ansible_host: 172.16.27.137
+          ansible_host: 172.16.27.189
         client6:
-          ansible_host: 172.16.27.251
+          ansible_host: 172.16.27.231
+        client7:
+          ansible_host: 172.16.27.91

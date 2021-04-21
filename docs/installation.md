@@ -31,6 +31,9 @@ director_clients:
   - host: 172.16.27.53
 ```
 
+> An example inventory catalog can be found under
+  `tools/director-inventory-catalog.yaml`.
+
 Once the catalog file is setup, running a cluster wide bootstrap is simple.
 In this example the first catalog option is referencing the unique inputs
 that represent a given data center. The second catalog file is referencing
@@ -92,6 +95,8 @@ all:
         client3:
           ansible_host: 172.16.27.120
 ```
+
+> An example inventory can be found under `tools/ansible-inventory.yaml`.
 
 With the inventory created, run the bootstrap playbook from the **tools** directory.
 
