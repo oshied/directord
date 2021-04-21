@@ -55,7 +55,7 @@ development bootstrap process took **81.23** seconds (1.5 minutes) to complete.
 * Run the Director orchestration command to execute 1000 trivial jobs.
 
 ``` shell
-$ director orchestrate --ignore-cache tools/comparison-orchestration.yaml
+$ director orchestrate --ignore-cache tests/comparison-orchestration.yaml
 ```
 
 Running the comparison orchestration file with a six node test environment
@@ -89,7 +89,7 @@ $ export ANSIBLE_CONFIG=tools/ansible.cfg
 * Run the Ansible playbook command to loop over all 1000 trivial tasks.
 
 ``` shell
-$ ansible-playbook -i tools/ansible-inventory.yaml tools/comparison-loop-playbook.yml
+$ ansible-playbook -i tools/ansible-inventory.yaml tests/comparison-loop-playbook.yml
 ```
 
 This command runs one shell task with 1000 items within a loop.
@@ -104,7 +104,7 @@ returns an execution time of **1947** seconds (32 minutes).
 * Run the Ansible playbook command to execute 1000 trivial tasks.
 
 ``` shell
-$ ansible-playbook -i tools/ansible-inventory.yaml tools/comparison-task-playbook.yml
+$ ansible-playbook -i tools/ansible-inventory.yaml tests/comparison-task-playbook.yml
 ```
 
 This command runs 1000 shell tasks.
@@ -122,7 +122,7 @@ To enable pipelining the export `ANSIBLE_PIPELINING` was set **True**.
 
 ``` shell
 $ export ANSIBLE_PIPELINING=True
-$ ansible-playbook -i tools/ansible-inventory.yaml tools/comparison-task-playbook.yml
+$ ansible-playbook -i tools/ansible-inventory.yaml tests/comparison-task-playbook.yml
 ```
 
 This command runs 1000 shell tasks.
