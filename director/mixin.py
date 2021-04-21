@@ -3,9 +3,12 @@ import os
 import yaml
 import sys
 
-from director import client, utils
+import jinja2
+
+from director import client
 from director import server
 from director import user
+from director import utils
 
 
 class Mixin(object):
@@ -21,6 +24,7 @@ class Mixin(object):
         """
 
         self.args = args
+        self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
 
     @staticmethod
     def exec_orchestartions(
@@ -335,7 +339,7 @@ class Mixin(object):
                 return_jobs.append(job)
         return return_jobs
 
-    def bootstrap_run(self, job_def, quiet=False):
+    def bootstrap_run(self, job_def, catalog, quiet=False):
         """Run a given set of jobs using a defined job definition.
 
         This method requires a job definition which contains the following.
@@ -350,6 +354,8 @@ class Mixin(object):
 
         :param jobs_def: Defined job definition.
         :type jobs_def: Dictionary
+        :param catalog: The job catalog definition.
+        :type catalog: Dictionary
         :param quiet: Enable|Disable quiet mode.
         :type quiet: Boolean
         """
@@ -367,7 +373,7 @@ class Mixin(object):
             ) as conn:
                 ssh, session = conn
                 if key == "RUN":
-                    self.bootstrap_exec(session=session, command=value)
+                    self.bootstrap_exec(session=session, command=value, catalog=catalog)
                 elif key == "ADD":
                     localfile, remotefile = value.split(" ", 1)
                     localfile = self.bootstrap_localfile_padding(localfile)
@@ -416,8 +422,7 @@ class Mixin(object):
         finally:
             ftp_client.close()
 
-    @staticmethod
-    def bootstrap_exec(session, command):
+    def bootstrap_exec(self, session, command, catalog):
         """Run a remote command.
 
         Run a command and check the status. If there's a failure the
@@ -427,9 +432,12 @@ class Mixin(object):
         :type session: Object
         :param command: Plain-text execution string.
         :type command: String
+        :param catalog: The job catalog definition.
+        :type catalog: Dictionary
         """
 
-        session.exec_command(command)
+        t_command = self.blueprint.from_string(command)
+        session.exec_command(t_command.render(**catalog))
         if session.recv_exit_status() != 0:
             stderr = session.recv_stderr(4096)
             raise SystemExit(
@@ -438,22 +446,24 @@ class Mixin(object):
                 )
             )
 
-    def bootstrap_q_processor(self, queue):
+    def bootstrap_q_processor(self, queue, catalog):
         """Run a queing execution thread.
 
         The queue will be processed so long as there are objects to process.
 
         :param queue: SSH connection object.
         :type queue: Object
+        :param catalog: The job catalog definition.
+        :type catalog: Dictionary
         """
 
         while True:
             try:
-                job_def = queue.get(block=False, timeout=1)
+                job_def = queue.get(timeout=3)
             except Exception:
                 break
             else:
-                self.bootstrap_run(job_def=job_def, quiet=True)
+                self.bootstrap_run(job_def=job_def, catalog=catalog, quiet=True)
 
     def _merge_dict(self, base, new):
         """Recursively merge new into base.
@@ -505,7 +515,7 @@ class Mixin(object):
             print("Loading server information")
             for s in self.bootstrap_catalog_entry(entry=director_server):
                 s["key_file"] = self.args.key_file
-                self.bootstrap_run(job_def=s)
+                self.bootstrap_run(job_def=s, catalog=catalog)
 
         director_clients = catalog.get("director_clients")
         if director_clients:
@@ -517,7 +527,7 @@ class Mixin(object):
         cleanup_threads = list()
         for _ in range(self.args.threads):
             t = multiprocessing.Process(
-                target=self.bootstrap_q_processor, args=(q,)
+                target=self.bootstrap_q_processor, args=(q, catalog)
             )
             t.daemon = True
             t.start()

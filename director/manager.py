@@ -68,9 +68,7 @@ class Interface(director.Processor):
 
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
-
-        self.template = jinja2.Environment(loader=jinja2.BaseLoader())
-
+        self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
         self.base_dir = "/etc/director"
         self.public_keys_dir = os.path.join(self.base_dir, "public_keys")
         self.secret_keys_dir = os.path.join(self.base_dir, "private_keys")

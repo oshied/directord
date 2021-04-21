@@ -18,13 +18,15 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   VERSION_INFO="${VERSION_ID%%"."*}"
   if [[ ${ID} == "rhel" ]]; then
     dnf install -y python3 ${TRIPLEO_REPOS}
-    DISTRO="--distro rhel${VERSION_INFO[0]}"
+    DISTRO="--no-stream --distro rhel${VERSION_INFO[0]}"
     tripleo-repos ${DISTRO} -b master current-tripleo ceph
   elif [[ ${ID} == "centos" ]]; then
     dnf install -y python3 ${TRIPLEO_REPOS}
     DISTRO="--distro centos${VERSION_INFO[0]}"
-    if grep -qi "stream" /etc/os-release; then
+    if grep -qi "CentOS Stream" /etc/os-release; then
       DISTRO="--stream ${DISTRO}"
+    else
+      DISTRO="--no-stream ${DISTRO}"
     fi
     tripleo-repos ${DISTRO} -b master current-tripleo ceph
   fi

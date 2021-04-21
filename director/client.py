@@ -169,7 +169,7 @@ class Client(manager.Interface):
         """
 
         if "args" in cache:
-            t_command = self.template.from_string(command)
+            t_command = self.blueprint.from_string(command)
             command = t_command.render(**cache["args"])
 
         info, success = utils.run_command(command=command)
@@ -196,7 +196,7 @@ class Client(manager.Interface):
         """
 
         if "args" in cache:
-            t_workdir = self.template.from_string(workdir)
+            t_workdir = self.blueprint.from_string(workdir)
             workdir = t_workdir.render(**cache["args"])
 
         try:
@@ -251,7 +251,7 @@ class Client(manager.Interface):
                 with open(file_to) as f:
                     file_contents = f.read()
 
-                t_file_contents = self.template.from_string(file_contents)
+                t_file_contents = self.blueprint.from_string(file_contents)
                 file_contents = t_file_contents.render(**cache["args"])
                 with open(file_to, "w") as f:
                     f.write(file_contents)

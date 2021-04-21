@@ -1,6 +1,6 @@
 director_server:
   targets:
-  - host: 172.16.27.108
+  - host: 172.16.27.96
     port: 22
     username: centos
 
@@ -9,7 +9,7 @@ director_clients:
     port: 22
     username: centos
   targets:
-  - host: 172.16.27.108
+  - host: 172.16.27.96
   - host: 172.16.27.129
   - host: 172.16.27.99
   - host: 172.16.27.242

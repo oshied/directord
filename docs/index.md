@@ -36,6 +36,8 @@ fast, stable, and unique deployment engine.
 Getting started is simple, here's the documentation needed to be successful
 with Director.
 
+* [Tutorials](tutorials.md)
+
 * [Overview](overview.md)
 * [Installation](installation.md)
 * [Service Setup](service-setup.md)

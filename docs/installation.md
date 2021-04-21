@@ -47,6 +47,13 @@ $ director bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/director-boo
   defined. While a built-in has been provided as an example, users are
   free to do whatever they see fit to achieve their bootstrap goals.
 
+> All values within a set of catalog files can be used as blueprinted options
+  with commands. This makes it possible to set any key and value within a catalog
+  file and use that option as an argument. This is specifically used in the
+  default bootstrap catalog file to dynamically source the server address for
+  clients; blueprinting is basic jinja and for the purpose of the bootstrap
+  example is used like so `"{{ director_server['targets'][0]['host'] }}"`.
+
 > In a [touchless](containerization.md#touchless-operations) operations
   scenario only the `director_clients` would need to be defined for a bootstrap
   operation as the server would be provided for using the container image.

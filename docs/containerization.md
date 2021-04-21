@@ -46,32 +46,29 @@ When running Director in server mode two things need to happen.
 2. Create a volume for the client to access the server socket.
 
 ``` shell
-sudo mkdir -p /usr/local/share/director
-sudo chown -R "${USER}" /usr/local/share/director
-
+$ mkdir -p ~/local/share/director ~/local/share/director/etc
 $ podman run --hostname director \
              --name director-server \
              --net=host \
              --env DIRECTOR_MODE=server \
-             --volume /etc/director:/etc/director \
-             --volume /usr/local/share/director:/usr/local/share/director \
+             --volume ${HOME}/local/share/director/etc:/etc/director:z \
+             --volume ${HOME}/local/share/director:${HOME}/local/share/director \
              --detach \
+             --user 0 \
              director director
 ```
 
-> NOTE: the volume `--volume /usr/local/share/director:/usr/local/share/director` is
+> NOTE: the volume `--volume ${HOME}/local/share/director:${HOME}/local/share/director` is
   specifically using the full path so that the file system structure within the
   server mirrors that of the local file system. This is important when working
   with artifacts that are not native to the container. While this path is a
   share, it could be any mirrored file system path and works perfectly with
   shared file-systems.
 
-When using this example you can move content into the
-`/usr/local/share/director` home folder.
-
 > Operators following this example will need to copy content on the local
-  system into `~/director` before running jobs that assume read access to
-  artifacts; such as exec `COPY` or `ADD` jobs and all orchestrations.
+  system into `${HOME}/local/share/director` before running jobs that
+  assume read access to artifacts; such as exec `COPY` or `ADD` jobs and
+  all orchestrations.
 
 Example local client action using a containerized server.
 
@@ -80,8 +77,8 @@ $ director --socket-path /tmp/director.sock manage --list-nodes
 ```
 
 > Because the Director server runs in an unprivileged container, it can also
-  run in a root-less container. This also means multiple containerized Director
-  servers can run on a single worker node.
+  run in a root-less container. This also means multiple containerized
+  Director servers can run on a single node, provided `--net=host` isn't used.
 
 #### Running the container in Client mode
 
