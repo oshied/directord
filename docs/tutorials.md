@@ -1,26 +1,26 @@
-## Install Director using Source Scripts
-
-This quick tutorial will show you how to install Director using the development
-script. This script will install Director from source which is suitable for
-development environments.
-
-{% include youtubePlayer.html id="dQw4w9WgXcQ" %}
-
 ## Install Director using Package Scripts
 
 This quick tutorial will show you how to install Director using nothing more
 than the scripts that come with it. The installation will follow a production
 like workflow and will allow director to work in a secure environment.
 
-{% include youtubePlayer.html id="dQw4w9WgXcQ" %}
+{% include youtubePlayer.html id="Xy9LTjSMaPc" %}
 
-## Install Director using a Container
+## Install Director using Source Scripts
+
+This quick tutorial will show you how to install Director using the development
+script. This script will install Director from source which is suitable for
+development environments.
+
+{% include youtubePlayer.html id="uz8bdwV17Gc" %}
+
+## Deploy Director using a Container
 
 This quick tutorial will show you how to get Director up and running within a
 container. Specifically I'll show you how to get Director running in a rootless
 Podman container.
 
-{% include youtubePlayer.html id="dQw4w9WgXcQ" %}
+{% include youtubePlayer.html id="nWtgH57PzRQ" %}
 
 ## Creating a Director Server Service
 
