@@ -33,10 +33,11 @@ fast, stable, and unique deployment engine.
 
 ### Getting Started
 
-Getting started is simple, here's the documentation needed to be successful
-with Director.
+Getting started is simple.
 
 * [Tutorials](tutorials.md)
+
+Here's the documentation needed to be successful with Director.
 
 * [Overview](overview.md)
 * [Installation](installation.md)
