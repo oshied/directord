@@ -27,7 +27,7 @@ class Mixin(object):
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
 
     @staticmethod
-    def exec_orchestartions(
+    def exec_orchestrations(
         user_exec,
         orchestrations,
         defined_targets=None,
@@ -129,7 +129,7 @@ class Mixin(object):
                     defined_targets = list(set(self.args.target))
 
                 return_data.extend(
-                    self.exec_orchestartions(
+                    self.exec_orchestrations(
                         user_exec=user_exec,
                         orchestrations=orchestrations,
                         defined_targets=defined_targets,
