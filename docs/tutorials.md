@@ -27,14 +27,14 @@ Podman container.
 This tutorial will show you how to setup Director Server to run as a systemd
 Service.
 
-{% include youtubePlayer.html id="dQw4w9WgXcQ" %}
+{% include youtubePlayer.html id="YmdSCTVSfX8" %}
 
 ## Creating a Director Client Service
 
 This tutorial will show you how to setup Director Client to run as a systemd
 Service.
 
-{% include youtubePlayer.html id="dQw4w9WgXcQ" %}
+{% include youtubePlayer.html id="2RHaG4fnVTU" %}
 
 ## Bootstrap Director Cluster
 
@@ -42,13 +42,13 @@ This tutorial will show you how to bootstrap a secure cluster with Director and
 highlight hot to validate the cluster's encryption as well as talk through some
 of the finer points of a bootstrap operation.
 
-{% include youtubePlayer.html id="dQw4w9WgXcQ" %}
+{% include youtubePlayer.html id="OQZdQJFVmCk" %}
 
 ## Run a Director Execution
 
 This tutorial will show you how to execute commands across a Director cluster.
 
-{% include youtubePlayer.html id="dQw4w9WgXcQ" %}
+{% include youtubePlayer.html id="hMdA3BXSBOs" %}
 
 ## Run a Director Orchestration
 
