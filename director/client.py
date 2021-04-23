@@ -3,7 +3,6 @@ import json
 import os
 import pwd
 import struct
-import tempfile
 import time
 import yaml
 
@@ -534,7 +533,9 @@ class Client(manager.Interface):
 
         self.bind_job = self.job_connect()
         self.bind_transfer = self.transfer_connect()
-        with diskcache.Cache(tempfile.gettempdir()) as cache:
+        # Ensure that the cache path exists before executing.
+        os.makedirs(self.args.cache_path, exist_ok=True)
+        with diskcache.Cache(self.args.cache_path) as cache:
             while True:
                 self._job_loop(cache=cache)
 

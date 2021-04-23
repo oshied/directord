@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import sys
-import time
 import yaml
 
 import tabulate
@@ -84,6 +83,18 @@ def _args():
         metavar="STRING",
         default=str(
             os.getenv("DIRECTOR_SOCKET_PATH", "/var/run/director.sock")
+        ),
+        type=str,
+    )
+    parser.add_argument(
+        "--cache-path",
+        help=(
+            "Client cache path."
+            " Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(
+            os.getenv("DIRECTOR_CACHE_PATH", "/var/cache/director")
         ),
         type=str,
     )
