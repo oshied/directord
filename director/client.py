@@ -171,7 +171,10 @@ class Client(manager.Interface):
             t_command = self.blueprint.from_string(command)
             command = t_command.render(**cache["args"])
 
-        info, success = utils.run_command(command=command)
+        info, success = utils.run_command(
+            command=command,
+            env=cache.get("env")
+        )
 
         if stdout_arg:
             clean_info = info.decode().strip()
@@ -418,14 +421,17 @@ class Client(manager.Interface):
         elif command in [b"ARG", b"ENV"]:
             conn.start_processing()
             cache_args = dict()
-            if "args" in cache:
-                cache_args = cache["args"]
-            for k, v in job["args"].items():
+            cache_type = "{}s".format(command.decode().lower())
+            if cache_type in cache:
+                cache_args = cache[cache_type]
+            for k, v in job[cache_type].items():
                 cache_args[k] = v
             else:
-                cache["args"] = cache_args
-
-            return (b"ARG(s) added to Cache", True)
+                cache.set(cache_type, cache_args, expire=28800)
+            return (
+                "{} added to Cache".format(cache_type).encode(),
+                True
+            )
         elif command == b"CACHEFILE":
             conn.start_processing()
             try:

@@ -37,11 +37,19 @@ argument.
 
 Syntax: `KEY VALUE`
 
-Sets a cached item within the environment.
+Sets a cached item within the argument system, which allows for the brace
+expansion of items within a command or through the blueprint interface.
+
+> Argument values are cached for 12 hours.
 
 ##### `ENV`
 
-The same as `ARG`.
+Syntax: `KEY VALUE`
+
+Sets a cached item within the environment system used to augment command
+line execution.
+
+> Environmental values are cached for 12 hours.
 
 ##### `ADD`
 

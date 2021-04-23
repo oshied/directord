@@ -40,7 +40,11 @@ def run_command(
     :returns: Truple
     """
 
-    if env is None:
+    if env:
+        _env = dict(os.environ)
+        _env.update(env)
+        env = _env
+    else:
         env = os.environ
 
     stdout = subprocess.PIPE

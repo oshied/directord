@@ -145,8 +145,9 @@ class User(manager.Interface):
         elif verb == "FROM":
             raise NotImplementedError()
         elif verb in ["ARG", "ENV"]:
+            cache_type = "{}s".format(verb.lower())
             parser.add_argument(
-                "args",
+                cache_type,
                 nargs="+",
                 action="append",
                 help="Set a given argument. KEY VALUE",
@@ -154,7 +155,7 @@ class User(manager.Interface):
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
-            data["args"] = dict([" ".join(args.args[0]).split(" ", 1)])
+            data[cache_type] = dict([" ".join(args.args[0]).split(" ", 1)])
         elif verb == "LABEL":
             raise NotImplementedError()
         elif verb == "USER":
