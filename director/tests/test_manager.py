@@ -49,9 +49,6 @@ class TestUtils(unittest.TestCase):
     def test_socket_connect(self):
         pass
 
-    def test_run_threads(self):
-        pass
-
     def test_socket_multipart_send(self):
         pass
 

@@ -31,6 +31,7 @@ setuptools.setup(
         "pyyaml",
         "pyzmq",
         "tabulate",
+        "tenacity",
     ],
     extras_require={"ui": ["flask"], "dev": ["etcd3"]},
     classifiers=[

@@ -5,6 +5,7 @@ import socket
 import time
 import uuid
 
+import tenacity
 import zmq
 import zmq.auth
 from zmq.auth.thread import ThreadAuthenticator
@@ -179,6 +180,13 @@ class Interface(director.Processor):
 
         return bind
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(TimeoutError),
+        wait=tenacity.wait_fixed(5),
+        before_sleep=tenacity.before_sleep_log(
+            director.getLogger(name="director"), logging.WARN
+        ),
+    )
     def socket_connect(
         self,
         socket_type,
@@ -191,6 +199,10 @@ class Interface(director.Processor):
 
         When send_ready is set True and the socket_type is not SUB or PULL,
         the bound socket will send a single SOH ready message.
+
+        > A connection back to the server will wait 10 seconds for an ack
+          before going into a retry loop. This is done to forcefully cycle
+          the connection object to reset.
 
         :param socket_type: Set the Socket type, typically defined using a ZMQ
                             constant.
@@ -249,39 +261,21 @@ class Interface(director.Processor):
 
         bind.linger = 0
         self.poller.register(bind, poller_type)
-        bind.connect(
-            "{connection}:{port}".format(
-                connection=connection,
-                port=port,
+        with self.timeout(time=10, job_id="Socket connect", reraise=True):
+            bind.connect(
+                "{connection}:{port}".format(
+                    connection=connection,
+                    port=port,
+                )
             )
-        )
 
         if send_ready and socket_type not in [zmq.SUB, zmq.PULL]:
             self.socket_multipart_send(
                 zsocket=bind, control=self.heartbeat_ready
             )
 
+        self.log.info("Socket connected to [ %s ].", connection)
         return bind
-
-    def run_threads(self, threads):
-        """Execute process objects from an array.
-
-        The array of threads are processed and started in a "daemon" mode.
-        Once started the thread object is added into a cleanup array which
-        is then joined.
-
-        :param threads: An array of Process objects.
-        :type threads: List
-        """
-
-        cleanup_threads = list()
-        for t in threads:
-            t.daemon = True
-            t.start()
-            cleanup_threads.append(t)
-
-        for t in cleanup_threads:
-            t.join()
 
     def socket_multipart_send(
         self,

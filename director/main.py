@@ -88,14 +88,9 @@ def _args():
     )
     parser.add_argument(
         "--cache-path",
-        help=(
-            "Client cache path."
-            " Default: %(default)s"
-        ),
+        help=("Client cache path." " Default: %(default)s"),
         metavar="STRING",
-        default=str(
-            os.getenv("DIRECTOR_CACHE_PATH", "/var/cache/director")
-        ),
+        default=str(os.getenv("DIRECTOR_CACHE_PATH", "/var/cache/director")),
         type=str,
     )
     subparsers = parser.add_subparsers(

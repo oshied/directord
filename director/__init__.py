@@ -165,6 +165,7 @@ class Processor(object):
     job_queue = multiprocessing.Queue()
     thread = multiprocessing.Process
     manager = multiprocessing.Manager()
+    processes = list()
 
     def __init__(self):
         """Initialize Processor class creating all required manager objects.
@@ -176,6 +177,25 @@ class Processor(object):
         self.workers = self.manager.dict()
         self.return_jobs = self.manager.dict()  # This could likely be etcd
         self.log = getLogger(name="director")
+
+    def run_threads(self, threads):
+        """Execute process objects from an array.
+
+        The array of threads are processed and started in a "daemon" mode.
+        Once started the thread object is added into a cleanup array which
+        is then joined.
+
+        :param threads: An array of Process objects.
+        :type threads: List
+        """
+
+        for t in threads:
+            t.daemon = True
+            self.processes.append(t)
+            t.start()
+
+        for t in self.processes:
+            t.join()
 
     def wq_prune(self, workers):
         """Given a Manager.Dictionary object return a pruned hash.
@@ -272,13 +292,15 @@ class Processor(object):
         return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
 
     @contextlib.contextmanager
-    def timeout(self, time, job_id):
+    def timeout(self, time, job_id, reraise=False):
         """Registers a context manager to raise whenever a timeout occurs.
 
         :param time: Time in seconds before an alarm is raised.
         :type time: Integer
         :param job_id: Job UUID
         :type job_id: String
+        :param reraise: Reraise the timeout exception
+        :type reraise: Boolean
         :yields:
         """
 
@@ -292,6 +314,8 @@ class Processor(object):
                     time, job_id
                 )
             )
+            if reraise:
+                raise TimeoutError
         finally:
             signal.signal(signal.SIGALRM, signal.SIG_IGN)
 

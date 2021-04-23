@@ -373,7 +373,9 @@ class Mixin(object):
             ) as conn:
                 ssh, session = conn
                 if key == "RUN":
-                    self.bootstrap_exec(session=session, command=value, catalog=catalog)
+                    self.bootstrap_exec(
+                        session=session, command=value, catalog=catalog
+                    )
                 elif key == "ADD":
                     localfile, remotefile = value.split(" ", 1)
                     localfile = self.bootstrap_localfile_padding(localfile)
@@ -463,7 +465,9 @@ class Mixin(object):
             except Exception:
                 break
             else:
-                self.bootstrap_run(job_def=job_def, catalog=catalog, quiet=True)
+                self.bootstrap_run(
+                    job_def=job_def, catalog=catalog, quiet=True
+                )
 
     def _merge_dict(self, base, new):
         """Recursively merge new into base.

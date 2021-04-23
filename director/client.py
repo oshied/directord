@@ -57,7 +57,7 @@ class Client(manager.Interface):
             send_ready=False,
         )
 
-    def heatbeat_connect(self):
+    def heartbeat_connect(self):
         """Connect to a heartbeat socket and return the socket.
 
         :returns: Object
@@ -82,7 +82,7 @@ class Client(manager.Interface):
         self.log.debug("Unregistered heartbeat.")
         self.bind_heatbeat.close()
         self.log.debug("Heartbeat connection closed.")
-        self.bind_heatbeat = self.heatbeat_connect()
+        self.bind_heatbeat = self.heartbeat_connect()
         return self.get_heartbeat
 
     def run_heartbeat(self):
@@ -96,7 +96,7 @@ class Client(manager.Interface):
         times the connection will be reset after a failure cooldown.
         """
 
-        self.bind_heatbeat = self.heatbeat_connect()
+        self.bind_heatbeat = self.heartbeat_connect()
         heartbeat_at = self.get_heartbeat
         heartbeat_misses = 0
         while True:

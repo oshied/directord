@@ -235,6 +235,9 @@ class TestProcessor(unittest.TestCase):
         sha1 = self.processor.object_sha1(obj={"test": "value"})
         self.assertEqual(sha1, "4e0b1f3b9b1e08306ab4e388a65847c73a902097")
 
+    def test_run_threads(self):
+        pass
+
 
 class TestUnixSocket(unittest.TestCase):
     def setUp(self):
