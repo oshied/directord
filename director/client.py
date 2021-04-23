@@ -172,8 +172,7 @@ class Client(manager.Interface):
             command = t_command.render(**cache["args"])
 
         info, success = utils.run_command(
-            command=command,
-            env=cache.get("env")
+            command=command, env=cache.get("envs")
         )
 
         if stdout_arg:
@@ -428,10 +427,7 @@ class Client(manager.Interface):
                 cache_args[k] = v
             else:
                 cache.set(cache_type, cache_args, expire=28800)
-            return (
-                "{} added to Cache".format(cache_type).encode(),
-                True
-            )
+            return "{} added to Cache".format(cache_type).encode(), True
         elif command == b"CACHEFILE":
             conn.start_processing()
             try:

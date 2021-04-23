@@ -155,7 +155,8 @@ class User(manager.Interface):
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
-            data[cache_type] = dict([" ".join(args.args[0]).split(" ", 1)])
+            cache_obj = getattr(args, cache_type)
+            data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
         elif verb == "LABEL":
             raise NotImplementedError()
         elif verb == "USER":

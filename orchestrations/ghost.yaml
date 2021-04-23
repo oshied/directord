@@ -1,0 +1,96 @@
+- jobs:
+  - ARG: mysql_root_password secrete
+  - ARG: ghost_db_pw SuperSecrete
+  - ARG: ghost_db_host localhost
+  - ARG: ghost_db_source localhost
+  - ARG: ghost_user_name ghost
+  - ARG: domain_name ghost.localdomain
+  - ARG: domain_proto http
+  - ARG: domain_port 2368
+
+  ### Target run environment
+
+  # Create our NGINX config for our ghost proxy
+  - COPY: --blueprint files/nginx-ghost /etc/nginx/conf.d/{{ domain_name }}.conf
+
+  # # Ensure out http port is open
+  # EXPOSE 80
+
+  # # Ensure out https port is open
+  # EXPOSE 443
+
+  # Ensure we're allowing selinux to play nicely with an http environment
+  - RUN: --stdout-arg selinux_enforcing getenforce || echo "false")
+  - RUN: >-
+      if [[ {{ selinux_enforcing }} == "Enforcing" ]]; then \
+        semanage port --list | grep "{{ domain_port }}" || semanage port -a -t http_port_t -p tcp {{ domain_port }}; \
+      fi
+
+  - RUN: systemctl restart nginx.service
+
+  # Ghost needs sudo privileges, this will allow that to happen via the ghost-application group
+  - RUN: >-
+      grep -w '^ghost-application\:.*' /etc/group || groupadd --system ghost-application
+  - RUN: >-
+      echo '%ghost-application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/ghost-application
+  - RUN: >-
+      chmod 0440 /etc/sudoers.d/ghost-application
+
+  # Creates a new environment variable for the application database name
+  - RUN: --stdout-arg db_name echo "{{ domain_name }}" | sed -e 's/\./_/g' -e 's/-/_/g'
+
+  # Create application user
+  - RUN: >-
+      grep -w "^{{ ghost_user_name }}\:.*" /etc/passwd || adduser --home-dir "/var/www/{{ domain_name }}" \
+                                                               --comment "ghost application user" \
+                                                               --groups ghost-application,systemd-journal \
+                                                               --create-home \
+                                                               --shell /bin/bash \
+                                                               "{{ ghost_user_name }}"
+
+  # Globally install ghost-cli
+  - RUN: command -v ghost || npm install ghost-cli@latest -g
+
+  # Ensure our client mariadb client libs are installed.
+  - RUN: dnf install -y mariadb
+
+  # Create the application database
+  - RUN: >-
+      [ -f /var/local/{{ domain_name }}-db-created ] || \
+      (mysql -u root -h {{ ghost_db_host }} -p{{ mysql_root_password }} -e "CREATE DATABASE {{ db_name }}" && \
+      touch /var/local/{{ domain_name }}-db-created)
+
+  - RUN: >-
+      [ -f /var/local/{{ domain_name }}-db-user-created ] || \
+      (mysql -u root -h {{ ghost_db_host }} -p{{ mysql_root_password }} -e "CREATE USER '{{ db_name }}'@'{{ ghost_db_source }}' IDENTIFIED BY '{{ ghost_db_pw }}'" && \
+      mysql -u root -h {{ ghost_db_host }} -p{{ mysql_root_password }} -e "GRANT ALL PRIVILEGES ON {{ db_name }}.* TO '{{ db_name }}'@'{{ ghost_db_source }}'" && \
+      touch /var/local/{{ domain_name }}-db-user-created)
+
+  # Change to our application work directory
+  - WORKDIR: /var/www/{{ domain_name }}
+
+  # Run application setup
+  - USER: {{ ghost_user_name }}
+  - RUN: [ -f config.production.json ] || \
+         ghost install local \
+         --url "{{ domain_proto }}://{{ domain_name }}" \
+         --port "{{ domain_port }}" \
+         --db mysql \
+         --dbhost "{{ ghost_db_host }}" \
+         --dbuser "{{ db_name }}" \
+         --dbpass "{{ ghost_db_pw }}" \
+         --dbname "{{ db_name }}" \
+         --no-prompt \
+         --no-stack \
+         --no-color \
+         --no-start
+         --auto \
+         --process systemd \
+         --pname "{{ db_name }}"
+
+  - RUN: >-
+      [ -f config.production.json ] || mv config.development.json config.production.json
+
+  # Generate an entrypoint for the application
+  ENV NODE_ENV=production
+  ENTRYPOINT ["/usr/bin/node", "/usr/bin/ghost", "run"]
