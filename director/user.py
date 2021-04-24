@@ -194,6 +194,19 @@ class User(manager.Interface):
                 self.sanitized_args(execute=execute)
             )
             data["cachefile"] = args.cachefile
+        elif verb == "CACHEEVICT":
+            parser.add_argument(
+                "cacheevict",
+                help=(
+                    "Evict all tagged cached items from a client machine."
+                    " Typical tags are, but not limited to:"
+                    " [args, envs, jobs, parents, ...]"
+                ),
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["cacheevict"] = args.cacheevict
         else:
             raise SystemExit("No known verb defined.")
 

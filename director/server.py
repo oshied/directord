@@ -255,15 +255,21 @@ class Server(manager.Interface):
         poller_interval = 1024
 
         while True:
-            if poller_time > poller_time + 32:
-                poller_interval = 1024
-            elif poller_time > poller_time + 64:
+            if time.time() > poller_time + 64:
+                if poller_interval != 2048:
+                    self.log.info("Director server entering idle state.")
                 poller_interval = 2048
+
+            elif time.time() > poller_time + 32:
+                if poller_interval != 1024:
+                    self.log.info("Director server ramping down.")
+                poller_interval = 1024
 
             socks = dict(self.poller.poll(poller_interval))
 
             if socks.get(self.bind_transfer) == zmq.POLLIN:
                 poller_interval, poller_time = 128, time.time()
+
                 (
                     identity,
                     msg_id,

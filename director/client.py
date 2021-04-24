@@ -167,22 +167,20 @@ class Client(manager.Interface):
         :returns: tuple
         """
 
-        if "args" in cache:
-            t_command = self.blueprint.from_string(command)
-            command = t_command.render(**cache["args"])
-
+        command = self.blueprinter(content=command, values=cache.get("args"))
         info, success = utils.run_command(
             command=command, env=cache.get("envs")
         )
 
         if stdout_arg:
             clean_info = info.decode().strip()
-            if "args" in cache:
-                cache_args = cache["args"]
-                cache_args[stdout_arg] = clean_info
-                cache["args"] = cache_args
-            else:
-                cache["args"] = {stdout_arg: clean_info}
+            self.set_cache(
+                cache=cache,
+                key="args",
+                value={stdout_arg: clean_info},
+                value_update=True,
+                tag="args",
+            )
 
         return info.strip() or command, success
 
@@ -196,9 +194,7 @@ class Client(manager.Interface):
         :returns: tuple
         """
 
-        if "args" in cache:
-            t_workdir = self.blueprint.from_string(workdir)
-            workdir = t_workdir.render(**cache["args"])
+        workdir = self.blueprinter(content=workdir, values=cache.get("args"))
 
         try:
             os.makedirs(workdir, exist_ok=True)
@@ -247,13 +243,13 @@ class Client(manager.Interface):
         :returns: tuple
         """
 
-        def blueprinter():
-            if blueprint and "args" in cache:
+        def _blueprinter():
+            if blueprint:
                 with open(file_to) as f:
-                    file_contents = f.read()
+                    file_contents = self.blueprinter(
+                        content=f.read(), values=cache.get("args")
+                    )
 
-                t_file_contents = self.blueprint.from_string(file_contents)
-                file_contents = t_file_contents.render(**cache["args"])
                 with open(file_to, "w") as f:
                     f.write(file_contents)
 
@@ -270,7 +266,7 @@ class Client(manager.Interface):
                 msg_id=job_id.encode(),
                 control=self.transfer_end,
             )
-            blueprinter()
+            _blueprinter()
             return info, True
         else:
             self.log.debug(
@@ -306,7 +302,7 @@ class Client(manager.Interface):
             self.log.critical("Failure when creating file. FAILURE:%s", e)
             return "Failure when creating file", False
 
-        blueprinter()
+        _blueprinter()
         info = self.file_sha1(file_to)
         success = True
         if user:
@@ -373,8 +369,8 @@ class Client(manager.Interface):
 
         # Set the parent ID value to True, if set False all jobs with
         # this parent ID will halt and fail.
-        if job_parent_id and job_parent_id in cache:
-            if cache[job_parent_id] is False:
+        if job_parent_id and cache.get(job_parent_id):
+            if cache.get(job_parent_id) is False:
                 status = (
                     "Job [ {} ] was not allowed to run because there"
                     " was a failure under this partent ID"
@@ -382,12 +378,17 @@ class Client(manager.Interface):
                 )
                 self.log.error(status)
                 conn.info = status.encode()
-                conn.job_state = cache[job_sha1] = self.job_failed
+                conn.job_state = self.job_failed
+                self.set_cache(
+                    cache=cache, key=job_sha1, value=conn.job_state, tag="jobs"
+                )
                 return None, None
         else:
             # Parent ID information is set to automatically expire
             # after 24 hours.
-            cache.add(key=job_parent_id, value=True, expire=86400)
+            self.set_cache(
+                cache=cache, key=job_parent_id, value=True, tag="parents"
+            )
 
         if cached:
             # TODO: Figure out how to skip cache when file transfering.
@@ -419,14 +420,14 @@ class Client(manager.Interface):
             return self._run_workdir(workdir=job["workdir"], cache=cache)
         elif command in [b"ARG", b"ENV"]:
             conn.start_processing()
-            cache_args = dict()
             cache_type = "{}s".format(command.decode().lower())
-            if cache_type in cache:
-                cache_args = cache[cache_type]
-            for k, v in job[cache_type].items():
-                cache_args[k] = v
-            else:
-                cache.set(cache_type, cache_args, expire=28800)
+            self.set_cache(
+                cache=cache,
+                key=cache_type,
+                value=job[cache_type],
+                value_update=True,
+                tag=cache_type,
+            )
             return "{} added to Cache".format(cache_type).encode(), True
         elif command == b"CACHEFILE":
             conn.start_processing()
@@ -436,14 +437,22 @@ class Client(manager.Interface):
             except Exception as e:
                 return str(e), False
             else:
-                if "args" in cache:
-                    cache_args = cache["args"]
-                    cache_args.update(cachefile_args)
-                    cache["args"] = cache_args
-                else:
-                    cache["args"] = cachefile_args
-
+                self.set_cache(
+                    cache=cache,
+                    key="args",
+                    value=cachefile_args,
+                    value_update=True,
+                    tag="args",
+                )
                 return b"Cache file loaded", True
+        elif command == b"CACHEEVICT":
+            conn.start_processing()
+            tag = job["cacheevict"]
+            evicted = cache.evict(tag)
+            return (
+                "Evicted {} items, tagged {}".format(evicted, tag).encode(),
+                True
+            )
         else:
             self.log.warn(
                 "Unknown command - COMMAND:%s ID:%s",
@@ -452,94 +461,182 @@ class Client(manager.Interface):
             )
             return None, None
 
-    def _job_loop(self, cache):
-        """Execute the job loop.
+    def blueprinter(self, content, values):
+        """Return blue printed content.
 
-        > When a file transfer is initiated the client will enter a loop
-          waiting for data chunks until an `transfer_end` signal is passed.
+        :param content: A string item that will be interpreted and blueprinted.
+        :type content: String
+        :param values: Dictionary items that will be used to render a
+                       blueprinted item.
+        :type values: Dictionary
+        :returns: String
+        """
+
+        if values:
+            _contents = self.blueprint.from_string(content)
+            return _contents.render(**values)
+        else:
+            return content
+
+    @staticmethod
+    def set_cache(
+        cache, key, value, value_update=False, expire=28800, tag=None
+    ):
+        """Set a cached item.
 
         :param cache: Cached access object.
         :type cache: Object
+        :param key: Key for the cached item.
+        :type key: String
+        :param value: Value for the cached item.
+        :type value: ANY
+        :param value_update: Instructs the method to update a Dictionary with
+                             another dictionary.
+        :type value_update: Boolean
+        :param expire: Sets the expire time, defaults to 12 hours.
+        :type expire: Integer
+        :param tag: Sets the index for a given cached item.
+        :type tag: String
         """
 
-        socks = dict(self.poller.poll(128))
-        if self.bind_job in socks:
-            (
-                _,
-                _,
-                command,
-                data,
-                info,
-            ) = self.socket_multipart_recv(zsocket=self.bind_job)
-            job = json.loads(data.decode())
-            job_id = job["task"]
-            job_sha1 = job.get("task_sha1sum")
-            self.log.info("Job received {}".format(job_id))
-            self.socket_multipart_send(
-                zsocket=self.bind_job,
-                msg_id=job_id.encode(),
-                control=self.job_ack,
-            )
+        if value_update:
+            _value = cache.pop(key, default=dict())
+            _value.update(value)
+            value = _value
 
-            job_skip_cache = job.get(
-                "skip_cache", job.get("ignore_cache", False)
-            )
-
-            job_parent_id = job.get("parent_id")
-
-            cache_hit = (
-                not job_skip_cache and cache.get(job_sha1) == self.job_end
-            )
-
-            # Caching does not work for transfers at this stage.
-            cache_allowed = command not in [b"ADD", b"COPY", b"ARG", b"ENV"]
-            cached = cache_hit and cache_allowed
-            success, status, state = False, None, self.nullbyte
-            with utils.ClientStatus(
-                socket=self.bind_job, job_id=job_id.encode(), ctx=self
-            ) as c:
-                with self.timeout(time=job.get("timeout", 600), job_id=job_id):
-                    status, success = self._job_executor(
-                        conn=c,
-                        cache=cache,
-                        info=info,
-                        job=job,
-                        job_parent_id=job_parent_id,
-                        job_id=job_id,
-                        job_sha1=job_sha1,
-                        cached=cached,
-                        command=command,
-                    )
-
-                if status:
-                    if not isinstance(status, bytes):
-                        status = status.encode()
-                    c.info = status
-
-                if success is False:
-                    state = c.job_state = self.job_failed
-                    self.log.error("Job failed {}".format(job_id))
-                    cache.set(key=job_parent_id, value=False, expire=86400)
-                elif success is True:
-                    state = c.job_state = self.job_end
-                    self.log.info("Job complete {}".format(job_id))
-
-            cache[job_sha1] = state
+        cache.set(key, value, tag=tag, expire=expire)
 
     def run_job(self):
         """Job entry point.
 
         This creates a cached access object, connects to the socket and begins
         the loop.
+
+        > When a file transfer is initiated the client will enter a loop
+          waiting for data chunks until an `transfer_end` signal is passed.
+
+        * Initial poll interval is 1024, maxing out at 2048. When work is
+          present, the poll interval is 128.
         """
 
         self.bind_job = self.job_connect()
         self.bind_transfer = self.transfer_connect()
+        poller_time = time.time()
+        poller_interval = 1024
+        cache_check_time = time.time()
+
         # Ensure that the cache path exists before executing.
         os.makedirs(self.args.cache_path, exist_ok=True)
         with diskcache.Cache(self.args.cache_path) as cache:
             while True:
-                self._job_loop(cache=cache)
+                if time.time() > poller_time + 64:
+                    if poller_interval != 2048:
+                        self.log.info("Director client entering idle state.")
+                    poller_interval = 2048
+
+                elif time.time() > poller_time + 32:
+                    if poller_interval != 1024:
+                        self.log.info("Director client ramping down.")
+                    poller_interval = 1024
+
+                if time.time() > cache_check_time + 4096:
+                    self.log.info(
+                        "Current estimated cache size: %s KiB",
+                        cache.volume() / 1024,
+                    )
+                    cache.cull()
+                    warnings = cache.check()
+                    if warnings:
+                        self.log.warn(
+                            "Client cache noticed %s warnings.", len(warnings)
+                        )
+                        for item in warnings:
+                            self.log.warn(
+                                "Client Cache Warning: [ %s ].",
+                                str(item.message),
+                            )
+                    cache_check_time = time.time()
+
+                if self.bind_job in dict(self.poller.poll(poller_interval)):
+                    poller_interval, poller_time = 128, time.time()
+                    (
+                        _,
+                        _,
+                        command,
+                        data,
+                        info,
+                    ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                    job = json.loads(data.decode())
+                    job_id = job["task"]
+                    job_sha1 = job.get("task_sha1sum")
+                    self.log.info("Job received {}".format(job_id))
+                    self.socket_multipart_send(
+                        zsocket=self.bind_job,
+                        msg_id=job_id.encode(),
+                        control=self.job_ack,
+                    )
+
+                    job_skip_cache = job.get(
+                        "skip_cache", job.get("ignore_cache", False)
+                    )
+
+                    job_parent_id = job.get("parent_id")
+
+                    cache_hit = (
+                        not job_skip_cache
+                        and cache.get(job_sha1) == self.job_end
+                    )
+
+                    # Caching does not work for transfers at this stage.
+                    cache_allowed = command not in [
+                        b"ADD",
+                        b"COPY",
+                        b"ARG",
+                        b"ENV",
+                        b"CACHEFILE",
+                        b"CACHEEVICT",
+                    ]
+                    cached = cache_hit and cache_allowed
+                    success, status, state = False, None, self.nullbyte
+                    with utils.ClientStatus(
+                        socket=self.bind_job, job_id=job_id.encode(), ctx=self
+                    ) as c:
+                        with self.timeout(
+                            time=job.get("timeout", 600), job_id=job_id
+                        ):
+                            status, success = self._job_executor(
+                                conn=c,
+                                cache=cache,
+                                info=info,
+                                job=job,
+                                job_parent_id=job_parent_id,
+                                job_id=job_id,
+                                job_sha1=job_sha1,
+                                cached=cached,
+                                command=command,
+                            )
+
+                        if status:
+                            if not isinstance(status, bytes):
+                                status = status.encode()
+                            c.info = status
+
+                        if success is False:
+                            state = c.job_state = self.job_failed
+                            self.log.error("Job failed {}".format(job_id))
+                            self.set_cache(
+                                cache=cache,
+                                key=job_parent_id,
+                                value=False,
+                                tag="parents",
+                            )
+                        elif success is True:
+                            state = c.job_state = self.job_end
+                            self.log.info("Job complete {}".format(job_id))
+
+                    self.set_cache(
+                        cache=cache, key=job_sha1, value=state, tag="jobs"
+                    )
 
     def worker_run(self):
         """Run all work related threads.

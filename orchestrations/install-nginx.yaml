@@ -1,0 +1,13 @@
+# Install packages
+- jobs:
+  - RUN: dnf install -y nginx
+
+  - WORKDIR: /var/www
+
+  # Ensure we're allowing selinux to play nicely with an http environment
+  - RUN: >-
+      semanage permissive --list | grep httpd_t || semanage permissive -a httpd_t
+
+  # Start our webserver
+  - RUN: systemctl start nginx.service
+  - RUN: systemctl enable nginx.service

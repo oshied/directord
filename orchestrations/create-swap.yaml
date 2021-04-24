@@ -1,0 +1,9 @@
+
+# Create a swap file and enable it
+- jobs:
+  - RUN: dd if=/dev/zero of=/swapfile bs=1M count=2048
+  - RUN: chmod 600 /swapfile
+  - RUN: mkswap /swapfile
+  - RUN: swapon /swapfile
+  - RUN: grep -q "/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" | tee -a /etc/fstab
+  - RUN: sysctl -w vm.swappiness=10 > /etc/sysctl.d/99-swap.conf

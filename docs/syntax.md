@@ -89,6 +89,16 @@ argument cache. While cached arguments can easily be defined using the `ARG` or
 `ENV` verb, the `CACHEFILE` verb provides a way to load thousands of arguments
 using a single action.
 
+##### `CACHEEVICT`
+
+Syntax: `STRING`
+
+Evicts all cached items from a given tag. Built-in tags are: **jobs**,
+**parents**, **args**, **envs**.
+
+While all cached items have a TTL of 12 hours, this method is useful to purge
+items on demand.
+
 ## Extra options
 
 Every job has the ability to skip a cache hit should one be present on the
