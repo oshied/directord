@@ -23,26 +23,26 @@
   - RUN: systemctl restart nginx.service
 
   # Ghost needs sudo privileges, this will allow that to happen via the ghost-application group
-  - RUN: |-
+  - RUN: >-
       groupadd --system ghost-application || true
 
-  - RUN: |-
+  - RUN: >-
       echo '%ghost-application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/ghost-application
 
-  - RUN: |-
-      chmod 0440 /etc/sudoers.d/ghost-application
+  - RUN: chmod 0440 /etc/sudoers.d/ghost-application
 
   # Creates a new environment variable for the application database name
   - RUN: --stdout-arg db_name echo "{{ domain_name }}" | sed -e 's/\./_/g' -e 's/-/_/g'
 
   # Create application user
-  - RUN: |-
-      adduser --home-dir "/var/www/{{ domain_name }}" \
-              --comment "ghost application user" \
-              --groups ghost-application,systemd-journal \
-              --create-home \
-              --shell /bin/bash \
-              "{{ ghost_user_name }}" || true
+  - RUN: >-
+      adduser
+      --home-dir "/var/www/{{ domain_name }}"
+      --comment "ghost application user"
+      --groups ghost-application,systemd-journal
+      --create-home
+      --shell /bin/bash
+      "{{ ghost_user_name }}" || true
 
   # Globally install ghost-cli
   - RUN: command -v ghost || npm install ghost-cli@latest -g
@@ -82,6 +82,12 @@
       [ -f /var/www/{{ domain_name }}/config.production.json ] ||
       su --preserve-environment {{ ghost_user_name }} -c "mv /var/www/{{ domain_name }}/config.development.json /var/www/{{ domain_name }}/config.production.json"
 
-  # Generate an entrypoint for the application
-  ENV NODE_ENV=production
-  ENTRYPOINT ["/usr/bin/node", "/usr/bin/ghost", "run"]
+  - ENV: NODE_ENV production
+
+  - ADD: --blueprint files/ghost-systemd.service /etc/systemd/system/ghost-{{ domain_name | replace(".", "-") }}.service
+
+  - RUN: systemctl daemon-reload
+
+  - RUN: systemctl start ghost-{{ domain_name | replace(".", "-") }}.service
+
+  - RUN: systemctl enable ghost-{{ domain_name | replace(".", "-") }}.service

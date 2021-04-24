@@ -151,14 +151,14 @@ class Server(manager.Interface):
         if job_status == self.job_ack:
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = False
-            job_metadata["INFO"] = job_output
+            job_metadata["INFO"][identity] = job_output
             if not _createtime:
                 job_metadata["_createtime"] = time.time()
             self.log.info("{} received job {}".format(identity, job_id))
         elif job_status == self.job_processing:
             job_metadata["PROCESSING"] = True
             job_metadata["SUCCESS"] = False
-            job_metadata["INFO"] = job_output
+            job_metadata["INFO"][identity] = job_output
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
             self.log.info("{} is processing {}".format(identity, job_id))
@@ -166,7 +166,7 @@ class Server(manager.Interface):
             self.log.info("{} finished processing {}".format(identity, job_id))
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = True
-            job_metadata["INFO"] = job_output
+            job_metadata["INFO"][identity] = job_output
             job_metadata["EXECUTION_TIME"] = return_exec_time(
                 started=_starttime
             )
@@ -180,7 +180,7 @@ class Server(manager.Interface):
                 job_metadata["FAILED"].append(identity)
             else:
                 job_metadata["FAILED"] = [identity]
-            job_metadata["INFO"] = job_output
+            job_metadata["INFO"][identity] = job_output
             job_metadata["EXECUTION_TIME"] = return_exec_time(
                 started=_starttime
             )
@@ -350,7 +350,7 @@ class Server(manager.Interface):
                     if task not in self.return_jobs:
                         job_info = self.return_jobs[task] = {
                             "ACCEPTED": True,
-                            "INFO": self.nullbyte.decode(),
+                            "INFO": dict(),
                             "NODES": [i.decode() for i in targets],
                             "VERB": job_item["verb"],
                             "TRANSFERS": list(),
