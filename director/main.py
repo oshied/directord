@@ -144,6 +144,7 @@ def _args():
             "WORKDIR",
             "CACHEFILE",
             "CACHEEVICT",
+            "QUERY",
         ],
         required=True,
     )

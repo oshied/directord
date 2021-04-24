@@ -2,6 +2,7 @@
 
 - jobs:
   - ARG: mysql_root_password SuperSecrete
+  - RUN: --stdout-arg mysql_host ip -o r g 1 | awk '{print $7}'
   - RUN: --stdout-arg director_hostname hostname
   - RUN: --skip-cache dnf -y install mariadb mariadb-server
   - RUN: systemctl enable mariadb.service

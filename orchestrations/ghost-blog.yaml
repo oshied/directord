@@ -1,14 +1,16 @@
 - jobs:
   - ARG: mysql_root_password SuperSecrete
   - ARG: ghost_db_pw Secrete
-  - ARG: ghost_db_host localhost
-  - ARG: ghost_db_source localhost
   - ARG: ghost_user_name ghost
   - ARG: domain_name ghost.localdomain
   - ARG: domain_proto http
   - ARG: domain_port 2368
 
+  ### Scan the environment for a given cached argument
+  - QUERY: mysql_host
+
   ### Target run environment
+  - RUN: --stdout-arg ghost_db_source ip -o r g 1 | awk '{print $7}'
 
   # Create our NGINX config for our ghost proxy
   - COPY: --blueprint files/nginx-ghost "/etc/nginx/conf.d/{{ domain_name }}.conf"

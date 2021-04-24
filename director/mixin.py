@@ -469,37 +469,6 @@ class Mixin(object):
                     job_def=job_def, catalog=catalog, quiet=True
                 )
 
-    def _merge_dict(self, base, new):
-        """Recursively merge new into base.
-
-        :param base: Base dictionary to load items into
-        :type base: Dictionary
-        :param new: New dictionary to merge items from
-        :type new: Dictionary
-        :returns: Dictionary
-        """
-
-        if isinstance(new, dict):
-            for key, value in new.items():
-                if key not in base:
-                    base[key] = value
-                elif isinstance(value, dict):
-                    base[key] = self._merge_dict(
-                        base=base.get(key, {}), new=value
-                    )
-                elif isinstance(value, list):
-                    base[key].extend(value)
-                elif isinstance(value, (tuple, set)):
-                    if isinstance(base.get(key), tuple):
-                        base[key] += tuple(value)
-                    elif isinstance(base.get(key), list):
-                        base[key].extend(list(value))
-                else:
-                    base[key] = new[key]
-        elif isinstance(new, list):
-            base.extend(new)
-        return base
-
     def bootstrap_cluster(self):
         """Run a cluster wide bootstrap using a catalog file.
 
@@ -512,7 +481,7 @@ class Mixin(object):
         q = multiprocessing.Queue()
         catalog = dict()
         for c in self.args.catalog:
-            self._merge_dict(base=catalog, new=yaml.safe_load(c))
+            utils.merge_dict(base=catalog, new=yaml.safe_load(c))
 
         director_server = catalog.get("director_server")
         if director_server:

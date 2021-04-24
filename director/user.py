@@ -137,7 +137,7 @@ class User(manager.Interface):
                 if len(chown) == 1:
                     chown.append(None)
                 data["user"], data["group"] = chown
-            file_from, data["to"] = shlex.split(' '.join(args.files))
+            file_from, data["to"] = shlex.split(" ".join(args.files))
             data["from"] = [
                 os.path.abspath(os.path.expanduser(i))
                 for i in glob.glob(file_from)
@@ -213,6 +213,19 @@ class User(manager.Interface):
                 self.sanitized_args(execute=execute)
             )
             data["cacheevict"] = args.cacheevict
+        elif verb == "QUERY":
+            parser.add_argument(
+                "query",
+                help=(
+                    "Scan the environment for a given cached argument and"
+                    " store the resultant on the target. The resultant is"
+                    " set in dictionary format: `{'client-id': ...}`"
+                ),
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["query"] = args.query
         else:
             raise SystemExit("No known verb defined.")
 

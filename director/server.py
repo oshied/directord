@@ -145,7 +145,7 @@ class Server(manager.Interface):
 
         # NOTE(cloudnull): This is where we would need to implement a
         #                  callback plugin for the client.
-        job_metadata = self.return_jobs.get(job_id, {})
+        job_metadata = self.return_jobs.get(job_id, dict())
         _starttime = job_metadata.get("_starttime")
         _createtime = job_metadata.get("_createtime")
         if job_status == self.job_ack:
@@ -253,6 +253,8 @@ class Server(manager.Interface):
         self.bind_transfer = self.transfer_bind()
         poller_time = time.time()
         poller_interval = 1024
+        job_item = None
+        query_targets = False
 
         while True:
             if time.time() > poller_time + 64:
@@ -304,30 +306,47 @@ class Server(manager.Interface):
                     msg_id,
                     control,
                     command,
-                    _,
+                    data,
                     info,
                 ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                node = identity.decode()
+                node_output = info.decode()
                 self._set_job_status(
                     job_status=control,
                     job_id=msg_id.decode(),
-                    identity=identity.decode(),
-                    job_output=info.decode(),
+                    identity=node,
+                    job_output=node_output,
                 )
+                if command == b"QUERY":
+                    query_value = json.loads(node_output)
+                    if query_value:
+                        job_item = json.loads(data.decode())
+                        query_arg = job_item.pop("query")
+                        job_item["task"] = self.get_uuid
+                        job_item["skip_cache"] = True
+                        job_item["verb"] = "ARG"
+                        job_item["args"] = {
+                            "query": {node: {query_arg: query_value}}
+                        }
 
             if self.workers:
-                poller_interval, poller_time = 128, time.time()
                 try:
-                    job_item = self.job_queue.get(block=False, timeout=1)
+                    if not job_item:
+                        job_item = self.job_queue.get(block=False, timeout=1)
                 except Exception:
                     pass
                 else:
+                    poller_interval, poller_time = 128, time.time()
                     restrict_sha1 = job_item.get("restrict")
                     if restrict_sha1:
                         if job_item["task_sha1sum"] not in restrict_sha1:
                             return
 
+                    query_targets = job_item["verb"] == "QUERY"
                     job_target = job_item.get("target")
-                    if job_target:
+
+                    # NOTE(cloudnull): We skip all set targets if query is used.
+                    if job_target and not query_targets:
                         job_target = job_target.encode()
                         targets = list()
                         if job_target in self.workers:
@@ -405,6 +424,10 @@ class Server(manager.Interface):
                         )
                     else:
                         self.return_jobs[task] = job_info
+
+                    # Job complete, reset the item
+                    job_item = None
+                    query_targets = False
 
     def run_socket_server(self):
         """Start a socket server.

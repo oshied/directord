@@ -99,10 +99,22 @@ using a single action.
 Syntax: `STRING`
 
 Evicts all cached items from a given tag. Built-in tags are: **jobs**,
-**parents**, **args**, **envs**.
+**parents**, **args**, **envs**, **query**.
 
 While all cached items have a TTL of 12 hours, this method is useful to purge
 items on demand.
+
+##### `QUERY`
+
+Syntax: `STRING`
+
+> Scan the environment for a given cached argument and store the resultant on
+  the target. The resultant is set in dictionary format:
+  `"query": {query_identity: {query_arg: query_value}}`
+
+Note that the key `query` stores all of the queried values for a given item
+from across the cluster. This provides the ability to store multiple items
+and intelligently parse/blueprint data based on node memberships.
 
 ## Extra options
 

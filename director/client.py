@@ -420,6 +420,7 @@ class Client(manager.Interface):
             return self._run_workdir(workdir=job["workdir"], cache=cache)
         elif command in [b"ARG", b"ENV"]:
             conn.start_processing()
+            # Sets the cache type to "args" or "envs"
             cache_type = "{}s".format(command.decode().lower())
             self.set_cache(
                 cache=cache,
@@ -428,7 +429,7 @@ class Client(manager.Interface):
                 value_update=True,
                 tag=cache_type,
             )
-            return "{} added to Cache".format(cache_type).encode(), True
+            return "{} added to cache".format(cache_type).encode(), True
         elif command == b"CACHEFILE":
             conn.start_processing()
             try:
@@ -451,8 +452,16 @@ class Client(manager.Interface):
             evicted = cache.evict(tag)
             return (
                 "Evicted {} items, tagged {}".format(evicted, tag).encode(),
-                True
+                True,
             )
+        elif command == b"QUERY":
+            conn.start_processing()
+            args = cache.get("args")
+            if args:
+                query = json.dumps(args.get(job["query"])).encode()
+            else:
+                query = None
+            return query, True
         else:
             self.log.warn(
                 "Unknown command - COMMAND:%s ID:%s",
@@ -500,9 +509,8 @@ class Client(manager.Interface):
         """
 
         if value_update:
-            _value = cache.pop(key, default=dict())
-            _value.update(value)
-            value = _value
+            orig = cache.pop(key, default=dict())
+            value = utils.merge_dict(orig, value)
 
         cache.set(key, value, tag=tag, expire=expire)
 
@@ -595,11 +603,15 @@ class Client(manager.Interface):
                         b"ENV",
                         b"CACHEFILE",
                         b"CACHEEVICT",
+                        b"QUERY",
                     ]
                     cached = cache_hit and cache_allowed
                     success, status, state = False, None, self.nullbyte
                     with utils.ClientStatus(
-                        socket=self.bind_job, job_id=job_id.encode(), ctx=self
+                        socket=self.bind_job,
+                        job_id=job_id.encode(),
+                        command=command,
+                        ctx=self,
                     ) as c:
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id
@@ -616,6 +628,9 @@ class Client(manager.Interface):
                                 command=command,
                             )
 
+                        if command == b"QUERY":
+                            c.data = json.dumps(job).encode()
+
                         if status:
                             if not isinstance(status, bytes):
                                 status = status.encode()
@@ -630,6 +645,7 @@ class Client(manager.Interface):
                                 value=False,
                                 tag="parents",
                             )
+
                         elif success is True:
                             state = c.job_state = self.job_end
                             self.log.info("Job complete {}".format(job_id))

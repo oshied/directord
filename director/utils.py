@@ -84,17 +84,51 @@ def dump_yaml(file_path, data):
     return file_path
 
 
+def merge_dict(base, new):
+    """Recursively merge new into base.
+
+    :param base: Base dictionary to load items into
+    :type base: Dictionary
+    :param new: New dictionary to merge items from
+    :type new: Dictionary
+    :returns: Dictionary
+    """
+
+    if isinstance(new, dict):
+        for key, value in new.items():
+            if key not in base:
+                base[key] = value
+            elif isinstance(value, dict):
+                base[key] = merge_dict(
+                    base=base.get(key, {}), new=value
+                )
+            elif isinstance(value, list):
+                base[key].extend(value)
+            elif isinstance(value, (tuple, set)):
+                if isinstance(base.get(key), tuple):
+                    base[key] += tuple(value)
+                elif isinstance(base.get(key), list):
+                    base[key].extend(list(value))
+            else:
+                base[key] = new[key]
+    elif isinstance(new, list):
+        base.extend(new)
+    return base
+
+
 class ClientStatus(object):
     """Context manager for transmitting client status."""
 
-    def __init__(self, socket, job_id, ctx):
+    def __init__(self, socket, job_id, command, ctx):
         """Initialize the UNIX socket connect context manager."""
 
         self.ctx = ctx
         self.job_id = job_id
+        self.command = command
         self.job_state = ctx.nullbyte
         self.info = ctx.nullbyte
         self.socket = socket
+        self.data = None
 
     def start_processing(self):
         self.ctx.socket_multipart_send(
@@ -118,6 +152,8 @@ class ClientStatus(object):
             zsocket=self.socket,
             msg_id=self.job_id,
             control=self.job_state,
+            command=self.command,
+            data=self.data,
             info=self.info,
         )
 
