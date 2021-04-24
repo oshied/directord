@@ -11,13 +11,13 @@
   ### Target run environment
 
   # Create our NGINX config for our ghost proxy
-  - COPY: --blueprint files/nginx-ghost /etc/nginx/conf.d/{{ domain_name }}.conf
+  - COPY: --blueprint files/nginx-ghost "/etc/nginx/conf.d/{{ domain_name }}.conf"
 
-  - RUN: |-
+  - RUN: >-
       if systemctl is-active firewalld; then
-        firewall-cmd --zone=public --permanent --add-service=http
-        firewall-cmd --zone=public --permanent --add-service=https
-        firewall-cmd --reload
+      firewall-cmd --zone=public --permanent --add-service=http;
+      firewall-cmd --zone=public --permanent --add-service=https;
+      firewall-cmd --reload;
       fi
 
   - RUN: systemctl restart nginx.service
@@ -82,9 +82,7 @@
       [ -f /var/www/{{ domain_name }}/config.production.json ] ||
       su --preserve-environment {{ ghost_user_name }} -c "mv /var/www/{{ domain_name }}/config.development.json /var/www/{{ domain_name }}/config.production.json"
 
-  - ENV: NODE_ENV production
-
-  - ADD: --blueprint files/ghost-systemd.service /etc/systemd/system/ghost-{{ domain_name | replace(".", "-") }}.service
+  - ADD: --blueprint files/ghost-systemd.service '/etc/systemd/system/ghost-{{ domain_name | replace(".", "-") }}.service'
 
   - RUN: systemctl daemon-reload
 

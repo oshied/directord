@@ -70,6 +70,11 @@ a defined user and group (optionally).
 `--blueprint` - The blueprint option instructs the client to read and render
 a copied file. The file will be rendered using cached arguments.
 
+> When a copy command has a brace expanded path, the value must be quoted:
+  `example/path "/example/{{ target }}/path"`. The quotes around the brace
+  exampled target path ensure that the string is preserved by the parser and
+  is passed, as is, to the execution engine.
+
 ##### `COPY`
 
 The same as `ADD`.

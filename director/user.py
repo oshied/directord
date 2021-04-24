@@ -2,6 +2,7 @@ import argparse
 import glob
 import json
 import os
+import shlex
 import time
 
 import zmq.auth
@@ -123,7 +124,12 @@ class User(manager.Interface):
                 action="store_true",
                 help="Instruct the remote file to be blueprinted.",
             )
-            args, file_path = parser.parse_known_args(
+            parser.add_argument(
+                "files",
+                nargs="+",
+                help="Set the file to transfer: 'FROM' 'TO'",
+            )
+            args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             if args.chown:
@@ -131,7 +137,7 @@ class User(manager.Interface):
                 if len(chown) == 1:
                     chown.append(None)
                 data["user"], data["group"] = chown
-            file_from, data["to"] = file_path
+            file_from, data["to"] = shlex.split(' '.join(args.files))
             data["from"] = [
                 os.path.abspath(os.path.expanduser(i))
                 for i in glob.glob(file_from)
