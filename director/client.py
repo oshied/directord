@@ -461,7 +461,10 @@ class Client(manager.Interface):
         elif command == b"CACHEEVICT":
             conn.start_processing()
             tag = job["cacheevict"]
-            evicted = cache.evict(tag)
+            if tag == "all":
+                evicted = cache.clear()
+            else:
+                evicted = cache.evict(tag)
             return (
                 "Evicted {} items, tagged {}".format(evicted, tag).encode(),
                 True,

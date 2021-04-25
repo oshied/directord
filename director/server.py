@@ -333,6 +333,8 @@ class Server(manager.Interface):
                     job_output=node_output,
                 )
                 if command == b"QUERY":
+                    # NOTE(cloudnull): When a command return is "QUERY" an ARG
+                    #                  is resent to all known workers.
                     query_value = json.loads(node_output)
                     if query_value:
                         query_item = json.loads(data.decode())
@@ -340,10 +342,14 @@ class Server(manager.Interface):
                         query_item["skip_cache"] = True
                         query_item["verb"] = "ARG"
                         query_item["args"] = {
-                            "query": {node: {query_item.pop("query"): query_value}}
+                            "query": {
+                                node: {query_item.pop("query"): query_value}
+                            }
                         }
                         targets = self.workers.keys()
-                        self.create_return_jobs(task=task, job_item=query_item, targets=targets)
+                        self.create_return_jobs(
+                            task=task, job_item=query_item, targets=targets
+                        )
                         for target in targets:
                             self.socket_multipart_send(
                                 zsocket=self.bind_job,
@@ -366,8 +372,10 @@ class Server(manager.Interface):
 
                     job_target = job_item.get("target")
 
-                    # NOTE(cloudnull): We skip all set targets if query is used.
-                    if job_target:
+                    # NOTE(cloudnull): We run on all targets if query is used.
+                    run_query = job_item["verb"] != "QUERY"
+
+                    if job_target and not run_query:
                         job_target = job_target.encode()
                         targets = list()
                         if job_target in self.workers:
@@ -382,12 +390,14 @@ class Server(manager.Interface):
                     else:
                         targets = self.workers.keys()
 
-                    if job_item.get("run_once", False):
+                    if job_item.get("run_once", False) and not run_query:
                         self.log.debug("Run once enabled.")
                         targets = [targets[0]]
 
                     task = job_item.get("task")
-                    job_info = self.create_return_jobs(task=task, job_item=job_item, targets=targets)
+                    job_info = self.create_return_jobs(
+                        task=task, job_item=job_item, targets=targets
+                    )
                     transfers = job_info.get("TRANSFERS", list())
                     for identity in targets:
                         if job_item["verb"] in ["ADD", "COPY"]:

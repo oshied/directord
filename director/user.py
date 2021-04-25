@@ -206,7 +206,8 @@ class User(manager.Interface):
                 help=(
                     "Evict all tagged cached items from a client machine."
                     " Typical tags are, but not limited to:"
-                    " [args, envs, jobs, parents, ...]"
+                    " [args, envs, jobs, parents, query, ...]. To evict 'all'
+                    " cached items use the keyword 'all'."
                 ),
             )
             args, _ = parser.parse_known_args(

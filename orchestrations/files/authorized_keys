@@ -1,4 +1,9 @@
-# Blueprint ssh keygen file from query
+# Blueprint ssh authorized keys file from query
+# Process:
+#   All keys generated on remote nodes
+#   public key captured as arg
+#   query for arg
+#   write file
 {% for item in (query.values() | map(attribute='director_ssh_key')) %}
 {{ item }}
 {%- endfor %}

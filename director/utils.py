@@ -99,9 +99,7 @@ def merge_dict(base, new):
             if key not in base:
                 base[key] = value
             elif isinstance(value, dict):
-                base[key] = merge_dict(
-                    base=base.get(key, {}), new=value
-                )
+                base[key] = merge_dict(base=base.get(key, {}), new=value)
             elif isinstance(value, list):
                 base[key].extend(value)
             elif isinstance(value, (tuple, set)):

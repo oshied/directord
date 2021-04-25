@@ -99,10 +99,12 @@ using a single action.
 Syntax: `STRING`
 
 Evicts all cached items from a given tag. Built-in tags are: **jobs**,
-**parents**, **args**, **envs**, **query**.
+**parents**, **args**, **envs**, **query**, **all**.
 
 While all cached items have a TTL of 12 hours, this method is useful to purge
 items on demand.
+
+> The "all" keyword will evict all items from the cache.
 
 ##### `QUERY`
 
