@@ -12,6 +12,7 @@ fi
 dnf -y install ${PACKAGES}
 
 python3 -m venv --system-site-packages /opt/director
+/opt/director/bin/pip install --upgrade pip setuptools wheel
 /opt/director/bin/pip install git+https://github.com/cloudnull/director
 
 echo -e "\nDirector is setup and installed within [ /opt/director ]"

@@ -379,7 +379,7 @@ class Server(manager.Interface):
                             "_createtime": time.time(),
                         }
                     else:
-                        job_info = dict()
+                        job_info = self.return_jobs[task]
 
                     transfers = job_info.get("TRANSFERS", list())
                     for identity in targets:
