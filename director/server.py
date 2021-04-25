@@ -231,6 +231,23 @@ class Server(manager.Interface):
                     command=verb,
                 )
 
+    def create_return_jobs(self, task, job_item, targets):
+        if task not in self.return_jobs:
+            job_info = self.return_jobs[task] = {
+                "ACCEPTED": True,
+                "INFO": dict(),
+                "NODES": [i.decode() for i in targets],
+                "VERB": job_item["verb"],
+                "TRANSFERS": list(),
+                "TASK_SHA1": job_item["task_sha1sum"],
+                "JOB_DEFINITION": job_item,
+                "PARENT_JOB_ID": job_item.get("parent_id"),
+                "_createtime": time.time(),
+            }
+            return job_info
+        else:
+            return self.return_jobs[task]
+
     def run_job(self):
         """Execute the job loop.
 
@@ -253,8 +270,6 @@ class Server(manager.Interface):
         self.bind_transfer = self.transfer_bind()
         poller_time = time.time()
         poller_interval = 1024
-        job_item = None
-        query_targets = False
 
         while True:
             if time.time() > poller_time + 64:
@@ -299,7 +314,7 @@ class Server(manager.Interface):
                         job_output=info.decode(),
                     )
 
-            if socks.get(self.bind_job) == zmq.POLLIN:
+            elif socks.get(self.bind_job) == zmq.POLLIN:
                 poller_interval, poller_time = 128, time.time()
                 (
                     identity,
@@ -320,19 +335,26 @@ class Server(manager.Interface):
                 if command == b"QUERY":
                     query_value = json.loads(node_output)
                     if query_value:
-                        job_item = json.loads(data.decode())
-                        query_arg = job_item.pop("query")
-                        job_item["task"] = self.get_uuid
-                        job_item["skip_cache"] = True
-                        job_item["verb"] = "ARG"
-                        job_item["args"] = {
-                            "query": {node: {query_arg: query_value}}
+                        query_item = json.loads(data.decode())
+                        task = query_item["task"] = self.get_uuid
+                        query_item["skip_cache"] = True
+                        query_item["verb"] = "ARG"
+                        query_item["args"] = {
+                            "query": {node: {query_item.pop("query"): query_value}}
                         }
+                        targets = self.workers.keys()
+                        self.create_return_jobs(task=task, job_item=query_item, targets=targets)
+                        for target in targets:
+                            self.socket_multipart_send(
+                                zsocket=self.bind_job,
+                                identity=target,
+                                command=query_item["verb"].encode(),
+                                data=json.dumps(query_item).encode(),
+                            )
 
-            if self.workers:
+            elif self.workers:
                 try:
-                    if not job_item:
-                        job_item = self.job_queue.get(block=False, timeout=1)
+                    job_item = self.job_queue.get(block=False, timeout=1)
                 except Exception:
                     pass
                 else:
@@ -342,11 +364,10 @@ class Server(manager.Interface):
                         if job_item["task_sha1sum"] not in restrict_sha1:
                             return
 
-                    query_targets = job_item["verb"] == "QUERY"
                     job_target = job_item.get("target")
 
                     # NOTE(cloudnull): We skip all set targets if query is used.
-                    if job_target and not query_targets:
+                    if job_target:
                         job_target = job_target.encode()
                         targets = list()
                         if job_target in self.workers:
@@ -366,21 +387,7 @@ class Server(manager.Interface):
                         targets = [targets[0]]
 
                     task = job_item.get("task")
-                    if task not in self.return_jobs:
-                        job_info = self.return_jobs[task] = {
-                            "ACCEPTED": True,
-                            "INFO": dict(),
-                            "NODES": [i.decode() for i in targets],
-                            "VERB": job_item["verb"],
-                            "TRANSFERS": list(),
-                            "TASK_SHA1": job_item["task_sha1sum"],
-                            "JOB_DEFINITION": job_item,
-                            "PARENT_JOB_ID": job_item.get("parent_id"),
-                            "_createtime": time.time(),
-                        }
-                    else:
-                        job_info = self.return_jobs[task]
-
+                    job_info = self.create_return_jobs(task=task, job_item=job_item, targets=targets)
                     transfers = job_info.get("TRANSFERS", list())
                     for identity in targets:
                         if job_item["verb"] in ["ADD", "COPY"]:
@@ -424,10 +431,6 @@ class Server(manager.Interface):
                         )
                     else:
                         self.return_jobs[task] = job_info
-
-                    # Job complete, reset the item
-                    job_item = None
-                    query_targets = False
 
     def run_socket_server(self):
         """Start a socket server.

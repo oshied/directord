@@ -1,0 +1,4 @@
+# Blueprint ssh keygen file from query
+{% for item in (query.values() | map(attribute='director_ssh_key')) %}
+{{ item }}
+{%- endfor %}

@@ -168,6 +168,9 @@ class Client(manager.Interface):
         """
 
         command = self.blueprinter(content=command, values=cache.get("args"))
+        if not command:
+            return None, False
+
         info, success = utils.run_command(
             command=command, env=cache.get("envs")
         )
@@ -195,7 +198,8 @@ class Client(manager.Interface):
         """
 
         workdir = self.blueprinter(content=workdir, values=cache.get("args"))
-
+        if not workdir:
+            return None, False
         try:
             os.makedirs(workdir, exist_ok=True)
         except (FileExistsError, PermissionError) as e:
@@ -249,12 +253,16 @@ class Client(manager.Interface):
                     file_contents = self.blueprinter(
                         content=f.read(), values=cache.get("args")
                     )
+                    if not file_contents:
+                        return False
 
                 with open(file_to, "w") as f:
                     f.write(file_contents)
 
                 self.log.info("File %s has been blueprinted.", file_to)
+            return True
 
+        file_to = self.blueprinter(content=file_to, values=cache.get("args"))
         if os.path.isfile(file_to) and self.file_sha1(file_to) == file_sha1:
             info = (
                 "File exists {} and SHA1 {} matches, nothing to"
@@ -266,7 +274,9 @@ class Client(manager.Interface):
                 msg_id=job_id.encode(),
                 control=self.transfer_end,
             )
-            _blueprinter()
+            if not _blueprinter():
+                return None, False
+
             return info, True
         else:
             self.log.debug(
@@ -302,7 +312,9 @@ class Client(manager.Interface):
             self.log.critical("Failure when creating file. FAILURE:%s", e)
             return "Failure when creating file", False
 
-        _blueprinter()
+        if not _blueprinter():
+            return None, False
+
         info = self.file_sha1(file_to)
         success = True
         if user:
@@ -478,12 +490,15 @@ class Client(manager.Interface):
         :param values: Dictionary items that will be used to render a
                        blueprinted item.
         :type values: Dictionary
-        :returns: String
+        :returns: String | None
         """
 
         if values:
             _contents = self.blueprint.from_string(content)
-            return _contents.render(**values)
+            try:
+                return _contents.render(**values)
+            except Exception:
+                return
         else:
             return content
 
