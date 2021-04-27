@@ -11,12 +11,12 @@ fi
 
 dnf -y install ${PACKAGES}
 
-python3 -m venv --system-site-packages /opt/director
-/opt/director/bin/pip install --upgrade pip setuptools wheel
-/opt/director/bin/pip install git+https://github.com/cloudnull/director
+python3 -m venv --system-site-packages /opt/directord
+/opt/directord/bin/pip install --upgrade pip setuptools wheel
+/opt/directord/bin/pip install git+https://github.com/cloudnull/directord
 
-echo -e "\nDirector is setup and installed within [ /opt/director ]"
-echo "Activate the venv or run director directly."
-echo "Director can be installed as a service using the following command(s):"
-echo "/opt/director/bin/director-client-systemd"
-echo -e "/opt/director/bin/director-server-systemd\n"
+echo -e "\nDirectord is setup and installed within [ /opt/directord ]"
+echo "Activate the venv or run directord directly."
+echo "Directord can be installed as a service using the following command(s):"
+echo "/opt/directord/bin/directord-client-systemd"
+echo -e "/opt/directord/bin/directord-server-systemd\n"

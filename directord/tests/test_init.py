@@ -1,25 +1,25 @@
 import time
 import unittest
 
-import director
+import directord
 
-from director import tests
+from directord import tests
 
 
 class TestLogger(unittest.TestCase):
     def setUp(self):
-        self.log = director.LogSetup()
+        self.log = directord.LogSetup()
 
-        self.uid_patched = unittest.mock.patch("director.os.getuid")
+        self.uid_patched = unittest.mock.patch("directord.os.getuid")
         self.uid = self.uid_patched.start()
 
-        self.env_patched = unittest.mock.patch("director.os.path.expanduser")
+        self.env_patched = unittest.mock.patch("directord.os.path.expanduser")
         self.env = self.env_patched.start()
 
-        self.idr_patched = unittest.mock.patch("director.os.path.isdir")
+        self.idr_patched = unittest.mock.patch("directord.os.path.isdir")
         self.idr = self.idr_patched.start()
 
-        self.stat_patched = unittest.mock.patch("director.os.stat")
+        self.stat_patched = unittest.mock.patch("directord.os.stat")
         self.stat = self.stat_patched.start()
 
     def tearDown(self):
@@ -37,19 +37,19 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(self.log.debug_logging, False)
 
     def test_logger_override_backup(self):
-        log = director.LogSetup(max_backup=10)
+        log = directord.LogSetup(max_backup=10)
         self.assertEqual(log.max_backup, 10)
 
     def test_logger_override_max_backup(self):
-        log = director.LogSetup(max_backup=10)
+        log = directord.LogSetup(max_backup=10)
         self.assertEqual(log.max_backup, 10)
 
     def test_logger_override_max_size(self):
-        log = director.LogSetup(max_size=10)
+        log = directord.LogSetup(max_size=10)
         self.assertEqual(log.max_size, 10485760)
 
     def test_logger_debug_logging_enabled(self):
-        log = director.LogSetup(debug_logging=True)
+        log = directord.LogSetup(debug_logging=True)
         self.assertEqual(log.debug_logging, True)
 
     def test_logger_return_logfile_not_root_new_log_dir(self):
@@ -101,14 +101,16 @@ class TestLoggerHandlers(unittest.TestCase):
     def setUp(self):
 
         self.rh_patched = unittest.mock.patch(
-            "director.handlers.RotatingFileHandler"
+            "directord.handlers.RotatingFileHandler"
         )
         self.rh = self.rh_patched.start()
 
-        self.sh_patched = unittest.mock.patch("director.logging.StreamHandler")
+        self.sh_patched = unittest.mock.patch(
+            "directord.logging.StreamHandler"
+        )
         self.sh = self.sh_patched.start()
 
-        self.log = director.LogSetup()
+        self.log = directord.LogSetup()
 
         self._log = unittest.mock.Mock()
         self._handler = unittest.mock.Mock()
@@ -118,7 +120,7 @@ class TestLoggerHandlers(unittest.TestCase):
         self.sh_patched.stop()
 
     def test_getlogger_new_logger(self):
-        log = director.getLogger(name="testLogger")
+        log = directord.getLogger(name="testLogger")
         for handler in log.handlers:
             return self.assertTrue(handler.name == "testLogger")
         else:
@@ -161,9 +163,9 @@ class TestLoggerHandlers(unittest.TestCase):
 
 class TestProcessor(unittest.TestCase):
     def setUp(self):
-        self.log_patched = unittest.mock.patch("director.getLogger")
+        self.log_patched = unittest.mock.patch("directord.getLogger")
         self.log = self.log_patched.start()
-        self.processor = director.Processor()
+        self.processor = directord.Processor()
 
     def tearDown(self):
         self.log_patched.stop()
@@ -241,16 +243,16 @@ class TestProcessor(unittest.TestCase):
 
 class TestUnixSocket(unittest.TestCase):
     def setUp(self):
-        self.socket_patched = unittest.mock.patch("director.socket.socket")
+        self.socket_patched = unittest.mock.patch("directord.socket.socket")
         self.socket = self.socket_patched.start()
 
     def tearDown(self):
         self.socket_patched.stop()
 
     def test_unix_socket(self):
-        with director.UNIXSocketConnect(sock_path="/test.sock") as c:
+        with directord.UNIXSocketConnect(sock_path="/test.sock") as c:
             c.connect.assert_called_once_with("/test.sock")
         c.close.assert_called_once()
         self.socket.assert_called_once_with(
-            director.socket.AF_UNIX, director.socket.SOCK_STREAM
+            directord.socket.AF_UNIX, directord.socket.SOCK_STREAM
         )

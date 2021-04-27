@@ -5,17 +5,17 @@ import sys
 
 import jinja2
 
-from director import client
-from director import server
-from director import user
-from director import utils
+from directord import client
+from directord import server
+from directord import user
+from directord import utils
 
 
 class Mixin(object):
     """Mixin class."""
 
     def __init__(self, args):
-        """Initialize the Director mixin.
+        """Initialize the Directord mixin.
 
         Sets up the mixin object.
 
@@ -306,10 +306,10 @@ class Mixin(object):
         if not localfile.startswith(os.sep):
             if sys.prefix == sys.base_prefix:
                 base_path = os.path.join(
-                    sys.base_prefix, "share/director/tools"
+                    sys.base_prefix, "share/directord/tools"
                 )
             else:
-                base_path = os.path.join(sys.prefix, "share/director/tools")
+                base_path = os.path.join(sys.prefix, "share/directord/tools")
             return os.path.join(base_path, localfile)
         else:
             return localfile
@@ -473,7 +473,7 @@ class Mixin(object):
         """Run a cluster wide bootstrap using a catalog file.
 
         Cluster bootstrap requires a catalog file to run. Catalogs are broken
-        up into two sections, `director_server` and `director_client`. All
+        up into two sections, `directord_server` and `directord_client`. All
         servers are processed serially and first. All clients are processing
         in parallel using a maximum of the threads argument.
         """
@@ -483,17 +483,17 @@ class Mixin(object):
         for c in self.args.catalog:
             utils.merge_dict(base=catalog, new=yaml.safe_load(c))
 
-        director_server = catalog.get("director_server")
-        if director_server:
+        directord_server = catalog.get("directord_server")
+        if directord_server:
             print("Loading server information")
-            for s in self.bootstrap_catalog_entry(entry=director_server):
+            for s in self.bootstrap_catalog_entry(entry=directord_server):
                 s["key_file"] = self.args.key_file
                 self.bootstrap_run(job_def=s, catalog=catalog)
 
-        director_clients = catalog.get("director_clients")
-        if director_clients:
+        directord_clients = catalog.get("directord_clients")
+        if directord_clients:
             print("Loading client information")
-            for c in self.bootstrap_catalog_entry(entry=director_clients):
+            for c in self.bootstrap_catalog_entry(entry=directord_clients):
                 c["key_file"] = self.args.key_file
                 q.put(c)
 

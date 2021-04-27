@@ -3,7 +3,7 @@ export DIRECTOR_SERVER_ADDRESS=${DIRECTOR_SERVER_ADDRESS:-localhost}
 export DIRECTOR_MODE=${DIRECTOR_MODE:-client}
 
 if [ "${DIRECTOR_MODE}" = "server" ]; then
-    /director/bin/director --socket-path /tmp/director.sock server
+    /directord/bin/directord --socket-path /tmp/directord.sock server
 else
-    /director/bin/director client --server-address ${DIRECTOR_SERVER_ADDRESS}
+    /directord/bin/directord client --server-address ${DIRECTOR_SERVER_ADDRESS}
 fi

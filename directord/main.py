@@ -6,17 +6,17 @@ import yaml
 
 import tabulate
 
-import director
-from director import mixin
-from director import user
-from director import utils
+import directord
+from directord import mixin
+from directord import user
+from directord import utils
 
 
 def _args():
     """Setup client arguments."""
 
     parser = argparse.ArgumentParser(
-        description="Deployment Framework Next.", prog="Director"
+        description="Deployment Framework Next.", prog="Directord"
     )
     parser.add_argument(
         "--config-file",
@@ -82,7 +82,7 @@ def _args():
         ),
         metavar="STRING",
         default=str(
-            os.getenv("DIRECTOR_SOCKET_PATH", "/var/run/director.sock")
+            os.getenv("DIRECTOR_SOCKET_PATH", "/var/run/directord.sock")
         ),
         type=str,
     )
@@ -90,7 +90,7 @@ def _args():
         "--cache-path",
         help=("Client cache path." " Default: %(default)s"),
         metavar="STRING",
-        default=str(os.getenv("DIRECTOR_CACHE_PATH", "/var/cache/director")),
+        default=str(os.getenv("DIRECTOR_CACHE_PATH", "/var/cache/directord")),
         type=str,
     )
     subparsers = parser.add_subparsers(
@@ -168,7 +168,7 @@ def _args():
     parser_server = subparsers.add_parser("server", help="Server mode help")
     parser_server.add_argument(
         "--bind-address",
-        help="IP Address to bind a Director Server. Default: %(default)s",
+        help="IP Address to bind a Directord Server. Default: %(default)s",
         metavar="STRING",
         default=os.getenv("DIRECTOR_BIND_ADDRESS", "*"),
     )
@@ -187,7 +187,7 @@ def _args():
     )
     parser_server.add_argument(
         "--run-ui",
-        help="Enable the Director UI. Default: %(default)s",
+        help="Enable the Directord UI. Default: %(default)s",
         action="store_true",
     )
     parser_server.add_argument(
@@ -201,7 +201,7 @@ def _args():
     parser_client.add_argument(
         "--server-address",
         help=(
-            "Domain or IP address of the Director server."
+            "Domain or IP address of the Directord server."
             " Default: %(default)s"
         ),
         metavar="STRING",
@@ -250,8 +250,8 @@ def _args():
     parser_bootstrap = subparsers.add_parser(
         "bootstrap",
         help=(
-            "Bootstrap a director cluster. This uses SSH to connect to remote"
-            " machines and setup Director. Once Director is setup, SSH is no"
+            "Bootstrap a directord cluster. This uses SSH to connect to remote"
+            " machines and setup Directord. Once Directord is setup, SSH is no"
             " longer required."
         ),
     )
@@ -297,21 +297,21 @@ class SystemdInstall(object):
     def __init__(self):
         """Class to create systemd service units.
 
-        This class is used with the director-server-systemd and
-        director-client-systemd entrypoints.
+        This class is used with the directord-server-systemd and
+        directord-client-systemd entrypoints.
         """
 
-        self.config_path = "/etc/director"
+        self.config_path = "/etc/directord"
 
     def path_setup(self):
         """Create the configuration path and basic configuration file."""
 
         if not os.path.isdir(self.config_path):
             os.makedirs(self.config_path)
-            print("[+] Created director configuration path")
+            print("[+] Created directord configuration path")
 
-        if not os.path.exists("/etc/director/config.yaml"):
-            with open("/etc/director/config.yaml", "w") as f:
+        if not os.path.exists("/etc/directord/config.yaml"):
+            with open("/etc/directord/config.yaml", "w") as f:
                 f.write("---\ndebug: false\n")
             print("[+] Created empty configuration file")
 
@@ -325,7 +325,7 @@ class SystemdInstall(object):
 
         path = os.path.abspath(os.path.dirname(sys.argv[0]))
         self.path_setup()
-        base = os.path.dirname(director.__file__)
+        base = os.path.dirname(directord.__file__)
         service_file_path = "/etc/systemd/system/{}".format(service_file)
         if os.path.exists(service_file_path):
             print(
@@ -337,7 +337,8 @@ class SystemdInstall(object):
                 for line in f.readlines():
                     service_f.write(
                         line.replace(
-                            "/usr/bin/director", os.path.join(path, "director")
+                            "/usr/bin/directord",
+                            os.path.join(path, "directord"),
                         )
                     )
 
@@ -349,12 +350,12 @@ class SystemdInstall(object):
     def server(self):
         """Run the server systemd service unit file creation process."""
 
-        self.writer(service_file="director-server.service")
+        self.writer(service_file="directord-server.service")
 
     def client(self):
         """Run the client systemd service unit file creation process."""
 
-        self.writer(service_file="director-client.service")
+        self.writer(service_file="directord-client.service")
 
 
 def _systemd_server():

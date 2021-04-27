@@ -1,9 +1,9 @@
-# Director Components
+# Directord Components
 
 * TOC
 {:toc}
 
-Director is a single application which consists of three parts:
+Directord is a single application which consists of three parts:
 
 * **Server** - The server is the centralized manager of all communication and
   application delivery.
@@ -14,14 +14,14 @@ Director is a single application which consists of three parts:
 * **User** - CLI utility which interfaces with the server over a local socket
   connect.
 
-Director allows for the user to configure the application using environment
+Directord allows for the user to configure the application using environment
 variables, a configurations file, or command line switches.
 
 > NOTE: Because the user interface communicates with the server over a UNIX
   socket, the User and Server components are assumed to exist on the same
   machine.
 
-![Director](assets/Director.png)
+![Directord](assets/Directord.png)
 
 ### Cluster Messaging
 
@@ -30,32 +30,32 @@ communication to and from the nodes. The router allows us to create a low
 latency mesh which monitors node health and ensures is highly responsive
 instruction delivery network.
 
-![Director-Data-flow](assets/Director-Data-flow.png)
+![Directord-Data-flow](assets/Directord-Data-flow.png)
 
 ### Comparative Analysis
 
-Because Director is task driven and messaging backed it is fast, Directors time
+Because Directord is task driven and messaging backed it is fast, Directords time
 to work is measured in microseconds with return trip times measured in
 milliseconds.
 
-To test interactions we used comparison files from the tools director to run 1000
+To test interactions we used comparison files from the tools directord to run 1000
 tasks across a small 6 node test environment.
 
-#### Director
+#### Directord
 
-> The statistics recorded here were provide by the Director application.
+> The statistics recorded here were provide by the Directord application.
   Execution time and roundtrip time are recorded as part of regular job
   interactions.
 
-The director cluster was bootstrapped with the
+The directord cluster was bootstrapped with the
 [Native Bootstrap](installation.md#bootstrap-natively) process. Before running
 these tests the bootstrap process had to be completed ahead of time. The example
 development bootstrap process took **81.23** seconds (1.5 minutes) to complete.
 
-* Run the Director orchestration command to execute 1000 trivial jobs.
+* Run the Directord orchestration command to execute 1000 trivial jobs.
 
 ``` shell
-$ director orchestrate --ignore-cache tests/comparison-orchestration.yaml
+$ directord orchestrate --ignore-cache tests/comparison-orchestration.yaml
 ```
 
 Running the comparison orchestration file with a six node test environment

@@ -1,4 +1,4 @@
-from director import main
+from directord import main
 
 
 main.main()

@@ -2,11 +2,11 @@ all:
   vars:
     ansible_user: centos
   children:
-    director_server:
+    directord_server:
       hosts:
         server0:
           ansible_host: 172.16.27.108
-    director_clients:
+    directord_clients:
       hosts:
         client0:
           ansible_host: 172.16.27.108

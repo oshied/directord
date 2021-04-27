@@ -18,7 +18,7 @@
         <mxCell id="bobSDe8uDwk_6qxty1IZ-7" value="UNIX socket()" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="-40" y="240" width="120" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="bobSDe8uDwk_6qxty1IZ-8" value="&lt;h1&gt;Director Server&lt;/h1&gt;&lt;p&gt;UNIX socket entrypoint into the director server&lt;/p&gt;&lt;p&gt;Bi-directional communication to execute nodes and guarantees ordering.&lt;/p&gt;&lt;p&gt;Consists of: Heartbeat, Job execution, and File Transfer&lt;/p&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;" vertex="1" parent="1">
+        <mxCell id="bobSDe8uDwk_6qxty1IZ-8" value="&lt;h1&gt;Directord Server&lt;/h1&gt;&lt;p&gt;UNIX socket entrypoint into the directord server&lt;/p&gt;&lt;p&gt;Bi-directional communication to execute nodes and guarantees ordering.&lt;/p&gt;&lt;p&gt;Consists of: Heartbeat, Job execution, and File Transfer&lt;/p&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="80" y="90" width="280" height="150" as="geometry" />
         </mxCell>
         <mxCell id="bobSDe8uDwk_6qxty1IZ-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="bobSDe8uDwk_6qxty1IZ-11" target="bobSDe8uDwk_6qxty1IZ-15">

@@ -1,4 +1,4 @@
-# This orchestration will run a functional test, exercising much of the functionality Director offers.
+# This orchestration will run a functional test, exercising much of the functionality Directord offers.
 #
 ---
 
@@ -21,7 +21,7 @@
   # Test setting a cached object using the ENV verb
   - ENV: test_runtime_arg_as_env environment
 
-  # Test creating a work directory
+  # Test creating a work directordy
   - WORKDIR: /tmp/test
 
   # Test copying a file.

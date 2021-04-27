@@ -1,10 +1,10 @@
-director_server:
+directord_server:
   targets:
   - host: 172.16.27.96
     port: 22
     username: centos
 
-director_clients:
+directord_clients:
   args:
     port: 22
     username: centos

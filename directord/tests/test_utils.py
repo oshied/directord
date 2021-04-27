@@ -2,19 +2,19 @@ import unittest
 
 from unittest.mock import patch
 
-from director import tests
-from director import utils
+from directord import tests
+from directord import utils
 
 
 class TestUtils(unittest.TestCase):
-    @patch("director.utils.subprocess.Popen")
+    @patch("directord.utils.subprocess.Popen")
     def test_run_command_success(self, popen):
         popen.return_value = tests.FakePopen()
         output, outcome = utils.run_command(command="test_command")
         self.assertEqual(output, "stdout")
         self.assertEqual(outcome, True)
 
-    @patch("director.utils.subprocess.Popen")
+    @patch("directord.utils.subprocess.Popen")
     def test_run_command_fail(self, popen):
         popen.return_value = tests.FakePopen(return_code=1)
         output, outcome = utils.run_command(command="test_command")
@@ -34,14 +34,19 @@ class TestUtils(unittest.TestCase):
         ctx = unittest.mock.MagicMock()
         socket = unittest.mock.MagicMock()
         with utils.ClientStatus(
-            socket=socket, job_id=b"test-id", ctx=ctx
+            socket=socket,
+            job_id=b"test-id",
+            command=b"test",
+            ctx=ctx,
         ) as c:
             assert c.job_id == b"test-id"
 
-        ctx.socket_multipart_send.assert_called_once_with(
+        ctx.socket_multipart_send.assert_called_with(
             zsocket=socket,
             msg_id=b"test-id",
+            command=b"test",
             control=unittest.mock.ANY,
+            data=unittest.mock.ANY,
             info=unittest.mock.ANY,
         )
 
@@ -49,10 +54,10 @@ class TestUtils(unittest.TestCase):
         ctx = unittest.mock.MagicMock()
         socket = unittest.mock.MagicMock()
         with utils.ClientStatus(
-            socket=socket, job_id=b"test-id-start", ctx=ctx
+            socket=socket, job_id=b"test-id-start", command=b"test", ctx=ctx
         ) as c:
             c.start_processing()
-            ctx.socket_multipart_send.assert_called_once_with(
+            ctx.socket_multipart_send.assert_called_with(
                 zsocket=socket,
                 msg_id=b"test-id-start",
                 control=unittest.mock.ANY,
@@ -61,6 +66,8 @@ class TestUtils(unittest.TestCase):
         ctx.socket_multipart_send.assert_called_with(
             zsocket=socket,
             msg_id=b"test-id-start",
+            command=b"test",
             control=unittest.mock.ANY,
+            data=unittest.mock.ANY,
             info=unittest.mock.ANY,
         )

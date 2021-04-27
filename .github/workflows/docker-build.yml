@@ -5,5 +5,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Build new director container
-      run: docker build -t director -f Containerfile .
+    - name: Build new directord container
+      run: docker build -t directord -f Containerfile .

@@ -21,17 +21,14 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 
 setuptools.setup(
-    name="director",
+    name="directord",
     author="Kevin Carter",
     author_email="kevin@cloudnull.com",
     description=(
-        "A deployment framework built to manage the data center"
-        " life cycle."
+        "A deployment framework built to manage the data center" " life cycle."
     ),
     version="0.1.0",
-    packages=[
-        "director"
-    ],
+    packages=["directord"],
     include_package_data=True,
     zip_safe=False,
     test_suite="tests",
@@ -46,9 +43,9 @@ setuptools.setup(
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/cloudnull/director",
+    url="https://github.com/cloudnull/directord",
     project_urls={
-        "Bug Tracker": "https://github.com/cloudnull/director/issues",
+        "Bug Tracker": "https://github.com/cloudnull/directord/issues",
     },
     python_requires=">=3.6",
     extras_require={"ui": ["flask"], "dev": ["etcd3"]},
@@ -64,18 +61,18 @@ setuptools.setup(
     ],
     entry_points={
         "console_scripts": [
-            "director = director.main:main",
-            "director-server-systemd = director.main:_systemd_server",
-            "director-client-systemd = director.main:_systemd_client",
+            "directord = directord.main:main",
+            "directord-server-systemd = directord.main:_systemd_server",
+            "directord-client-systemd = directord.main:_systemd_client",
         ]
     },
     data_files=[
         (
-            "share/director/orchestrations",
+            "share/directord/orchestrations",
             [i for i in glob.glob("orchestrations/*") if os.path.isfile(i)],
         ),
         (
-            "share/director/orchestrations/files",
+            "share/directord/orchestrations/files",
             [
                 i
                 for i in glob.glob("orchestrations/files/*")
@@ -83,7 +80,7 @@ setuptools.setup(
             ],
         ),
         (
-            "share/director/tools",
+            "share/directord/tools",
             [i for i in glob.glob("tools/*") if os.path.isfile(i)],
         ),
     ],

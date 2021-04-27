@@ -1,0 +1,19 @@
+---
+
+directord_server:
+  jobs:
+  - RUN: sudo /opt/directord/bin/directord manage --generate-keys
+  - RUN: sudo systemctl restart directord-server.service
+  - GET: /etc/directord/private_keys/client.key_secret /tmp/client.key_secret
+  - GET: /etc/directord/public_keys/client.key /tmp/client.key
+  - GET: /etc/directord/public_keys/server.key /tmp/server.key
+
+directord_clients:
+  jobs:
+  - ADD: /tmp/client.key_secret /tmp/client.key_secret-stash
+  - RUN: sudo mv /tmp/client.key_secret-stash /etc/directord/private_keys/client.key_secret
+  - ADD: /tmp/client.key /tmp/client.key-stash
+  - RUN: sudo mv /tmp/client.key-stash /etc/directord/public_keys/client.key
+  - ADD: /tmp/server.key /tmp/server.key-stash
+  - RUN: sudo mv /tmp/server.key-stash /etc/directord/public_keys/server.key
+  - RUN: sudo systemctl restart directord-client.service

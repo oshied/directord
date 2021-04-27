@@ -10,12 +10,12 @@ kind: Pod
 metadata:
   creationTimestamp: "2021-04-16T14:49:59Z"
   labels:
-    app: director-server
-  name: director-server
+    app: directord-server
+  name: directord-server
 spec:
   containers:
   - args:
-    - director
+    - directord
     command:
     - entrypoint
     env:
@@ -28,9 +28,9 @@ spec:
     - name: DIRECTOR_MODE
       value: server
     - name: HOSTNAME
-      value: director
-    image: director
-    name: director-server
+      value: directord
+    image: directord
+    name: directord-server
     resources: {}
     securityContext:
       allowPrivilegeEscalation: true
@@ -44,20 +44,20 @@ spec:
       runAsUser: 1001
       seLinuxOptions: {}
     volumeMounts:
-    - mountPath: /etc/director
-      name: etc-director-host
-    - mountPath: /usr/local/share/director
-      name: usr-local-share-director
+    - mountPath: /etc/directord
+      name: etc-directord-host
+    - mountPath: /usr/local/share/directord
+      name: usr-local-share-directord
     workingDir: /
   dnsConfig: {}
   hostNetwork: true
   volumes:
   - hostPath:
-      path: /etc/director
-      type: Directory
-    name: etc-director-host
+      path: /etc/directord
+      type: Directordy
+    name: etc-directord-host
   - hostPath:
-      path: /usr/local/share/director
-      type: Directory
-    name: usr-local-share-director
+      path: /usr/local/share/directord
+      type: Directordy
+    name: usr-local-share-directord
 status: {}

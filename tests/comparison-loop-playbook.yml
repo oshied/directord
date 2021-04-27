@@ -1,5 +1,5 @@
 - name: Run trivial tasks
-  hosts: director_clients
+  hosts: directord_clients
   gather_facts: False
   any_errors_fatal: true
   tasks:
