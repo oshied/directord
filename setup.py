@@ -16,11 +16,22 @@ import os
 import setuptools
 
 
+with open("README.md", "r", encoding="utf-8") as f:
+    long_description = f.read()
+
+
 setuptools.setup(
     name="director",
-    version="0.0.1",
-    long_description=__doc__,
-    packages=["director"],
+    author="Kevin Carter",
+    author_email="kevin@cloudnull.com",
+    description=(
+        "A deployment framework built to manage the data center"
+        " life cycle."
+    ),
+    version="0.1.0",
+    packages=[
+        "director"
+    ],
     include_package_data=True,
     zip_safe=False,
     test_suite="tests",
@@ -33,6 +44,13 @@ setuptools.setup(
         "tabulate",
         "tenacity",
     ],
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/cloudnull/director",
+    project_urls={
+        "Bug Tracker": "https://github.com/cloudnull/director/issues",
+    },
+    python_requires=">=3.6",
     extras_require={"ui": ["flask"], "dev": ["etcd3"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
