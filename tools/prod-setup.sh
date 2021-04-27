@@ -13,7 +13,7 @@ dnf -y install ${PACKAGES}
 
 python3 -m venv --system-site-packages /opt/directord
 /opt/directord/bin/pip install --upgrade pip setuptools wheel
-/opt/directord/bin/pip install git+https://github.com/cloudnull/directord
+/opt/directord/bin/pip install directord
 
 echo -e "\nDirectord is setup and installed within [ /opt/directord ]"
 echo "Activate the venv or run directord directly."
