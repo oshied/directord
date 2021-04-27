@@ -15,5 +15,5 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
-          repository: cloudnull/director/director
+          repository: cloudnull/directord/directord
           tag_with_ref: true

@@ -17,7 +17,7 @@
   - ARG: keystone_db_name keystone
   - ARG: keystone_admin_pass keystone
   - ARG: mysql_root_password SuperSecrete
-  - RUN: --stdout-arg director_hostname hostname
+  - RUN: --stdout-arg directord_hostname hostname
 
 # Install all of our packages and do some basic service setup.
 - jobs:
@@ -26,7 +26,7 @@
       crudini --set /etc/keystone/keystone.conf database connection
       'mysql+pymysql://{{ keystone_db_username }}:{{ keystone_db_password }}@{{ keystone_db_host }}/{{ keystone_db_name }}'
   - RUN: crudini --set /etc/keystone/keystone.conf token provider fernet
-  - RUN: sed -i "s/^#ServerName.*/ServerName {{ director_hostname }}/g" /etc/httpd/conf/httpd.conf
+  - RUN: sed -i "s/^#ServerName.*/ServerName {{ directord_hostname }}/g" /etc/httpd/conf/httpd.conf
   - RUN: ln -sf /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
 
 # Perform all the service integration tasks. Note these tasks are all using `--run-once`.
@@ -55,6 +55,6 @@
       --bootstrap-role-name admin
       --bootstrap-service-name keystone
       --bootstrap-region-id {{ keystone_region }}
-      --bootstrap-admin-url http://{{ director_hostname }}:35357
-      --bootstrap-public-url http://{{ director_hostname }}:5000
-      --bootstrap-internal-url http://{{ director_hostname }}:5000
+      --bootstrap-admin-url http://{{ directord_hostname }}:35357
+      --bootstrap-public-url http://{{ directord_hostname }}:5000
+      --bootstrap-internal-url http://{{ directord_hostname }}:5000

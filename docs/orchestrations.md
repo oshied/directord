@@ -3,7 +3,7 @@
 * TOC
 {:toc}
 
-Orchestration files allow director to run any number of jobs against a given
+Orchestration files allow directord to run any number of jobs against a given
 set of targets. The specification file is simple and made to be easy. Each
 file is loaded as an array and can contain many jobs.
 
@@ -20,7 +20,7 @@ The values available within an orchestration file are `targets` and `jobs`.
 ```
 
 Within the orchestration file the "target" key is optional. If this key is
-undefined, Director will run against all available targets.
+undefined, Directord will run against all available targets.
 
 ``` yaml
 ---
@@ -43,7 +43,7 @@ the given command and the value is the execution.
 ##### Example Orchestration file
 
 This example orchestration file will copy the local client ssh keys from the
-directory `/home/centos/.ssh` to all nodes within the clister. Then, on the
+directordy `/home/centos/.ssh` to all nodes within the clister. Then, on the
 three noted targets, `wget` will be installed.
 
 ``` yaml
@@ -67,23 +67,23 @@ Running an orchestration is simple and follows the same pattern as running an
 adhoc execution.
 
 ``` shell
-$ director orchestrate ${ORCHESTRATION_FILE_NAME} [<switches> ...]
+$ directord orchestrate ${ORCHESTRATION_FILE_NAME} [<switches> ...]
 ```
 
 #### Orchestration Library Usage
 
 Running orchestration jobs can also be run using the library. This allows
 operators to define jobs in out of band task flows and provides and interface
-into Director that is not strictly defined by shell interactions.
+into Directord that is not strictly defined by shell interactions.
 
 ``` python
 # Import the required modules.
-from director import mixin, user
+from directord import mixin, user
 
 # Define a minimal set of arguments.
 class args(object):
     debug=False
-    socket_path='/var/run/director.sock'
+    socket_path='/var/run/directord.sock'
     mode='orchestrate'
 
 # Define your job(s).

@@ -9,15 +9,15 @@ import yaml
 import diskcache
 import zmq
 
-from director import manager
-from director import utils
+from directord import manager
+from directord import utils
 
 
 class Client(manager.Interface):
-    """Director client class."""
+    """Directord client class."""
 
     def __init__(self, args):
-        """Initialize the Director client.
+        """Initialize the Directord client.
 
         Sets up the client object.
 
@@ -158,7 +158,7 @@ class Client(manager.Interface):
 
         Command operations are rendered with cached data from the args dict.
 
-        :param command: Work directory path.
+        :param command: Work directordy path.
         :type command: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
@@ -188,9 +188,9 @@ class Client(manager.Interface):
         return info.strip() or command, success
 
     def _run_workdir(self, workdir, cache):
-        """Run file work directory operation.
+        """Run file work directordy operation.
 
-        :param workdir: Work directory path.
+        :param workdir: Work directordy path.
         :type workdir: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
@@ -557,12 +557,12 @@ class Client(manager.Interface):
             while True:
                 if time.time() > poller_time + 64:
                     if poller_interval != 2048:
-                        self.log.info("Director client entering idle state.")
+                        self.log.info("Directord client entering idle state.")
                     poller_interval = 2048
 
                 elif time.time() > poller_time + 32:
                     if poller_interval != 1024:
-                        self.log.info("Director client ramping down.")
+                        self.log.info("Directord client ramping down.")
                     poller_interval = 1024
 
                 if time.time() > cache_check_time + 4096:

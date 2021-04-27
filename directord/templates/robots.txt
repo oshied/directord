@@ -1,4 +1,4 @@
-# Welcome to Director!
+# Welcome to Directord!
 # robots welcome;
 User-Agent: *
 Disallow:

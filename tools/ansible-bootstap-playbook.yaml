@@ -1,11 +1,11 @@
 
-- name: Bootstrap director
+- name: Bootstrap directord
   hosts: all
   gather_facts: False
   any_errors_fatal: true
   become: true
   vars:
-    director_development_env: true
+    directord_development_env: true
   tasks:
     - name: Development setup block
       block:
@@ -19,7 +19,7 @@
       - name: Execute development script
         command: "bash /opt/dev-setup.sh"
       when:
-        - director_development_env | bool
+        - directord_development_env | bool
     - name: Production setup block
       block:
       - name: Specifying a destination path
@@ -31,48 +31,48 @@
       - name: Execute development script
         command: "bash /opt/prod-setup.sh"
       when:
-        - not director_development_env | bool
+        - not directord_development_env | bool
 
-- name: Start director server
-  hosts: director_server
+- name: Start directord server
+  hosts: directord_server
   gather_facts: False
   any_errors_fatal: true
   become: true
   vars:
-    director_development_env: true
-    # For now, all installations of director are assumed to be within a virtual environment.
-    director_bin_path: "{{ director_development_env | bool | ternary('/opt/director/bin', '/opt/director/bin') }}"
+    directord_development_env: true
+    # For now, all installations of directord are assumed to be within a virtual environment.
+    directord_bin_path: "{{ directord_development_env | bool | ternary('/opt/directord/bin', '/opt/directord/bin') }}"
   tasks:
     - name: Generate curve keys
-      command: "{{ director_bin_path }}/director manage --generate-keys"
+      command: "{{ directord_bin_path }}/directord manage --generate-keys"
     - name: Specifying a destination path
       fetch:
         src: "{{ item }}"
         dest: "/tmp/{{ item | basename }}"
         flat: yes
       loop:
-      - /etc/director/private_keys/client.key_secret
-      - /etc/director/public_keys/client.key
-      - /etc/director/public_keys/server.key
-    - name: Setup director server service unit
-      command: "{{ director_bin_path }}/director-server-systemd"
-    - name: Load director server service unit
+      - /etc/directord/private_keys/client.key_secret
+      - /etc/directord/public_keys/client.key
+      - /etc/directord/public_keys/server.key
+    - name: Setup directord server service unit
+      command: "{{ directord_bin_path }}/directord-server-systemd"
+    - name: Load directord server service unit
       systemd:
         state: restarted
         daemon_reload: yes
-        name: director-server.service
+        name: directord-server.service
 
-- name: Start director clients
-  hosts: director_clients
+- name: Start directord clients
+  hosts: directord_clients
   gather_facts: False
   any_errors_fatal: true
   become: true
   tags:
-    - director-client
+    - directord-client
   vars:
-    director_development_env: true
-    # For now, all installations of director are assumed to be within a virtual environment.
-    director_bin_path: "{{ director_development_env | bool | ternary('/opt/director/bin', '/opt/director/bin') }}"
+    directord_development_env: true
+    # For now, all installations of directord are assumed to be within a virtual environment.
+    directord_bin_path: "{{ directord_development_env | bool | ternary('/opt/directord/bin', '/opt/directord/bin') }}"
   handlers:
     - name: Key cleanup
       fetch:
@@ -85,50 +85,50 @@
       - /tmp/client.key
       - /tmp/server.key
   tasks:
-    - name: Ensure key directories exists
+    - name: Ensure key directordies exists
       file:
         path: "{{ item }}"
-        state: directory
+        state: directordy
       loop:
-      - /etc/director
-      - /etc/director/private_keys
-      - /etc/director/public_keys
+      - /etc/directord
+      - /etc/directord/private_keys
+      - /etc/directord/public_keys
     - name: Copy secret keys
       copy:
         src: "/tmp/client.key_secret"
-        dest: "/etc/director/private_keys/client.key_secret"
+        dest: "/etc/directord/private_keys/client.key_secret"
       notify: Key cleanup
     - name: Copy public keys
       copy:
         src: "{{ item }}"
-        dest: "/etc/director/public_keys/{{ item | basename }}"
+        dest: "/etc/directord/public_keys/{{ item | basename }}"
       loop:
         - /tmp/client.key
         - /tmp/server.key
       notify: Key cleanup
-    - name: Read the director config file
+    - name: Read the directord config file
       slurp:
-        path: /etc/director/config.yaml
+        path: /etc/directord/config.yaml
       register: config
     - name: extract the data
       set_fact:
-        director_config: "{{ config['content'] | b64decode | from_yaml }}"
-    - name: Write the director config file
+        directord_config: "{{ config['content'] | b64decode | from_yaml }}"
+    - name: Write the directord config file
       copy:
         content: >-
           {{
-            director_config | combine(
+            directord_config | combine(
               {
-                'server_address': hostvars[groups['director_server'][0]]['ansible_host'],
+                'server_address': hostvars[groups['directord_server'][0]]['ansible_host'],
                 'curve_encryption': true
               }
             ) | to_nice_yaml
           }}
-        dest: /etc/director/config.yaml
-    - name: Setup director client service unit
-      command: "{{ director_bin_path }}/bin/director-client-systemd"
-    - name: Load director client service unit
+        dest: /etc/directord/config.yaml
+    - name: Setup directord client service unit
+      command: "{{ directord_bin_path }}/bin/directord-client-systemd"
+    - name: Load directord client service unit
       systemd:
         state: restarted
         daemon_reload: yes
-        name: director-client.service
+        name: directord-client.service

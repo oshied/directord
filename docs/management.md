@@ -9,8 +9,8 @@ the cluster.
 
 ## UI
 
-The server component of director provides for a minimal read-only UI which
+The server component of directord provides for a minimal read-only UI which
 provides insight into job executions and nodes within the cluster. To start
 the UI component use the `--run-ui` flag when starting the server.
 
-![Director-UI](assets/Director-UI.png)
+![Directord-UI](assets/Directord-UI.png)

@@ -3,9 +3,9 @@ import uuid
 
 from unittest.mock import patch
 
-from director import manager
+from directord import manager
 
-from director import tests
+from directord import tests
 
 
 class TestUtils(unittest.TestCase):

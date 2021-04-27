@@ -9,8 +9,8 @@ JOBS = list()
 NODES = list()
 
 
-class DirectorUI(MethodView):
-    """Implement a method view for the Director UI."""
+class DirectordUI(MethodView):
+    """Implement a method view for the Directord UI."""
 
     def get(self):
         """Return a get response from a template."""
@@ -32,10 +32,10 @@ class DirectorUI(MethodView):
 
 
 class UI(object):
-    """The Director UI execution class."""
+    """The Directord UI execution class."""
 
     def __init__(self, args, jobs, nodes):
-        """Initialize the Director UI class.
+        """Initialize the Directord UI class.
 
         :param args: Arguments parsed by argparse.
         :type args: Object
@@ -57,7 +57,7 @@ class UI(object):
         Starts the flask application using the embedded server.
         """
 
-        APP.add_url_rule("/", view_func=DirectorUI.as_view("index"))
+        APP.add_url_rule("/", view_func=DirectordUI.as_view("index"))
         if self.args.bind_address == "*":
             host = "0.0.0.0"
         else:

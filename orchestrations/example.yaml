@@ -3,7 +3,7 @@
 ---
 
 # This orchestration file is simple and used to show how to leverage
-# parts of the Director technology stack.
+# parts of the Directord technology stack.
 
 # This item lists all of the jobs that will be applied globally to all
 # nodes within the stack.

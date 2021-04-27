@@ -1,0 +1,12 @@
+# This orchestration assumes new keys have been generated on the directord server.
+# Once the jobs have been completed, restart the directord server process.
+#
+---
+
+- jobs:
+  - WORKDIR: /etc/directord/private_keys
+  - WORKDIR: /etc/directord/public_keys
+  - ADD: /etc/directord/private_keys/client.key_secret /etc/directord/private_keys/client.key_secret
+  - ADD: /etc/directord/public_keys/client.key /etc/directord/public_keys/client.key
+  - ADD: /etc/directord/public_keys/server.key /etc/directord/public_keys/server.key
+  - RUN: systemctl restart directord-client

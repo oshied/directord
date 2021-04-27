@@ -28,6 +28,6 @@ class FakeArgs(object):
     mode = "client"
     server_address = "localhost"
     shared_key = None
-    socket_path = "/var/run/director.sock"
+    socket_path = "/var/run/directord.sock"
     transfer_port = 5556
     curve_encryption = None

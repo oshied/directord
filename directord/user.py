@@ -7,13 +7,13 @@ import time
 
 import zmq.auth
 
-import director
+import directord
 
-from director import manager
+from directord import manager
 
 
 class User(manager.Interface):
-    """Director User interface class."""
+    """Directord User interface class."""
 
     def __init__(self, args):
         """Initialize the User interface class.
@@ -186,7 +186,7 @@ class User(manager.Interface):
                 expose.append("tcp")
             data["port"], data["proto"] = expose
         elif verb == "WORKDIR":
-            parser.add_argument("workdir", help="Create a directory.")
+            parser.add_argument("workdir", help="Create a directordy.")
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
@@ -268,7 +268,7 @@ class User(manager.Interface):
         :returns: String
         """
 
-        with director.UNIXSocketConnect(self.args.socket_path) as s:
+        with directord.UNIXSocketConnect(self.args.socket_path) as s:
             s.sendall(data.encode())
             fragments = []
             while True:
@@ -281,7 +281,7 @@ class User(manager.Interface):
 
 
 class Manage(User):
-    """Director Manage interface class."""
+    """Directord Manage interface class."""
 
     def __init__(self, args):
         """Initialize the Manage interface class.
@@ -296,9 +296,9 @@ class Manage(User):
 
     @staticmethod
     def move_certificates(
-        directory, target_directory=None, backup=False, suffix=".key"
+        directordy, target_directordy=None, backup=False, suffix=".key"
     ):
-        for item in os.listdir(directory):
+        for item in os.listdir(directordy):
             if backup:
                 target_file = "{}.bak".format(os.path.basename(item))
             else:
@@ -306,14 +306,14 @@ class Manage(User):
 
             if item.endswith(suffix):
                 os.rename(
-                    os.path.join(directory, item),
-                    os.path.join(target_directory or directory, target_file),
+                    os.path.join(directordy, item),
+                    os.path.join(target_directordy or directordy, target_file),
                 )
 
-    def generate_certificates(self, base_dir="/etc/director"):
+    def generate_certificates(self, base_dir="/etc/directord"):
         """Generate client and server CURVE certificate files.
 
-        :param base_dir: Director configuration path.
+        :param base_dir: Directord configuration path.
         :type base_dir: String
         """
 
@@ -326,10 +326,10 @@ class Manage(User):
 
         # Run certificate backup
         self.move_certificates(
-            directory=public_keys_dir, backup=True, suffix=".key"
+            directordy=public_keys_dir, backup=True, suffix=".key"
         )
         self.move_certificates(
-            directory=secret_keys_dir, backup=True, suffix=".key_secret"
+            directordy=secret_keys_dir, backup=True, suffix=".key_secret"
         )
 
         # create new keys in certificates dir
@@ -338,11 +338,13 @@ class Manage(User):
 
         # Move generated certificates in place
         self.move_certificates(
-            directory=keys_dir, target_directory=public_keys_dir, suffix=".key"
+            directordy=keys_dir,
+            target_directordy=public_keys_dir,
+            suffix=".key",
         )
         self.move_certificates(
-            directory=keys_dir,
-            target_directory=secret_keys_dir,
+            directordy=keys_dir,
+            target_directordy=secret_keys_dir,
             suffix=".key_secret",
         )
 

@@ -9,9 +9,9 @@
 ---
 
 - jobs:
-  - ARG: director_ssh_folder /root/.ssh
+  - ARG: directord_ssh_folder /root/.ssh
   - RUN: >-
-      [ -f ~/.ssh/id_rsa ] || ssh-keygen -q -b 2048 -t rsa -N '' -f "{{ director_ssh_folder }}/id_rsa"
-  - RUN: --skip-cache --stdout-arg director_ssh_key cat "{{ director_ssh_folder }}/id_rsa.pub"
-  - QUERY: director_ssh_key
-  - ADD: --blueprint files/authorized_keys "{{ director_ssh_folder }}/authorized_keys"
+      [ -f ~/.ssh/id_rsa ] || ssh-keygen -q -b 2048 -t rsa -N '' -f "{{ directord_ssh_folder }}/id_rsa"
+  - RUN: --skip-cache --stdout-arg directord_ssh_key cat "{{ directord_ssh_folder }}/id_rsa.pub"
+  - QUERY: directord_ssh_key
+  - ADD: --blueprint files/authorized_keys "{{ directord_ssh_folder }}/authorized_keys"

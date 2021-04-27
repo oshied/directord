@@ -1,0 +1,51 @@
+---
+
+directord_server:
+  jobs:
+  - ADD: prod-setup.sh prod-setup.sh
+  - RUN: sudo bash prod-setup.sh
+  - RUN: >-
+      [[ ! -f /etc/directord/config.yaml ]] || echo "{}" | sudo tee /etc/directord/config.yaml
+  - RUN: sudo /opt/directord/bin/directord manage --generate-keys
+  - RUN: sudo /opt/directord/bin/directord-server-systemd
+  - RUN: |-
+      sudo python3 <<EOC
+      import yaml
+      with open('/etc/directord/config.yaml') as f:
+          config = yaml.safe_load(f)
+      config["curve_encryption"] = True
+      with open('/etc/directord/config.yaml', 'w') as f:
+          f.write(yaml.safe_dump(config, default_flow_style=False))
+      EOC
+  - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl restart directord-server.service
+  - GET: /etc/directord/private_keys/client.key_secret /tmp/client.key_secret
+  - GET: /etc/directord/public_keys/client.key /tmp/client.key
+  - GET: /etc/directord/public_keys/server.key /tmp/server.key
+
+directord_clients:
+  jobs:
+  - ADD: prod-setup.sh prod-setup.sh
+  - RUN: sudo bash prod-setup.sh
+  - RUN: >-
+      [[ ! -f /etc/directord/config.yaml ]] || echo "{}" | sudo tee /etc/directord/config.yaml
+  - RUN: sudo mkdir -p /etc/directord/private_keys /etc/directord/public_keys
+  - ADD: /tmp/client.key_secret /tmp/client.key_secret-stash
+  - RUN: sudo mv /tmp/client.key_secret-stash /etc/directord/private_keys/client.key_secret
+  - ADD: /tmp/client.key /tmp/client.key-stash
+  - RUN: sudo mv /tmp/client.key-stash /etc/directord/public_keys/client.key
+  - ADD: /tmp/server.key /tmp/server.key-stash
+  - RUN: sudo mv /tmp/server.key-stash /etc/directord/public_keys/server.key
+  - RUN: sudo /opt/directord/bin/directord-client-systemd
+  - RUN: |-
+      sudo python3 <<EOC
+      import yaml
+      with open('/etc/directord/config.yaml') as f:
+          config = yaml.safe_load(f)
+      config["curve_encryption"] = True
+      config['server_address'] = "{{ directord_server['targets'][0]['host'] }}"
+      with open('/etc/directord/config.yaml', 'w') as f:
+          f.write(yaml.safe_dump(config, default_flow_style=False))
+      EOC
+  - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl restart directord-client.service

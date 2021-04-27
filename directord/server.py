@@ -7,11 +7,11 @@ import time
 
 import zmq
 
-from director import manager
+from directord import manager
 
 
 class Server(manager.Interface):
-    """Director server class."""
+    """Directord server class."""
 
     def __init__(self, args):
         """Initialize the Server class.
@@ -258,8 +258,8 @@ class Server(manager.Interface):
         receive the message. If a defined target is not found within the
         workers object no job will be executed.
 
-        Director's job executor will slow down the poll interval when no work
-        is present. This means Director will ramp-up resource utilization when
+        Directord's job executor will slow down the poll interval when no work
+        is present. This means Directord will ramp-up resource utilization when
         required and become virtually idle when there's nothing to do.
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
@@ -274,12 +274,12 @@ class Server(manager.Interface):
         while True:
             if time.time() > poller_time + 64:
                 if poller_interval != 2048:
-                    self.log.info("Director server entering idle state.")
+                    self.log.info("Directord server entering idle state.")
                 poller_interval = 2048
 
             elif time.time() > poller_time + 32:
                 if poller_interval != 1024:
-                    self.log.info("Director server ramping down.")
+                    self.log.info("Directord server ramping down.")
                 poller_interval = 1024
 
             socks = dict(self.poller.poll(poller_interval))
@@ -446,7 +446,7 @@ class Server(manager.Interface):
         """Start a socket server.
 
         The socket server is used to broker a connection from the end user
-        into the director sub-system. The socket server will allow for 1
+        into the directord sub-system. The socket server will allow for 1
         message of 10M before requiring the client to reconnect.
 
         All received data is expected to be JSON serialized data. Before
@@ -575,7 +575,7 @@ class Server(manager.Interface):
 
         if self.args.run_ui:
             # low import to ensure nothing flask is loading needlessly.
-            from director import ui  # noqa
+            from directord import ui  # noqa
 
             ui_obj = ui.UI(
                 args=self.args, jobs=self.return_jobs, nodes=self.workers

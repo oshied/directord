@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo
 
-VENV_PATH="${1:-/opt/director}"
+VENV_PATH="${1:-/opt/directord}"
 PYTHON_BIN=${2:-python3}
 
 # OS Detect
@@ -47,13 +47,13 @@ dnf install -y $(${VENV_PATH}/bin/bindep -b -f ${BASE_PATH}/bindep.txt test) pyt
 if [[ -f "${BASE_PATH}/../setup.py" ]]; then
   ${VENV_PATH}/bin/pip install "${BASE_PATH}/../[ui,dev]"
 else
-  rm -rf /opt/director-src
-  git clone https://github.com/cloudnull/director /opt/director-src
-  ${VENV_PATH}/bin/pip install /opt/director-src[ui,dev]
+  rm -rf /opt/directord-src
+  git clone https://github.com/cloudnull/directord /opt/directord-src
+  ${VENV_PATH}/bin/pip install /opt/directord-src[ui,dev]
 fi
 
-echo -e "\nDirector is setup and installed within [ ${VENV_PATH} ]"
-echo "Activate the venv or run director directly."
-echo "Director can be installed as a service using the following command(s):"
-echo "${VENV_PATH}/bin/director-client-systemd"
-echo -e "${VENV_PATH}/bin/director-server-systemd\n"
+echo -e "\nDirectord is setup and installed within [ ${VENV_PATH} ]"
+echo "Activate the venv or run directord directly."
+echo "Directord can be installed as a service using the following command(s):"
+echo "${VENV_PATH}/bin/directord-client-systemd"
+echo -e "${VENV_PATH}/bin/directord-server-systemd\n"

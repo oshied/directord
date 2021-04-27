@@ -10,10 +10,10 @@ import zmq
 import zmq.auth
 from zmq.auth.thread import ThreadAuthenticator
 
-import director
+import directord
 
 
-class Interface(director.Processor):
+class Interface(directord.Processor):
     """The Interface class.
 
     This class defines everything required to connect to or from a given
@@ -70,7 +70,7 @@ class Interface(director.Processor):
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
-        self.base_dir = "/etc/director"
+        self.base_dir = "/etc/directord"
         self.public_keys_dir = os.path.join(self.base_dir, "public_keys")
         self.secret_keys_dir = os.path.join(self.base_dir, "private_keys")
         self.curve_keys_exist = os.path.exists(
@@ -184,7 +184,7 @@ class Interface(director.Processor):
         retry=tenacity.retry_if_exception_type(TimeoutError),
         wait=tenacity.wait_fixed(5),
         before_sleep=tenacity.before_sleep_log(
-            director.getLogger(name="director"), logging.WARN
+            directord.getLogger(name="directord"), logging.WARN
         ),
     )
     def socket_connect(
