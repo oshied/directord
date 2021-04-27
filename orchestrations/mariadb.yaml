@@ -1,3 +1,5 @@
+# This orchestration will deploy a MySQL (MariaDB) server.
+#
 ---
 
 - jobs:

@@ -1,3 +1,5 @@
+# This orchestration can be used to install and setup tripleo-repos.
+#
 ---
 
 - jobs:

@@ -1,5 +1,6 @@
----
 # Example orchestration file.
+#
+---
 
 # This orchestration file is simple and used to show how to leverage
 # parts of the Director technology stack.

@@ -1,3 +1,9 @@
+# This orchestration will deploy the ghost blogging platform.
+# This orchestration assumes that the mysql server (mariadb) is online and reachable
+# via the MySQL command line client.
+#
+---
+
 - jobs:
   - ARG: mysql_root_password SuperSecrete
   - ARG: ghost_db_pw Secrete

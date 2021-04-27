@@ -1,3 +1,7 @@
+# This orchestration will run a functional test, exercising much of the functionality Director offers.
+#
+---
+
 - jobs:
   # Test run
   - RUN: echo hello world

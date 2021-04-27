@@ -1,3 +1,13 @@
+# This orchestration will deploy ssh keys and ensure all targets have
+# a complete set of public keys from all other targets.
+#
+# NOTE(cloudnull): This orchestration highlights the power or "QUERY"
+#                  which has the ability to notify targets of an "ARG"
+#                  and how that ability can be leveraged within a simple
+#                  blueprint.
+#
+---
+
 - jobs:
   - ARG: director_ssh_folder /root/.ssh
   - RUN: >-

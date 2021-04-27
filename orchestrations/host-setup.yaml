@@ -1,3 +1,5 @@
+# This is a simple host setup orchestration which should be safe to run on all RHEL/CentOS deployments.
+#
 ---
 
 - jobs:

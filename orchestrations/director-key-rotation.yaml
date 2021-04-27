@@ -1,5 +1,11 @@
+# This orchestration assumes new keys have been generated on the director server.
+# Once the jobs have been completed, restart the director server process.
+#
+---
 
 - jobs:
+  - WORKDIR: /etc/director/private_keys
+  - WORKDIR: /etc/director/public_keys
   - ADD: /etc/director/private_keys/client.key_secret /etc/director/private_keys/client.key_secret
   - ADD: /etc/director/public_keys/client.key /etc/director/public_keys/client.key
   - ADD: /etc/director/public_keys/server.key /etc/director/public_keys/server.key

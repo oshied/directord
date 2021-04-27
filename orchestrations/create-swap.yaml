@@ -1,3 +1,6 @@
+# This orchestration will create a swap file and ensure it's active.
+#
+---
 
 # Create a swap file and enable it
 - jobs:

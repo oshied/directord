@@ -1,3 +1,7 @@
+# This orchestration will deploy an NGINX server.
+#
+---
+
 # Install packages
 - jobs:
   - RUN: dnf install -y nginx
