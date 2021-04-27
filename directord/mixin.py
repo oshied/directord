@@ -124,9 +124,10 @@ class Mixin(object):
                 with open(orchestrate_file) as f:
                     orchestrations = yaml.safe_load(f)
 
-                defined_targets = list()
                 if self.args.target:
                     defined_targets = list(set(self.args.target))
+                else:
+                    defined_targets = list()
 
                 return_data.extend(
                     self.exec_orchestrations(

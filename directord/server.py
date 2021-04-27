@@ -373,7 +373,7 @@ class Server(manager.Interface):
                     job_target = job_item.get("target")
 
                     # NOTE(cloudnull): We run on all targets if query is used.
-                    run_query = job_item["verb"] != "QUERY"
+                    run_query = job_item["verb"] == "QUERY"
 
                     if job_target and not run_query:
                         job_target = job_target.encode()
