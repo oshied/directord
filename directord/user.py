@@ -145,7 +145,7 @@ class User(manager.Interface):
             ]
             if not data["from"]:
                 raise AttributeError(
-                    "The value of {} was not found.".format(file_from)
+                    "The value of [ {} ] was not found.".format(file_from)
                 )
             data["blueprint"] = args.blueprint
         elif verb in ["ARG", "ENV"]:
