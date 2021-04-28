@@ -301,9 +301,7 @@ class Manage(User):
             os.makedirs(item, exist_ok=True)
 
         # Run certificate backup
-        self.move_certificates(
-            directory=public_keys_dir, backup=True, suffix=".key"
-        )
+        self.move_certificates(directory=public_keys_dir, backup=True)
         self.move_certificates(
             directory=secret_keys_dir, backup=True, suffix=".key_secret"
         )
@@ -333,6 +331,7 @@ class Manage(User):
         :type job_id: String
         :returns: Tuple
         """
+
         with self.timeout(
             time=getattr(self.args, "timeout", 240), job_id=job_id
         ):
@@ -344,8 +343,8 @@ class Manage(User):
                         return True, "Job Success: {}".format(job_id)
                     elif data_return.get("FAILED"):
                         return False, "Job Failed: {}".format(job_id)
-                    else:
-                        time.sleep(1)
+                else:
+                    time.sleep(1)
 
     def run(self, override=None):
         """Send the management command to the server.
@@ -357,22 +356,28 @@ class Manage(User):
 
         if (
             override == "list-jobs"
-            or self.args.list_jobs
-            or self.args.job_info
-            or self.args.export_jobs
+            or getattr(self.args, "list_jobs", False)
+            or getattr(self.args, "job_info", False)
+            or getattr(self.args, "export_jobs", False)
         ):
             manage = "list-jobs"
         elif (
             override == "list-nodes"
-            or self.args.list_nodes
-            or self.args.export_nodes
+            or getattr(self.args, "list_nodes", False)
+            or getattr(self.args, "export_nodes", False)
         ):
             manage = "list-nodes"
-        elif override == "purge-jobs" or self.args.purge_jobs:
+        elif override == "purge-jobs" or getattr(
+            self.args, "purge_jobs", False
+        ):
             manage = "purge-jobs"
-        elif override == "purge-nodes" or self.args.purge_nodes:
+        elif override == "purge-nodes" or getattr(
+            self.args, "purge_nodes", False
+        ):
             manage = "purge-nodes"
-        elif override == "generate-keys" or self.args.generate_keys:
+        elif override == "generate-keys" or getattr(
+            self.args, "generate_keys", False
+        ):
             return self.generate_certificates()
         else:
             raise SystemExit("No known management function was defined.")

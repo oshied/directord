@@ -2,6 +2,7 @@ import json
 import unittest
 
 from unittest.mock import patch
+from unittest.mock import call
 
 from directord import user
 from directord import tests
@@ -251,19 +252,151 @@ class TestUser(unittest.TestCase):
 
 class TestManager(unittest.TestCase):
     def setUp(self):
-        pass
+        self.manage = user.Manage(args=tests.FakeArgs())
 
     def tearDown(self):
         pass
 
-    def test_move_cetrificates(self):
-        pass
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_move_cetrificates_null(self, mock_listdir, mock_rename):
+        mock_listdir.return_value = ["item-one", "item-two"]
+        self.manage.move_certificates(directory="/test/path")
+        mock_rename.assert_not_called()
 
-    def test_generate_certificates(self):
-        pass
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_move_cetrificates_normal(self, mock_listdir, mock_rename):
+        mock_listdir.return_value = ["item-one.key", "item-two.key"]
+        self.manage.move_certificates(directory="/test/path")
+        mock_rename.assert_called_with(
+            "/test/path/item-two.key", "/test/path/item-two.key"
+        )
+        mock_rename.assert_has_calls(
+            [
+                call("/test/path/item-one.key", "/test/path/item-one.key"),
+                call("/test/path/item-two.key", "/test/path/item-two.key"),
+            ]
+        )
 
-    def test_poll_job(self):
-        pass
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_move_cetrificates_backup(self, mock_listdir, mock_rename):
+        mock_listdir.return_value = ["item-one.key", "item-two.key"]
+        self.manage.move_certificates(directory="/test/path", backup=True)
+        mock_rename.assert_has_calls(
+            [
+                call("/test/path/item-one.key", "/test/path/item-one.key.bak"),
+                call("/test/path/item-two.key", "/test/path/item-two.key.bak"),
+            ]
+        )
 
-    def test_run(self):
-        pass
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_move_cetrificates_target_directory(
+        self, mock_listdir, mock_rename
+    ):
+        mock_listdir.return_value = ["item-one.key", "item-two.key"]
+        self.manage.move_certificates(
+            directory="/test/path", target_directory="/new/test/path"
+        )
+        mock_rename.assert_has_calls(
+            [
+                call("/test/path/item-one.key", "/new/test/path/item-one.key"),
+                call("/test/path/item-two.key", "/new/test/path/item-two.key"),
+            ]
+        )
+
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_move_cetrificates_normal_selective(
+        self, mock_listdir, mock_rename
+    ):
+        mock_listdir.return_value = ["item-one.test", "item-two.key"]
+        self.manage.move_certificates(directory="/test/path", suffix=".test")
+        mock_rename.assert_called_once_with(
+            "/test/path/item-one.test", "/test/path/item-one.test"
+        )
+
+    @patch("zmq.auth.create_certificates", autospec=True)
+    @patch("os.makedirs", autospec=True)
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_generate_certificates(
+        self, mock_listdir, mock_rename, mock_makedirs, mock_zmqgencerts
+    ):
+        mock_listdir.return_value = ["item-one.test", "item-two.key"]
+        self.manage.generate_certificates()
+        mock_makedirs.assert_has_calls(
+            [
+                call("/etc/directord/certificates", exist_ok=True),
+                call("/etc/directord/public_keys", exist_ok=True),
+                call("/etc/directord/private_keys", exist_ok=True),
+            ]
+        )
+        mock_zmqgencerts.assert_has_calls(
+            [
+                call("/etc/directord/certificates", "server"),
+                call("/etc/directord/certificates", "client"),
+            ]
+        )
+
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_poll_job_success(self, mock_send_data):
+        mock_send_data.return_value = '{"test-id": {"SUCCESS": true}}'
+        self.manage.poll_job("test-id")
+
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_poll_job_failed(self, mock_send_data):
+        mock_send_data.return_value = '{"test-id": {"FAILED": true}}'
+        self.manage.poll_job("test-id")
+
+    @patch("logging.Logger.warning", autospec=True)
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_poll_job_timeout(self, mock_send_data, mock_logging):
+        setattr(self.manage.args, "timeout", 1)
+        mock_send_data.return_value = '{"test-id-null": {}}'
+        self.manage.poll_job("test-id")
+        mock_logging.assert_called_once_with(
+            unittest.mock.ANY,
+            "Timeout encountered after 1 seconds running test-id.",
+        )
+
+    def test_run_override_unknown(self):
+        self.assertRaises(SystemExit, self.manage.run, override="UNKNOWN")
+
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_run_override_list_jobs(self, mock_send_data):
+        self.manage.run(override="list-jobs")
+        mock_send_data.assert_called_once_with(
+            unittest.mock.ANY, data='{"manage": "list-jobs"}'
+        )
+
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_run_override_list_nodes(self, mock_send_data):
+        self.manage.run(override="list-nodes")
+        mock_send_data.assert_called_once_with(
+            unittest.mock.ANY, data='{"manage": "list-nodes"}'
+        )
+
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_run_override_purge_jobs(self, mock_send_data):
+        self.manage.run(override="purge-jobs")
+        mock_send_data.assert_called_once_with(
+            unittest.mock.ANY, data='{"manage": "purge-jobs"}'
+        )
+
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_run_override_purge_nodes(self, mock_send_data):
+        self.manage.run(override="purge-nodes")
+        mock_send_data.assert_called_once_with(
+            unittest.mock.ANY, data='{"manage": "purge-nodes"}'
+        )
+
+    @patch("directord.user.Manage.generate_certificates", autospec=True)
+    @patch("directord.user.User.send_data", autospec=True)
+    def test_run_override_generate_keys(
+        self, mock_send_data, mock_generate_certificates
+    ):
+        self.manage.run(override="generate-keys")
+        mock_send_data.assert_not_called()

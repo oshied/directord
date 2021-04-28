@@ -309,7 +309,7 @@ class Processor(object):
         try:
             yield
         except TimeoutError:
-            self.log.warn(
+            self.log.warning(
                 "Timeout encountered after {} seconds running {}.".format(
                     time, job_id
                 )

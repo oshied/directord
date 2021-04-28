@@ -100,7 +100,7 @@ job = {
 }
 
 # Initialize the user interactions
-u = user.User(args=args)
+u = user.Manage(args=args)
 
 # Run the orchestration execution
 m = mixin.Mixin(args=args)
@@ -115,7 +115,7 @@ jobs = m.exec_orchestrations(
 # Poll for job completion
 for item in [i.decode() for i in jobs]:
     # Each poll will return True|False on job outcome, and a String.
-    status_boolean, info = m.poll_job(job_id=item)
+    status_boolean, info = u.poll_job(job_id=item)
 ```
 
 The return from `exec_orchestrations` is an array of byte encoded UUID, which

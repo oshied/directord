@@ -115,7 +115,7 @@ class Client(manager.Interface):
                     self.connection_string,
                 )
                 if command == b"reset":
-                    self.log.warn(
+                    self.log.warning(
                         "Received heartbeat reset command. Connection"
                         " resetting."
                     )
@@ -129,7 +129,7 @@ class Client(manager.Interface):
             else:
                 if time.time() > heartbeat_at and heartbeat_misses > 5:
                     self.log.error("Heartbeat failure, can't reach server")
-                    self.log.warn(
+                    self.log.warning(
                         "Reconnecting in {}s...".format(
                             self.heartbeat_failure_interval
                         )
@@ -326,7 +326,7 @@ class Client(manager.Interface):
                     "Failed to set ownership properties."
                     " USER:{} GROUP:{}".format(user, group)
                 )
-                self.log.warn(info)
+                self.log.warning(info)
             else:
                 os.chown(file_to, uid, gid)
                 success = True
@@ -467,7 +467,7 @@ class Client(manager.Interface):
                 query = None
             return query, True
         else:
-            self.log.warn(
+            self.log.warning(
                 "Unknown command - COMMAND:%s ID:%s",
                 command.decode(),
                 job_id,
@@ -585,11 +585,11 @@ class Client(manager.Interface):
                     cache.cull()
                     warnings = cache.check()
                     if warnings:
-                        self.log.warn(
+                        self.log.warning(
                             "Client cache noticed %s warnings.", len(warnings)
                         )
                         for item in warnings:
-                            self.log.warn(
+                            self.log.warning(
                                 "Client Cache Warning: [ %s ].",
                                 str(item.message),
                             )
