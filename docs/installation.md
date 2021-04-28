@@ -105,7 +105,7 @@ all:
 
 > An example inventory can be found under `tools/ansible-inventory.yaml`.
 
-With the inventory created, run the bootstrap playbook from the **tools** directordy.
+With the inventory created, run the bootstrap playbook from the **tools** directory.
 
 ``` shell
 $ ansible-playbook --inventory ~/directord-inventory.yaml tools/ansible-bootstap-playbook.yaml
@@ -173,10 +173,10 @@ python3 -m venv --system-site-packages /opt/directord
 
 ##### Installations By Script
 
-The script `prod-setup.sh`, within the tools directordy, can be used to automate
+The script `prod-setup.sh`, within the tools directory, can be used to automate
 the setup of Directord using a package based installation which was created to
 provide a means to bootstrap clusters quickly in a production environment.
 
-The script `dev-setup.sh`, within the tools directordy can be used to automate
+The script `dev-setup.sh`, within the tools directory can be used to automate
 the setup of Directord from source, which was created to allow developers to get
 and running quickly with Directord on a development system.

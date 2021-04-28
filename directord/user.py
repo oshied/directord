@@ -162,7 +162,7 @@ class User(manager.Interface):
             cache_obj = getattr(args, cache_type)
             data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
         elif verb == "WORKDIR":
-            parser.add_argument("workdir", help="Create a directordy.")
+            parser.add_argument("workdir", help="Create a directory.")
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
@@ -272,9 +272,9 @@ class Manage(User):
 
     @staticmethod
     def move_certificates(
-        directordy, target_directordy=None, backup=False, suffix=".key"
+        directory, target_directory=None, backup=False, suffix=".key"
     ):
-        for item in os.listdir(directordy):
+        for item in os.listdir(directory):
             if backup:
                 target_file = "{}.bak".format(os.path.basename(item))
             else:
@@ -282,8 +282,8 @@ class Manage(User):
 
             if item.endswith(suffix):
                 os.rename(
-                    os.path.join(directordy, item),
-                    os.path.join(target_directordy or directordy, target_file),
+                    os.path.join(directory, item),
+                    os.path.join(target_directory or directory, target_file),
                 )
 
     def generate_certificates(self, base_dir="/etc/directord"):
@@ -302,10 +302,10 @@ class Manage(User):
 
         # Run certificate backup
         self.move_certificates(
-            directordy=public_keys_dir, backup=True, suffix=".key"
+            directory=public_keys_dir, backup=True, suffix=".key"
         )
         self.move_certificates(
-            directordy=secret_keys_dir, backup=True, suffix=".key_secret"
+            directory=secret_keys_dir, backup=True, suffix=".key_secret"
         )
 
         # create new keys in certificates dir
@@ -314,13 +314,13 @@ class Manage(User):
 
         # Move generated certificates in place
         self.move_certificates(
-            directordy=keys_dir,
-            target_directordy=public_keys_dir,
+            directory=keys_dir,
+            target_directory=public_keys_dir,
             suffix=".key",
         )
         self.move_certificates(
-            directordy=keys_dir,
-            target_directordy=secret_keys_dir,
+            directory=keys_dir,
+            target_directory=secret_keys_dir,
             suffix=".key_secret",
         )
 

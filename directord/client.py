@@ -158,7 +158,7 @@ class Client(manager.Interface):
 
         Command operations are rendered with cached data from the args dict.
 
-        :param command: Work directordy path.
+        :param command: Work directory path.
         :type command: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
@@ -188,9 +188,9 @@ class Client(manager.Interface):
         return info.strip() or command, success
 
     def _run_workdir(self, workdir, cache):
-        """Run file work directordy operation.
+        """Run file work directory operation.
 
-        :param workdir: Work directordy path.
+        :param workdir: Work directory path.
         :type workdir: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object

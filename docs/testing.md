@@ -34,7 +34,7 @@ output.
 With Directord running, with at least one client, the functional test
 orchestration file can be used to exercise the entire suit of tooling. For the
 functional tests to work the will need to be executed from the "orchestrations"
-directordy within the local checkout of this repository.
+directory within the local checkout of this repository.
 
 ``` shell
 $ directord orchestrate functional-tests.yaml --ignore-cache

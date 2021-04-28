@@ -43,7 +43,7 @@ the given command and the value is the execution.
 ##### Example Orchestration file
 
 This example orchestration file will copy the local client ssh keys from the
-directordy `/home/centos/.ssh` to all nodes within the clister. Then, on the
+directory `/home/centos/.ssh` to all nodes within the clister. Then, on the
 three noted targets, `wget` will be installed.
 
 ``` yaml
