@@ -262,10 +262,11 @@ class Server(manager.Interface):
 
         :returns: Tuple
         """
+
         try:
             job_item = self.job_queue.get(block=False, timeout=1)
         except Exception:
-            self.log.info(
+            self.log.debug(
                 "Directord server found nothing to do, cooling down the poller."
             )
             return 512, time.time()
@@ -273,7 +274,7 @@ class Server(manager.Interface):
             restrict_sha1 = job_item.get("restrict")
             if restrict_sha1:
                 if job_item["task_sha1sum"] not in restrict_sha1:
-                    return
+                    return 512, time.time()
 
             job_target = job_item.get("target")
 
@@ -289,7 +290,7 @@ class Server(manager.Interface):
                     self.log.critical(
                         "Target {} is in an unknown state.".format(job_target)
                     )
-                    return
+                    return 512, time.time()
             else:
                 targets = self.workers.keys()
 
@@ -517,33 +518,28 @@ class Server(manager.Interface):
                             str(e),
                         )
                 else:
-                    task_id = json_data.pop("task", None)
-                    parent_id = json_data.pop("parent_id", None)
+                    task_id = json_data.pop("task", self.get_uuid)
+                    parent_id = json_data.pop("parent_id", task_id)
                     ignore_cache = json_data.pop("skip_cache", False)
                     restrict = json_data.pop("restrict", None)
                     self.log.debug("Job definition %s", json_data)
-                    json_data["task_sha1sum"] = hashlib.sha1(
+                    sha1sum = json_data["task_sha1sum"] = hashlib.sha1(
                         json.dumps(json_data).encode()
                     ).hexdigest()
                     if restrict:
-                        if json_data["task_sha1sum"] not in restrict:
+                        if sha1sum not in restrict:
                             self.log.debug(
                                 "Task skipped. Task SHA1 %s doesn't match"
                                 " restriction %s",
-                                json_data["task_sha1sum"],
+                                sha1sum,
                                 restrict,
                             )
                             continue
                         json_data["restrict"] = restrict
 
-                    if parent_id:
-                        json_data["parent_id"] = parent_id
-
                     json_data["ignore_cache"] = ignore_cache
-                    if not task_id:
-                        json_data["task"] = self.get_uuid
-                    else:
-                        json_data["task"] = task_id
+                    json_data["task"] = task_id
+                    json_data["parent_id"] = parent_id
 
                     # Returns the message in reverse to show a return. This
                     # will be a standard client return in JSON format under

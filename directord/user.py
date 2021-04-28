@@ -274,6 +274,18 @@ class Manage(User):
     def move_certificates(
         directory, target_directory=None, backup=False, suffix=".key"
     ):
+        """Move certificates when required.
+
+        :param directory: Set the origin path.
+        :type directory: String
+        :param target_directory: Set the target path.
+        :type target_directory: String
+        :param backup: Enable file backup before moving.
+        :type backup:  Boolean
+        :param suffix: Set the search suffix
+        :type suffix: String
+        """
+
         for item in os.listdir(directory):
             if backup:
                 target_file = "{}.bak".format(os.path.basename(item))
