@@ -264,7 +264,10 @@ def _args():
     )
     parser_bootstrap.add_argument(
         "--key-file",
-        help="SSH Key file to use when connecting to targets. Default: %(default)s",
+        help=(
+            "SSH Key file to use when connecting to targets."
+            " Default: %(default)s"
+        ),
         metavar="STRING",
         default=os.getenv(
             "DIRECTOR_BOOTSTRAP_SSH_KEY_FILE",

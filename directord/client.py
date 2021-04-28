@@ -347,7 +347,8 @@ class Client(manager.Interface):
     ):
         """Execute a given job.
 
-        :param conn: Connection object used to store information used in a return message.
+        :param conn: Connection object used to store information used in a
+                     return message.
         :type conn: Object
         :param cache: Cached access object.
         :type cache: Object
@@ -361,7 +362,8 @@ class Client(manager.Interface):
         :type job_id: String
         :param job_sha1: Job fingerprint in SHA1 format.
         :type job_sha1: String
-        :param cached: Boolean option to determin if a command is to be treated as cached.
+        :param cached: Boolean option to determin if a command is to be
+                       treated as cached.
         :type cached: Boolean
         :param command: Byte encoded command used to run a given job.
         :type command: Bytes

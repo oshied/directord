@@ -267,7 +267,8 @@ class Server(manager.Interface):
             job_item = self.job_queue.get(block=False, timeout=1)
         except Exception:
             self.log.debug(
-                "Directord server found nothing to do, cooling down the poller."
+                "Directord server found nothing to do, cooling down"
+                " the poller."
             )
             return 512, time.time()
         else:
