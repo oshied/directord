@@ -7,7 +7,7 @@ import uuid
 
 import tenacity
 import zmq
-import zmq.auth
+import zmq.auth as zmq_auth
 from zmq.auth.thread import ThreadAuthenticator
 
 import directord
@@ -162,7 +162,7 @@ class Interface(directord.Processor):
                 server_secret_file = os.path.join(
                     self.secret_keys_dir, "server.key_secret"
                 )
-                server_public, server_secret = zmq.auth.load_certificate(
+                server_public, server_secret = zmq_auth.load_certificate(
                     server_secret_file
                 )
                 bind.curve_secretkey = server_secret
@@ -243,7 +243,7 @@ class Interface(directord.Processor):
                         "The required path [ {} ] does not exist. Have"
                         " you generated your keys?".format(item)
                     )
-            client_public, client_secret = zmq.auth.load_certificate(
+            client_public, client_secret = zmq_auth.load_certificate(
                 client_secret_file
             )
             bind.curve_secretkey = client_secret
@@ -251,7 +251,7 @@ class Interface(directord.Processor):
             server_public_file = os.path.join(
                 self.public_keys_dir, "server.key"
             )
-            server_public, _ = zmq.auth.load_certificate(server_public_file)
+            server_public, _ = zmq_auth.load_certificate(server_public_file)
             bind.curve_serverkey = server_public
 
         if socket_type == zmq.SUB:

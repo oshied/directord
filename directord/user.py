@@ -5,7 +5,7 @@ import os
 import shlex
 import time
 
-import zmq.auth
+import zmq.auth as zmq_auth
 
 import directord
 
@@ -310,7 +310,7 @@ class Manage(User):
 
         # create new keys in certificates dir
         for item in ["server", "client"]:
-            zmq.auth.create_certificates(keys_dir, item)
+            zmq_auth.create_certificates(keys_dir, item)
 
         # Move generated certificates in place
         self.move_certificates(

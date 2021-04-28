@@ -4,7 +4,6 @@ import uuid
 from unittest.mock import patch
 
 from directord import manager
-
 from directord import tests
 
 
@@ -12,6 +11,11 @@ class TestUtils(unittest.TestCase):
     def setUp(self):
         args = tests.FakeArgs()
         self.interface = manager.Interface(args=args)
+        self.sockets = list()
+
+    def tearDown(self):
+        for socket in self.sockets:
+            socket.close()
 
     def test_get_heartbeat(self):
         with patch("time.time") as p:
@@ -32,7 +36,7 @@ class TestUtils(unittest.TestCase):
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
-    def test_socket_bind_no_auth(self, socket, poller):
+    def test_socket_bind_no_auth(self, mock_poller, mock_socket):
         bind = self.interface.socket_bind(
             socket_type=manager.zmq.ROUTER,
             connection="tcp://127.0.0.1",
@@ -40,17 +44,176 @@ class TestUtils(unittest.TestCase):
         )
         self.assertIsNotNone(bind.bind)
 
-    def test_socket_bind_shared_auth(self):
-        pass
+    @patch("zmq.backend.Socket", autospec=True)
+    @patch("zmq.Poller", autospec=True)
+    @patch("directord.manager.ThreadAuthenticator", autospec=True)
+    def test_socket_bind_shared_auth(
+        self, mock_auth, mock_poller, mock_socket
+    ):
+        setattr(self.interface.args, "shared_key", "test")
+        bind = self.interface.socket_bind(
+            socket_type=manager.zmq.ROUTER,
+            connection="tcp://127.0.0.1",
+            port=9000,
+        )
+        self.assertIsNotNone(bind.bind)
+        self.assertEqual(bind.plain_server, True)
 
-    def test_socket_bind_curve_auth(self):
-        pass
+    @patch("zmq.backend.Socket", autospec=True)
+    @patch("zmq.Poller", autospec=True)
+    @patch("directord.manager.ThreadAuthenticator", autospec=True)
+    def test_socket_bind_shared_curve_auth(
+        self, mock_auth, mock_poller, mock_socket
+    ):
+        setattr(self.interface.args, "curve_encryption", True)
+        m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
+        with patch("builtins.open", m):
+            bind = self.interface.socket_bind(
+                socket_type=manager.zmq.ROUTER,
+                connection="tcp://127.0.0.1",
+                port=9000,
+            )
+            self.assertIsNotNone(bind.bind)
+            self.assertEqual(bind.curve_server, True)
 
     def test_socket_connect(self):
-        pass
+        self.interface.curve_keys_exist = False
+        bind = self.interface.socket_connect(
+            socket_type=manager.zmq.PULL,
+            connection="tcp://test",
+            port=1234,
+        )
+        self.assertEqual(bind.linger, 0)
 
-    def test_socket_multipart_send(self):
-        pass
+    def test_socket_connect_shared_key(self):
+        self.interface.curve_keys_exist = False
+        setattr(self.interface.args, "shared_key", "test-key")
+        bind = self.interface.socket_connect(
+            socket_type=manager.zmq.PULL,
+            connection="tcp://test",
+            port=1234,
+        )
+        self.assertEqual(bind.plain_username, b"admin")
+        self.assertEqual(bind.plain_password, b"test-key")
+        self.assertEqual(bind.linger, 0)
 
-    def test_socket_multipart_recv(self):
-        pass
+    def test_socket_connect_curve_auth(self):
+        m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
+        with patch("builtins.open", m):
+            bind = self.interface.socket_connect(
+                socket_type=manager.zmq.PULL,
+                connection="tcp://test",
+                port=1234,
+            )
+            self.assertEqual(bind.linger, 0)
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket,
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [unittest.mock.ANY, b"\x00", b"\x00", b"\x00", b"\x00"]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_ident(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket, identity=b"test-identity"
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                unittest.mock.ANY,
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+            ]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_msg_id(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket,
+            identity=b"test-identity",
+            msg_id=b"testing_id",
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                b"testing_id",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+            ]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_control(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket, identity=b"test-identity", control=b"\x01"
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                unittest.mock.ANY,
+                b"\x01",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+            ]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_command(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket,
+            identity=b"test-identity",
+            command=b"test-command",
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                unittest.mock.ANY,
+                b"\x00",
+                b"test-command",
+                b"\x00",
+                b"\x00",
+            ]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_data(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket,
+            identity=b"test-identity",
+            data=b'{"test": "json"}',
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                unittest.mock.ANY,
+                b"\x00",
+                b"\x00",
+                b'{"test": "json"}',
+                b"\x00",
+            ]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_info(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket, identity=b"test-identity", info=b"stdout-data"
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                unittest.mock.ANY,
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"stdout-data",
+            ]
+        )

@@ -1,3 +1,15 @@
+MOCK_CURVE_KEY = """
+#   ****  Generated test key  ****
+#   ZeroMQ CURVE **Secret** Certificate
+#   DO NOT PROVIDE THIS FILE TO OTHER USERS nor change its permissions.
+
+metadata
+curve
+    public-key = ".e7-:Y61tEcr)>n&RVB^N$[!56z!Ye=3ia?/GA<L"
+    secret-key = "4S}VzCf0fj]{j>8X!Px#=)P<<1Em$8cWNY2&g[x="
+"""
+
+
 class FakePopen(object):
     """Fake Shell Commands."""
 
@@ -20,7 +32,6 @@ class FakeStat(object):
 
 class FakeArgs(object):
     config_file = None
-    Nonecurve_encryption = False
     debug = False
     heartbeat_interval = 60
     heartbeat_port = 5557
