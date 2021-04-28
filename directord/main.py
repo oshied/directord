@@ -442,12 +442,17 @@ def main():
 
                 tabulated_data = _mixin.return_tabulated_info(data=item)
             else:
-                restrict_headings = [
-                    "EXECUTION_TIME",
-                    "SUCCESS",
-                    "FAILED",
-                    "EXPIRY",
-                ]
+                if args.list_jobs:
+                    restrict_headings = [
+                        "PARENT_JOB_ID",
+                        "EXECUTION_TIME",
+                        "SUCCESS",
+                        "FAILED",
+                    ]
+                else:
+                    restrict_headings = [
+                        "EXPIRY",
+                    ]
                 _tabulated_data = _mixin.return_tabulated_data(
                     data=data, restrict_headings=restrict_headings
                 )
