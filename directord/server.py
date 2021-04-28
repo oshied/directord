@@ -105,7 +105,7 @@ class Server(manager.Interface):
             # Send heartbeats to idle workers if it's time
             elif time.time() > idel_time and self.workers:
                 for worker in list(self.workers.keys()):
-                    self.log.warn(
+                    self.log.warning(
                         "Sending idle worker [ {} ] a heartbeat".format(worker)
                     )
                     self.socket_multipart_send(
@@ -116,7 +116,9 @@ class Server(manager.Interface):
                         info=struct.pack("<f", self.get_expiry),
                     )
                     if time.time() > idel_time + 3:
-                        self.log.warn("Removing dead worker {}".format(worker))
+                        self.log.warning(
+                            "Removing dead worker {}".format(worker)
+                        )
                         self.workers.pop(worker)
             else:
                 self.wq_prune(workers=self.workers)

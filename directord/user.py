@@ -145,7 +145,7 @@ class User(manager.Interface):
             ]
             if not data["from"]:
                 raise AttributeError(
-                    "The value of {} was not found.".format(file_from)
+                    "The value of [ {} ] was not found.".format(file_from)
                 )
             data["blueprint"] = args.blueprint
         elif verb in ["ARG", "ENV"]:
@@ -162,7 +162,7 @@ class User(manager.Interface):
             cache_obj = getattr(args, cache_type)
             data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
         elif verb == "WORKDIR":
-            parser.add_argument("workdir", help="Create a directordy.")
+            parser.add_argument("workdir", help="Create a directory.")
             args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
@@ -272,9 +272,9 @@ class Manage(User):
 
     @staticmethod
     def move_certificates(
-        directordy, target_directordy=None, backup=False, suffix=".key"
+        directory, target_directory=None, backup=False, suffix=".key"
     ):
-        for item in os.listdir(directordy):
+        for item in os.listdir(directory):
             if backup:
                 target_file = "{}.bak".format(os.path.basename(item))
             else:
@@ -282,8 +282,8 @@ class Manage(User):
 
             if item.endswith(suffix):
                 os.rename(
-                    os.path.join(directordy, item),
-                    os.path.join(target_directordy or directordy, target_file),
+                    os.path.join(directory, item),
+                    os.path.join(target_directory or directory, target_file),
                 )
 
     def generate_certificates(self, base_dir="/etc/directord"):
@@ -301,11 +301,9 @@ class Manage(User):
             os.makedirs(item, exist_ok=True)
 
         # Run certificate backup
+        self.move_certificates(directory=public_keys_dir, backup=True)
         self.move_certificates(
-            directordy=public_keys_dir, backup=True, suffix=".key"
-        )
-        self.move_certificates(
-            directordy=secret_keys_dir, backup=True, suffix=".key_secret"
+            directory=secret_keys_dir, backup=True, suffix=".key_secret"
         )
 
         # create new keys in certificates dir
@@ -314,13 +312,13 @@ class Manage(User):
 
         # Move generated certificates in place
         self.move_certificates(
-            directordy=keys_dir,
-            target_directordy=public_keys_dir,
+            directory=keys_dir,
+            target_directory=public_keys_dir,
             suffix=".key",
         )
         self.move_certificates(
-            directordy=keys_dir,
-            target_directordy=secret_keys_dir,
+            directory=keys_dir,
+            target_directory=secret_keys_dir,
             suffix=".key_secret",
         )
 
@@ -333,6 +331,7 @@ class Manage(User):
         :type job_id: String
         :returns: Tuple
         """
+
         with self.timeout(
             time=getattr(self.args, "timeout", 240), job_id=job_id
         ):
@@ -344,8 +343,8 @@ class Manage(User):
                         return True, "Job Success: {}".format(job_id)
                     elif data_return.get("FAILED"):
                         return False, "Job Failed: {}".format(job_id)
-                    else:
-                        time.sleep(1)
+                else:
+                    time.sleep(1)
 
     def run(self, override=None):
         """Send the management command to the server.
@@ -357,22 +356,28 @@ class Manage(User):
 
         if (
             override == "list-jobs"
-            or self.args.list_jobs
-            or self.args.job_info
-            or self.args.export_jobs
+            or getattr(self.args, "list_jobs", False)
+            or getattr(self.args, "job_info", False)
+            or getattr(self.args, "export_jobs", False)
         ):
             manage = "list-jobs"
         elif (
             override == "list-nodes"
-            or self.args.list_nodes
-            or self.args.export_nodes
+            or getattr(self.args, "list_nodes", False)
+            or getattr(self.args, "export_nodes", False)
         ):
             manage = "list-nodes"
-        elif override == "purge-jobs" or self.args.purge_jobs:
+        elif override == "purge-jobs" or getattr(
+            self.args, "purge_jobs", False
+        ):
             manage = "purge-jobs"
-        elif override == "purge-nodes" or self.args.purge_nodes:
+        elif override == "purge-nodes" or getattr(
+            self.args, "purge_nodes", False
+        ):
             manage = "purge-nodes"
-        elif override == "generate-keys" or self.args.generate_keys:
+        elif override == "generate-keys" or getattr(
+            self.args, "generate_keys", False
+        ):
             return self.generate_certificates()
         else:
             raise SystemExit("No known management function was defined.")

@@ -115,7 +115,7 @@ class Client(manager.Interface):
                     self.connection_string,
                 )
                 if command == b"reset":
-                    self.log.warn(
+                    self.log.warning(
                         "Received heartbeat reset command. Connection"
                         " resetting."
                     )
@@ -129,7 +129,7 @@ class Client(manager.Interface):
             else:
                 if time.time() > heartbeat_at and heartbeat_misses > 5:
                     self.log.error("Heartbeat failure, can't reach server")
-                    self.log.warn(
+                    self.log.warning(
                         "Reconnecting in {}s...".format(
                             self.heartbeat_failure_interval
                         )
@@ -158,7 +158,7 @@ class Client(manager.Interface):
 
         Command operations are rendered with cached data from the args dict.
 
-        :param command: Work directordy path.
+        :param command: Work directory path.
         :type command: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
@@ -188,9 +188,9 @@ class Client(manager.Interface):
         return info.strip() or command, success
 
     def _run_workdir(self, workdir, cache):
-        """Run file work directordy operation.
+        """Run file work directory operation.
 
-        :param workdir: Work directordy path.
+        :param workdir: Work directory path.
         :type workdir: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
@@ -326,7 +326,7 @@ class Client(manager.Interface):
                     "Failed to set ownership properties."
                     " USER:{} GROUP:{}".format(user, group)
                 )
-                self.log.warn(info)
+                self.log.warning(info)
             else:
                 os.chown(file_to, uid, gid)
                 success = True
@@ -467,7 +467,7 @@ class Client(manager.Interface):
                 query = None
             return query, True
         else:
-            self.log.warn(
+            self.log.warning(
                 "Unknown command - COMMAND:%s ID:%s",
                 command.decode(),
                 job_id,
@@ -585,11 +585,11 @@ class Client(manager.Interface):
                     cache.cull()
                     warnings = cache.check()
                     if warnings:
-                        self.log.warn(
+                        self.log.warning(
                             "Client cache noticed %s warnings.", len(warnings)
                         )
                         for item in warnings:
-                            self.log.warn(
+                            self.log.warning(
                                 "Client Cache Warning: [ %s ].",
                                 str(item.message),
                             )

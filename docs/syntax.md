@@ -83,7 +83,7 @@ The same as `ADD`.
 
 Syntax: `STRING`
 
-Create a directordy on the client system.
+Create a directory on the client system.
 
 ##### `CACHEFILE`
 

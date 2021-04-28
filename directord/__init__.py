@@ -131,12 +131,12 @@ class LogSetup(object):
         """Return a path for logging file.
 
         If ``log_dir`` exists and the userID is 0 the log file will be written
-        to the provided log directordy. If the UserID is not 0 or log_dir does
+        to the provided log directory. If the UserID is not 0 or log_dir does
         not exist the log file will be written to the users home folder.
 
         :param filename: File name to write log messages.
         :type filename: String
-        :param log_dir: Directordy where the log file will be stored.
+        :param log_dir: Directory where the log file will be stored.
         :type log_dir: String
         :returns: String
         """
@@ -309,7 +309,7 @@ class Processor(object):
         try:
             yield
         except TimeoutError:
-            self.log.warn(
+            self.log.warning(
                 "Timeout encountered after {} seconds running {}.".format(
                     time, job_id
                 )

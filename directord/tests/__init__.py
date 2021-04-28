@@ -42,3 +42,22 @@ class FakeArgs(object):
     socket_path = "/var/run/directord.sock"
     transfer_port = 5556
     curve_encryption = None
+
+
+class MockSocket:
+    def __init__(self, *args, **kwargs):
+        self.chunk_returned = False
+
+    def sendall(self, *args, **kwargs):
+        pass
+
+    def connect(self, *args, **kwargs):
+        pass
+
+    def recv(self, *args, **kwargs):
+        if not self.chunk_returned:
+            self.chunk_returned = True
+            return b"return data"
+
+    def close(self):
+        pass

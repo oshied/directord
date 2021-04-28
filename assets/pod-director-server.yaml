@@ -54,10 +54,10 @@ spec:
   volumes:
   - hostPath:
       path: /etc/directord
-      type: Directordy
+      type: Directory
     name: etc-directord-host
   - hostPath:
       path: /usr/local/share/directord
-      type: Directordy
+      type: Directory
     name: usr-local-share-directord
 status: {}

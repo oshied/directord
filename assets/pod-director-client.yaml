@@ -52,6 +52,6 @@ spec:
   volumes:
   - hostPath:
       path: /etc/directord
-      type: Directordy
+      type: Directory
     name: etc-directord-host
 status: {}
