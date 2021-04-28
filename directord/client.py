@@ -247,21 +247,6 @@ class Client(manager.Interface):
         :returns: tuple
         """
 
-        def _blueprinter():
-            if blueprint:
-                with open(file_to) as f:
-                    file_contents = self.blueprinter(
-                        content=f.read(), values=cache.get("args")
-                    )
-                    if not file_contents:
-                        return False
-
-                with open(file_to, "w") as f:
-                    f.write(file_contents)
-
-                self.log.info("File %s has been blueprinted.", file_to)
-            return True
-
         file_to = self.blueprinter(content=file_to, values=cache.get("args"))
         if os.path.isfile(file_to) and self.file_sha1(file_to) == file_sha1:
             info = (
@@ -274,7 +259,9 @@ class Client(manager.Interface):
                 msg_id=job_id.encode(),
                 control=self.transfer_end,
             )
-            if not _blueprinter():
+            if blueprint and not self.file_blueprinter(
+                cache=cache, file_to=file_to
+            ):
                 return None, False
 
             return info, True
@@ -312,7 +299,9 @@ class Client(manager.Interface):
             self.log.critical("Failure when creating file. FAILURE:%s", e)
             return "Failure when creating file", False
 
-        if not _blueprinter():
+        if blueprint and not self.file_blueprinter(
+            cache=cache, file_to=file_to
+        ):
             return None, False
 
         info = self.file_sha1(file_to)
@@ -484,6 +473,29 @@ class Client(manager.Interface):
                 job_id,
             )
             return None, None
+
+    def file_blueprinter(self, cache, file_to):
+        """Read a file and blueprint its contents.
+
+        :param cache: Cached access object.
+        :type cache: Object
+        :param file_to: String path to a file which will blueprint.
+        :type file_to: String
+        :returns: Boolean
+        """
+
+        with open(file_to) as f:
+            file_contents = self.blueprinter(
+                content=f.read(), values=cache.get("args")
+            )
+            if not file_contents:
+                return False
+
+        with open(file_to, "w") as f:
+            f.write(file_contents)
+
+        self.log.info("File %s has been blueprinted.", file_to)
+        return True
 
     def blueprinter(self, content, values):
         """Return blue printed content.

@@ -148,8 +148,6 @@ class User(manager.Interface):
                     "The value of {} was not found.".format(file_from)
                 )
             data["blueprint"] = args.blueprint
-        elif verb == "FROM":
-            raise NotImplementedError()
         elif verb in ["ARG", "ENV"]:
             cache_type = "{}s".format(verb.lower())
             parser.add_argument(
@@ -163,28 +161,6 @@ class User(manager.Interface):
             )
             cache_obj = getattr(args, cache_type)
             data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
-        elif verb == "LABEL":
-            raise NotImplementedError()
-        elif verb == "USER":
-            raise NotImplementedError()
-            parser.add_argument("user")
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
-            )
-            user = args.user.split(":", 1)
-            if len(user) == 1:
-                user.append(None)
-            data["user"], data["group"] = user
-        elif verb == "EXPOSE":
-            raise NotImplementedError()
-            parser.add_argument("expose")
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
-            )
-            expose = args.expose.split("/", 1)
-            if len(expose) == 1:
-                expose.append("tcp")
-            data["port"], data["proto"] = expose
         elif verb == "WORKDIR":
             parser.add_argument("workdir", help="Create a directordy.")
             args, _ = parser.parse_known_args(

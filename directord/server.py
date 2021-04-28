@@ -249,7 +249,7 @@ class Server(manager.Interface):
             return self.return_jobs[task]
 
     def run_job(self):
-        """Execute the job loop.
+        """Run a job interaction
 
         As the job loop executes it will interrogate the job item as returned
         from the queue. If the item contains a "target" definition the
@@ -258,9 +258,98 @@ class Server(manager.Interface):
         receive the message. If a defined target is not found within the
         workers object no job will be executed.
 
-        Directord's job executor will slow down the poll interval when no work
-        is present. This means Directord will ramp-up resource utilization when
-        required and become virtually idle when there's nothing to do.
+        :returns: Tuple
+        """
+        try:
+            job_item = self.job_queue.get(block=False, timeout=1)
+        except Exception:
+            self.log.info(
+                "Directord server found nothing to do, cooling down the poller."
+            )
+            return 512, time.time()
+        else:
+            restrict_sha1 = job_item.get("restrict")
+            if restrict_sha1:
+                if job_item["task_sha1sum"] not in restrict_sha1:
+                    return
+
+            job_target = job_item.get("target")
+
+            # NOTE(cloudnull): We run on all targets if query is used.
+            run_query = job_item["verb"] == "QUERY"
+
+            if job_target and not run_query:
+                job_target = job_target.encode()
+                targets = list()
+                if job_target in self.workers:
+                    targets.append(job_target)
+                else:
+                    self.log.critical(
+                        "Target {} is in an unknown state.".format(job_target)
+                    )
+                    return
+            else:
+                targets = self.workers.keys()
+
+            if job_item.get("run_once", False) and not run_query:
+                self.log.debug("Run once enabled.")
+                targets = [targets[0]]
+
+            task = job_item.get("task")
+            job_info = self.create_return_jobs(
+                task=task, job_item=job_item, targets=targets
+            )
+            transfers = job_info.get("TRANSFERS", list())
+            for identity in targets:
+                if job_item["verb"] in ["ADD", "COPY"]:
+                    for file_path in job_item["from"]:
+                        job_item["file_sha1sum"] = self.file_sha1(
+                            file_path=file_path
+                        )
+                        if job_item["to"].endswith(os.sep):
+                            job_item["file_to"] = os.path.join(
+                                job_item["to"],
+                                os.path.basename(file_path),
+                            )
+                        else:
+                            job_item["file_to"] = job_item["to"]
+
+                        if job_item["file_to"] not in transfers:
+                            transfers.append(job_item["file_to"])
+                        self.log.debug(
+                            "Sending file transfer message for"
+                            " file_path:%s to identity:%s",
+                            file_path,
+                            identity.decode(),
+                        )
+                        self.socket_multipart_send(
+                            zsocket=self.bind_job,
+                            identity=identity,
+                            command=job_item["verb"].encode(),
+                            data=json.dumps(job_item).encode(),
+                            info=file_path.encode(),
+                        )
+                else:
+                    self.socket_multipart_send(
+                        zsocket=self.bind_job,
+                        identity=identity,
+                        command=job_item["verb"].encode(),
+                        data=json.dumps(job_item).encode(),
+                    )
+
+                self.log.info("Sent job {} to {}".format(task, identity))
+            else:
+                self.return_jobs[task] = job_info
+
+        return 128, time.time()
+
+    def run_interactions(self):
+        """Execute the interactions loop.
+
+        Directord's interaction executor will slow down the poll interval
+        when no work is present. This means Directord will ramp-up resource
+        utilization when required and become virtually idle when there's
+        nothing to do.
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 128.
@@ -359,88 +448,7 @@ class Server(manager.Interface):
                             )
 
             elif self.workers:
-                try:
-                    job_item = self.job_queue.get(block=False, timeout=1)
-                except Exception:
-                    pass
-                else:
-                    poller_interval, poller_time = 128, time.time()
-                    restrict_sha1 = job_item.get("restrict")
-                    if restrict_sha1:
-                        if job_item["task_sha1sum"] not in restrict_sha1:
-                            return
-
-                    job_target = job_item.get("target")
-
-                    # NOTE(cloudnull): We run on all targets if query is used.
-                    run_query = job_item["verb"] == "QUERY"
-
-                    if job_target and not run_query:
-                        job_target = job_target.encode()
-                        targets = list()
-                        if job_target in self.workers:
-                            targets.append(job_target)
-                        else:
-                            self.log.critical(
-                                "Target {} is in an unknown state.".format(
-                                    job_target
-                                )
-                            )
-                            return
-                    else:
-                        targets = self.workers.keys()
-
-                    if job_item.get("run_once", False) and not run_query:
-                        self.log.debug("Run once enabled.")
-                        targets = [targets[0]]
-
-                    task = job_item.get("task")
-                    job_info = self.create_return_jobs(
-                        task=task, job_item=job_item, targets=targets
-                    )
-                    transfers = job_info.get("TRANSFERS", list())
-                    for identity in targets:
-                        if job_item["verb"] in ["ADD", "COPY"]:
-                            for file_path in job_item["from"]:
-                                job_item["file_sha1sum"] = self.file_sha1(
-                                    file_path=file_path
-                                )
-                                if job_item["to"].endswith(os.sep):
-                                    job_item["file_to"] = os.path.join(
-                                        job_item["to"],
-                                        os.path.basename(file_path),
-                                    )
-                                else:
-                                    job_item["file_to"] = job_item["to"]
-
-                                if job_item["file_to"] not in transfers:
-                                    transfers.append(job_item["file_to"])
-                                self.log.debug(
-                                    "Sending file transfer message for"
-                                    " file_path:%s to identity:%s",
-                                    file_path,
-                                    identity.decode(),
-                                )
-                                self.socket_multipart_send(
-                                    zsocket=self.bind_job,
-                                    identity=identity,
-                                    command=job_item["verb"].encode(),
-                                    data=json.dumps(job_item).encode(),
-                                    info=file_path.encode(),
-                                )
-                        else:
-                            self.socket_multipart_send(
-                                zsocket=self.bind_job,
-                                identity=identity,
-                                command=job_item["verb"].encode(),
-                                data=json.dumps(job_item).encode(),
-                            )
-
-                        self.log.info(
-                            "Sent job {} to {}".format(task, identity)
-                        )
-                    else:
-                        self.return_jobs[task] = job_info
+                poller_interval, poller_time = self.run_job()
 
     def run_socket_server(self):
         """Start a socket server.
@@ -570,7 +578,7 @@ class Server(manager.Interface):
         threads = [
             self.thread(target=self.run_socket_server),
             self.thread(target=self.run_heartbeat),
-            self.thread(target=self.run_job),
+            self.thread(target=self.run_interactions),
         ]
 
         if self.args.run_ui:
