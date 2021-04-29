@@ -28,6 +28,12 @@ diagrams, installation, usage, and more can all be
 
 * Information on running tests can be [found here](https://cloudnull.github.io/directord/testing).
 
+## Quick Introduction
+
+This quick cast shows how easy it is to install, bootstrap, and deploy a scale test environment.
+
+[![asciicast](https://asciinema.org/a/410759.svg)](https://asciinema.org/a/410759)
+
 ## License
 
 Apache License Version 2.0

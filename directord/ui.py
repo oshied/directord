@@ -26,7 +26,8 @@ NODES = list()
 class DirectordUI(MethodView):
     """Implement a method view for the Directord UI."""
 
-    def get(self):
+    @staticmethod
+    def get():
         """Return a get response from a template."""
 
         response = flask.make_response(
