@@ -18,8 +18,8 @@ $ for i in {1..40}; do
   podman run --hostname $(hostname)-client-${i} \
              --name $(hostname)-client-${i} \
              --net=host \
-             --env DIRECTOR_SERVER_ADDRESS=127.0.0.1 \
-             --env DIRECTOR_SHARED_KEY=secrete \
+             --env DIRECTORD_SERVER_ADDRESS=127.0.0.1 \
+             --env DIRECTORD_SHARED_KEY=secrete \
              --user 0 \
              --detach \
              directord directord
