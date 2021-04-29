@@ -356,24 +356,66 @@ class TestManager(unittest.TestCase):
         )
 
     @patch("directord.user.User.send_data", autospec=True)
+    def test_poll_job_unknown(self, mock_send_data):
+        mock_send_data.return_value = json.dumps(
+            {
+                "test-id": {
+                    "SUCCESS": ["hostname-node1"],
+                    "NODES": ["hostname-node1", "hostname-node2"],
+                    "PROCESSING": False,
+                }
+            }
+        )
+        status, info = self.manage.poll_job("test-id")
+        self.assertEqual(status, None)
+        self.assertEqual(info, "Job in an unknown state: test-id")
+
+    @patch("directord.user.User.send_data", autospec=True)
     def test_poll_job_success(self, mock_send_data):
-        mock_send_data.return_value = '{"test-id": {"SUCCESS": true}}'
-        self.manage.poll_job("test-id")
+        mock_send_data.return_value = json.dumps(
+            {
+                "test-id": {
+                    "SUCCESS": ["hostname-node"],
+                    "NODES": ["hostname-node"],
+                    "PROCESSING": False,
+                }
+            }
+        )
+        status, info = self.manage.poll_job("test-id")
+        self.assertEqual(status, True)
+        self.assertEqual(info, "Job Success: test-id")
 
     @patch("directord.user.User.send_data", autospec=True)
     def test_poll_job_failed(self, mock_send_data):
-        mock_send_data.return_value = '{"test-id": {"FAILED": true}}'
-        self.manage.poll_job("test-id")
+        mock_send_data.return_value = json.dumps(
+            {
+                "test-id": {
+                    "FAILED": ["hostname-node"],
+                    "NODES": ["hostname-node"],
+                    "PROCESSING": False,
+                }
+            }
+        )
+        status, info = self.manage.poll_job("test-id")
+        self.assertEqual(status, False)
+        self.assertEqual(info, "Job Failed: test-id")
 
+    @patch("logging.Logger.error", autospec=True)
     @patch("logging.Logger.warning", autospec=True)
     @patch("directord.user.User.send_data", autospec=True)
-    def test_poll_job_timeout(self, mock_send_data, mock_logging):
+    def test_poll_job_timeout(
+        self, mock_send_data, mock_log_warn, mock_log_error
+    ):
         setattr(self.manage.args, "timeout", 1)
         mock_send_data.return_value = '{"test-id-null": {}}'
         self.manage.poll_job("test-id")
-        mock_logging.assert_called_once_with(
+        mock_log_warn.assert_called_once_with(
             unittest.mock.ANY,
             "Timeout encountered after 1 seconds running test-id.",
+        )
+        mock_log_error.assert_called_once_with(
+            unittest.mock.ANY,
+            "Task timeout encountered.",
         )
 
     def test_run_override_unknown(self):

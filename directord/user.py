@@ -364,11 +364,16 @@ class Manage(User):
             while True:
                 data = dict(json.loads(self.run(override="list-jobs")))
                 data_return = data.get(job_id)
-                if data_return:
-                    if data_return.get("SUCCESS"):
-                        return True, "Job Success: {}".format(job_id)
-                    elif data_return.get("FAILED"):
+                if data_return and data_return.get("PROCESSING") is False:
+                    nodes = len(data_return.get("NODES"))
+                    if data_return.get("FAILED"):
                         return False, "Job Failed: {}".format(job_id)
+                    elif len(data_return.get("SUCCESS")) == nodes:
+                        return True, "Job Success: {}".format(job_id)
+                    else:
+                        return None, "Job in an unknown state: {}".format(
+                            job_id
+                        )
                 else:
                     time.sleep(1)
 
