@@ -269,10 +269,7 @@ def _args():
             " Default: %(default)s"
         ),
         metavar="STRING",
-        default=os.getenv(
-            "DIRECTOR_BOOTSTRAP_SSH_KEY_FILE",
-            os.path.join(os.environ["HOME"], ".ssh", "id_rsa"),
-        ),
+        default=os.getenv("DIRECTOR_BOOTSTRAP_SSH_KEY_FILE"),
     )
     parser_bootstrap.add_argument(
         "--threads",

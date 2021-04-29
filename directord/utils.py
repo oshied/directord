@@ -163,7 +163,7 @@ class ParamikoConnect(object):
     however, upon enter the system will use the SSH agent is defined.
     """
 
-    def __init__(self, host, username, port, key_file):
+    def __init__(self, host, username, port, key_file=None):
         """Initialize the connection manager.
 
         :param host: IP or Domain to connect to.
@@ -180,10 +180,17 @@ class ParamikoConnect(object):
         self.ssh = paramiko.SSHClient()
         self.ssh.load_system_host_keys()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.pkey = paramiko.RSAKey(filename=key_file)
         self.host = host
         self.username = username
         self.port = port
+        self.connect_kwargs = dict(
+            hostname=self.host,
+            username=self.username,
+            port=self.port,
+            allow_agent=True,
+        )
+        if key_file:
+            self.connect_kwargs["pkey"] = paramiko.RSAKey(filename=key_file)
 
     def __enter__(self):
         """Connect to the remote node and return the ssh and session objects.
@@ -191,13 +198,7 @@ class ParamikoConnect(object):
         :returns: Tuple
         """
 
-        self.ssh.connect(
-            hostname=self.host,
-            username=self.username,
-            port=self.port,
-            pkey=self.pkey,
-            allow_agent=True,
-        )
+        self.ssh.connect(**self.connect_kwargs)
         session = self.ssh.get_transport().open_session()
         agent.AgentRequestHandler(session)
 
