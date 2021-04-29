@@ -268,9 +268,7 @@ class Mixin(object):
                         arranged_data.append(0)
                     else:
                         if report_item and isinstance(report_item, list):
-                            arranged_data.append(report_item.pop(0))
-                            if report_item:
-                                original_data.insert(0, (key, value))
+                            arranged_data.append(len(report_item))
                         elif isinstance(report_item, float):
                             arranged_data.append("{:.2f}".format(report_item))
                         else:

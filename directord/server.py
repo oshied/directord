@@ -165,15 +165,12 @@ class Server(manager.Interface):
         _starttime = job_metadata.get("_starttime")
         _createtime = job_metadata.get("_createtime")
         if job_status == self.job_ack:
-            job_metadata["PROCESSING"] = False
-            job_metadata["SUCCESS"] = False
             job_metadata["INFO"][identity] = job_output
             if not _createtime:
                 job_metadata["_createtime"] = time.time()
             self.log.debug("{} received job {}".format(identity, job_id))
         elif job_status == self.job_processing:
             job_metadata["PROCESSING"] = True
-            job_metadata["SUCCESS"] = False
             job_metadata["INFO"][identity] = job_output
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
@@ -183,7 +180,10 @@ class Server(manager.Interface):
                 "{} finished processing {}".format(identity, job_id)
             )
             job_metadata["PROCESSING"] = False
-            job_metadata["SUCCESS"] = True
+            if "SUCCESS" in job_metadata:
+                job_metadata["SUCCESS"].append(identity)
+            else:
+                job_metadata["SUCCESS"] = [identity]
             job_metadata["INFO"][identity] = job_output
             job_metadata["EXECUTION_TIME"] = return_exec_time(
                 started=_starttime
@@ -193,7 +193,6 @@ class Server(manager.Interface):
             )
         elif job_status == self.job_failed:
             job_metadata["PROCESSING"] = False
-            job_metadata["SUCCESS"] = False
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
