@@ -370,7 +370,7 @@ class Mixin(object):
                 host=job_def["host"],
                 username=job_def["username"],
                 port=job_def["port"],
-                key_file=job_def["key_file"],
+                key_file=job_def.get("key_file"),
             ) as conn:
                 ssh, session = conn
                 if key == "RUN":

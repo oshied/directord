@@ -156,16 +156,18 @@ class Server(manager.Interface):
             job_metadata["INFO"][identity] = job_output
             if not _createtime:
                 job_metadata["_createtime"] = time.time()
-            self.log.info("{} received job {}".format(identity, job_id))
+            self.log.debug("{} received job {}".format(identity, job_id))
         elif job_status == self.job_processing:
             job_metadata["PROCESSING"] = True
             job_metadata["SUCCESS"] = False
             job_metadata["INFO"][identity] = job_output
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
-            self.log.info("{} is processing {}".format(identity, job_id))
+            self.log.debug("{} is processing {}".format(identity, job_id))
         elif job_status in [self.job_end, self.nullbyte]:
-            self.log.info("{} finished processing {}".format(identity, job_id))
+            self.log.debug(
+                "{} finished processing {}".format(identity, job_id)
+            )
             job_metadata["PROCESSING"] = False
             job_metadata["SUCCESS"] = True
             job_metadata["INFO"][identity] = job_output
@@ -341,7 +343,7 @@ class Server(manager.Interface):
                         data=json.dumps(job_item).encode(),
                     )
 
-                self.log.info("Sent job {} to {}".format(task, identity))
+                self.log.debug("Sent job {} to {}".format(task, identity))
             else:
                 self.return_jobs[task] = job_info
 

@@ -22,7 +22,7 @@ def _args():
         "--config-file",
         help="File path for client configuration. Default: %(default)s",
         metavar="STRING",
-        default=os.getenv("DIRECTOR_CONFIG_FILE"),
+        default=os.getenv("DIRECTORD_CONFIG_FILE"),
         type=argparse.FileType(mode="r"),
     )
     auth_group = parser.add_mutually_exclusive_group()
@@ -30,7 +30,7 @@ def _args():
         "--shared-key",
         help="Shared key used for server client authentication.",
         metavar="STRING",
-        default=os.getenv("DIRECTOR_SHARED_KEY"),
+        default=os.getenv("DIRECTORD_SHARED_KEY"),
     )
     auth_group.add_argument(
         "--curve-encryption",
@@ -50,28 +50,28 @@ def _args():
         "--job-port",
         help="Job port to bind. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_MSG_PORT", 5555)),
+        default=int(os.getenv("DIRECTORD_MSG_PORT", 5555)),
         type=int,
     )
     parser.add_argument(
         "--transfer-port",
         help="Transfer port to bind. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_TRANSFER_PORT", 5556)),
+        default=int(os.getenv("DIRECTORD_TRANSFER_PORT", 5556)),
         type=int,
     )
     parser.add_argument(
         "--heartbeat-port",
         help="heartbeat port to bind. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_HEARTBEAT_PORT", 5557)),
+        default=int(os.getenv("DIRECTORD_HEARTBEAT_PORT", 5557)),
         type=int,
     )
     parser.add_argument(
         "--heartbeat-interval",
         help="heartbeat interval in seconds. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_HEARTBEAT_INTERVAL", 60)),
+        default=int(os.getenv("DIRECTORD_HEARTBEAT_INTERVAL", 60)),
         type=int,
     )
     parser.add_argument(
@@ -82,7 +82,7 @@ def _args():
         ),
         metavar="STRING",
         default=str(
-            os.getenv("DIRECTOR_SOCKET_PATH", "/var/run/directord.sock")
+            os.getenv("DIRECTORD_SOCKET_PATH", "/var/run/directord.sock")
         ),
         type=str,
     )
@@ -90,7 +90,7 @@ def _args():
         "--cache-path",
         help=("Client cache path." " Default: %(default)s"),
         metavar="STRING",
-        default=str(os.getenv("DIRECTOR_CACHE_PATH", "/var/cache/directord")),
+        default=str(os.getenv("DIRECTORD_CACHE_PATH", "/var/cache/directord")),
         type=str,
     )
     subparsers = parser.add_subparsers(
@@ -170,19 +170,19 @@ def _args():
         "--bind-address",
         help="IP Address to bind a Directord Server. Default: %(default)s",
         metavar="STRING",
-        default=os.getenv("DIRECTOR_BIND_ADDRESS", "*"),
+        default=os.getenv("DIRECTORD_BIND_ADDRESS", "*"),
     )
     parser_server.add_argument(
         "--etcd-server",
         help="Domain or IP address of the ETCD server. Default: %(default)s",
         metavar="STRING",
-        default=os.getenv("DIRECTOR_ETCD_SERVER", "localhost"),
+        default=os.getenv("DIRECTORD_ETCD_SERVER", "localhost"),
     )
     parser_server.add_argument(
         "--etcd-port",
         help="ETCD server bind port. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_ETCD_PORT", 2379)),
+        default=int(os.getenv("DIRECTORD_ETCD_PORT", 2379)),
         type=int,
     )
     parser_server.add_argument(
@@ -194,7 +194,7 @@ def _args():
         "--ui-port",
         help="UI server bind port. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_UI_PORT", 9000)),
+        default=int(os.getenv("DIRECTORD_UI_PORT", 9000)),
         type=int,
     )
     parser_client = subparsers.add_parser("client", help="Client mode help")
@@ -205,7 +205,7 @@ def _args():
             " Default: %(default)s"
         ),
         metavar="STRING",
-        default=os.getenv("DIRECTOR_SERVER_ADDRESS", "localhost"),
+        default=os.getenv("DIRECTORD_SERVER_ADDRESS", "localhost"),
     )
     parser_manage = subparsers.add_parser(
         "manage", help="Server management mode help"
@@ -269,16 +269,13 @@ def _args():
             " Default: %(default)s"
         ),
         metavar="STRING",
-        default=os.getenv(
-            "DIRECTOR_BOOTSTRAP_SSH_KEY_FILE",
-            os.path.join(os.environ["HOME"], ".ssh", "id_rsa"),
-        ),
+        default=os.getenv("DIRECTORD_BOOTSTRAP_SSH_KEY_FILE"),
     )
     parser_bootstrap.add_argument(
         "--threads",
         help="Client bootstrap threads. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTOR_BOOTSTRAP_THREADS", 10)),
+        default=int(os.getenv("DIRECTORD_BOOTSTRAP_THREADS", 10)),
         type=int,
     )
     args = parser.parse_args()

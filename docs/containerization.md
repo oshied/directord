@@ -50,7 +50,7 @@ $ mkdir -p ~/local/share/directord ~/local/share/directord/etc
 $ podman run --hostname directord \
              --name directord-server \
              --net=host \
-             --env DIRECTOR_MODE=server \
+             --env DIRECTORD_MODE=server \
              --volume ${HOME}/local/share/directord/etc:/etc/directord:z \
              --volume ${HOME}/local/share/directord:${HOME}/local/share/directord \
              --detach \
@@ -89,14 +89,14 @@ $ directord --socket-path /tmp/directord.sock manage --list-nodes
 $ podman run --hostname $(hostname)-client \
              --name directord-client \
              --net=host \
-             --env DIRECTOR_SERVER_ADDRESS=172.16.27.120 \
-             --env DIRECTOR_SHARED_KEY=secrete \
+             --env DIRECTORD_SERVER_ADDRESS=172.16.27.120 \
+             --env DIRECTORD_SHARED_KEY=secrete \
              --user 0 \
              --detach \
              directord directord
 ```
 
-> NOTE: the DIRECTOR_SERVER_ADDRESS environment variable needs to point to the
+> NOTE: the DIRECTORD_SERVER_ADDRESS environment variable needs to point to the
   IP address or Domain name of the Directord server.
 
 #### Running pods

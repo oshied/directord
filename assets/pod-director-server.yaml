@@ -25,7 +25,7 @@ spec:
       value: xterm
     - name: container
       value: oci
-    - name: DIRECTOR_MODE
+    - name: DIRECTORD_MODE
       value: server
     - name: HOSTNAME
       value: directord

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-export DIRECTOR_SERVER_ADDRESS=${DIRECTOR_SERVER_ADDRESS:-localhost}
-export DIRECTOR_MODE=${DIRECTOR_MODE:-client}
+export DIRECTORD_SERVER_ADDRESS=${DIRECTORD_SERVER_ADDRESS:-localhost}
+export DIRECTORD_MODE=${DIRECTORD_MODE:-client}
 
-if [ "${DIRECTOR_MODE}" = "server" ]; then
+if [ "${DIRECTORD_MODE}" = "server" ]; then
     /directord/bin/directord --socket-path /tmp/directord.sock server
 else
-    /directord/bin/directord client --server-address ${DIRECTOR_SERVER_ADDRESS}
+    /directord/bin/directord client --server-address ${DIRECTORD_SERVER_ADDRESS}
 fi
