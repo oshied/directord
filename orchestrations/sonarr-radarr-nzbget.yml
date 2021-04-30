@@ -1,0 +1,47 @@
+# This orchestration will deploy nzbget, sonarr, and radarr and start them using systemd services.
+#
+---
+
+- jobs:
+  - RUN: rpmkeys --import "http://pool.sks-keyservers.net/pks/lookup?op=get&search=0x3fa7e0328081bff6a14da29aa6a19b38d3d831ef"
+  - RUN: curl https://download.mono-project.com/repo/centos8-stable.repo | tee /etc/yum.repos.d/mono-centos8-stable.repo
+  - RUN: sed -i 's/enabled.*/enabled=1/g' /etc/yum.repos.d/CentOS-Stream-PowerTools.repo
+  - RUN: dnf install -y mono-complete mono-devel wget libmediainfo tinyxml2
+  - RUN: groupadd --system curator-application
+  - RUN: >-
+      adduser --home-dir "/var/lib/curator"
+              --comment "curator application user"
+              --groups curator-application,systemd-journal
+              --create-home
+              --shell /bin/bash
+              curator
+
+  - ARG: app_username curator
+
+  - RUN: su -c 'wget "https://services.sonarr.tv/v1/download/main/latest?version=3&os=linux" -O /var/lib/curator/sonarr.tgz' - curator
+  - RUN: su -c "tar xf /var/lib/curator/sonarr.tgz; rm -f /var/lib/curator/sonarr.tgz" - curator
+  - RUN: mkdir -p /var/lib/curator/.sonarr
+  - ARG: app_name sonar
+  - ARG: app_workdir /var/lib/curator/.sonarr
+  - ARG: app_exec "/usr/bin/mono /var/lib/curator/Sonarr/Sonarr.exe"
+  - ADD: --blueprint files/generic-systemd.service.j2 /etc/systemd/system/sonarr.service
+
+  - RUN: su -c 'wget "https://radarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=x64" -O /var/lib/curator/radarr.tgz' - curator
+  - RUN: su -c "tar xf /var/lib/curator/radarr.tgz; rm -f /var/lib/curator/radarr.tgz" - curator
+  - RUN: mkdir -p /var/lib/curator/.radarr
+  - RUN: ln -s /var/lib/curator/Radarr/Radarr /usr/local/bin/radarr
+  - ARG: app_name sonar
+  - ARG: app_workdir /var/lib/curator/.radarr
+  - ARG: app_exec "/usr/local/bin/radarr"
+  - ADD: --blueprint files/generic-systemd.service.j2 /etc/systemd/system/radarr.service
+
+  - RUN: su -c 'wget "https://github.com/nzbget/nzbget/releases/download/v21.0/nzbget-21.0-bin-linux.run" -O /var/lib/curator/nzbget.run' - curator
+  - ARG: app_name nzbget
+  - ARG: app_workdir /var/lib/curator/.nzbget
+  - ARG: app_exec "/var/lib/curator/nzbget/nzbget -s -o outputmode=log"
+  - ADD: --blueprint files/generic-systemd.service.j2 /etc/systemd/system/nzbget.service
+
+  - RUN: systemctl daemon-reload
+  - RUN: systemctl restart sonarr.service
+  - RUN: systemctl restart radarr.service
+  - RUN: systemctl restart nzbget.service

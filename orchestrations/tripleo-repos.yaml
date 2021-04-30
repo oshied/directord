@@ -3,7 +3,10 @@
 ---
 
 - jobs:
-  - RUN: --skip-cache dnf install -y lynx
+  - RUN: >-
+      --skip-cache dnf install -y lynx ||
+      dnf -y install http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/lynx-2.8.9-2.el8.x86_64.rpm
+                     http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/centos-indexhtml-8.0-0.el8.noarch.rpm
   - RUN: >-
       --skip-cache --stdout-arg tripleo_repo_rpm
       lynx -dump -hiddenlinks=listonly https://trunk.rdoproject.org/centos8/component/tripleo/current/ | awk '/python3-tripleo-repos.*rpm$/ {print $2}'

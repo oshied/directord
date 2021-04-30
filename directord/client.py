@@ -353,7 +353,6 @@ class Client(manager.Interface):
         cache,
         info,
         job,
-        job_parent_id,
         job_id,
         job_sha1,
         cached,
@@ -370,8 +369,6 @@ class Client(manager.Interface):
         :type info: Bytes
         :param job: Information containing the original job specification.
         :type job: Dictionary
-        :param job_parent_id: Parent UUID for a given job.
-        :type job_parent_id: String
         :param job_id: Job UUID
         :type job_id: String
         :param job_sha1: Job fingerprint in SHA1 format.
@@ -383,29 +380,6 @@ class Client(manager.Interface):
         :type command: Bytes
         :returns: Tuple
         """
-
-        # Set the parent ID value to True, if set False all jobs with
-        # this parent ID will halt and fail.
-        if job_parent_id and cache.get(job_parent_id):
-            if cache.get(job_parent_id) is False:
-                status = (
-                    "Job [ {} ] was not allowed to run because there"
-                    " was a failure under this partent ID"
-                    " [ {} ]".format(job_id, job_parent_id)
-                )
-                self.log.error(status)
-                conn.info = status.encode()
-                conn.job_state = self.job_failed
-                self.set_cache(
-                    cache=cache, key=job_sha1, value=conn.job_state, tag="jobs"
-                )
-                return None, None
-        else:
-            # Parent ID information is set to automatically expire
-            # after 24 hours.
-            self.set_cache(
-                cache=cache, key=job_parent_id, value=True, tag="parents"
-            )
 
         if cached:
             # TODO(cloudnull): Figure out how to skip cache when file
@@ -526,8 +500,8 @@ class Client(manager.Interface):
         """
 
         if values:
-            _contents = self.blueprint.from_string(content)
             try:
+                _contents = self.blueprint.from_string(content)
                 return _contents.render(**values)
             except Exception:
                 return
@@ -660,6 +634,22 @@ class Client(manager.Interface):
                         command=command,
                         ctx=self,
                     ) as c:
+                        if cache.get(job_parent_id) is False:
+                            self.log.error(
+                                "Parent failure {} skipping {}".format(
+                                    job_parent_id, job_id
+                                )
+                            )
+                            status = (
+                                "Job [ {} ] was not allowed to run because"
+                                " there was a failure under this partent ID"
+                                " [ {} ]".format(job_id, job_parent_id)
+                            )
+                            self.log.error(status)
+                            c.info = status.encode()
+                            c.job_state = self.job_failed
+                            continue
+
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id
                         ):
@@ -668,7 +658,6 @@ class Client(manager.Interface):
                                 cache=cache,
                                 info=info,
                                 job=job,
-                                job_parent_id=job_parent_id,
                                 job_id=job_id,
                                 job_sha1=job_sha1,
                                 cached=cached,
@@ -692,10 +681,15 @@ class Client(manager.Interface):
                                 value=False,
                                 tag="parents",
                             )
-
                         elif success is True:
                             state = c.job_state = self.job_end
                             self.log.info("Job complete {}".format(job_id))
+                            self.set_cache(
+                                cache=cache,
+                                key=job_parent_id,
+                                value=True,
+                                tag="parents",
+                            )
 
                     self.set_cache(
                         cache=cache, key=job_sha1, value=state, tag="jobs"

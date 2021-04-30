@@ -1,0 +1,97 @@
+# This orchestration will deploy a MySQL (MariaDB) server.
+#
+---
+
+- jobs:
+  - ARG: rabbitmq_async_threads 128
+  - ARG: rabbitmq_process_limit 1048576
+  - ARG: rabbitmq_ulimit 65536
+  - ARG: rabbitmq_collect_statistics_interval 5000
+  - ARG: rabbitmq_ssl_cert /etc/rabbitmq/rabbitmq.pem
+  - ARG: rabbitmq_ssl_key /etc/rabbitmq/rabbitmq.key
+  - ARG: rabbitmq_ssl_ca_cert /etc/rabbitmq/rabbitmq-ca.pem
+  - ARG: rabbitmq_memory_high_watermark 0.2
+  - ARG: rabbitmq_cluster_partition_handling pause_minority
+  - ARG: rabbitmq_management_rates_mode basic
+  - ARG: rabbitmq_management_bind_address 0.0.0.0
+  - ARG: rabbitmq_mnesia_dump_log_write_threshold 300
+  - ARG: rabbitmq_ssl_port 5671
+  - ARG: rabbitmq_tcp_port 5672
+  - ARG: rabbitmq_cluster_name rabbitmq_cluster_1
+
+  - RUN: --stdout-arg rabbitmq_host ip -o r g 1 | awk '{print $7}'
+  - RUN: >-
+      --run-once --stdout-arg rabbitmq_cookie uuidgen | sha1sum | awk '{print $1}'
+
+  - RUN: --stdout-arg directord_hostname hostname -f
+  - RUN: --stdout-arg directord_hostname_short hostname -f
+
+  - RUN: --skip-cache dnf -y install rabbitmq-server erlang
+
+  - RUN: >-
+      --run-once --stdout-arg rabbitmq_ssl_self_signed_subject
+      echo "/C=US/ST=Texas/L=San Antonio/O=IT/CN={{ directord_hostname }}"
+
+  - RUN: >-
+      --run-once openssl req -new -nodes -sha256 -x509 -subj
+      "{{ rabbitmq_ssl_self_signed_subject }}"
+      -days 3650
+      -keyout {{ rabbitmq_ssl_key }}
+      -out {{ rabbitmq_ssl_cert }}
+      -extensions v3_ca
+      creates={{ rabbitmq_ssl_cert }}
+
+  - RUN: --run-once --stdout-arg rabbitmq_primary hostname -f
+  - RUN: --run-once --stdout-arg rabbitmq_ssl_key_output cat {{ rabbitmq_ssl_key }}
+  - RUN: --run-once --stdout-arg rabbitmq_ssl_cert_output cat {{ rabbitmq_ssl_cert }}
+
+  - QUERY: rabbitmq_ssl_cert_output
+  - QUERY: rabbitmq_ssl_key_output
+  - QUERY: rabbitmq_cookie
+  - QUERY: directord_hostname
+  - QUERY: directord_hostname_short
+  - QUERY: rabbitmq_host
+  - QUERY: rabbitmq_primary
+
+  - RUN: >-
+      {% for _, value in query.items() %}
+      {%   if "rabbitmq_ssl_cert_output" in value %}
+      echo -e "{{ value['rabbitmq_ssl_cert_output'] }}" | tee {{ rabbitmq_ssl_cert }};
+      {%   elif "rabbitmq_ssl_key_output" in value %}
+      echo -e "{{ value['rabbitmq_ssl_key_output'] }}" | tee {{ rabbitmq_ssl_key }};
+      {%   elif "rabbitmq_cookie" in value %}
+      echo -e "{{ value['rabbitmq_cookie'] }}" | tee /var/lib/rabbitmq/.erlang.cookie;
+      {%   endif %}
+      {% endfor %}
+
+  - RUN: >-
+      {% for _, value in query.items() %}
+      {%   if "directord_hostname" in value and "directord_hostname_short" in value %}
+      grep "{{ value['directord_hostname'] }}" /etc/hosts || (echo -e "{{ value['rabbitmq_host'] }} {{ value['directord_hostname_short'] }} {{ value['directord_hostname'] }}" | tee -a /etc/hosts);
+      {%   endif %}
+      {% endfor %}
+
+  - RUN: chown rabbitmq:rabbitmq {{ rabbitmq_ssl_cert }} {{ rabbitmq_ssl_key }}
+
+  - WORKDIR: /etc/systemd/system/rabbitmq-server.service.d
+  - ADD: --blueprint files/rabbitmq/systemd-limits.conf.j2 /etc/systemd/system/rabbitmq-server.service.d/limits.conf
+
+  - ADD: --blueprint files/rabbitmq/rabbitmq.config.j2 /etc/rabbitmq/rabbitmq.config
+  - ADD: --blueprint files/rabbitmq/rabbitmq-server.j2 /etc/default/rabbitmq-server
+  - ADD: --blueprint files/rabbitmq/rabbitmq-env.j2 /etc/rabbitmq/rabbitmq-env.conf
+
+  - RUN: systemctl daemon-reload
+  - RUN: systemctl enable rabbitmq-server.service
+  - RUN: --run-once systemctl start rabbitmq-server.service
+  - RUN: --run-once sleep 5 && rabbitmqctl set_cluster_name {{ rabbitmq_cluster_name }}
+  - RUN: >-
+      {% for key, value in query.items() %}
+      {%   if directord_hostname != value['rabbitmq_primary'] %}
+      systemctl start rabbitmq-server.service;
+      sleep 5;
+      rabbitmqctl stop_app;
+      sleep 5;
+      rabbitmqctl join_cluster "rabbit@{{ key.split('.')[0] }}";
+      rabbitmqctl start_app;
+      {%   endif %}
+      {% endfor %}

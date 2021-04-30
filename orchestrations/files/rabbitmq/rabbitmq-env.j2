@@ -1,0 +1,4 @@
+# Set ERLANG VM parameters
+NODENAME=rabbit@{{ director_hostname }}
+RABBITMQ_IO_THREAD_POOL_SIZE={{ rabbitmq_async_threads }}
+RABBITMQ_SERVER_ERL_ARGS="+P {{ rabbitmq_process_limit }}"

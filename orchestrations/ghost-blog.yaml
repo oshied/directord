@@ -19,7 +19,7 @@
   - RUN: --stdout-arg ghost_db_source ip -o r g 1 | awk '{print $7}'
 
   # Create our NGINX config for our ghost proxy
-  - COPY: --blueprint files/nginx-ghost "/etc/nginx/conf.d/{{ domain_name }}.conf"
+  - COPY: --blueprint files/nginx-ghost.j2 "/etc/nginx/conf.d/{{ domain_name }}.conf"
 
   - RUN: >-
       if systemctl is-active firewalld; then
@@ -90,7 +90,7 @@
       [ -f /var/www/{{ domain_name }}/config.production.json ] ||
       su --preserve-environment {{ ghost_user_name }} -c "mv /var/www/{{ domain_name }}/config.development.json /var/www/{{ domain_name }}/config.production.json"
 
-  - ADD: --blueprint files/ghost-systemd.service '/etc/systemd/system/ghost-{{ domain_name | replace(".", "-") }}.service'
+  - ADD: --blueprint files/ghost-systemd.service.j2 '/etc/systemd/system/ghost-{{ domain_name | replace(".", "-") }}.service'
 
   - RUN: systemctl daemon-reload
 
