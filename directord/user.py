@@ -58,7 +58,7 @@ class User(manager.Interface):
         self,
         verb,
         execute,
-        target=None,
+        targets=None,
         ignore_cache=False,
         restrict=None,
         parent_id=None,
@@ -74,8 +74,8 @@ class User(manager.Interface):
         :type verb: String
         :param execute: Execution string to parse.
         :type execute: String
-        :param target: Target argent to send job to.
-        :type target: String
+        :param targets: Target argents to send job to.
+        :type targets: List
         :param ignore_cache: Instruct the entire execution to
                              ignore client caching.
         :type ignore_cache: Boolean
@@ -223,8 +223,8 @@ class User(manager.Interface):
         if hasattr(args, "exec_help") and args.exec_help:
             return parser.print_help(1)
         else:
-            if target:
-                data["target"] = target
+            if targets:
+                data["targets"] = targets
 
             data["verb"] = verb
             data["timeout"] = args.timeout
@@ -345,34 +345,46 @@ class Manage(User):
             suffix=".key_secret",
         )
 
-    def poll_job(self, job_id):
+    def poll_job(self, job_id, miss=0):
         """Given a job poll for its completion and return status.
 
         > The status return is (Boolean, String)
 
         :param job_id: UUID for job
         :type job_id: String
+        :param miss: Cache miss counter
+        :type miss: Integer
         :returns: Tuple
         """
 
         with self.timeout(
-            time=getattr(self.args, "timeout", 240), job_id=job_id
+            time=getattr(self.args, "timeout", 600), job_id=job_id
         ):
             while True:
                 data = dict(json.loads(self.run(override="list-jobs")))
-                data_return = data.get(job_id)
-                if data_return and data_return.get("PROCESSING") is False:
+                data_return = data.get(job_id, dict())
+                job_state = data_return.get("PROCESSING", "unknown")
+                job_state = job_state.encode()
+                if job_state == self.job_processing:
+                    time.sleep(1)
+                elif job_state == self.job_failed:
+                    return False, "Job Failed: {}".format(job_id)
+                elif job_state in [self.job_end, self.nullbyte]:
                     nodes = len(data_return.get("NODES"))
-                    if data_return.get("FAILED"):
-                        return False, "Job Failed: {}".format(job_id)
-                    elif len(data_return.get("SUCCESS")) == nodes:
+                    if len(data_return.get("SUCCESS", list())) == nodes:
                         return True, "Job Success: {}".format(job_id)
+                    elif len(data_return.get("FAILED", list())) > 0:
+                        return None, "Job Degrated: {}".format(job_id)
                     else:
+                        return None, "Job Skipped: {}".format(job_id)
+                else:
+                    miss += 1
+                    if miss > 5:
                         return None, "Job in an unknown state: {}".format(
                             job_id
                         )
-                else:
-                    time.sleep(1)
+                    else:
+                        time.sleep(1)
 
     def run(self, override=None):
         """Send the management command to the server.

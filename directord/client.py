@@ -183,7 +183,7 @@ class Client(manager.Interface):
 
         command = self.blueprinter(content=command, values=cache.get("args"))
         if not command:
-            return None, False
+            return None, False, command
 
         info, success = utils.run_command(
             command=command, env=cache.get("envs")
@@ -199,7 +199,7 @@ class Client(manager.Interface):
                 tag="args",
             )
 
-        return info.strip() or command, success
+        return info.strip(), success, command
 
     def _run_workdir(self, workdir, cache):
         """Run file work directory operation.
@@ -217,9 +217,9 @@ class Client(manager.Interface):
         try:
             os.makedirs(workdir, exist_ok=True)
         except (FileExistsError, PermissionError) as e:
-            return str(e), False
+            return str(e), False, None
         else:
-            return "", True
+            return "", True, None
 
     def _run_transfer(
         self,
@@ -276,9 +276,9 @@ class Client(manager.Interface):
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
             ):
-                return None, False
+                return None, False, None
 
-            return info, True
+            return info, True, None
         else:
             self.log.debug(
                 "Requesting transfer of source file:%s", source_file
@@ -311,12 +311,12 @@ class Client(manager.Interface):
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
             self.log.critical("Failure when creating file. FAILURE:%s", e)
-            return "Failure when creating file", False
+            return "Failure when creating file", False, None
 
         if blueprint and not self.file_blueprinter(
             cache=cache, file_to=file_to
         ):
-            return None, False
+            return None, False, None
 
         info = self.file_sha1(file_to)
         success = True
@@ -345,7 +345,7 @@ class Client(manager.Interface):
                 os.chown(file_to, uid, gid)
                 success = True
 
-        return info, success
+        return info, success, None
 
     def _job_executor(
         self,
@@ -387,7 +387,7 @@ class Client(manager.Interface):
             self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
             conn.info = b"job skipped"
             conn.job_state = self.job_end
-            return None, None
+            return None, None, None
         elif command == b"RUN":
             conn.start_processing()
             return self._run_command(
@@ -421,7 +421,7 @@ class Client(manager.Interface):
                 value_update=True,
                 tag=cache_type,
             )
-            return "{} added to cache".format(cache_type).encode(), True
+            return "{} added to cache".format(cache_type).encode(), True, None
         elif command == b"CACHEFILE":
             conn.start_processing()
             try:
@@ -437,7 +437,7 @@ class Client(manager.Interface):
                     value_update=True,
                     tag="args",
                 )
-                return b"Cache file loaded", True
+                return b"Cache file loaded", True, None
         elif command == b"CACHEEVICT":
             conn.start_processing()
             tag = job["cacheevict"]
@@ -448,6 +448,7 @@ class Client(manager.Interface):
             return (
                 "Evicted {} items, tagged {}".format(evicted, tag).encode(),
                 True,
+                None,
             )
         elif command == b"QUERY":
             conn.start_processing()
@@ -456,14 +457,14 @@ class Client(manager.Interface):
                 query = json.dumps(args.get(job["query"])).encode()
             else:
                 query = None
-            return query, True
+            return query, True, None
         else:
             self.log.warning(
                 "Unknown command - COMMAND:%s ID:%s",
                 command.decode(),
                 job_id,
             )
-            return None, None
+            return None, None, None
 
     def file_blueprinter(self, cache, file_to):
         """Read a file and blueprint its contents.
@@ -653,7 +654,7 @@ class Client(manager.Interface):
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id
                         ):
-                            status, success = self._job_executor(
+                            status, success, exe_command = self._job_executor(
                                 conn=c,
                                 cache=cache,
                                 info=info,
@@ -664,8 +665,10 @@ class Client(manager.Interface):
                                 command=command,
                             )
 
-                        if command == b"QUERY":
-                            c.data = json.dumps(job).encode()
+                        if exe_command:
+                            job["executed_command"] = exe_command
+
+                        c.data = json.dumps(job).encode()
 
                         if status:
                             if not isinstance(status, bytes):

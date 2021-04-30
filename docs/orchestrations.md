@@ -19,7 +19,7 @@ The values available within an orchestration file are `targets` and `jobs`.
   jobs: []
 ```
 
-Within the orchestration file the "target" key is optional. If this key is
+Within the orchestration file the "targets" key is optional. If this key is
 undefined, Directord will run against all available targets.
 
 ``` yaml

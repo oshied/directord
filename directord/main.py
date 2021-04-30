@@ -36,7 +36,9 @@ def _args():
         "--config-file",
         help="File path for client configuration. Default: %(default)s",
         metavar="STRING",
-        default=os.getenv("DIRECTORD_CONFIG_FILE"),
+        default=os.getenv(
+            "DIRECTORD_CONFIG_FILE", "/etc/directord/config.yaml"
+        ),
         type=argparse.FileType(mode="r"),
     )
     auth_group = parser.add_mutually_exclusive_group()

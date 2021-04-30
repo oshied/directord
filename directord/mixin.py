@@ -84,29 +84,17 @@ class Mixin(object):
             for job in jobs:
                 key, value = next(iter(job.items()))
                 value = [value]
-                for target in targets:
-                    job_to_run.append(
-                        dict(
-                            verb=key,
-                            execute=value,
-                            target=target,
-                            restrict=restrict,
-                            ignore_cache=ignore_cache,
-                            parent_id=parent_id,
-                            return_raw=return_raw,
-                        )
+                job_to_run.append(
+                    dict(
+                        verb=key,
+                        execute=value,
+                        targets=targets,
+                        restrict=restrict,
+                        ignore_cache=ignore_cache,
+                        parent_id=parent_id,
+                        return_raw=return_raw,
                     )
-                if not targets:
-                    job_to_run.append(
-                        dict(
-                            verb=key,
-                            execute=value,
-                            restrict=restrict,
-                            ignore_cache=ignore_cache,
-                            parent_id=parent_id,
-                            return_raw=return_raw,
-                        )
-                    )
+                )
 
         return_data = list()
         count = 0
