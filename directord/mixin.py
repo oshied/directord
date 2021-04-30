@@ -111,7 +111,6 @@ class Mixin(object):
         return_data = list()
         count = 0
         for job in job_to_run:
-            count += 1
             formatted_job = user_exec.format_exec(**job)
             if self.args.finger_print:
                 item = json.loads(formatted_job)
@@ -121,12 +120,14 @@ class Mixin(object):
                 return_data.append(
                     "{count:<5} {verb:<13}"
                     " {execute:<39} {fingerprint:>13}".format(
-                        count=count,
+                        count=count
+                        or "\n{a}\n{b:<5}".format(a="*" * 100, b=0),
                         verb=item["verb"],
                         execute=exec_str,
                         fingerprint=item["task_sha1sum"],
                     ).encode()
                 )
+                count += 1
             else:
                 return_data.append(user_exec.send_data(data=formatted_job))
         return return_data
