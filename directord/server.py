@@ -136,7 +136,9 @@ class Server(manager.Interface):
             else:
                 self.wq_prune(workers=self.workers)
 
-    def _set_job_status(self, job_status, job_id, identity, job_output):
+    def _set_job_status(
+        self, job_status, job_id, identity, job_output, job_exec_command=None
+    ):
         """Set job status.
 
         This will update the manager object for job tracking, allowing the
@@ -150,6 +152,8 @@ class Server(manager.Interface):
         :type identity: String
         :param job_output: Job output information
         :type job_output: String
+        :param job_exec_command: Job output information
+        :type job_exec_command: String
         """
 
         def return_exec_time(started):
@@ -160,7 +164,14 @@ class Server(manager.Interface):
 
         # NOTE(cloudnull): This is where we would need to implement a
         #                  callback plugin for the client.
-        job_metadata = self.return_jobs.get(job_id, dict())
+        job_metadata = self.return_jobs.get(job_id)
+        if not job_metadata:
+            return
+
+        if job_exec_command:
+            job_metadata["EXECUTED_COMMAND"][identity] = job_exec_command
+
+        job_metadata["PROCESSING"] = job_status.decode()
         _starttime = job_metadata.get("_starttime")
         _createtime = job_metadata.get("_createtime")
         if job_status == self.job_ack:
@@ -169,7 +180,6 @@ class Server(manager.Interface):
                 job_metadata["_createtime"] = time.time()
             self.log.debug("{} received job {}".format(identity, job_id))
         elif job_status == self.job_processing:
-            job_metadata["PROCESSING"] = True
             job_metadata["INFO"][identity] = job_output
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
@@ -178,7 +188,6 @@ class Server(manager.Interface):
             self.log.debug(
                 "{} finished processing {}".format(identity, job_id)
             )
-            job_metadata["PROCESSING"] = False
             if "SUCCESS" in job_metadata:
                 job_metadata["SUCCESS"].append(identity)
             else:
@@ -191,7 +200,6 @@ class Server(manager.Interface):
                 started=_createtime
             )
         elif job_status == self.job_failed:
-            job_metadata["PROCESSING"] = False
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
@@ -252,6 +260,7 @@ class Server(manager.Interface):
             job_info = self.return_jobs[task] = {
                 "ACCEPTED": True,
                 "INFO": dict(),
+                "EXECUTED_COMMAND": dict(),
                 "NODES": [i.decode() for i in targets],
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
@@ -268,8 +277,8 @@ class Server(manager.Interface):
         """Run a job interaction
 
         As the job loop executes it will interrogate the job item as returned
-        from the queue. If the item contains a "target" definition the
-        job loop will only send the message to the one target, assuming the
+        from the queue. If the item contains a "targets" definition the
+        job loop will only send the message to the given targets, assuming the
         target is known within the workers object, otherwise all targets will
         receive the message. If a defined target is not found within the
         workers object no job will be executed.
@@ -291,21 +300,24 @@ class Server(manager.Interface):
                 if job_item["task_sha1sum"] not in restrict_sha1:
                     return 512, time.time()
 
-            job_target = job_item.get("target")
+            job_targets = job_item.get("targets")
 
             # NOTE(cloudnull): We run on all targets if query is used.
             run_query = job_item["verb"] == "QUERY"
 
-            if job_target and not run_query:
-                job_target = job_target.encode()
+            if job_targets and not run_query:
                 targets = list()
-                if job_target in self.workers:
-                    targets.append(job_target)
-                else:
-                    self.log.critical(
-                        "Target {} is in an unknown state.".format(job_target)
-                    )
-                    return 512, time.time()
+                for job_target in job_targets:
+                    job_target = job_target.encode()
+                    if job_target in self.workers:
+                        targets.append(job_target)
+                    else:
+                        self.log.critical(
+                            "Target {} is in an unknown state.".format(
+                                job_target
+                            )
+                        )
+                        return 512, time.time()
             else:
                 targets = self.workers.keys()
 
@@ -433,37 +445,46 @@ class Server(manager.Interface):
                 ) = self.socket_multipart_recv(zsocket=self.bind_job)
                 node = identity.decode()
                 node_output = info.decode()
+                try:
+                    data_item = json.loads(data.decode())
+                except Exception:
+                    data_item = dict()
+
                 self._set_job_status(
                     job_status=control,
                     job_id=msg_id.decode(),
                     identity=node,
                     job_output=node_output,
+                    job_exec_command=data_item.get("executed_command"),
                 )
                 if command == b"QUERY":
                     # NOTE(cloudnull): When a command return is "QUERY" an ARG
                     #                  is resent to all known workers.
-                    query_value = json.loads(node_output)
-                    if query_value:
-                        query_item = json.loads(data.decode())
-                        task = query_item["task"] = self.get_uuid
-                        query_item["skip_cache"] = True
-                        query_item["verb"] = "ARG"
-                        query_item["args"] = {
-                            "query": {
-                                node: {query_item.pop("query"): query_value}
+                    try:
+                        query_value = json.loads(node_output)
+                    except Exception:
+                        pass
+                    else:
+                        if query_value and data_item:
+                            task = data_item["task"] = self.get_uuid
+                            data_item["skip_cache"] = True
+                            data_item["verb"] = "ARG"
+                            data_item["args"] = {
+                                "query": {
+                                    node: {data_item.pop("query"): query_value}
+                                }
                             }
-                        }
-                        targets = self.workers.keys()
-                        self.create_return_jobs(
-                            task=task, job_item=query_item, targets=targets
-                        )
-                        for target in targets:
-                            self.socket_multipart_send(
-                                zsocket=self.bind_job,
-                                identity=target,
-                                command=query_item["verb"].encode(),
-                                data=json.dumps(query_item).encode(),
+                            targets = self.workers.keys()
+                            self.create_return_jobs(
+                                task=task, job_item=data_item, targets=targets
                             )
+                            for target in targets:
+                                self.socket_multipart_send(
+                                    zsocket=self.bind_job,
+                                    identity=target,
+                                    command=data_item["verb"].encode(),
+                                    data=json.dumps(data_item).encode(),
+                                )
 
             elif self.workers:
                 poller_interval, poller_time = self.run_job()

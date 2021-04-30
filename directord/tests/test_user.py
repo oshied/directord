@@ -79,14 +79,14 @@ class TestUser(unittest.TestCase):
 
     def test_format_exec_run_target(self):
         result = self.user.format_exec(
-            verb="RUN", execute=self.execute, target="test_target"
+            verb="RUN", execute=self.execute, targets=["test_target"]
         )
         self.assertEqual(
             result,
             json.dumps(
                 {
                     "command": "long '{{ jinja }}' quoted string string",
-                    "target": "test_target",
+                    "targets": ["test_target"],
                     "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
@@ -382,7 +382,7 @@ class TestManager(unittest.TestCase):
                 "test-id": {
                     "SUCCESS": ["hostname-node1"],
                     "NODES": ["hostname-node1", "hostname-node2"],
-                    "PROCESSING": False,
+                    "PROCESSING": "UNDEFINED",
                 }
             }
         )
@@ -397,7 +397,7 @@ class TestManager(unittest.TestCase):
                 "test-id": {
                     "SUCCESS": ["hostname-node"],
                     "NODES": ["hostname-node"],
-                    "PROCESSING": False,
+                    "PROCESSING": b"\004".decode(),
                 }
             }
         )
@@ -412,7 +412,7 @@ class TestManager(unittest.TestCase):
                 "test-id": {
                     "FAILED": ["hostname-node"],
                     "NODES": ["hostname-node"],
-                    "PROCESSING": False,
+                    "PROCESSING": b"\025".decode(),
                 }
             }
         )

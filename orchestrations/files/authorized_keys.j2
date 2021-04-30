@@ -4,6 +4,6 @@
 #   public key captured as arg
 #   query for arg
 #   write file
-{% for item in (query.values() | map(attribute='director_ssh_key')) %}
+{% for item in (query.values() | map(attribute='directord_ssh_key')) %}
 {{ item }}
 {%- endfor %}

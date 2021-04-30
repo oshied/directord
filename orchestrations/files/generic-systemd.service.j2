@@ -1,0 +1,20 @@
+
+[Unit]
+Description=systemd service for {{ app_name }}
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={{ app_workdir }}
+User={{ app_username }}
+ExecStart={{ app_exec }}
+Restart=on-failure
+RestartSec=10
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
+Slice=directord.slice
+
+[Install]
+WantedBy=multi-user.target

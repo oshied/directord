@@ -183,7 +183,7 @@ class Client(manager.Interface):
 
         command = self.blueprinter(content=command, values=cache.get("args"))
         if not command:
-            return None, False
+            return None, False, command
 
         info, success = utils.run_command(
             command=command, env=cache.get("envs")
@@ -199,7 +199,7 @@ class Client(manager.Interface):
                 tag="args",
             )
 
-        return info.strip() or command, success
+        return info.strip(), success, command
 
     def _run_workdir(self, workdir, cache):
         """Run file work directory operation.
@@ -217,9 +217,9 @@ class Client(manager.Interface):
         try:
             os.makedirs(workdir, exist_ok=True)
         except (FileExistsError, PermissionError) as e:
-            return str(e), False
+            return str(e), False, None
         else:
-            return "", True
+            return "", True, None
 
     def _run_transfer(
         self,
@@ -276,9 +276,9 @@ class Client(manager.Interface):
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
             ):
-                return None, False
+                return None, False, None
 
-            return info, True
+            return info, True, None
         else:
             self.log.debug(
                 "Requesting transfer of source file:%s", source_file
@@ -311,12 +311,12 @@ class Client(manager.Interface):
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
             self.log.critical("Failure when creating file. FAILURE:%s", e)
-            return "Failure when creating file", False
+            return "Failure when creating file", False, None
 
         if blueprint and not self.file_blueprinter(
             cache=cache, file_to=file_to
         ):
-            return None, False
+            return None, False, None
 
         info = self.file_sha1(file_to)
         success = True
@@ -345,7 +345,7 @@ class Client(manager.Interface):
                 os.chown(file_to, uid, gid)
                 success = True
 
-        return info, success
+        return info, success, None
 
     def _job_executor(
         self,
@@ -353,7 +353,6 @@ class Client(manager.Interface):
         cache,
         info,
         job,
-        job_parent_id,
         job_id,
         job_sha1,
         cached,
@@ -370,8 +369,6 @@ class Client(manager.Interface):
         :type info: Bytes
         :param job: Information containing the original job specification.
         :type job: Dictionary
-        :param job_parent_id: Parent UUID for a given job.
-        :type job_parent_id: String
         :param job_id: Job UUID
         :type job_id: String
         :param job_sha1: Job fingerprint in SHA1 format.
@@ -384,36 +381,13 @@ class Client(manager.Interface):
         :returns: Tuple
         """
 
-        # Set the parent ID value to True, if set False all jobs with
-        # this parent ID will halt and fail.
-        if job_parent_id and cache.get(job_parent_id):
-            if cache.get(job_parent_id) is False:
-                status = (
-                    "Job [ {} ] was not allowed to run because there"
-                    " was a failure under this partent ID"
-                    " [ {} ]".format(job_id, job_parent_id)
-                )
-                self.log.error(status)
-                conn.info = status.encode()
-                conn.job_state = self.job_failed
-                self.set_cache(
-                    cache=cache, key=job_sha1, value=conn.job_state, tag="jobs"
-                )
-                return None, None
-        else:
-            # Parent ID information is set to automatically expire
-            # after 24 hours.
-            self.set_cache(
-                cache=cache, key=job_parent_id, value=True, tag="parents"
-            )
-
         if cached:
             # TODO(cloudnull): Figure out how to skip cache when file
             #                  transfering.
             self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
             conn.info = b"job skipped"
             conn.job_state = self.job_end
-            return None, None
+            return None, None, None
         elif command == b"RUN":
             conn.start_processing()
             return self._run_command(
@@ -447,7 +421,7 @@ class Client(manager.Interface):
                 value_update=True,
                 tag=cache_type,
             )
-            return "{} added to cache".format(cache_type).encode(), True
+            return "{} added to cache".format(cache_type).encode(), True, None
         elif command == b"CACHEFILE":
             conn.start_processing()
             try:
@@ -463,7 +437,7 @@ class Client(manager.Interface):
                     value_update=True,
                     tag="args",
                 )
-                return b"Cache file loaded", True
+                return b"Cache file loaded", True, None
         elif command == b"CACHEEVICT":
             conn.start_processing()
             tag = job["cacheevict"]
@@ -474,6 +448,7 @@ class Client(manager.Interface):
             return (
                 "Evicted {} items, tagged {}".format(evicted, tag).encode(),
                 True,
+                None,
             )
         elif command == b"QUERY":
             conn.start_processing()
@@ -482,14 +457,14 @@ class Client(manager.Interface):
                 query = json.dumps(args.get(job["query"])).encode()
             else:
                 query = None
-            return query, True
+            return query, True, None
         else:
             self.log.warning(
                 "Unknown command - COMMAND:%s ID:%s",
                 command.decode(),
                 job_id,
             )
-            return None, None
+            return None, None, None
 
     def file_blueprinter(self, cache, file_to):
         """Read a file and blueprint its contents.
@@ -526,8 +501,8 @@ class Client(manager.Interface):
         """
 
         if values:
-            _contents = self.blueprint.from_string(content)
             try:
+                _contents = self.blueprint.from_string(content)
                 return _contents.render(**values)
             except Exception:
                 return
@@ -660,23 +635,40 @@ class Client(manager.Interface):
                         command=command,
                         ctx=self,
                     ) as c:
+                        if cache.get(job_parent_id) is False:
+                            self.log.error(
+                                "Parent failure {} skipping {}".format(
+                                    job_parent_id, job_id
+                                )
+                            )
+                            status = (
+                                "Job [ {} ] was not allowed to run because"
+                                " there was a failure under this partent ID"
+                                " [ {} ]".format(job_id, job_parent_id)
+                            )
+                            self.log.error(status)
+                            c.info = status.encode()
+                            c.job_state = self.job_failed
+                            continue
+
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id
                         ):
-                            status, success = self._job_executor(
+                            status, success, exe_command = self._job_executor(
                                 conn=c,
                                 cache=cache,
                                 info=info,
                                 job=job,
-                                job_parent_id=job_parent_id,
                                 job_id=job_id,
                                 job_sha1=job_sha1,
                                 cached=cached,
                                 command=command,
                             )
 
-                        if command == b"QUERY":
-                            c.data = json.dumps(job).encode()
+                        if exe_command:
+                            job["executed_command"] = exe_command
+
+                        c.data = json.dumps(job).encode()
 
                         if status:
                             if not isinstance(status, bytes):
@@ -692,10 +684,15 @@ class Client(manager.Interface):
                                 value=False,
                                 tag="parents",
                             )
-
                         elif success is True:
                             state = c.job_state = self.job_end
                             self.log.info("Job complete {}".format(job_id))
+                            self.set_cache(
+                                cache=cache,
+                                key=job_parent_id,
+                                value=True,
+                                tag="parents",
+                            )
 
                     self.set_cache(
                         cache=cache, key=job_sha1, value=state, tag="jobs"

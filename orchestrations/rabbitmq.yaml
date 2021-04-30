@@ -1,0 +1,95 @@
+# This orchestration will deploy a MySQL (MariaDB) server.
+#
+---
+
+- targets:
+  - df.next-c0.localdomain
+  - df.next-c1.localdomain
+  - df.next-c2.localdomain
+  jobs:
+  - ARG: rabbitmq_async_threads 128
+  - ARG: rabbitmq_process_limit 1048576
+  - ARG: rabbitmq_ulimit 65536
+  - ARG: rabbitmq_collect_statistics_interval 5000
+  - ARG: rabbitmq_ssl_cert /etc/rabbitmq/rabbitmq.pem
+  - ARG: rabbitmq_ssl_key /etc/rabbitmq/rabbitmq.key
+  - ARG: rabbitmq_ssl_ca_cert /etc/rabbitmq/rabbitmq-ca.pem
+  - ARG: rabbitmq_memory_high_watermark 0.2
+  - ARG: rabbitmq_cluster_partition_handling pause_minority
+  - ARG: rabbitmq_management_rates_mode basic
+  - ARG: rabbitmq_management_bind_address 0.0.0.0
+  - ARG: rabbitmq_mnesia_dump_log_write_threshold 300
+  - ARG: rabbitmq_ssl_port 5671
+  - ARG: rabbitmq_tcp_port 5672
+  - ARG: rabbitmq_cluster_name rabbitmq_cluster_1
+  - RUN: --stdout-arg rabbitmq_host ip -o r g 1 | awk '{print $7}'
+  - QUERY: rabbitmq_host
+  - RUN: >-
+      --run-once --stdout-arg rabbitmq_cookie uuidgen | sha1sum | awk '{print $1}'
+  - RUN: --stdout-arg directord_hostname hostname -f
+  - QUERY: directord_hostname
+  - RUN: --skip-cache dnf -y install rabbitmq-server erlang
+  - WORKDIR: /etc/systemd/system/rabbitmq-server.service.d
+  - ADD: --blueprint files/rabbitmq/systemd-limits.conf.j2 /etc/systemd/system/rabbitmq-server.service.d/limits.conf
+  - ADD: --blueprint files/rabbitmq/rabbitmq.conf.j2 /etc/rabbitmq/rabbitmq.conf
+  - RUN: restorecon -v /etc/rabbitmq/rabbitmq.conf
+  - ADD: --blueprint files/rabbitmq/rabbitmq-env.j2 /etc/rabbitmq/rabbitmq-env.conf
+  - RUN: restorecon -v /etc/rabbitmq/rabbitmq-env.conf
+  - RUN: systemctl daemon-reload
+  - RUN: systemctl enable rabbitmq-server.service
+  - RUN: >-
+      {% for _, value in query.items() %}
+      grep "{{ value['directord_hostname'] }}" /etc/hosts || (echo -e "{{ value['rabbitmq_host'] }} {{ value['directord_hostname'] }}" | tee -a /etc/hosts);
+      {% endfor %}
+
+
+- targets:
+  - df.next-c0.localdomain
+  jobs:
+  - RUN: >-
+      --stdout-arg rabbitmq_ssl_self_signed_subject
+      echo "/C=US/ST=Texas/L=San Antonio/O=IT/CN={{ directord_hostname }}"
+  - RUN: >-
+      openssl req -new -nodes -sha256 -x509 -subj
+      "{{ rabbitmq_ssl_self_signed_subject }}"
+      -days 3650
+      -keyout {{ rabbitmq_ssl_key }}
+      -out {{ rabbitmq_ssl_cert }}
+      -extensions v3_ca
+  - RUN: --stdout-arg rabbitmq_ssl_key_output cat {{ rabbitmq_ssl_key }}
+  - RUN: --stdout-arg rabbitmq_ssl_cert_output cat {{ rabbitmq_ssl_cert }}
+  - RUN: chown rabbitmq:rabbitmq {{ rabbitmq_ssl_cert }} {{ rabbitmq_ssl_key }}
+  - QUERY: rabbitmq_cookie
+  - RUN: >-
+      echo -e "{{ query.values() | map(attribute="rabbitmq_cookie") | select("defined") | list | first }}" | tee /var/lib/rabbitmq/.erlang.cookie;
+  - RUN: systemctl start rabbitmq-server.service
+  - RUN: sleep 5 && rabbitmqctl set_cluster_name {{ rabbitmq_cluster_name }}
+  - RUN: --stdout-arg rabbitmq_primary hostname -f
+
+
+- targets:
+  - df.next-c1.localdomain
+  - df.next-c2.localdomain
+  jobs:
+  - QUERY: rabbitmq_ssl_cert_output
+  - RUN: >-
+      echo -e "{{ query.values() | map(attribute="rabbitmq_ssl_cert_output") | select("defined") | list | first }}" | tee {{ rabbitmq_ssl_cert }};
+  - RUN: chown rabbitmq:rabbitmq {{ rabbitmq_ssl_cert }}
+  - QUERY: rabbitmq_ssl_key_output
+  - RUN: >-
+      echo -e "{{ query.values() | map(attribute="rabbitmq_ssl_key_output") | select("defined") | list | first }}" | tee {{ rabbitmq_ssl_key }};
+  - RUN: chown rabbitmq:rabbitmq {{ rabbitmq_ssl_key }}
+  - QUERY: rabbitmq_cookie
+  - RUN: >-
+      echo -e "{{ query.values() | map(attribute="rabbitmq_cookie") | select("defined") | list | first }}" | tee /var/lib/rabbitmq/.erlang.cookie;
+  - QUERY: rabbitmq_primary
+  - RUN: echo "{{ query }}" | tee /tmp/query-dump2
+  - RUN: >-
+      --skip-cache
+      systemctl start rabbitmq-server.service;
+      sleep 5;
+      rabbitmqctl stop_app;
+      sleep 5;
+      rabbitmqctl join_cluster "rabbit@{{ query.values() | map(attribute="rabbitmq_primary") | select("defined") | list | first }}";
+      sleep 5;
+      rabbitmqctl start_app;
