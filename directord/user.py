@@ -226,23 +226,20 @@ class User(manager.Interface):
             if target:
                 data["target"] = target
 
-            if restrict:
-                data["restrict"] = restrict
+            data["verb"] = verb
+            data["timeout"] = args.timeout
+            data["run_once"] = getattr(args, "run_once", False)
+            data["task_sha1sum"] = self.object_sha1(obj=data)
+            data["return_raw"] = return_raw
+            data["skip_cache"] = ignore_cache or getattr(
+                args, "skip_cache", False
+            )
 
             if parent_id:
                 data["parent_id"] = parent_id
 
-            data["verb"] = verb
-            data["timeout"] = args.timeout
-
-            if args:
-                data["skip_cache"] = ignore_cache or args.skip_cache
-                data["run_once"] = args.run_once
-            else:
-                if ignore_cache:
-                    data["skip_cache"] = True
-
-            data["return_raw"] = return_raw
+            if restrict:
+                data["restrict"] = restrict
 
             return json.dumps(data)
 

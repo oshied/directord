@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import json
 import multiprocessing
 import os
 import sys
@@ -40,8 +41,8 @@ class Mixin(object):
         self.args = args
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
 
-    @staticmethod
     def exec_orchestrations(
+        self,
         user_exec,
         orchestrations,
         defined_targets=None,
@@ -108,10 +109,26 @@ class Mixin(object):
                     )
 
         return_data = list()
+        count = 0
         for job in job_to_run:
-            return_data.append(
-                user_exec.send_data(data=user_exec.format_exec(**job))
-            )
+            count += 1
+            formatted_job = user_exec.format_exec(**job)
+            if self.args.finger_print:
+                item = json.loads(formatted_job)
+                exec_str = " ".join(job["execute"])
+                if len(exec_str) >= 30:
+                    exec_str = "{execute}...".format(execute=exec_str[:27])
+                return_data.append(
+                    "{count:<5} {verb:<13}"
+                    " {execute:<39} {fingerprint:>13}".format(
+                        count=count,
+                        verb=item["verb"],
+                        execute=exec_str,
+                        fingerprint=item["task_sha1sum"],
+                    ).encode()
+                )
+            else:
+                return_data.append(user_exec.send_data(data=formatted_job))
         return return_data
 
     def run_orchestration(self):
