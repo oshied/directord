@@ -26,9 +26,17 @@ class TestUser(unittest.TestCase):
     def setUp(self):
         self.user = user.User(args=tests.FakeArgs())
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
+        self.dummy_sha1 = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        self.patched_object_sha1 = patch.object(
+            self.user,
+            "object_sha1",
+            autospec=True,
+            return_value=self.dummy_sha1,
+        )
+        self.patched_object_sha1.start()
 
     def tearDown(self):
-        pass
+        self.patched_object_sha1.stop()
 
     def test_sanitize_args(self):
 
@@ -61,9 +69,10 @@ class TestUser(unittest.TestCase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "verb": "RUN",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
                 }
             ),
         )
@@ -80,9 +89,10 @@ class TestUser(unittest.TestCase):
                     "target": "test_target",
                     "verb": "RUN",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
                 }
             ),
         )
@@ -98,9 +108,10 @@ class TestUser(unittest.TestCase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "verb": "RUN",
                     "timeout": 600,
-                    "skip_cache": True,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": True,
                 }
             ),
         )
@@ -114,12 +125,13 @@ class TestUser(unittest.TestCase):
             json.dumps(
                 {
                     "command": "long '{{ jinja }}' quoted string string",
-                    "restrict": "RestrictedSHA1",
                     "verb": "RUN",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
+                    "restrict": "RestrictedSHA1",
                 }
             ),
         )
@@ -133,12 +145,13 @@ class TestUser(unittest.TestCase):
             json.dumps(
                 {
                     "command": "long '{{ jinja }}' quoted string string",
-                    "parent_id": "ParentID",
                     "verb": "RUN",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
+                    "parent_id": "ParentID",
                 }
             ),
         )
@@ -154,9 +167,10 @@ class TestUser(unittest.TestCase):
             "blueprint": False,
             "verb": "COPY",
             "timeout": 600,
-            "skip_cache": False,
             "run_once": False,
+            "task_sha1sum": self.dummy_sha1,
             "return_raw": False,
+            "skip_cache": False,
         }
         result = self.user.format_exec(
             verb="COPY", execute=["/from/*", "/to/path/"]
@@ -173,9 +187,10 @@ class TestUser(unittest.TestCase):
             "args": {"key": "value"},
             "verb": "ARG",
             "timeout": 600,
-            "skip_cache": False,
             "run_once": False,
+            "task_sha1sum": self.dummy_sha1,
             "return_raw": False,
+            "skip_cache": False,
         }
         result = self.user.format_exec(verb="ARG", execute=["key", "value"])
         self.assertEqual(result, json.dumps(expected_result))
@@ -185,9 +200,10 @@ class TestUser(unittest.TestCase):
             "envs": {"key": "value"},
             "verb": "ENV",
             "timeout": 600,
-            "skip_cache": False,
             "run_once": False,
+            "task_sha1sum": self.dummy_sha1,
             "return_raw": False,
+            "skip_cache": False,
         }
         result = self.user.format_exec(verb="ENV", execute=["key", "value"])
         self.assertEqual(result, json.dumps(expected_result))
@@ -201,9 +217,10 @@ class TestUser(unittest.TestCase):
                     "workdir": "/test/path",
                     "verb": "WORKDIR",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
                 }
             ),
         )
@@ -219,9 +236,10 @@ class TestUser(unittest.TestCase):
                     "cachefile": "/test/path",
                     "verb": "CACHEFILE",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
                 }
             ),
         )
@@ -235,9 +253,10 @@ class TestUser(unittest.TestCase):
                     "cacheevict": "test",
                     "verb": "CACHEEVICT",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
                 }
             ),
         )
@@ -251,9 +270,10 @@ class TestUser(unittest.TestCase):
                     "query": "test",
                     "verb": "QUERY",
                     "timeout": 600,
-                    "skip_cache": False,
                     "run_once": False,
+                    "task_sha1sum": self.dummy_sha1,
                     "return_raw": False,
+                    "skip_cache": False,
                 }
             ),
         )

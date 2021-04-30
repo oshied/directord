@@ -139,6 +139,11 @@ def _args():
         action="store_true",
     )
     parser_orchestrate.add_argument(
+        "--finger-print",
+        help="Finger print a set of orchestrations.",
+        action="store_true",
+    )
+    parser_orchestrate.add_argument(
         "orchestrate_files",
         help="YAML files to use for orchestration.",
         metavar="STRING",
