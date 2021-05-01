@@ -41,6 +41,11 @@
       {% for _, value in query.items() %}
       grep "{{ value['directord_hostname'] }}" /etc/hosts || (echo -e "{{ value['rabbitmq_host'] }} {{ value['directord_hostname'] }}" | tee -a /etc/hosts);
       {% endfor %}
+  - QUERY: rabbitmq_cookie
+  - RUN: >-
+      echo -e "{{ query.values() | map(attribute="rabbitmq_cookie") | select("defined") | list | first }}" | tee /var/lib/rabbitmq/.erlang.cookie;
+  - RUN: chmod 600 /var/lib/rabbitmq/.erlang.cookie
+  - RUN: chown rabbitmq. /var/lib/rabbitmq/.erlang.cookie
 
 
 - targets:
@@ -59,9 +64,6 @@
   - RUN: --stdout-arg rabbitmq_ssl_key_output cat {{ rabbitmq_ssl_key }}
   - RUN: --stdout-arg rabbitmq_ssl_cert_output cat {{ rabbitmq_ssl_cert }}
   - RUN: chown rabbitmq:rabbitmq {{ rabbitmq_ssl_cert }} {{ rabbitmq_ssl_key }}
-  - QUERY: rabbitmq_cookie
-  - RUN: >-
-      echo -e "{{ query.values() | map(attribute="rabbitmq_cookie") | select("defined") | list | first }}" | tee /var/lib/rabbitmq/.erlang.cookie;
   - RUN: systemctl start rabbitmq-server.service
   - RUN: sleep 5 && rabbitmqctl set_cluster_name {{ rabbitmq_cluster_name }}
   - RUN: --stdout-arg rabbitmq_primary hostname -f
@@ -79,9 +81,6 @@
   - RUN: >-
       echo -e "{{ query.values() | map(attribute="rabbitmq_ssl_key_output") | select("defined") | list | first }}" | tee {{ rabbitmq_ssl_key }};
   - RUN: chown rabbitmq:rabbitmq {{ rabbitmq_ssl_key }}
-  - QUERY: rabbitmq_cookie
-  - RUN: >-
-      echo -e "{{ query.values() | map(attribute="rabbitmq_cookie") | select("defined") | list | first }}" | tee /var/lib/rabbitmq/.erlang.cookie;
   - QUERY: rabbitmq_primary
   - RUN: echo "{{ query }}" | tee /tmp/query-dump2
   - RUN: >-

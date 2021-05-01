@@ -127,7 +127,15 @@ class TestUtils(unittest.TestCase):
             zsocket=mock_socket,
         )
         mock_socket.send_multipart.assert_called_once_with(
-            [unittest.mock.ANY, b"\x00", b"\x00", b"\x00", b"\x00"]
+            [
+                unittest.mock.ANY,
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+            ]
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -139,6 +147,8 @@ class TestUtils(unittest.TestCase):
             [
                 b"test-identity",
                 unittest.mock.ANY,
+                b"\x00",
+                b"\x00",
                 b"\x00",
                 b"\x00",
                 b"\x00",
@@ -161,6 +171,8 @@ class TestUtils(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"\x00",
+                b"\x00",
+                b"\x00",
             ]
         )
 
@@ -174,6 +186,8 @@ class TestUtils(unittest.TestCase):
                 b"test-identity",
                 unittest.mock.ANY,
                 b"\x01",
+                b"\x00",
+                b"\x00",
                 b"\x00",
                 b"\x00",
                 b"\x00",
@@ -195,6 +209,8 @@ class TestUtils(unittest.TestCase):
                 b"test-command",
                 b"\x00",
                 b"\x00",
+                b"\x00",
+                b"\x00",
             ]
         )
 
@@ -213,6 +229,8 @@ class TestUtils(unittest.TestCase):
                 b"\x00",
                 b'{"test": "json"}',
                 b"\x00",
+                b"\x00",
+                b"\x00",
             ]
         )
 
@@ -229,5 +247,43 @@ class TestUtils(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"stdout-data",
+                b"\x00",
+                b"\x00",
+            ]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_stderr(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket, identity=b"test-identity", stderr=b"stderr"
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                unittest.mock.ANY,
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"stderr",
+                b"\x00",
+            ]
+        )
+
+    @patch("zmq.sugar.socket.Socket", autospec=True)
+    def test_socket_multipart_send_stdout(self, mock_socket):
+        self.interface.socket_multipart_send(
+            zsocket=mock_socket, identity=b"test-identity", stdout=b"stdout"
+        )
+        mock_socket.send_multipart.assert_called_once_with(
+            [
+                b"test-identity",
+                unittest.mock.ANY,
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"\x00",
+                b"stdout",
             ]
         )

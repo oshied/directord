@@ -171,25 +171,18 @@ class Mixin(object):
         :returns: List
         """
 
-        return_data = list()
         user_exec = user.User(args=self.args)
+        format_kwargs = dict(
+            verb=self.args.verb,
+            execute=self.args.exec,
+            return_raw=getattr(self.args, "poll", False),
+        )
         if self.args.target:
-            for target in set(self.args.target):
-                data = user_exec.format_exec(
-                    verb=self.args.verb,
-                    execute=self.args.exec,
-                    target=target,
-                    return_raw=getattr(self.args, "poll", False),
-                )
-                return_data.append(user_exec.send_data(data=data))
-        else:
-            data = user_exec.format_exec(
-                verb=self.args.verb,
-                execute=self.args.exec,
-                return_raw=getattr(self.args, "poll", False),
-            )
-            return_data.append(user_exec.send_data(data=data))
-        return return_data
+            format_kwargs["targets"] = list(set(self.args.target))
+
+        return [
+            user_exec.send_data(data=user_exec.format_exec(**format_kwargs))
+        ]
 
     def start_server(self):
         """Start the Server process."""

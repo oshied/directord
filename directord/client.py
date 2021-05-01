@@ -123,6 +123,8 @@ class Client(manager.Interface):
                     command,
                     _,
                     info,
+                    _,
+                    _,
                 ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
                 self.log.debug(
                     "Heartbeat received from server [ %s ]",
@@ -167,7 +169,7 @@ class Client(manager.Interface):
                         self.connection_string,
                     )
 
-    def _run_command(self, command, cache, stdout_arg=None):
+    def _run_command(self, command, cache, conn, stdout_arg=None):
         """Run file command operation.
 
         Command operations are rendered with cached data from the args dict.
@@ -176,6 +178,9 @@ class Client(manager.Interface):
         :type command: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
+        :param conn: Connection object used to store information used in a
+                     return message.
+        :type conn: Object
         :param stdout_arg: Argument name used to store stdout in cache.
         :type stdout_arg: String
         :returns: tuple
@@ -185,12 +190,13 @@ class Client(manager.Interface):
         if not command:
             return None, False, command
 
-        info, success = utils.run_command(
+        stdout, stderr, outcome = utils.run_command(
             command=command, env=cache.get("envs")
         )
+        conn.info = command.encode()
 
         if stdout_arg:
-            clean_info = info.decode().strip()
+            clean_info = stdout.decode().strip()
             self.set_cache(
                 cache=cache,
                 key="args",
@@ -199,7 +205,7 @@ class Client(manager.Interface):
                 tag="args",
             )
 
-        return info.strip(), success, command
+        return stdout, stderr, outcome
 
     def _run_workdir(self, workdir, cache):
         """Run file work directory operation.
@@ -217,9 +223,11 @@ class Client(manager.Interface):
         try:
             os.makedirs(workdir, exist_ok=True)
         except (FileExistsError, PermissionError) as e:
-            return str(e), False, None
+            return None, str(e), False
         else:
-            return "", True, None
+            update_info = "Directory {} OK".format(workdir)
+            self.log.info(update_info)
+            return update_info, None, True
 
     def _run_transfer(
         self,
@@ -276,9 +284,9 @@ class Client(manager.Interface):
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
             ):
-                return None, False, None
+                return None, None, None
 
-            return info, True, None
+            return info, None, True
         else:
             self.log.debug(
                 "Requesting transfer of source file:%s", source_file
@@ -300,6 +308,8 @@ class Client(manager.Interface):
                             _,
                             data,
                             info,
+                            _,
+                            _,
                         ) = self.socket_multipart_recv(
                             zsocket=self.bind_transfer
                         )
@@ -310,16 +320,18 @@ class Client(manager.Interface):
                     else:
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
-            self.log.critical("Failure when creating file. FAILURE:%s", e)
-            return "Failure when creating file", False, None
+            stderr = "Failure when creating file. FAILURE:{}".format(e)
+            self.log.critical(stderr)
+            return None, stderr, False
 
         if blueprint and not self.file_blueprinter(
             cache=cache, file_to=file_to
         ):
-            return None, False, None
+            return None, None, None
 
         info = self.file_sha1(file_to)
-        success = True
+        stderr = None
+        outcome = True
         if user:
             try:
                 try:
@@ -335,17 +347,17 @@ class Client(manager.Interface):
                 else:
                     gid = -1
             except KeyError:
-                success = False
-                info = (
+                outcome = False
+                stderr = (
                     "Failed to set ownership properties."
                     " USER:{} GROUP:{}".format(user, group)
                 )
-                self.log.warning(info)
+                self.log.warning(stderr)
             else:
                 os.chown(file_to, uid, gid)
-                success = True
+                outcome = True
 
-        return info, success, None
+        return info, stderr, outcome
 
     def _job_executor(
         self,
@@ -384,7 +396,7 @@ class Client(manager.Interface):
         if cached:
             # TODO(cloudnull): Figure out how to skip cache when file
             #                  transfering.
-            self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
+            self.log.info("Cache hit on {}, task skipped.".format(job_sha1))
             conn.info = b"job skipped"
             conn.job_state = self.job_end
             return None, None, None
@@ -393,6 +405,7 @@ class Client(manager.Interface):
             return self._run_command(
                 command=job["command"],
                 cache=cache,
+                conn=conn,
                 stdout_arg=job.get("stdout_arg"),
             )
         elif command in [b"ADD", b"COPY"]:
@@ -421,14 +434,17 @@ class Client(manager.Interface):
                 value_update=True,
                 tag=cache_type,
             )
-            return "{} added to cache".format(cache_type).encode(), True, None
+            conn.info = "type:{}, value:{}".format(
+                cache_type, job[cache_type]
+            ).encode()
+            return "{} added to cache".format(cache_type).encode(), None, True
         elif command == b"CACHEFILE":
             conn.start_processing()
             try:
                 with open(job["cachefile"]) as f:
                     cachefile_args = yaml.safe_load(f)
             except Exception as e:
-                return str(e), False
+                return None, str(e), False
             else:
                 self.set_cache(
                     cache=cache,
@@ -437,7 +453,7 @@ class Client(manager.Interface):
                     value_update=True,
                     tag="args",
                 )
-                return b"Cache file loaded", True, None
+                return b"Cache file loaded", None, True
         elif command == b"CACHEEVICT":
             conn.start_processing()
             tag = job["cacheevict"]
@@ -447,8 +463,8 @@ class Client(manager.Interface):
                 evicted = cache.evict(tag)
             return (
                 "Evicted {} items, tagged {}".format(evicted, tag).encode(),
-                True,
                 None,
+                True,
             )
         elif command == b"QUERY":
             conn.start_processing()
@@ -457,7 +473,7 @@ class Client(manager.Interface):
                 query = json.dumps(args.get(job["query"])).encode()
             else:
                 query = None
-            return query, True, None
+            return query, None, True
         else:
             self.log.warning(
                 "Unknown command - COMMAND:%s ID:%s",
@@ -557,24 +573,26 @@ class Client(manager.Interface):
 
         # Ensure that the cache path exists before executing.
         os.makedirs(self.args.cache_path, exist_ok=True)
-        with diskcache.Cache(self.args.cache_path) as cache:
-            while True:
-                if time.time() > poller_time + 64:
-                    if poller_interval != 2048:
-                        self.log.info("Directord client entering idle state.")
-                    poller_interval = 2048
+        while True:
+            if time.time() > poller_time + 64:
+                if poller_interval != 2048:
+                    self.log.info("Directord client entering idle state.")
+                poller_interval = 2048
 
-                elif time.time() > poller_time + 32:
-                    if poller_interval != 1024:
-                        self.log.info("Directord client ramping down.")
-                    poller_interval = 1024
+            elif time.time() > poller_time + 32:
+                if poller_interval != 1024:
+                    self.log.info("Directord client ramping down.")
+                poller_interval = 1024
 
-                if time.time() > cache_check_time + 4096:
+            if time.time() > cache_check_time + 4096:
+                with diskcache.Cache(
+                    self.args.cache_path, tag_index=True
+                ) as cache:
                     self.log.info(
                         "Current estimated cache size: %s KiB",
                         cache.volume() / 1024,
                     )
-                    cache.cull()
+
                     warnings = cache.check()
                     if warnings:
                         self.log.warning(
@@ -585,9 +603,14 @@ class Client(manager.Interface):
                                 "Client Cache Warning: [ %s ].",
                                 str(item.message),
                             )
+
+                    cache.expire()
                     cache_check_time = time.time()
 
-                if self.bind_job in dict(self.poller.poll(poller_interval)):
+            if self.bind_job in dict(self.poller.poll(poller_interval)):
+                with diskcache.Cache(
+                    self.args.cache_path, tag_index=True
+                ) as cache:
                     poller_interval, poller_time = 128, time.time()
                     (
                         _,
@@ -595,6 +618,8 @@ class Client(manager.Interface):
                         command,
                         data,
                         info,
+                        _,
+                        _,
                     ) = self.socket_multipart_recv(zsocket=self.bind_job)
                     job = json.loads(data.decode())
                     job_id = job["task"]
@@ -628,7 +653,6 @@ class Client(manager.Interface):
                         b"QUERY",
                     ]
                     cached = cache_hit and cache_allowed
-                    success, status, state = False, None, self.nullbyte
                     with utils.ClientStatus(
                         socket=self.bind_job,
                         job_id=job_id.encode(),
@@ -654,7 +678,7 @@ class Client(manager.Interface):
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id
                         ):
-                            status, success, exe_command = self._job_executor(
+                            stdout, stderr, outcome = self._job_executor(
                                 conn=c,
                                 cache=cache,
                                 info=info,
@@ -665,17 +689,24 @@ class Client(manager.Interface):
                                 command=command,
                             )
 
-                        if exe_command:
-                            job["executed_command"] = exe_command
+                        if stdout:
+                            stdout = stdout.strip()
+                            if not isinstance(stdout, bytes):
+                                stdout = stdout.encode()
+                            c.stdout = stdout
 
-                        c.data = json.dumps(job).encode()
+                        if stderr:
+                            stderr = stderr.strip()
+                            if not isinstance(stderr, bytes):
+                                stderr = stderr.encode()
+                            c.stderr = stderr
 
-                        if status:
-                            if not isinstance(status, bytes):
-                                status = status.encode()
-                            c.info = status
+                        if command == b"QUERY":
+                            c.data = json.dumps(job).encode()
+                            if stdout:
+                                c.info = stdout
 
-                        if success is False:
+                        if outcome is False:
                             state = c.job_state = self.job_failed
                             self.log.error("Job failed {}".format(job_id))
                             self.set_cache(
@@ -684,7 +715,7 @@ class Client(manager.Interface):
                                 value=False,
                                 tag="parents",
                             )
-                        elif success is True:
+                        elif outcome is True:
                             state = c.job_state = self.job_end
                             self.log.info("Job complete {}".format(job_id))
                             self.set_cache(
@@ -693,6 +724,8 @@ class Client(manager.Interface):
                                 value=True,
                                 tag="parents",
                             )
+                        else:
+                            state = self.nullbyte
 
                     self.set_cache(
                         cache=cache, key=job_sha1, value=state, tag="jobs"
