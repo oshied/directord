@@ -300,6 +300,8 @@ class Interface(directord.Processor):
         command=None,
         data=None,
         info=None,
+        stderr=None,
+        stdout=None,
     ):
         """Send a message over a ZM0 socket.
 
@@ -311,7 +313,9 @@ class Interface(directord.Processor):
                 b"ASCII Control Characters",
                 b"command",
                 b"data",
-                b"info"
+                b"info",
+                b"stderr",
+                b"stdout",
             ]
 
         The message specification for client is as follows.
@@ -321,7 +325,9 @@ class Interface(directord.Processor):
                 b"ASCII Control Characters",
                 b"command",
                 b"data",
-                b"info"
+                b"info",
+                b"stderr",
+                b"stdout",
             ]
 
         All message information is assumed to be byte encoded.
@@ -345,6 +351,10 @@ class Interface(directord.Processor):
         :type data: Bytes
         :param info: Encoded information that will be transmitted.
         :type info: Bytes
+        :param stderr: Encoded error information from a command.
+        :type stderr: Bytes
+        :param stdout: Encoded output information from a command.
+        :type stdout: Bytes
         """
 
         if not msg_id:
@@ -362,7 +372,13 @@ class Interface(directord.Processor):
         if not info:
             info = self.nullbyte
 
-        message_parts = [msg_id, control, command, data, info]
+        if not stderr:
+            stderr = self.nullbyte
+
+        if not stdout:
+            stdout = self.nullbyte
+
+        message_parts = [msg_id, control, command, data, info, stderr, stdout]
 
         if identity:
             message_parts.insert(0, identity)
@@ -381,7 +397,9 @@ class Interface(directord.Processor):
                 b"ASCII Control Characters",
                 b"command",
                 b"data",
-                b"info"
+                b"info",
+                b"stderr",
+                b"stdout",
             ]
 
         The message specification for client is as follows.
@@ -391,7 +409,9 @@ class Interface(directord.Processor):
                 b"ASCII Control Characters",
                 b"command",
                 b"data",
-                b"info"
+                b"info",
+                b"stderr",
+                b"stdout",
             ]
 
         All message parts are byte encoded.

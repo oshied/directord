@@ -24,15 +24,15 @@ class TestUtils(unittest.TestCase):
     @patch("directord.utils.subprocess.Popen")
     def test_run_command_success(self, popen):
         popen.return_value = tests.FakePopen()
-        output, outcome = utils.run_command(command="test_command")
-        self.assertEqual(output, "stdout")
+        stdout, _, outcome = utils.run_command(command="test_command")
+        self.assertEqual(stdout, "stdout")
         self.assertEqual(outcome, True)
 
     @patch("directord.utils.subprocess.Popen")
     def test_run_command_fail(self, popen):
         popen.return_value = tests.FakePopen(return_code=1)
-        output, outcome = utils.run_command(command="test_command")
-        self.assertEqual(output, "stderr")
+        _, stderr, outcome = utils.run_command(command="test_command")
+        self.assertEqual(stderr, "stderr")
         self.assertEqual(outcome, False)
 
     def test_dump_yaml(self):
@@ -84,6 +84,8 @@ class TestUtils(unittest.TestCase):
             control=unittest.mock.ANY,
             data=unittest.mock.ANY,
             info=unittest.mock.ANY,
+            stderr=unittest.mock.ANY,
+            stdout=unittest.mock.ANY,
         )
 
     def test_ctx_mgr_clientstatus_start_processing(self):
@@ -106,6 +108,8 @@ class TestUtils(unittest.TestCase):
             control=unittest.mock.ANY,
             data=unittest.mock.ANY,
             info=unittest.mock.ANY,
+            stderr=unittest.mock.ANY,
+            stdout=unittest.mock.ANY,
         )
 
     @patch("directord.utils.paramiko.RSAKey", autospec=True)

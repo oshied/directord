@@ -78,9 +78,9 @@ def run_command(
 
     output, error = process.communicate()
     if process.returncode not in return_codes:
-        return error, False
+        return output, error, False
     else:
-        return output, True
+        return output, error, True
 
 
 def dump_yaml(file_path, data):
@@ -141,6 +141,8 @@ class ClientStatus(object):
         self.info = ctx.nullbyte
         self.socket = socket
         self.data = None
+        self.stderr = ctx.nullbyte
+        self.stdout = ctx.nullbyte
 
     def start_processing(self):
         self.ctx.socket_multipart_send(
@@ -167,6 +169,8 @@ class ClientStatus(object):
             command=self.command,
             data=self.data,
             info=self.info,
+            stderr=self.stderr,
+            stdout=self.stdout,
         )
 
 

@@ -95,6 +95,8 @@ class Server(manager.Interface):
                     _,
                     _,
                     _,
+                    _,
+                    _,
                 ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
 
                 if control in [self.heartbeat_ready, self.heartbeat_notice]:
@@ -137,7 +139,13 @@ class Server(manager.Interface):
                 self.wq_prune(workers=self.workers)
 
     def _set_job_status(
-        self, job_status, job_id, identity, job_output, job_exec_command=None
+        self,
+        job_status,
+        job_id,
+        identity,
+        job_output,
+        job_stdout=None,
+        job_stderr=None,
     ):
         """Set job status.
 
@@ -152,8 +160,10 @@ class Server(manager.Interface):
         :type identity: String
         :param job_output: Job output information
         :type job_output: String
-        :param job_exec_command: Job output information
-        :type job_exec_command: String
+        :param job_stdout: Job output information
+        :type job_stdout: String
+        :param job_stderr: Job error information
+        :type job_stderr: String
         """
 
         def return_exec_time(started):
@@ -168,19 +178,24 @@ class Server(manager.Interface):
         if not job_metadata:
             return
 
-        if job_exec_command:
-            job_metadata["EXECUTED_COMMAND"][identity] = job_exec_command
+        if job_output:
+            job_metadata["INFO"][identity] = job_output
+
+        if job_stdout:
+            job_metadata["STDOUT"][identity] = job_stdout
+
+        if job_stderr:
+            job_metadata["STDERR"][identity] = job_stderr
 
         job_metadata["PROCESSING"] = job_status.decode()
+
         _starttime = job_metadata.get("_starttime")
         _createtime = job_metadata.get("_createtime")
         if job_status == self.job_ack:
-            job_metadata["INFO"][identity] = job_output
             if not _createtime:
                 job_metadata["_createtime"] = time.time()
             self.log.debug("{} received job {}".format(identity, job_id))
         elif job_status == self.job_processing:
-            job_metadata["INFO"][identity] = job_output
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
             self.log.debug("{} is processing {}".format(identity, job_id))
@@ -192,7 +207,6 @@ class Server(manager.Interface):
                 job_metadata["SUCCESS"].append(identity)
             else:
                 job_metadata["SUCCESS"] = [identity]
-            job_metadata["INFO"][identity] = job_output
             job_metadata["EXECUTION_TIME"] = return_exec_time(
                 started=_starttime
             )
@@ -204,7 +218,6 @@ class Server(manager.Interface):
                 job_metadata["FAILED"].append(identity)
             else:
                 job_metadata["FAILED"] = [identity]
-            job_metadata["INFO"][identity] = job_output
             job_metadata["EXECUTION_TIME"] = return_exec_time(
                 started=_starttime
             )
@@ -260,7 +273,8 @@ class Server(manager.Interface):
             job_info = self.return_jobs[task] = {
                 "ACCEPTED": True,
                 "INFO": dict(),
-                "EXECUTED_COMMAND": dict(),
+                "STDOUT": dict(),
+                "STDERR": dict(),
                 "NODES": [i.decode() for i in targets],
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
@@ -300,7 +314,7 @@ class Server(manager.Interface):
                 if job_item["task_sha1sum"] not in restrict_sha1:
                     return 512, time.time()
 
-            job_targets = job_item.get("targets")
+            job_targets = job_item.pop("targets", list())
 
             # NOTE(cloudnull): We run on all targets if query is used.
             run_query = job_item["verb"] == "QUERY"
@@ -324,6 +338,9 @@ class Server(manager.Interface):
             if job_item.get("run_once", False) and not run_query:
                 self.log.debug("Run once enabled.")
                 targets = [targets[0]]
+
+            if run_query:
+                job_item["targets"] = [i.decode() for i in targets]
 
             task = job_item.get("task")
             job_info = self.create_return_jobs(
@@ -413,6 +430,8 @@ class Server(manager.Interface):
                     command,
                     _,
                     info,
+                    _,
+                    _,
                 ) = self.socket_multipart_recv(zsocket=self.bind_transfer)
                 if command == b"transfer":
                     self.log.debug(
@@ -442,30 +461,45 @@ class Server(manager.Interface):
                     command,
                     data,
                     info,
+                    stderr,
+                    stdout,
                 ) = self.socket_multipart_recv(zsocket=self.bind_job)
                 node = identity.decode()
                 node_output = info.decode()
-                try:
-                    data_item = json.loads(data.decode())
-                except Exception:
-                    data_item = dict()
-
                 self._set_job_status(
                     job_status=control,
                     job_id=msg_id.decode(),
                     identity=node,
                     job_output=node_output,
-                    job_exec_command=data_item.get("executed_command"),
+                    job_stdout=stdout.decode(),
+                    job_stderr=stderr.decode(),
                 )
                 if command == b"QUERY":
+                    try:
+                        data_item = json.loads(data.decode())
+                    except Exception:
+                        data_item = dict()
                     # NOTE(cloudnull): When a command return is "QUERY" an ARG
                     #                  is resent to all known workers.
                     try:
                         query_value = json.loads(node_output)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        self.log.error(
+                            "Query value failed to load, VALUE:%s, ERROR:%s",
+                            node_output,
+                            str(e),
+                        )
                     else:
                         if query_value and data_item:
+                            pop_targets = data_item.pop(
+                                "targets", self.workers.keys()
+                            )
+                            targets = list()
+                            for pop_target in pop_targets:
+                                if not isinstance(pop_target, bytes):
+                                    pop_target = pop_target.encode()
+                                targets.append(pop_target)
+
                             task = data_item["task"] = self.get_uuid
                             data_item["skip_cache"] = True
                             data_item["verb"] = "ARG"
@@ -474,7 +508,6 @@ class Server(manager.Interface):
                                     node: {data_item.pop("query"): query_value}
                                 }
                             }
-                            targets = self.workers.keys()
                             self.create_return_jobs(
                                 task=task, job_item=data_item, targets=targets
                             )
