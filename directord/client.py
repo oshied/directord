@@ -432,6 +432,10 @@ class Client(manager.Interface):
                 value_update=True,
                 tag=cache_type,
             )
+            conn.info = "type:{}, value:{}".format(
+                cache_type,
+                job[cache_type]
+            ).encode()
             return "{} added to cache".format(cache_type).encode(), None, True
         elif command == b"CACHEFILE":
             conn.start_processing()
@@ -568,24 +572,26 @@ class Client(manager.Interface):
 
         # Ensure that the cache path exists before executing.
         os.makedirs(self.args.cache_path, exist_ok=True)
-        with diskcache.Cache(self.args.cache_path) as cache:
-            while True:
-                if time.time() > poller_time + 64:
-                    if poller_interval != 2048:
-                        self.log.info("Directord client entering idle state.")
-                    poller_interval = 2048
+        while True:
+            if time.time() > poller_time + 64:
+                if poller_interval != 2048:
+                    self.log.info("Directord client entering idle state.")
+                poller_interval = 2048
 
-                elif time.time() > poller_time + 32:
-                    if poller_interval != 1024:
-                        self.log.info("Directord client ramping down.")
-                    poller_interval = 1024
+            elif time.time() > poller_time + 32:
+                if poller_interval != 1024:
+                    self.log.info("Directord client ramping down.")
+                poller_interval = 1024
 
-                if time.time() > cache_check_time + 4096:
+            if time.time() > cache_check_time + 4096:
+                with diskcache.Cache(
+                    self.args.cache_path, tag_index=True
+                ) as cache:
                     self.log.info(
                         "Current estimated cache size: %s KiB",
                         cache.volume() / 1024,
                     )
-                    cache.cull()
+
                     warnings = cache.check()
                     if warnings:
                         self.log.warning(
@@ -596,9 +602,14 @@ class Client(manager.Interface):
                                 "Client Cache Warning: [ %s ].",
                                 str(item.message),
                             )
+
+                    cache.expire()
                     cache_check_time = time.time()
 
-                if self.bind_job in dict(self.poller.poll(poller_interval)):
+            if self.bind_job in dict(self.poller.poll(poller_interval)):
+                with diskcache.Cache(
+                    self.args.cache_path, tag_index=True
+                ) as cache:
                     poller_interval, poller_time = 128, time.time()
                     (
                         _,
