@@ -135,12 +135,15 @@ def _args():
         ),
         action="store_true",
     )
-    parser_orchestrate.add_argument(
+    orchestrate_group = parser_orchestrate.add_mutually_exclusive_group(
+        required=False
+    )
+    orchestrate_group.add_argument(
         "--poll",
         help="Block on client return for the completion of executed jobs.",
         action="store_true",
     )
-    parser_orchestrate.add_argument(
+    orchestrate_group.add_argument(
         "--finger-print",
         help="Finger print a set of orchestrations.",
         action="store_true",

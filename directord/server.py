@@ -347,6 +347,7 @@ class Server(manager.Interface):
                 task=task, job_item=job_item, targets=targets
             )
             transfers = job_info.get("TRANSFERS", list())
+            self.log.debug("Sending job:%s", job_item)
             for identity in targets:
                 if job_item["verb"] in ["ADD", "COPY"]:
                     for file_path in job_item["from"]:
@@ -377,6 +378,11 @@ class Server(manager.Interface):
                             info=file_path.encode(),
                         )
                 else:
+                    self.log.debug(
+                        "Sending job message for job:%s to identity:%s",
+                        job_item["verb"].encode(),
+                        identity.decode(),
+                    )
                     self.socket_multipart_send(
                         zsocket=self.bind_job,
                         identity=identity,
@@ -491,15 +497,7 @@ class Server(manager.Interface):
                         )
                     else:
                         if query_value and data_item:
-                            pop_targets = data_item.pop(
-                                "targets", self.workers.keys()
-                            )
-                            targets = list()
-                            for pop_target in pop_targets:
-                                if not isinstance(pop_target, bytes):
-                                    pop_target = pop_target.encode()
-                                targets.append(pop_target)
-
+                            targets = self.workers.keys()
                             task = data_item["task"] = self.get_uuid
                             data_item["skip_cache"] = True
                             data_item["verb"] = "ARG"
@@ -508,10 +506,22 @@ class Server(manager.Interface):
                                     node: {data_item.pop("query"): query_value}
                                 }
                             }
+                            data_item.pop("task_sha1sum", None)
+                            data_item["task_sha1sum"] = self.object_sha1(
+                                data_item
+                            )
                             self.create_return_jobs(
                                 task=task, job_item=data_item, targets=targets
                             )
+                            self.log.debug(
+                                "Runing query against with DATA: %s", data_item
+                            )
                             for target in targets:
+                                self.log.debug(
+                                    "Runing query ARG update against"
+                                    " TARGET: %s",
+                                    target.decode(),
+                                )
                                 self.socket_multipart_send(
                                     zsocket=self.bind_job,
                                     identity=target,

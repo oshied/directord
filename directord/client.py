@@ -225,7 +225,9 @@ class Client(manager.Interface):
         except (FileExistsError, PermissionError) as e:
             return None, str(e), False
         else:
-            return "Directory {} OK".format(workdir), None, True
+            update_info = "Directory {} OK".format(workdir)
+            self.log.info(update_info)
+            return update_info, None, True
 
     def _run_transfer(
         self,
@@ -394,7 +396,7 @@ class Client(manager.Interface):
         if cached:
             # TODO(cloudnull): Figure out how to skip cache when file
             #                  transfering.
-            self.log.debug("Cache hit on {}, task skipped.".format(job_sha1))
+            self.log.info("Cache hit on {}, task skipped.".format(job_sha1))
             conn.info = b"job skipped"
             conn.job_state = self.job_end
             return None, None, None
@@ -433,8 +435,7 @@ class Client(manager.Interface):
                 tag=cache_type,
             )
             conn.info = "type:{}, value:{}".format(
-                cache_type,
-                job[cache_type]
+                cache_type, job[cache_type]
             ).encode()
             return "{} added to cache".format(cache_type).encode(), None, True
         elif command == b"CACHEFILE":
@@ -702,7 +703,8 @@ class Client(manager.Interface):
 
                         if command == b"QUERY":
                             c.data = json.dumps(job).encode()
-                            c.info = stdout
+                            if stdout:
+                                c.info = stdout
 
                         if outcome is False:
                             state = c.job_state = self.job_failed
