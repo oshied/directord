@@ -20,7 +20,7 @@ jobs:
             Directord version ${{ github.event.release.tag_name }} has been released!
 
             Python Package - https://pypi.org/project/directord
-            Project Release - ${{ github.event.release.html_url }}
+            ${{ github.event.release.html_url }}
 
   pypi_push_and_publish:
     runs-on: ubuntu-latest
