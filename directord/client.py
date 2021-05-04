@@ -270,7 +270,7 @@ class Client(manager.Interface):
         """
 
         file_to = self.blueprinter(content=file_to, values=cache.get("args"))
-        if os.path.isfile(file_to) and self.file_sha1(file_to) == file_sha1:
+        if os.path.isfile(file_to) and utils.file_sha1(file_to) == file_sha1:
             info = (
                 "File exists {} and SHA1 {} matches, nothing to"
                 " transfer".format(file_to, file_sha1)
@@ -329,7 +329,7 @@ class Client(manager.Interface):
         ):
             return None, None, None
 
-        info = self.file_sha1(file_to)
+        info = utils.file_sha1(file_to)
         stderr = None
         outcome = True
         if user:

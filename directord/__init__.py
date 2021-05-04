@@ -13,8 +13,6 @@
 #   under the License.
 
 import contextlib
-import hashlib
-import json
 import logging
 import multiprocessing
 import os
@@ -267,44 +265,6 @@ class Processor(object):
             )
             yield data
 
-    @staticmethod
-    def file_sha1(file_path, chunk_size=10240):
-        """Return the SHA1 sum of a given file.
-
-        Default chunk size: 10K.
-
-        :param file_path: File path
-        :type file_path: String
-        :param chunk_size: Set the read chunk size.
-        :type chunk_size: Integer
-        :returns: String
-        """
-
-        sha1 = hashlib.sha1()
-        if os.path.exists(file_path):
-            with open(file_path, "rb") as f:
-                while True:
-                    data = f.read(chunk_size)
-                    if not data:
-                        break
-                    else:
-                        sha1.update(data)
-
-            return sha1.hexdigest()
-
-    @staticmethod
-    def object_sha1(obj):
-        """Return the SHA1 sum of a given object.
-
-        The object used for generating a SHA1 must be JSON compatible.
-
-        :param file_path: File path
-        :type file_path: String
-        :returns: String
-        """
-
-        return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
-
     @contextlib.contextmanager
     def timeout(self, time, job_id, reraise=False):
         """Registers a context manager to raise whenever a timeout occurs.
@@ -366,3 +326,27 @@ class UNIXSocketConnect(object):
         """Upon exit, close the unix socket."""
 
         self.sock.close()
+
+
+def send_data(socket_path, data):
+    """Send data to the socket path.
+
+    The send method takes serialized data and submits it to the given
+    socket path.
+
+    This method will return information provided by the server in
+    String format.
+
+    :returns: String
+    """
+
+    with UNIXSocketConnect(socket_path) as s:
+        s.sendall(data.encode())
+        fragments = []
+        while True:
+            chunk = s.recv(1024)
+            if not chunk:
+                break
+            else:
+                fragments.append(chunk)
+        return b"".join(fragments)

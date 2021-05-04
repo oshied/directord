@@ -21,6 +21,7 @@ import time
 import zmq
 
 from directord import manager
+from directord import utils
 
 
 class Server(manager.Interface):
@@ -351,7 +352,7 @@ class Server(manager.Interface):
             for identity in targets:
                 if job_item["verb"] in ["ADD", "COPY"]:
                     for file_path in job_item["from"]:
-                        job_item["file_sha1sum"] = self.file_sha1(
+                        job_item["file_sha1sum"] = utils.file_sha1(
                             file_path=file_path
                         )
                         if job_item["to"].endswith(os.sep):
@@ -507,7 +508,7 @@ class Server(manager.Interface):
                                 }
                             }
                             data_item.pop("task_sha1sum", None)
-                            data_item["task_sha1sum"] = self.object_sha1(
+                            data_item["task_sha1sum"] = utils.object_sha1(
                                 data_item
                             )
                             self.create_return_jobs(

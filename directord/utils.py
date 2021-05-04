@@ -12,6 +12,8 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import hashlib
+import json
 import os
 import subprocess
 import yaml
@@ -226,3 +228,41 @@ class ParamikoConnect(object):
         """Upon exit, close the ssh connection."""
 
         self.ssh.close()
+
+
+def file_sha1(file_path, chunk_size=10240):
+    """Return the SHA1 sum of a given file.
+
+    Default chunk size: 10K.
+
+    :param file_path: File path
+    :type file_path: String
+    :param chunk_size: Set the read chunk size.
+    :type chunk_size: Integer
+    :returns: String
+    """
+
+    sha1 = hashlib.sha1()
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            while True:
+                data = f.read(chunk_size)
+                if not data:
+                    break
+                else:
+                    sha1.update(data)
+
+        return sha1.hexdigest()
+
+
+def object_sha1(obj):
+    """Return the SHA1 sum of a given object.
+
+    The object used for generating a SHA1 must be JSON compatible.
+
+    :param file_path: File path
+    :type file_path: String
+    :returns: String
+    """
+
+    return hashlib.sha1(json.dumps(obj).encode()).hexdigest()

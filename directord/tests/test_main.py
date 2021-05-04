@@ -21,6 +21,7 @@ from directord import tests
 class TestMain(unittest.TestCase):
     def setUp(self):
         self.args = tests.FakeArgs()
+        self.systemdinstall = main.SystemdInstall()
 
     def tearDown(self):
         pass

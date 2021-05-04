@@ -129,3 +129,21 @@ class TestUtils(unittest.TestCase):
             )
             ssh.get_transport.assert_called_once_with()
         ssh.close.assert_called_once_with()
+
+    def test_file_sha1(self):
+        with unittest.mock.patch(
+            "builtins.open", unittest.mock.mock_open(read_data=b"data")
+        ) as mock_file:
+            sha1 = utils.file_sha1(file_path=mock_file)
+            self.assertEqual(sha1, "a17c9aaa61e80a1bf71d0d850af4e5baa9800bbd")
+
+    def test_file_sha1_set_chunk(self):
+        with unittest.mock.patch(
+            "builtins.open", unittest.mock.mock_open(read_data=b"data")
+        ) as mock_file:
+            sha1 = utils.file_sha1(file_path=mock_file, chunk_size=1)
+            self.assertEqual(sha1, "a17c9aaa61e80a1bf71d0d850af4e5baa9800bbd")
+
+    def test_object_sha1(self):
+        sha1 = utils.object_sha1(obj={"test": "value"})
+        self.assertEqual(sha1, "4e0b1f3b9b1e08306ab4e388a65847c73a902097")

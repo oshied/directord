@@ -12,14 +12,18 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import argparse
+import glob
 import json
 import multiprocessing
 import os
+import shlex
 import sys
 import yaml
 
 import jinja2
 
+import directord
 from directord import client
 from directord import server
 from directord import user
@@ -40,6 +44,210 @@ class Mixin(object):
 
         self.args = args
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
+        self.log = directord.getLogger(name="directord")
+
+    @staticmethod
+    def sanitized_args(execute):
+        """Return arguments in a flattened array.
+
+        This will inspect the execution arguments and return everything found
+        as a flattened array.
+
+        :param execute: Execution string to parse.
+        :type execute: String
+        :returns: List
+        """
+
+        return [i for g in execute for i in g.split()]
+
+    def format_exec(
+        self,
+        verb,
+        execute,
+        targets=None,
+        ignore_cache=False,
+        restrict=None,
+        parent_id=None,
+        return_raw=False,
+    ):
+        """Return a JSON encode object for task execution.
+
+        While formatting the message, the method will treat each verb as a
+        case and parse the underlying sub-command, formatting the information
+        into a dictionary.
+
+        :param verb: Action to parse.
+        :type verb: String
+        :param execute: Execution string to parse.
+        :type execute: String
+        :param targets: Target argents to send job to.
+        :type targets: List
+        :param ignore_cache: Instruct the entire execution to
+                             ignore client caching.
+        :type ignore_cache: Boolean
+        :param restrict: Restrict job execution based on a provided task SHA1.
+        :type restrict: List
+        :param parent_id: Set the parent UUID for execution jobs.
+        :type parent_id: String
+        :param return_raw: Enable a raw return from the server.
+        :type return_raw: Boolean
+        :returns: String
+        """
+
+        args = None
+        data = dict()
+        parser = argparse.ArgumentParser(
+            description="Process exec commands",
+            allow_abbrev=False,
+            add_help=False,
+        )
+        parser.add_argument(
+            "--exec-help",
+            action="help",
+            help="Show this execution help message.",
+        )
+        parser.add_argument(
+            "--skip-cache",
+            action="store_true",
+            help="For a task to skip the on client cache.",
+        )
+        parser.add_argument(
+            "--run-once",
+            action="store_true",
+            help="Force a given task to run once.",
+        )
+        parser.add_argument(
+            "--timeout",
+            default=600,
+            type=int,
+            help="Set the action timeout. Default %(default)s.",
+        )
+        self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
+        if verb == "RUN":
+            parser.add_argument(
+                "--stdout-arg",
+                help=(
+                    "Stores the stdout of a given command as a cached"
+                    " argument."
+                ),
+            )
+            args, command = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            if args.stdout_arg:
+                data["stdout_arg"] = args.stdout_arg
+            data["command"] = " ".join(command)
+        elif verb in ["COPY", "ADD"]:
+            parser.add_argument("--chown", help="Set the file ownership")
+            parser.add_argument(
+                "--blueprint",
+                action="store_true",
+                help="Instruct the remote file to be blueprinted.",
+            )
+            parser.add_argument(
+                "files",
+                nargs="+",
+                help="Set the file to transfer: 'FROM' 'TO'",
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            if args.chown:
+                chown = args.chown.split(":", 1)
+                if len(chown) == 1:
+                    chown.append(None)
+                data["user"], data["group"] = chown
+            file_from, data["to"] = shlex.split(" ".join(args.files))
+            data["from"] = [
+                os.path.abspath(os.path.expanduser(i))
+                for i in glob.glob(file_from)
+                if os.path.isfile(os.path.expanduser(i))
+            ]
+            if not data["from"]:
+                raise AttributeError(
+                    "The value of [ {} ] was not found.".format(file_from)
+                )
+            data["blueprint"] = args.blueprint
+        elif verb in ["ARG", "ENV"]:
+            cache_type = "{}s".format(verb.lower())
+            parser.add_argument(
+                cache_type,
+                nargs="+",
+                action="append",
+                help="Set a given argument. KEY VALUE",
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            cache_obj = getattr(args, cache_type)
+            data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
+        elif verb == "WORKDIR":
+            parser.add_argument("workdir", help="Create a directory.")
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["workdir"] = args.workdir
+        elif verb == "CACHEFILE":
+            parser.add_argument(
+                "cachefile",
+                help="Load a cached file and store it as an update to ARGs.",
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["cachefile"] = args.cachefile
+        elif verb == "CACHEEVICT":
+            parser.add_argument(
+                "cacheevict",
+                help=(
+                    "Evict all tagged cached items from a client machine."
+                    " Typical tags are, but not limited to:"
+                    " [args, envs, jobs, parents, query, ...]. To evict 'all'"
+                    " cached items use the keyword 'all'."
+                ),
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["cacheevict"] = args.cacheevict
+        elif verb == "QUERY":
+            parser.add_argument(
+                "query",
+                help=(
+                    "Scan the environment for a given cached argument and"
+                    " store the resultant on the target. The resultant is"
+                    " set in dictionary format: `{'client-id': ...}`"
+                ),
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["query"] = args.query
+        else:
+            raise SystemExit("No known verb defined.")
+
+        if hasattr(args, "exec_help") and args.exec_help:
+            return parser.print_help(1)
+        else:
+            if targets:
+                data["targets"] = targets
+
+            data["verb"] = verb
+            data["timeout"] = args.timeout
+            data["run_once"] = getattr(args, "run_once", False)
+            data["task_sha1sum"] = utils.object_sha1(obj=data)
+            data["return_raw"] = return_raw
+            data["skip_cache"] = ignore_cache or getattr(
+                args, "skip_cache", False
+            )
+
+            if parent_id:
+                data["parent_id"] = parent_id
+
+            if restrict:
+                data["restrict"] = restrict
+
+            return json.dumps(data)
 
     def exec_orchestrations(
         self,
@@ -99,7 +307,7 @@ class Mixin(object):
         return_data = list()
         count = 0
         for job in job_to_run:
-            formatted_job = user_exec.format_exec(**job)
+            formatted_job = self.format_exec(**job)
             if self.args.finger_print:
                 item = json.loads(formatted_job)
                 exec_str = " ".join(job["execute"])
@@ -117,7 +325,12 @@ class Mixin(object):
                 )
                 count += 1
             else:
-                return_data.append(user_exec.send_data(data=formatted_job))
+                return_data.append(
+                    directord.send_data(
+                        socket_path=self.args.socket_path, data=formatted_job
+                    )
+                )
+
         return return_data
 
     def run_orchestration(self):
@@ -171,7 +384,6 @@ class Mixin(object):
         :returns: List
         """
 
-        user_exec = user.User(args=self.args)
         format_kwargs = dict(
             verb=self.args.verb,
             execute=self.args.exec,
@@ -181,7 +393,10 @@ class Mixin(object):
             format_kwargs["targets"] = list(set(self.args.target))
 
         return [
-            user_exec.send_data(data=user_exec.format_exec(**format_kwargs))
+            directord.send_data(
+                socket_path=self.args.socket_path,
+                data=self.format_exec(**format_kwargs),
+            )
         ]
 
     def start_server(self):
