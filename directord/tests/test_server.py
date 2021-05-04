@@ -11,3 +11,45 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
+
+import unittest
+
+from directord import server
+
+
+class TestServer(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_heartbeat_bind(self):
+        pass
+
+    def test_job_bind(self):
+        pass
+
+    def test_transfer_bind(self):
+        pass
+
+    def test_run_heartbeat(self):
+        pass
+
+    def test__run_transfer(self):
+        pass
+
+    def test_create_return_jobs(self):
+        pass
+
+    def test_run_job(self):
+        pass
+
+    def test_run_interactions(self):
+        pass
+
+    def test_run_socket_server(self):
+        pass
+
+    def test_worker_run(self):
+        pass

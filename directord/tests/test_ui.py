@@ -11,3 +11,21 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
+
+import unittest
+
+from directord import ui
+
+
+class TestUI(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_get(self):
+        pass
+
+    def test_start_app(self):
+        pass
