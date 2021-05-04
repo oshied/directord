@@ -499,7 +499,7 @@ class Server(manager.Interface):
                     else:
                         if query_value and data_item:
                             targets = self.workers.keys()
-                            task = data_item["task"] = self.get_uuid
+                            task = data_item["task"] = utils.get_uuid()
                             data_item["skip_cache"] = True
                             data_item["verb"] = "ARG"
                             data_item["args"] = {
@@ -598,7 +598,7 @@ class Server(manager.Interface):
                             str(e),
                         )
                 else:
-                    json_data["task"] = json_data.get("task", self.get_uuid)
+                    json_data["task"] = json_data.get("task", utils.get_uuid())
                     if "parent_id" not in json_data:
                         json_data["parent_id"] = json_data["task"]
                     restrict = json_data.get("restrict", None)

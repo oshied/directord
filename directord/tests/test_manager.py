@@ -41,13 +41,6 @@ class TestUtils(unittest.TestCase):
             p.return_value = 1000000000.0000001
             self.assertEqual(self.interface.get_expiry, 1000000180.0000001)
 
-    def test_get_uuid(self):
-        uuid1 = self.interface.get_uuid
-        uuid.UUID(uuid1, version=4)
-        uuid2 = self.interface.get_uuid
-        uuid.UUID(uuid2, version=4)
-        self.assertNotEqual(uuid1, uuid2)
-
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
     def test_socket_bind_no_auth(self, mock_poller, mock_socket):

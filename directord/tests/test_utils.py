@@ -13,6 +13,7 @@
 #   under the License.
 
 import unittest
+import uuid
 
 from unittest.mock import patch
 
@@ -147,3 +148,10 @@ class TestUtils(unittest.TestCase):
     def test_object_sha1(self):
         sha1 = utils.object_sha1(obj={"test": "value"})
         self.assertEqual(sha1, "4e0b1f3b9b1e08306ab4e388a65847c73a902097")
+
+    def test_get_uuid(self):
+        uuid1 = utils.get_uuid()
+        uuid.UUID(uuid1, version=4)
+        uuid2 = utils.get_uuid()
+        uuid.UUID(uuid2, version=4)
+        self.assertNotEqual(uuid1, uuid2)

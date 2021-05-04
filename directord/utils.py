@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import subprocess
+import uuid
 import yaml
 
 import paramiko
@@ -266,3 +267,12 @@ def object_sha1(obj):
     """
 
     return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
+
+
+def get_uuid():
+    """Return a new UUID in String format.
+
+    :returns: String
+    """
+
+    return str(uuid.uuid4())

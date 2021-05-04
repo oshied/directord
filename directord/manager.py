@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+from directord import utils
 import jinja2
 import logging
 import os
@@ -110,15 +111,6 @@ class Interface(directord.Processor):
         return time.time() + (
             self.heartbeat_interval * self.heartbeat_liveness
         )
-
-    @property
-    def get_uuid(self):
-        """Return a new UUID in String format.
-
-        :returns: String
-        """
-
-        return str(uuid.uuid4())
 
     def socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN
@@ -358,7 +350,7 @@ class Interface(directord.Processor):
         """
 
         if not msg_id:
-            msg_id = self.get_uuid.encode()
+            msg_id = utils.get_uuid().encode()
 
         if not control:
             control = self.nullbyte

@@ -251,7 +251,6 @@ class Mixin(object):
 
     def exec_orchestrations(
         self,
-        user_exec,
         orchestrations,
         defined_targets=None,
         restrict=None,
@@ -263,9 +262,6 @@ class Mixin(object):
         Iterates over a list of orchestartion blobs, fingerprints the jobs,
         and then runs them.
 
-        :param user_exec: Intialized user-class, required to prepare jobs and
-                          format execution.
-        :type user_exec: Object
         :param orchestrations: List of Dictionaries which are run as
                                orchestartion.
         :type orchestrations: List
@@ -286,7 +282,7 @@ class Mixin(object):
 
         job_to_run = list()
         for orchestrate in orchestrations:
-            parent_id = user_exec.get_uuid
+            parent_id = utils.get_uuid()
             targets = defined_targets or orchestrate.get("targets", list())
             jobs = orchestrate["jobs"]
             for job in jobs:
@@ -344,7 +340,6 @@ class Mixin(object):
         """
 
         return_data = list()
-        user_exec = user.User(args=self.args)
         for orchestrate_file in self.args.orchestrate_files:
             orchestrate_file = os.path.abspath(
                 os.path.expanduser(orchestrate_file)
@@ -364,7 +359,6 @@ class Mixin(object):
 
                 return_data.extend(
                     self.exec_orchestrations(
-                        user_exec=user_exec,
                         orchestrations=orchestrations,
                         defined_targets=defined_targets,
                         restrict=self.args.restrict,
