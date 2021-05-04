@@ -58,11 +58,12 @@ class TestUtils(unittest.TestCase):
         )
         self.assertIsNotNone(bind.bind)
 
+    @patch("logging.Logger.info", autospec=True)
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
     @patch("directord.manager.ThreadAuthenticator", autospec=True)
     def test_socket_bind_shared_auth(
-        self, mock_auth, mock_poller, mock_socket
+        self, mock_auth, mock_poller, mock_socket, mock_info_logging
     ):
         setattr(self.interface.args, "shared_key", "test")
         bind = self.interface.socket_bind(
@@ -72,6 +73,7 @@ class TestUtils(unittest.TestCase):
         )
         self.assertIsNotNone(bind.bind)
         self.assertEqual(bind.plain_server, True)
+        mock_info_logging.assert_called()
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
@@ -90,7 +92,8 @@ class TestUtils(unittest.TestCase):
             self.assertIsNotNone(bind.bind)
             self.assertEqual(bind.curve_server, True)
 
-    def test_socket_connect(self):
+    @patch("logging.Logger.info", autospec=True)
+    def test_socket_connect(self, mock_info_logging):
         self.interface.curve_keys_exist = False
         bind = self.interface.socket_connect(
             socket_type=manager.zmq.PULL,
@@ -98,8 +101,10 @@ class TestUtils(unittest.TestCase):
             port=1234,
         )
         self.assertEqual(bind.linger, 0)
+        mock_info_logging.assert_called()
 
-    def test_socket_connect_shared_key(self):
+    @patch("logging.Logger.info", autospec=True)
+    def test_socket_connect_shared_key(self, mock_info_logging):
         self.interface.curve_keys_exist = False
         setattr(self.interface.args, "shared_key", "test-key")
         bind = self.interface.socket_connect(
@@ -110,8 +115,10 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(bind.plain_username, b"admin")
         self.assertEqual(bind.plain_password, b"test-key")
         self.assertEqual(bind.linger, 0)
+        mock_info_logging.assert_called()
 
-    def test_socket_connect_curve_auth(self):
+    @patch("logging.Logger.info", autospec=True)
+    def test_socket_connect_curve_auth(self, mock_info_logging):
         m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
         with patch("builtins.open", m):
             bind = self.interface.socket_connect(
@@ -120,6 +127,7 @@ class TestUtils(unittest.TestCase):
                 port=1234,
             )
             self.assertEqual(bind.linger, 0)
+        mock_info_logging.assert_called()
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_multipart_send(self, mock_socket):
