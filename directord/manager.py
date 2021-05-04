@@ -18,7 +18,6 @@ import logging
 import os
 import socket
 import time
-import uuid
 
 import tenacity
 import zmq

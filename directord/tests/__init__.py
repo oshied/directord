@@ -12,6 +12,14 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+
+import io
+
+from unittest import mock
+
+import paramiko
+
+
 MOCK_CURVE_KEY = """
 #   ****  Generated test key  ****
 #   ZeroMQ CURVE **Secret** Certificate
@@ -75,3 +83,10 @@ class MockSocket:
 
     def close(self):
         pass
+
+
+class MockChannelFile(io.StringIO):
+    channel = mock.MagicMock(spec=paramiko.Channel)()
+
+    def __init__(self, rc=0):
+        self.channel.recv_exit_status.return_value = rc

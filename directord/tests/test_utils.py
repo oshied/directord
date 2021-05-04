@@ -118,8 +118,7 @@ class TestUtils(unittest.TestCase):
     def test_paramikoconnect(self, mock_sshclient, mock_rsakey):
         with utils.ParamikoConnect(
             host="test", username="testuser", port=22, key_file="/test/key"
-        ) as p:
-            ssh, _ = p
+        ) as ssh:
             self.assertEqual(ssh, mock_sshclient())
             ssh.connect.assert_called_once_with(
                 allow_agent=True,
@@ -128,7 +127,6 @@ class TestUtils(unittest.TestCase):
                 port=22,
                 username="testuser",
             )
-            ssh.get_transport.assert_called_once_with()
         ssh.close.assert_called_once_with()
 
     def test_file_sha1(self):

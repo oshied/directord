@@ -21,7 +21,10 @@ import yaml
 import tabulate
 
 import directord
+
+from directord import client
 from directord import mixin
+from directord import server
 from directord import user
 from directord import utils
 
@@ -36,9 +39,7 @@ def _args():
         "--config-file",
         help="File path for client configuration. Default: %(default)s",
         metavar="STRING",
-        default=os.getenv(
-            "DIRECTORD_CONFIG_FILE", "/etc/directord/config.yaml"
-        ),
+        default=os.getenv("DIRECTORD_CONFIG_FILE", None),
         type=argparse.FileType(mode="r"),
     )
     auth_group = parser.add_mutually_exclusive_group()
@@ -411,9 +412,9 @@ def main():
     _mixin = mixin.Mixin(args=args)
 
     if args.mode == "server":
-        _mixin.start_server()
+        server.Server(args=args).worker_run()
     elif args.mode == "client":
-        _mixin.start_client()
+        client.Client(args=args).worker_run()
     elif args.mode in ["exec", "orchestrate"]:
         if args.mode == "exec":
             return_data = _mixin.run_exec()

@@ -24,9 +24,6 @@ import yaml
 import jinja2
 
 import directord
-from directord import client
-from directord import server
-from directord import user
 from directord import utils
 
 
@@ -393,16 +390,6 @@ class Mixin(object):
             )
         ]
 
-    def start_server(self):
-        """Start the Server process."""
-
-        server.Server(args=self.args).worker_run()
-
-    def start_client(self):
-        """Start the client process."""
-
-        client.Client(args=self.args).worker_run()
-
     def return_tabulated_info(self, data):
         """Return a list of data that will be tabulated.
 
@@ -449,7 +436,7 @@ class Mixin(object):
                         computed_values[bool_heading] += 1
                     else:
                         computed_values[bool_heading] = 1
-                elif isinstance(value, (float)):
+                elif isinstance(value, (float, int)):
                     if value_heading in computed_values:
                         computed_values[value_heading] += value
                     else:
@@ -560,7 +547,7 @@ class Mixin(object):
                 return_jobs.append(job)
         return return_jobs
 
-    def bootstrap_run(self, job_def, catalog, quiet=False):
+    def bootstrap_run(self, job_def, catalog):
         """Run a given set of jobs using a defined job definition.
 
         This method requires a job definition which contains the following.
@@ -577,25 +564,21 @@ class Mixin(object):
         :type jobs_def: Dictionary
         :param catalog: The job catalog definition.
         :type catalog: Dictionary
-        :param quiet: Enable|Disable quiet mode.
-        :type quiet: Boolean
         """
 
-        print("Running bootstrap for {}".format(job_def["host"]))
+        self.log.info("Running bootstrap for %s", job_def["host"])
         for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
             key, value = next(iter(job.items()))
-            if not quiet:
-                print("Executing: {} {}".format(key, value))
+            self.log.debug("Executing: {} {}".format(key, value))
             with utils.ParamikoConnect(
                 host=job_def["host"],
                 username=job_def["username"],
                 port=job_def["port"],
                 key_file=job_def.get("key_file"),
-            ) as conn:
-                ssh, session = conn
+            ) as ssh:
                 if key == "RUN":
                     self.bootstrap_exec(
-                        session=session, command=value, catalog=catalog
+                        ssh=ssh, command=value, catalog=catalog
                     )
                 elif key == "ADD":
                     localfile, remotefile = value.split(" ", 1)
@@ -645,7 +628,7 @@ class Mixin(object):
         finally:
             ftp_client.close()
 
-    def bootstrap_exec(self, session, command, catalog):
+    def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.
 
         Run a command and check the status. If there's a failure the
@@ -660,9 +643,8 @@ class Mixin(object):
         """
 
         t_command = self.blueprint.from_string(command)
-        session.exec_command(t_command.render(**catalog))
-        if session.recv_exit_status() != 0:
-            stderr = session.recv_stderr(4096)
+        _, stdout, stderr = ssh.exec_command(t_command.render(**catalog))
+        if stdout.channel.recv_exit_status() != 0:
             raise SystemExit(
                 "Bootstrap command failed: {}, Error: {}".format(
                     command, stderr
@@ -687,7 +669,8 @@ class Mixin(object):
                 break
             else:
                 self.bootstrap_run(
-                    job_def=job_def, catalog=catalog, quiet=True
+                    job_def=job_def,
+                    catalog=catalog,
                 )
 
     def bootstrap_cluster(self):
@@ -706,14 +689,14 @@ class Mixin(object):
 
         directord_server = catalog.get("directord_server")
         if directord_server:
-            print("Loading server information")
+            self.log.info("Loading server information")
             for s in self.bootstrap_catalog_entry(entry=directord_server):
                 s["key_file"] = self.args.key_file
                 self.bootstrap_run(job_def=s, catalog=catalog)
 
         directord_clients = catalog.get("directord_clients")
         if directord_clients:
-            print("Loading client information")
+            self.log.info("Loading client information")
             for c in self.bootstrap_catalog_entry(entry=directord_clients):
                 c["key_file"] = self.args.key_file
                 q.put(c)

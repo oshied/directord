@@ -26,6 +26,9 @@ class TestMain(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test__args(self):
+        pass
+
     def test_path_setup(self):
         pass
 

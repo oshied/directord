@@ -20,7 +20,6 @@ import uuid
 import yaml
 
 import paramiko
-from paramiko import agent
 
 
 def run_command(
@@ -220,10 +219,7 @@ class ParamikoConnect(object):
         """
 
         self.ssh.connect(**self.connect_kwargs)
-        session = self.ssh.get_transport().open_session()
-        agent.AgentRequestHandler(session)
-
-        return self.ssh, session
+        return self.ssh
 
     def __exit__(self, *args, **kwargs):
         """Upon exit, close the ssh connection."""
