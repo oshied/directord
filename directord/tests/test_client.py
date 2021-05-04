@@ -15,11 +15,13 @@
 import unittest
 
 from directord import client
+from directord import tests
 
 
 class TestClient(unittest.TestCase):
     def setUp(self):
-        pass
+        self.args = tests.FakeArgs()
+        self.client = client.Client(args=self.args)
 
     def tearDown(self):
         pass

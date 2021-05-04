@@ -14,12 +14,14 @@
 
 import unittest
 
+from directord import tests
 from directord import ui
 
 
 class TestUI(unittest.TestCase):
     def setUp(self):
-        pass
+        self.args = tests.FakeArgs()
+        self.ui = ui.UI(args=self.args, jobs=[], nodes=[])
 
     def tearDown(self):
         pass

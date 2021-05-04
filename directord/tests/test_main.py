@@ -15,11 +15,12 @@
 import unittest
 
 from directord import main
+from directord import tests
 
 
 class TestMain(unittest.TestCase):
     def setUp(self):
-        pass
+        self.args = tests.FakeArgs()
 
     def tearDown(self):
         pass

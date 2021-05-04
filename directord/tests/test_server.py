@@ -15,11 +15,13 @@
 import unittest
 
 from directord import server
+from directord import tests
 
 
 class TestServer(unittest.TestCase):
     def setUp(self):
-        pass
+        self.args = tests.FakeArgs()
+        self.client = server.Server(args=self.args)
 
     def tearDown(self):
         pass

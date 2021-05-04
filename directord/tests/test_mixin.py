@@ -21,6 +21,7 @@ from directord import tests
 class TestMixin(unittest.TestCase):
     def setUp(self):
         self.args = tests.FakeArgs()
+        self.mixin = mixin.Mixin(args=self.args)
 
     def tearDown(self):
         pass
