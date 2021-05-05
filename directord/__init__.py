@@ -13,6 +13,8 @@
 #   under the License.
 
 import contextlib
+import importlib
+import json
 import logging
 import multiprocessing
 import os
@@ -21,6 +23,7 @@ import socket
 import time
 
 from logging import handlers
+from types import SimpleNamespace
 
 
 def getLogger(name, debug_logging=False):
@@ -350,3 +353,125 @@ def send_data(socket_path, data):
             else:
                 fragments.append(chunk)
         return b"".join(fragments)
+
+
+class DirectordConnect(object):
+    """Library context manager providing easy access into Directord."""
+
+    def __init__(self, debug=False, socket_path="/var/run/directord.sock"):
+        """Initialize the connection.
+
+        Basic usage.
+
+        > with DirectordConnect() as d:
+        ...   # Run orchestrations.
+        ...   ids = d.orchestrate(
+        ...       orchestrations=jobs
+        ...   )
+
+        :param debug: Enable|Disable debug mode.
+        :type debug: Boolean
+        :param socket_path: Socket path used to connect to Directord.
+        :type socket_path: String
+        """
+
+        args = SimpleNamespace(**{"debug": debug, "socket_path": socket_path})
+        _mixin = importlib.import_module(".mixin", package="directord")
+        self.mixin = _mixin.Mixin(args=args)
+        _user = importlib.import_module(".user", package="directord")
+        self.manage = _user.Manage(args=args)
+
+    def __enter__(self):
+        """Enter the context manager returning self."""
+
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        """Shutdown the context manager."""
+
+        pass
+
+    @staticmethod
+    def _from_json(return_obj):
+        """Decode a byte object and return the loaded JSON data.
+
+        :param return_obj: Byte encoded JSON string.
+        :type return_objL Bytes
+        :returns: Dictionary
+        """
+
+        return json.loads(return_obj.decode())
+
+    def orchestrate(self, orchestrations, defined_targets=None):
+        """Run an orchestration and return a list of job IDs.
+
+        :param orchestrations: List of dictionary objects used to run
+                               orchestrations.
+        :type orchestrations: List
+        :param defined_targets: List of Directord Targets.
+        :type defined_targets: List
+        :returns: List
+        """
+
+        return [
+            i.decode()
+            for i in self.mixin.exec_orchestrations(
+                orchestrations,
+                defined_targets=defined_targets,
+                return_raw=True,
+            )
+        ]
+
+    def poll(self, job_id):
+        """Poll for the completion of a given job ID.
+
+        :param job_id: Job UUID.
+        :type job_id: String
+        :returns: Tuple
+        """
+        return self.manage.poll_job(job_id=job_id)
+
+    def list_nodes(self):
+        """Return a list of all active Directord Nodes.
+
+        :returns: List
+        """
+
+        return list(
+            dict(
+                self._from_json(self.manage.run(override="list-nodes"))
+            ).keys()
+        )
+
+    def list_jobs(self):
+        """Return a dictionary of all current directord jobs.
+
+        :returns: Dictionary
+        """
+
+        return dict(self._from_json(self.manage.run(override="list-jobs")))
+
+    def purge_nodes(self):
+        """Purge all nodes from the work pool.
+
+        Purge all nodes from the pool, all remaining active nodes will
+        recheck-in and be added to the pool.
+
+        :returns: Boolean
+        """
+
+        return self._from_json(self.manage.run(override="purge-nodes"))[
+            "success"
+        ]
+
+    def purge_jobs(self):
+        """Purge all jobs from the return manager.
+
+        Purge all jobs from the return manager.
+
+        :returns: Boolean
+        """
+
+        return self._from_json(self.manage.run(override="purge-jobs"))[
+            "success"
+        ]

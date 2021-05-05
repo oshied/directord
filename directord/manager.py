@@ -51,9 +51,10 @@ class Interface(directord.Processor):
             for handler in self.log.handlers:
                 handler.setLevel(logging.DEBUG)
 
-        if self.args.mode == "client":
+        mode = getattr(self.args, "mode", None)
+        if mode == "client":
             self.bind_address = self.args.server_address
-        elif self.args.mode == "server":
+        elif mode == "server":
             self.bind_address = self.args.bind_address
         else:
             self.bind_address = "*"
