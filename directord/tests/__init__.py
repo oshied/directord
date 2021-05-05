@@ -15,9 +15,13 @@
 
 import io
 
+from collections import namedtuple
 from unittest import mock
 
 import paramiko
+
+
+TEST_BLUEPRINT_CONTENT = "This is a blueprint string {{ test }}"
 
 
 TEST_CATALOG = """---
@@ -82,6 +86,7 @@ class FakeArgs(object):
     server_address = "localhost"
     shared_key = None
     socket_path = "/var/run/directord.sock"
+    cache_path = "/var/cache/directord"
     transfer_port = 5556
     curve_encryption = None
 
@@ -110,3 +115,45 @@ class MockChannelFile(io.StringIO):
 
     def __init__(self, rc=0):
         self.channel.recv_exit_status.return_value = rc
+
+
+class FakeCache(object):
+    def __init__(self):
+        self.cache = {"args": {"test": 1}}
+
+    def get(self, key):
+        return self.cache.get(key)
+
+    def pop(self, key, **kwargs):
+        if key not in self.cache:
+            if "default" in kwargs:
+                return kwargs["default"]
+        else:
+            return self.cache.pop(key)
+
+    def set(self, key, value, **kwargs):
+        self.cache[key] = value
+
+    def evict(self, key):
+        popped = self.cache.pop(key, dict())
+        return len(popped)
+
+    def clear(self):
+        current = len(self.cache)
+        self.cache = dict()
+        return current
+
+    def volume(self):
+        return len(self.cache)
+
+    def check(self):
+        return [namedtuple("check", ["message"])("warning")]
+
+    def expire(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(*args, **kwargs):
+        pass

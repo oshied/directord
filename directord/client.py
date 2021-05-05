@@ -99,7 +99,7 @@ class Client(manager.Interface):
         self.bind_heatbeat = self.heartbeat_connect()
         return self.get_heartbeat
 
-    def run_heartbeat(self):
+    def run_heartbeat(self, sentinel=False):
         """Execute the heartbeat loop.
 
         If the heartbeat loop detects a problem, the connection will be
@@ -108,6 +108,9 @@ class Client(manager.Interface):
         This loop tracks heartbeat messages and should the heartbeat
         interval take longer than the expire time, and fail more than 5
         times the connection will be reset after a failure cooldown.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
         """
 
         self.bind_heatbeat = self.heartbeat_connect()
@@ -168,6 +171,9 @@ class Client(manager.Interface):
                         "Sent heartbeat to server [ %s ]",
                         self.connection_string,
                     )
+
+            if sentinel:
+                break
 
     def _run_command(self, command, cache, conn, stdout_arg=None):
         """Run file command operation.
@@ -284,7 +290,7 @@ class Client(manager.Interface):
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
             ):
-                return None, None, None
+                return utils.file_sha1(file_to), None, None
 
             return info, None, True
         else:
@@ -307,7 +313,7 @@ class Client(manager.Interface):
                             control,
                             _,
                             data,
-                            info,
+                            _,
                             _,
                             _,
                         ) = self.socket_multipart_recv(
@@ -327,9 +333,8 @@ class Client(manager.Interface):
         if blueprint and not self.file_blueprinter(
             cache=cache, file_to=file_to
         ):
-            return None, None, None
+            return utils.file_sha1(file_to), None, None
 
-        info = utils.file_sha1(file_to)
         stderr = None
         outcome = True
         if user:
@@ -357,7 +362,7 @@ class Client(manager.Interface):
                 os.chown(file_to, uid, gid)
                 outcome = True
 
-        return info, stderr, outcome
+        return utils.file_sha1(file_to), stderr, outcome
 
     def _job_executor(
         self,
@@ -392,6 +397,8 @@ class Client(manager.Interface):
         :type command: Bytes
         :returns: Tuple
         """
+
+        self.log.debug("Running command:%s", command.decode())
 
         if cached:
             # TODO(cloudnull): Figure out how to skip cache when file
@@ -437,7 +444,7 @@ class Client(manager.Interface):
             conn.info = "type:{}, value:{}".format(
                 cache_type, job[cache_type]
             ).encode()
-            return "{} added to cache".format(cache_type).encode(), None, True
+            return "{} added to cache".format(cache_type), None, True
         elif command == b"CACHEFILE":
             conn.start_processing()
             try:
@@ -453,16 +460,18 @@ class Client(manager.Interface):
                     value_update=True,
                     tag="args",
                 )
-                return b"Cache file loaded", None, True
+                return "Cache file loaded", None, True
         elif command == b"CACHEEVICT":
             conn.start_processing()
             tag = job["cacheevict"]
             if tag == "all":
                 evicted = cache.clear()
+                info = "All cache has been cleared"
             else:
                 evicted = cache.evict(tag)
+                info = "Evicted {} items, tagged {}".format(evicted, tag)
             return (
-                "Evicted {} items, tagged {}".format(evicted, tag).encode(),
+                info,
                 None,
                 True,
             )
@@ -470,17 +479,17 @@ class Client(manager.Interface):
             conn.start_processing()
             args = cache.get("args")
             if args:
-                query = json.dumps(args.get(job["query"])).encode()
+                query = json.dumps(args.get(job["query"]))
             else:
                 query = None
             return query, None, True
         else:
-            self.log.warning(
-                "Unknown command - COMMAND:%s ID:%s",
+            info = "Unknown command - COMMAND:{} ID:{}".format(
                 command.decode(),
                 job_id,
             )
-            return None, None, None
+            self.log.warning(info)
+            return None, info, None
 
     def file_blueprinter(self, cache, file_to):
         """Read a file and blueprint its contents.
@@ -492,18 +501,22 @@ class Client(manager.Interface):
         :returns: Boolean
         """
 
-        with open(file_to) as f:
-            file_contents = self.blueprinter(
-                content=f.read(), values=cache.get("args")
-            )
-            if not file_contents:
-                return False
+        try:
+            with open(file_to) as f:
+                file_contents = self.blueprinter(
+                    content=f.read(), values=cache.get("args")
+                )
+                if not file_contents:
+                    return False
 
-        with open(file_to, "w") as f:
-            f.write(file_contents)
-
-        self.log.info("File %s has been blueprinted.", file_to)
-        return True
+            with open(file_to, "w") as f:
+                f.write(file_contents)
+        except Exception as e:
+            self.log.critical("File blueprint failure: %s", str(e))
+            return False
+        else:
+            self.log.info("File %s has been blueprinted.", file_to)
+            return True
 
     def blueprinter(self, content, values):
         """Return blue printed content.
@@ -519,9 +532,12 @@ class Client(manager.Interface):
         if values:
             try:
                 _contents = self.blueprint.from_string(content)
-                return _contents.render(**values)
-            except Exception:
+                rendered_content = _contents.render(**values)
+            except Exception as e:
+                self.log.critical("blueprint failure: %s", str(e))
                 return
+            else:
+                return rendered_content
         else:
             return content
 
@@ -552,7 +568,7 @@ class Client(manager.Interface):
 
         cache.set(key, value, tag=tag, expire=expire)
 
-    def run_job(self):
+    def run_job(self, sentinel=False):
         """Job entry point.
 
         This creates a cached access object, connects to the socket and begins
@@ -563,12 +579,15 @@ class Client(manager.Interface):
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 128.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
         """
 
         self.bind_job = self.job_connect()
         self.bind_transfer = self.transfer_connect()
         poller_time = time.time()
-        poller_interval = 1024
+        poller_interval = 128
         cache_check_time = time.time()
 
         # Ensure that the cache path exists before executing.
@@ -622,8 +641,8 @@ class Client(manager.Interface):
                         _,
                     ) = self.socket_multipart_recv(zsocket=self.bind_job)
                     job = json.loads(data.decode())
-                    job_id = job["task"]
-                    job_sha1 = job.get("task_sha1sum")
+                    job_id = job.get("task", utils.get_uuid())
+                    job_sha1 = job.get("task_sha1sum", utils.object_sha1(job))
                     self.log.info("Job received {}".format(job_id))
                     self.socket_multipart_send(
                         zsocket=self.bind_job,
@@ -652,7 +671,6 @@ class Client(manager.Interface):
                         b"CACHEEVICT",
                         b"QUERY",
                     ]
-                    cached = cache_hit and cache_allowed
                     with utils.ClientStatus(
                         socket=self.bind_job,
                         job_id=job_id.encode(),
@@ -670,10 +688,15 @@ class Client(manager.Interface):
                                 " there was a failure under this partent ID"
                                 " [ {} ]".format(job_id, job_parent_id)
                             )
+
                             self.log.error(status)
                             c.info = status.encode()
                             c.job_state = self.job_failed
-                            continue
+
+                            if sentinel:
+                                break
+                            else:
+                                continue
 
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id
@@ -685,7 +708,7 @@ class Client(manager.Interface):
                                 job=job,
                                 job_id=job_id,
                                 job_sha1=job_sha1,
-                                cached=cached,
+                                cached=cache_hit and cache_allowed,
                                 command=command,
                             )
 
@@ -709,27 +732,32 @@ class Client(manager.Interface):
                         if outcome is False:
                             state = c.job_state = self.job_failed
                             self.log.error("Job failed {}".format(job_id))
-                            self.set_cache(
-                                cache=cache,
-                                key=job_parent_id,
-                                value=False,
-                                tag="parents",
-                            )
+                            if job_parent_id:
+                                self.set_cache(
+                                    cache=cache,
+                                    key=job_parent_id,
+                                    value=False,
+                                    tag="parents",
+                                )
                         elif outcome is True:
                             state = c.job_state = self.job_end
                             self.log.info("Job complete {}".format(job_id))
-                            self.set_cache(
-                                cache=cache,
-                                key=job_parent_id,
-                                value=True,
-                                tag="parents",
-                            )
+                            if job_parent_id:
+                                self.set_cache(
+                                    cache=cache,
+                                    key=job_parent_id,
+                                    value=True,
+                                    tag="parents",
+                                )
                         else:
                             state = self.nullbyte
 
                     self.set_cache(
                         cache=cache, key=job_sha1, value=state, tag="jobs"
                     )
+
+            if sentinel:
+                break
 
     def worker_run(self):
         """Run all work related threads.
