@@ -32,7 +32,11 @@ class TestMain(unittest.TestCase):
         pass
 
     def test__args_default(self):
-        main._args()
+        self.assertRaises(
+            SystemExit,
+            main._args,
+            [""],
+        )
 
     def test__args_orchestrate(self):
         args, _ = main._args(["orchestrate", "file1 file2"])
