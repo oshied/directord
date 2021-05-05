@@ -998,7 +998,7 @@ class TestClient(unittest.TestCase):
             "task": "XXX",
             "task_sha1sum": "YYY",
             "command": "RUN",
-            "parent_id": "ZZZ"
+            "parent_id": "ZZZ",
         }
         mock_multipart_recv.side_effect = [
             (None, None, b"RUN", json.dumps(job_def).encode(), b"", None, None)
@@ -1025,7 +1025,6 @@ class TestClient(unittest.TestCase):
         )
         self.assertEqual(cache.get("ZZZ"), True)
         self.assertEqual(cache.get("YYY"), self.client.job_end)
-
 
     @patch("directord.client.Client._job_executor", autospec=True)
     @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
@@ -1082,7 +1081,7 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(cache.get("YYY"), self.client.job_failed)
 
-    @patch('directord.client.Client.run_threads', autospec=True)
+    @patch("directord.client.Client.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads):
         self.client.worker_run()
         mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY])

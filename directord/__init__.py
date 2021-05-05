@@ -187,7 +187,7 @@ class Processor(object):
         """
 
         self.workers = self.manager.dict()
-        self.return_jobs = self.manager.dict()  # This could likely be etcd
+        self.return_jobs = self.manager.dict()
         self.log = getLogger(name="directord")
 
     def run_threads(self, threads):

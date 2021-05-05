@@ -308,8 +308,6 @@ class TestMain(unittest.TestCase):
                 "cache_path": "/var/cache/directord",
                 "mode": "server",
                 "bind_address": "*",
-                "etcd_server": "localhost",
-                "etcd_port": 2379,
                 "run_ui": False,
                 "ui_port": 9000,
             },
@@ -670,8 +668,6 @@ class TestMain(unittest.TestCase):
             "cache_path": "/var/cache/directord",
             "mode": "server",
             "bind_address": "*",
-            "etcd_server": "localhost",
-            "etcd_port": 2379,
             "run_ui": False,
             "ui_port": 9000,
         }

@@ -74,19 +74,22 @@ class Server(manager.Interface):
             port=self.args.transfer_port,
         )
 
-    def run_heartbeat(self):
+    def run_heartbeat(self, sentinel=False):
         """Execute the heartbeat loop.
 
         If the heartbeat loop detects a problem, the server will send a
         heartbeat probe to the client to ensure that it is alive. At the
         end of the loop workers without a valid heartbeat will be pruned
         from the available pool.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
         """
 
         self.bind_heatbeat = self.heartbeat_bind()
         heartbeat_at = self.get_heartbeat
         while True:
-            idel_time = heartbeat_at + (self.heartbeat_interval * 3)
+            idle_time = heartbeat_at + (self.heartbeat_interval * 3)
             socks = dict(self.poller.poll(1000))
             if socks.get(self.bind_heatbeat) == zmq.POLLIN:
                 (
@@ -99,7 +102,6 @@ class Server(manager.Interface):
                     _,
                     _,
                 ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
-
                 if control in [self.heartbeat_ready, self.heartbeat_notice]:
                     self.log.debug(
                         "Received Heartbeat from [ {} ], client online".format(
@@ -119,7 +121,7 @@ class Server(manager.Interface):
                     )
 
             # Send heartbeats to idle workers if it's time
-            elif time.time() > idel_time and self.workers:
+            elif time.time() > idle_time and self.workers:
                 for worker in list(self.workers.keys()):
                     self.log.warning(
                         "Sending idle worker [ {} ] a heartbeat".format(worker)
@@ -131,13 +133,16 @@ class Server(manager.Interface):
                         command=b"reset",
                         info=struct.pack("<f", self.get_expiry),
                     )
-                    if time.time() > idel_time + 3:
+                    if time.time() > idle_time + 3:
                         self.log.warning(
                             "Removing dead worker {}".format(worker)
                         )
                         self.workers.pop(worker)
             else:
                 self.wq_prune(workers=self.workers)
+
+            if sentinel:
+                break
 
     def _set_job_status(
         self,
@@ -225,9 +230,6 @@ class Server(manager.Interface):
             job_metadata["TOTAL_ROUNDTRIP_TIME"] = return_exec_time(
                 started=_createtime
             )
-            self.log.error(
-                "{} failed when processing {}".format(identity, job_id)
-            )
 
         self.return_jobs[job_id] = job_metadata
 
@@ -313,10 +315,12 @@ class Server(manager.Interface):
             restrict_sha1 = job_item.get("restrict")
             if restrict_sha1:
                 if job_item["task_sha1sum"] not in restrict_sha1:
+                    self.log.debug(
+                        "Job restriction %s is unknown.", restrict_sha1
+                    )
                     return 512, time.time()
 
             job_targets = job_item.pop("targets", list())
-
             # NOTE(cloudnull): We run on all targets if query is used.
             run_query = job_item["verb"] == "QUERY"
 
@@ -343,11 +347,10 @@ class Server(manager.Interface):
             if run_query:
                 job_item["targets"] = [i.decode() for i in targets]
 
-            task = job_item.get("task")
+            task = job_item.get("task", utils.get_uuid())
             job_info = self.create_return_jobs(
                 task=task, job_item=job_item, targets=targets
             )
-            transfers = job_info.get("TRANSFERS", list())
             self.log.debug("Sending job:%s", job_item)
             for identity in targets:
                 if job_item["verb"] in ["ADD", "COPY"]:
@@ -363,8 +366,9 @@ class Server(manager.Interface):
                         else:
                             job_item["file_to"] = job_item["to"]
 
-                        if job_item["file_to"] not in transfers:
-                            transfers.append(job_item["file_to"])
+                        if job_item["file_to"] not in job_info["TRANSFERS"]:
+                            job_info["TRANSFERS"].append(job_item["file_to"])
+
                         self.log.debug(
                             "Sending file transfer message for"
                             " file_path:%s to identity:%s",
@@ -397,7 +401,7 @@ class Server(manager.Interface):
 
         return 128, time.time()
 
-    def run_interactions(self):
+    def run_interactions(self, sentinel=False):
         """Execute the interactions loop.
 
         Directord's interaction executor will slow down the poll interval
@@ -407,20 +411,24 @@ class Server(manager.Interface):
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 128.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
         """
 
         self.bind_job = self.job_bind()
         self.bind_transfer = self.transfer_bind()
         poller_time = time.time()
-        poller_interval = 1024
+        poller_interval = 128
 
         while True:
-            if time.time() > poller_time + 64:
+            current_time = time.time()
+            if current_time > poller_time + 64:
                 if poller_interval != 2048:
                     self.log.info("Directord server entering idle state.")
                 poller_interval = 2048
 
-            elif time.time() > poller_time + 32:
+            elif current_time > poller_time + 32:
                 if poller_interval != 1024:
                     self.log.info("Directord server ramping down.")
                 poller_interval = 1024
@@ -441,17 +449,21 @@ class Server(manager.Interface):
                     _,
                 ) = self.socket_multipart_recv(zsocket=self.bind_transfer)
                 if command == b"transfer":
+                    transfer_obj = info.decode()
                     self.log.debug(
-                        "Executing transfer for [ %s ]", info.decode()
+                        "Executing transfer for [ %s ]", transfer_obj
                     )
                     self._run_transfer(
                         identity=identity,
                         verb=b"ADD",
                         file_path=os.path.abspath(
-                            os.path.expanduser(info.decode())
+                            os.path.expanduser(transfer_obj)
                         ),
                     )
                 elif control == self.transfer_end:
+                    self.log.debug(
+                        "Transfer complete for [ %s ]", info.decode()
+                    )
                     self._set_job_status(
                         job_status=control,
                         job_id=msg_id.decode(),
@@ -473,13 +485,17 @@ class Server(manager.Interface):
                 ) = self.socket_multipart_recv(zsocket=self.bind_job)
                 node = identity.decode()
                 node_output = info.decode()
+                if stderr:
+                    stderr = stderr.decode()
+                if stdout:
+                    stdout = stdout.decode()
                 self._set_job_status(
                     job_status=control,
                     job_id=msg_id.decode(),
                     identity=node,
                     job_output=node_output,
-                    job_stdout=stdout.decode(),
-                    job_stderr=stderr.decode(),
+                    job_stdout=stdout,
+                    job_stderr=stderr,
                 )
                 if command == b"QUERY":
                     try:
@@ -533,7 +549,10 @@ class Server(manager.Interface):
             elif self.workers:
                 poller_interval, poller_time = self.run_job()
 
-    def run_socket_server(self):
+            if sentinel:
+                break
+
+    def run_socket_server(self, sentinel=False):
         """Start a socket server.
 
         The socket server is used to broker a connection from the end user
@@ -545,6 +564,9 @@ class Server(manager.Interface):
         content. This is done for tracking and caching purposes. The task
         ID can be defined in the data. If a task ID is not defined one will
         be generated.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
         """
 
         try:
@@ -559,7 +581,6 @@ class Server(manager.Interface):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(self.args.socket_path)
         sock.listen(1)
-
         while True:
             conn, _ = sock.accept()
             with conn:
@@ -576,6 +597,7 @@ class Server(manager.Interface):
                             )
                             for i in self.workers.keys()
                         ]
+
                     elif manage == "list-jobs":
                         data = [
                             (str(k), v) for k, v in self.return_jobs.items()
@@ -601,16 +623,6 @@ class Server(manager.Interface):
                     json_data["task"] = json_data.get("task", utils.get_uuid())
                     if "parent_id" not in json_data:
                         json_data["parent_id"] = json_data["task"]
-                    restrict = json_data.get("restrict", None)
-                    if restrict:
-                        if json_data["task_sha1sum"] not in restrict:
-                            self.log.debug(
-                                "Task skipped. Task SHA1 %s doesn't match"
-                                " restriction %s",
-                                json_data["task_sha1sum"],
-                                restrict,
-                            )
-                            continue
 
                     # Returns the message in reverse to show a return. This
                     # will be a standard client return in JSON format under
@@ -636,6 +648,8 @@ class Server(manager.Interface):
                         )
                     finally:
                         self.job_queue.put(json_data)
+            if sentinel:
+                break
 
     def worker_run(self):
         """Run all work related threads.

@@ -198,19 +198,6 @@ def _args(exec_args=None):
         default=os.getenv("DIRECTORD_BIND_ADDRESS", "*"),
     )
     parser_server.add_argument(
-        "--etcd-server",
-        help="Domain or IP address of the ETCD server. Default: %(default)s",
-        metavar="STRING",
-        default=os.getenv("DIRECTORD_ETCD_SERVER", "localhost"),
-    )
-    parser_server.add_argument(
-        "--etcd-port",
-        help="ETCD server bind port. Default: %(default)s",
-        metavar="INT",
-        default=int(os.getenv("DIRECTORD_ETCD_PORT", 2379)),
-        type=int,
-    )
-    parser_server.add_argument(
         "--run-ui",
         help="Enable the Directord UI. Default: %(default)s",
         action="store_true",
