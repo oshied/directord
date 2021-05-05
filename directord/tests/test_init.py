@@ -15,6 +15,9 @@
 import time
 import unittest
 
+from unittest.mock import ANY
+from unittest.mock import patch
+
 import directord
 
 from directord import tests
@@ -252,3 +255,55 @@ class TestUnixSocket(unittest.TestCase):
         self.socket.assert_called_once_with(
             directord.socket.AF_UNIX, directord.socket.SOCK_STREAM
         )
+
+
+class TestDirectordConnect(unittest.TestCase):
+    def setUp(self):
+        self.dc = directord.DirectordConnect()
+
+    def tearDown(self):
+        pass
+
+    def test_from_json(self):
+        return_data = self.dc._from_json(b'{"test": "value"}')
+        self.assertDictEqual(return_data, {"test": "value"})
+
+    @patch("directord.mixin.Mixin.exec_orchestrations", autospec=True)
+    def test_orchestrate(self, mock_exec_orchestrations):
+        mock_exec_orchestrations.return_value = [b"XXX", b"YYY"]
+        ids = self.dc.orchestrate(orchestrations=[{"test": "jobs"}])
+        self.assertEqual(ids, ["XXX", "YYY"])
+        mock_exec_orchestrations.assert_called_with(
+            ANY, [{"test": "jobs"}], defined_targets=None, return_raw=True
+        )
+
+    @patch("directord.mixin.Mixin.exec_orchestrations", autospec=True)
+    def test_orchestrate_defined_targets(self, mock_exec_orchestrations):
+        mock_exec_orchestrations.return_value = [b"XXX", b"YYY"]
+        ids = self.dc.orchestrate(
+            orchestrations=[{"test": "jobs"}], defined_targets=["test-node1"]
+        )
+        self.assertEqual(ids, ["XXX", "YYY"])
+        mock_exec_orchestrations.assert_called_with(
+            ANY,
+            [{"test": "jobs"}],
+            defined_targets=["test-node1"],
+            return_raw=True,
+        )
+
+    @patch("directord.user.Manage.poll_job", autospec=True)
+    def test_poll_job(self, mock_poll_job):
+        mock_poll_job.return_value = (True, "info")
+        status_boolean, info = self.dc.poll(job_id="XXX")
+        self.assertEqual(status_boolean, True)
+        mock_poll_job.assert_called_with(ANY, job_id="XXX")
+
+    @patch("directord.user.Manage.run", autospec=True)
+    def test_purge_nodes(self, mock_run):
+        mock_run.return_value = b'{"success": true}'
+        self.assertTrue(self.dc.purge_nodes())
+
+    @patch("directord.user.Manage.run", autospec=True)
+    def test_purge_jobs(self, mock_run):
+        mock_run.return_value = b'{"success": true}'
+        self.assertTrue(self.dc.purge_jobs())

@@ -301,7 +301,7 @@ class Mixin(object):
         count = 0
         for job in job_to_run:
             formatted_job = self.format_exec(**job)
-            if self.args.finger_print:
+            if getattr(self.args, "finger_print", False):
                 item = json.loads(formatted_job)
                 exec_str = " ".join(job["execute"])
                 if len(exec_str) >= 30:

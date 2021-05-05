@@ -36,6 +36,7 @@ fast, stable, and unique deployment engine.
 Getting started is simple.
 
 * [Tutorials](tutorials.md)
+* [Library](library.md)
 
 Here's the documentation needed to be successful with Directord.
 
