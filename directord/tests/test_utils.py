@@ -13,6 +13,7 @@
 #   under the License.
 
 import unittest
+import uuid
 
 from unittest.mock import patch
 
@@ -117,8 +118,7 @@ class TestUtils(unittest.TestCase):
     def test_paramikoconnect(self, mock_sshclient, mock_rsakey):
         with utils.ParamikoConnect(
             host="test", username="testuser", port=22, key_file="/test/key"
-        ) as p:
-            ssh, _ = p
+        ) as ssh:
             self.assertEqual(ssh, mock_sshclient())
             ssh.connect.assert_called_once_with(
                 allow_agent=True,
@@ -127,5 +127,29 @@ class TestUtils(unittest.TestCase):
                 port=22,
                 username="testuser",
             )
-            ssh.get_transport.assert_called_once_with()
         ssh.close.assert_called_once_with()
+
+    def test_file_sha1(self):
+        with unittest.mock.patch(
+            "builtins.open", unittest.mock.mock_open(read_data=b"data")
+        ) as mock_file:
+            sha1 = utils.file_sha1(file_path=mock_file)
+            self.assertEqual(sha1, "a17c9aaa61e80a1bf71d0d850af4e5baa9800bbd")
+
+    def test_file_sha1_set_chunk(self):
+        with unittest.mock.patch(
+            "builtins.open", unittest.mock.mock_open(read_data=b"data")
+        ) as mock_file:
+            sha1 = utils.file_sha1(file_path=mock_file, chunk_size=1)
+            self.assertEqual(sha1, "a17c9aaa61e80a1bf71d0d850af4e5baa9800bbd")
+
+    def test_object_sha1(self):
+        sha1 = utils.object_sha1(obj={"test": "value"})
+        self.assertEqual(sha1, "4e0b1f3b9b1e08306ab4e388a65847c73a902097")
+
+    def test_get_uuid(self):
+        uuid1 = utils.get_uuid()
+        uuid.UUID(uuid1, version=4)
+        uuid2 = utils.get_uuid()
+        uuid.UUID(uuid2, version=4)
+        self.assertNotEqual(uuid1, uuid2)

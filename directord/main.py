@@ -21,12 +21,15 @@ import yaml
 import tabulate
 
 import directord
+
+from directord import client
 from directord import mixin
+from directord import server
 from directord import user
 from directord import utils
 
 
-def _args():
+def _args(exec_args=None):
     """Setup client arguments."""
 
     parser = argparse.ArgumentParser(
@@ -36,9 +39,7 @@ def _args():
         "--config-file",
         help="File path for client configuration. Default: %(default)s",
         metavar="STRING",
-        default=os.getenv(
-            "DIRECTORD_CONFIG_FILE", "/etc/directord/config.yaml"
-        ),
+        default=os.getenv("DIRECTORD_CONFIG_FILE", None),
         type=argparse.FileType(mode="r"),
     )
     auth_group = parser.add_mutually_exclusive_group()
@@ -197,19 +198,6 @@ def _args():
         default=os.getenv("DIRECTORD_BIND_ADDRESS", "*"),
     )
     parser_server.add_argument(
-        "--etcd-server",
-        help="Domain or IP address of the ETCD server. Default: %(default)s",
-        metavar="STRING",
-        default=os.getenv("DIRECTORD_ETCD_SERVER", "localhost"),
-    )
-    parser_server.add_argument(
-        "--etcd-port",
-        help="ETCD server bind port. Default: %(default)s",
-        metavar="INT",
-        default=int(os.getenv("DIRECTORD_ETCD_PORT", 2379)),
-        type=int,
-    )
-    parser_server.add_argument(
         "--run-ui",
         help="Enable the Directord UI. Default: %(default)s",
         action="store_true",
@@ -302,7 +290,10 @@ def _args():
         default=int(os.getenv("DIRECTORD_BOOTSTRAP_THREADS", 10)),
         type=int,
     )
-    args = parser.parse_args()
+    if exec_args:
+        args = parser.parse_args(args=exec_args)
+    else:
+        args = parser.parse_args()
     # Check for configuration file and load it if found.
     if args.config_file:
         config_data = yaml.safe_load(args.config_file)
@@ -330,10 +321,7 @@ class SystemdInstall(object):
     def path_setup(self):
         """Create the configuration path and basic configuration file."""
 
-        if not os.path.isdir(self.config_path):
-            os.makedirs(self.config_path)
-            print("[+] Created directord configuration path")
-
+        os.makedirs(self.config_path, exist_ok=True)
         if not os.path.exists("/etc/directord/config.yaml"):
             with open("/etc/directord/config.yaml", "w") as f:
                 f.write("---\ndebug: false\n")
@@ -411,9 +399,9 @@ def main():
     _mixin = mixin.Mixin(args=args)
 
     if args.mode == "server":
-        _mixin.start_server()
+        server.Server(args=args).worker_run()
     elif args.mode == "client":
-        _mixin.start_client()
+        client.Client(args=args).worker_run()
     elif args.mode in ["exec", "orchestrate"]:
         if args.mode == "exec":
             return_data = _mixin.run_exec()

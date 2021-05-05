@@ -16,12 +16,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 --upgrade
-        pip install .[ui,dev]
+        python -m pip install flake8 --upgrade
+        python -m pip install .[ui,dev]
     - name: Test with py-unittest
       run: |
         python -m unittest
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --show-source --max-complexity=20 --max-line-length=79 --statistics --benchmark --ignore=H104,W503
+        flake8 . --count --show-source --max-complexity=23 --max-line-length=79 --statistics --benchmark --ignore=H104,W503

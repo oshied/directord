@@ -12,17 +12,18 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import argparse
+import glob
 import json
 import multiprocessing
 import os
+import shlex
 import sys
 import yaml
 
 import jinja2
 
-from directord import client
-from directord import server
-from directord import user
+import directord
 from directord import utils
 
 
@@ -40,10 +41,213 @@ class Mixin(object):
 
         self.args = args
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
+        self.log = directord.getLogger(name="directord")
+
+    @staticmethod
+    def sanitized_args(execute):
+        """Return arguments in a flattened array.
+
+        This will inspect the execution arguments and return everything found
+        as a flattened array.
+
+        :param execute: Execution string to parse.
+        :type execute: String
+        :returns: List
+        """
+
+        return [i for g in execute for i in g.split()]
+
+    def format_exec(
+        self,
+        verb,
+        execute,
+        targets=None,
+        ignore_cache=False,
+        restrict=None,
+        parent_id=None,
+        return_raw=False,
+    ):
+        """Return a JSON encode object for task execution.
+
+        While formatting the message, the method will treat each verb as a
+        case and parse the underlying sub-command, formatting the information
+        into a dictionary.
+
+        :param verb: Action to parse.
+        :type verb: String
+        :param execute: Execution string to parse.
+        :type execute: String
+        :param targets: Target argents to send job to.
+        :type targets: List
+        :param ignore_cache: Instruct the entire execution to
+                             ignore client caching.
+        :type ignore_cache: Boolean
+        :param restrict: Restrict job execution based on a provided task SHA1.
+        :type restrict: List
+        :param parent_id: Set the parent UUID for execution jobs.
+        :type parent_id: String
+        :param return_raw: Enable a raw return from the server.
+        :type return_raw: Boolean
+        :returns: String
+        """
+
+        args = None
+        data = dict()
+        parser = argparse.ArgumentParser(
+            description="Process exec commands",
+            allow_abbrev=False,
+            add_help=False,
+        )
+        parser.add_argument(
+            "--exec-help",
+            action="help",
+            help="Show this execution help message.",
+        )
+        parser.add_argument(
+            "--skip-cache",
+            action="store_true",
+            help="For a task to skip the on client cache.",
+        )
+        parser.add_argument(
+            "--run-once",
+            action="store_true",
+            help="Force a given task to run once.",
+        )
+        parser.add_argument(
+            "--timeout",
+            default=600,
+            type=int,
+            help="Set the action timeout. Default %(default)s.",
+        )
+        self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
+        if verb == "RUN":
+            parser.add_argument(
+                "--stdout-arg",
+                help=(
+                    "Stores the stdout of a given command as a cached"
+                    " argument."
+                ),
+            )
+            args, command = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            if args.stdout_arg:
+                data["stdout_arg"] = args.stdout_arg
+            data["command"] = " ".join(command)
+        elif verb in ["COPY", "ADD"]:
+            parser.add_argument("--chown", help="Set the file ownership")
+            parser.add_argument(
+                "--blueprint",
+                action="store_true",
+                help="Instruct the remote file to be blueprinted.",
+            )
+            parser.add_argument(
+                "files",
+                nargs="+",
+                help="Set the file to transfer: 'FROM' 'TO'",
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            if args.chown:
+                chown = args.chown.split(":", 1)
+                if len(chown) == 1:
+                    chown.append(None)
+                data["user"], data["group"] = chown
+            file_from, data["to"] = shlex.split(" ".join(args.files))
+            data["from"] = [
+                os.path.abspath(os.path.expanduser(i))
+                for i in glob.glob(file_from)
+                if os.path.isfile(os.path.expanduser(i))
+            ]
+            if not data["from"]:
+                raise AttributeError(
+                    "The value of [ {} ] was not found.".format(file_from)
+                )
+            data["blueprint"] = args.blueprint
+        elif verb in ["ARG", "ENV"]:
+            cache_type = "{}s".format(verb.lower())
+            parser.add_argument(
+                cache_type,
+                nargs="+",
+                action="append",
+                help="Set a given argument. KEY VALUE",
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            cache_obj = getattr(args, cache_type)
+            data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
+        elif verb == "WORKDIR":
+            parser.add_argument("workdir", help="Create a directory.")
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["workdir"] = args.workdir
+        elif verb == "CACHEFILE":
+            parser.add_argument(
+                "cachefile",
+                help="Load a cached file and store it as an update to ARGs.",
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["cachefile"] = args.cachefile
+        elif verb == "CACHEEVICT":
+            parser.add_argument(
+                "cacheevict",
+                help=(
+                    "Evict all tagged cached items from a client machine."
+                    " Typical tags are, but not limited to:"
+                    " [args, envs, jobs, parents, query, ...]. To evict 'all'"
+                    " cached items use the keyword 'all'."
+                ),
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["cacheevict"] = args.cacheevict
+        elif verb == "QUERY":
+            parser.add_argument(
+                "query",
+                help=(
+                    "Scan the environment for a given cached argument and"
+                    " store the resultant on the target. The resultant is"
+                    " set in dictionary format: `{'client-id': ...}`"
+                ),
+            )
+            args, _ = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            data["query"] = args.query
+        else:
+            raise SystemExit("No known verb defined.")
+
+        if hasattr(args, "exec_help") and args.exec_help:
+            return parser.print_help(1)
+        else:
+            if targets:
+                data["targets"] = targets
+
+            data["verb"] = verb
+            data["timeout"] = args.timeout
+            data["run_once"] = getattr(args, "run_once", False)
+            data["task_sha1sum"] = utils.object_sha1(obj=data)
+            data["return_raw"] = return_raw
+            data["skip_cache"] = ignore_cache or getattr(
+                args, "skip_cache", False
+            )
+
+            if parent_id:
+                data["parent_id"] = parent_id
+
+            if restrict:
+                data["restrict"] = restrict
+
+            return json.dumps(data)
 
     def exec_orchestrations(
         self,
-        user_exec,
         orchestrations,
         defined_targets=None,
         restrict=None,
@@ -55,9 +259,6 @@ class Mixin(object):
         Iterates over a list of orchestartion blobs, fingerprints the jobs,
         and then runs them.
 
-        :param user_exec: Intialized user-class, required to prepare jobs and
-                          format execution.
-        :type user_exec: Object
         :param orchestrations: List of Dictionaries which are run as
                                orchestartion.
         :type orchestrations: List
@@ -78,7 +279,7 @@ class Mixin(object):
 
         job_to_run = list()
         for orchestrate in orchestrations:
-            parent_id = user_exec.get_uuid
+            parent_id = utils.get_uuid()
             targets = defined_targets or orchestrate.get("targets", list())
             jobs = orchestrate["jobs"]
             for job in jobs:
@@ -99,7 +300,7 @@ class Mixin(object):
         return_data = list()
         count = 0
         for job in job_to_run:
-            formatted_job = user_exec.format_exec(**job)
+            formatted_job = self.format_exec(**job)
             if self.args.finger_print:
                 item = json.loads(formatted_job)
                 exec_str = " ".join(job["execute"])
@@ -117,7 +318,12 @@ class Mixin(object):
                 )
                 count += 1
             else:
-                return_data.append(user_exec.send_data(data=formatted_job))
+                return_data.append(
+                    directord.send_data(
+                        socket_path=self.args.socket_path, data=formatted_job
+                    )
+                )
+
         return return_data
 
     def run_orchestration(self):
@@ -131,7 +337,6 @@ class Mixin(object):
         """
 
         return_data = list()
-        user_exec = user.User(args=self.args)
         for orchestrate_file in self.args.orchestrate_files:
             orchestrate_file = os.path.abspath(
                 os.path.expanduser(orchestrate_file)
@@ -151,7 +356,6 @@ class Mixin(object):
 
                 return_data.extend(
                     self.exec_orchestrations(
-                        user_exec=user_exec,
                         orchestrations=orchestrations,
                         defined_targets=defined_targets,
                         restrict=self.args.restrict,
@@ -171,7 +375,6 @@ class Mixin(object):
         :returns: List
         """
 
-        user_exec = user.User(args=self.args)
         format_kwargs = dict(
             verb=self.args.verb,
             execute=self.args.exec,
@@ -181,18 +384,11 @@ class Mixin(object):
             format_kwargs["targets"] = list(set(self.args.target))
 
         return [
-            user_exec.send_data(data=user_exec.format_exec(**format_kwargs))
+            directord.send_data(
+                socket_path=self.args.socket_path,
+                data=self.format_exec(**format_kwargs),
+            )
         ]
-
-    def start_server(self):
-        """Start the Server process."""
-
-        server.Server(args=self.args).worker_run()
-
-    def start_client(self):
-        """Start the client process."""
-
-        client.Client(args=self.args).worker_run()
 
     def return_tabulated_info(self, data):
         """Return a list of data that will be tabulated.
@@ -240,7 +436,7 @@ class Mixin(object):
                         computed_values[bool_heading] += 1
                     else:
                         computed_values[bool_heading] = 1
-                elif isinstance(value, (float)):
+                elif isinstance(value, (float, int)):
                     if value_heading in computed_values:
                         computed_values[value_heading] += value
                     else:
@@ -351,7 +547,7 @@ class Mixin(object):
                 return_jobs.append(job)
         return return_jobs
 
-    def bootstrap_run(self, job_def, catalog, quiet=False):
+    def bootstrap_run(self, job_def, catalog):
         """Run a given set of jobs using a defined job definition.
 
         This method requires a job definition which contains the following.
@@ -368,25 +564,21 @@ class Mixin(object):
         :type jobs_def: Dictionary
         :param catalog: The job catalog definition.
         :type catalog: Dictionary
-        :param quiet: Enable|Disable quiet mode.
-        :type quiet: Boolean
         """
 
-        print("Running bootstrap for {}".format(job_def["host"]))
+        self.log.info("Running bootstrap for %s", job_def["host"])
         for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
             key, value = next(iter(job.items()))
-            if not quiet:
-                print("Executing: {} {}".format(key, value))
+            self.log.debug("Executing: {} {}".format(key, value))
             with utils.ParamikoConnect(
                 host=job_def["host"],
                 username=job_def["username"],
                 port=job_def["port"],
                 key_file=job_def.get("key_file"),
-            ) as conn:
-                ssh, session = conn
+            ) as ssh:
                 if key == "RUN":
                     self.bootstrap_exec(
-                        session=session, command=value, catalog=catalog
+                        ssh=ssh, command=value, catalog=catalog
                     )
                 elif key == "ADD":
                     localfile, remotefile = value.split(" ", 1)
@@ -436,7 +628,7 @@ class Mixin(object):
         finally:
             ftp_client.close()
 
-    def bootstrap_exec(self, session, command, catalog):
+    def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.
 
         Run a command and check the status. If there's a failure the
@@ -451,9 +643,8 @@ class Mixin(object):
         """
 
         t_command = self.blueprint.from_string(command)
-        session.exec_command(t_command.render(**catalog))
-        if session.recv_exit_status() != 0:
-            stderr = session.recv_stderr(4096)
+        _, stdout, stderr = ssh.exec_command(t_command.render(**catalog))
+        if stdout.channel.recv_exit_status() != 0:
             raise SystemExit(
                 "Bootstrap command failed: {}, Error: {}".format(
                     command, stderr
@@ -478,7 +669,8 @@ class Mixin(object):
                 break
             else:
                 self.bootstrap_run(
-                    job_def=job_def, catalog=catalog, quiet=True
+                    job_def=job_def,
+                    catalog=catalog,
                 )
 
     def bootstrap_cluster(self):
@@ -497,14 +689,14 @@ class Mixin(object):
 
         directord_server = catalog.get("directord_server")
         if directord_server:
-            print("Loading server information")
+            self.log.info("Loading server information")
             for s in self.bootstrap_catalog_entry(entry=directord_server):
                 s["key_file"] = self.args.key_file
                 self.bootstrap_run(job_def=s, catalog=catalog)
 
         directord_clients = catalog.get("directord_clients")
         if directord_clients:
-            print("Loading client information")
+            self.log.info("Loading client information")
             for c in self.bootstrap_catalog_entry(entry=directord_clients):
                 c["key_file"] = self.args.key_file
                 q.put(c)
