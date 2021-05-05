@@ -14,6 +14,9 @@
 
 import unittest
 
+from unittest.mock import patch
+from unittest.mock import MagicMock
+
 from directord import tests
 from directord import ui
 
@@ -26,8 +29,28 @@ class TestUI(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_get(self):
-        pass
+    @patch("flask.Flask", autospec=True)
+    def test_start_app(self, mock_flask):
+        jobs = {}
+        nodes = {}
+        args = tests.FakeArgs()
+        setattr(args, "bind_address", "")
+        setattr(args, "ui_port", 8080)
+        app = ui.APP = mock_flask.return_value = MagicMock()
+        app.run = MagicMock()
 
-    def test_start_app(self):
-        pass
+        ui.UI(args=args, jobs=jobs, nodes=nodes).start_app()
+        app.run.assert_called_with(port=8080, host="")
+
+    @patch("flask.Flask", autospec=True)
+    def test_start_app_host(self, mock_flask):
+        jobs = {}
+        nodes = {}
+        args = tests.FakeArgs()
+        setattr(args, "bind_address", "10.1.10.1")
+        setattr(args, "ui_port", 8080)
+        app = ui.APP = mock_flask.return_value = MagicMock()
+        app.run = MagicMock()
+
+        ui.UI(args=args, jobs=jobs, nodes=nodes).start_app()
+        app.run.assert_called_with(port=8080, host="10.1.10.1")
