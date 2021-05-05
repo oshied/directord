@@ -247,7 +247,7 @@ class TestMain(unittest.TestCase):
             },
         )
 
-    def test__args_cacheevict(self):
+    def test__args_query(self):
         args, _ = main._args(["exec", "--verb", "QUERY", "var"])
         self.assertDictEqual(
             vars(args),
@@ -267,31 +267,6 @@ class TestMain(unittest.TestCase):
                 "target": None,
                 "exec": ["var"],
                 "poll": False,
-            },
-        )
-
-    def test__args_orchestrate(self):
-        args, _ = main._args(["orchestrate", "file1 file2"])
-        self.assertDictEqual(
-            vars(args),
-            {
-                "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
-                "debug": False,
-                "finger_print": False,
-                "job_port": 5555,
-                "transfer_port": 5556,
-                "heartbeat_port": 5557,
-                "ignore_cache": False,
-                "heartbeat_interval": 60,
-                "socket_path": "/var/run/directord.sock",
-                "cache_path": "/var/cache/directord",
-                "mode": "orchestrate",
-                "target": None,
-                "orchestrate_files": ["file1 file2"],
-                "poll": False,
-                "restrict": None,
             },
         )
 
@@ -499,7 +474,7 @@ class TestMain(unittest.TestCase):
             },
         )
 
-    def test__args_manage_purge_nodes(self):
+    def test__args_manage_export_nodes(self):
         args, _ = main._args(["manage", "--export-nodes", "xxxx"])
         self.assertDictEqual(
             vars(args),
@@ -616,7 +591,7 @@ class TestMain(unittest.TestCase):
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
     @patch("os.makedirs", autospec=True)
-    def test_systemdinstall_writer(
+    def test_systemdinstall_writer_not_called(
         self, mock_makedirs, mock_exists, mock_print
     ):
         mock_exists.return_value = True

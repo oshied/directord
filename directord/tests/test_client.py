@@ -16,8 +16,8 @@ import json
 import unittest
 
 from unittest.mock import ANY
-from unittest.mock import patch
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from directord import client
 from directord import tests
@@ -136,7 +136,7 @@ class TestClient(unittest.TestCase):
         mock_file_sha1.return_value = "YYYYYYYYY"
         fake_cache = tests.FakeCache()
         self.client.bind_transfer = self.client.transfer_connect()
-        with patch("builtins.open", unittest.mock.mock_open()) as m:
+        with patch("builtins.open", unittest.mock.mock_open()):
             stdout, stderr, outcome = self.client._run_transfer(
                 file_to="/test/file",
                 job_id="XXX",
@@ -146,7 +146,10 @@ class TestClient(unittest.TestCase):
             )
         self.assertEqual(
             stdout,
-            "File exists /test/file and SHA1 YYYYYYYYY matches, nothing to transfer",
+            (
+                "File exists /test/file and SHA1"
+                " YYYYYYYYY matches, nothing to transfer"
+            ),
         )
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, True)
@@ -164,7 +167,7 @@ class TestClient(unittest.TestCase):
         mock_file_sha1.return_value = "YYYYYYYYY"
         fake_cache = tests.FakeCache()
         self.client.bind_transfer = self.client.transfer_connect()
-        with patch("builtins.open", unittest.mock.mock_open()) as m:
+        with patch("builtins.open", unittest.mock.mock_open()):
             stdout, stderr, outcome = self.client._run_transfer(
                 file_to="/test/file",
                 job_id="XXX",
@@ -190,7 +193,7 @@ class TestClient(unittest.TestCase):
         mock_file_sha1.return_value = "YYYYYYYYY"
         fake_cache = tests.FakeCache()
         self.client.bind_transfer = self.client.transfer_connect()
-        with patch("builtins.open", unittest.mock.mock_open()) as m:
+        with patch("builtins.open", unittest.mock.mock_open()):
             stdout, stderr, outcome = self.client._run_transfer(
                 file_to="/test/file",
                 job_id="XXX",
@@ -215,7 +218,7 @@ class TestClient(unittest.TestCase):
         mock_file_sha1.return_value = "YYYYYYYYY"
         fake_cache = tests.FakeCache()
         self.client.bind_transfer = self.client.transfer_connect()
-        with patch("builtins.open", unittest.mock.mock_open()) as m:
+        with patch("builtins.open", unittest.mock.mock_open()):
             stdout, stderr, outcome = self.client._run_transfer(
                 file_to="/test/file",
                 job_id="XXX",
@@ -257,7 +260,7 @@ class TestClient(unittest.TestCase):
         mock_grp.return_value = gid
         fake_cache = tests.FakeCache()
         self.client.bind_transfer = self.client.transfer_connect()
-        with patch("builtins.open", unittest.mock.mock_open()) as m:
+        with patch("builtins.open", unittest.mock.mock_open()):
             stdout, stderr, outcome = self.client._run_transfer(
                 file_to="/test/file",
                 job_id="XXX",
@@ -291,7 +294,7 @@ class TestClient(unittest.TestCase):
         mock_file_sha1.return_value = "YYYYYYYYY"
         fake_cache = tests.FakeCache()
         self.client.bind_transfer = self.client.transfer_connect()
-        with patch("builtins.open", unittest.mock.mock_open()) as m:
+        with patch("builtins.open", unittest.mock.mock_open()):
             stdout, stderr, outcome = self.client._run_transfer(
                 file_to="/test/file",
                 job_id="XXX",
@@ -383,7 +386,10 @@ class TestClient(unittest.TestCase):
         )
         self.assertEqual(
             stdout,
-            "File exists /target/file1 and SHA1 YYYYYY matches, nothing to transfer",
+            (
+                "File exists /target/file1 and SHA1"
+                " YYYYYY matches, nothing to transfer"
+            ),
         )
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, True)
@@ -421,7 +427,10 @@ class TestClient(unittest.TestCase):
         )
         self.assertEqual(
             stdout,
-            "File exists /target/file1 and SHA1 YYYYYY matches, nothing to transfer",
+            (
+                "File exists /target/file1 and SHA1"
+                " YYYYYY matches, nothing to transfer"
+            ),
         )
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, True)

@@ -14,8 +14,8 @@
 
 import unittest
 
-from unittest.mock import patch
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from directord import tests
 from directord import ui

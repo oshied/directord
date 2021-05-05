@@ -12,11 +12,10 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from enum import auto
 import json
 import unittest
 
-from unittest.mock import ANY, sentinel
+from unittest.mock import ANY
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -96,7 +95,7 @@ class TestServer(unittest.TestCase):
         mock_time.side_effect = [1, 1000, 3000]
         self.server.run_heartbeat(sentinel=True)
         mock_log_debug.assert_called()
-        self.assertTrue(b"test-node" in self.server.workers)
+        self.assertIn(b"test-node", self.server.workers)
 
     @patch("directord.server.Server.heartbeat_bind", autospec=True)
     @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
@@ -128,7 +127,7 @@ class TestServer(unittest.TestCase):
         mock_time.side_effect = [1, 1000, 3000]
         self.server.run_heartbeat(sentinel=True)
         mock_log_debug.assert_called()
-        self.assertTrue(b"test-node" in self.server.workers)
+        self.assertIn(b"test-node", self.server.workers)
 
     @patch("directord.server.Server.heartbeat_bind", autospec=True)
     @patch("directord.manager.Interface.socket_multipart_send", autospec=True)

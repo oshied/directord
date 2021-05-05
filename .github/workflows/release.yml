@@ -20,7 +20,7 @@ jobs:
             Directord version ${{ github.event.release.tag_name }} has been released!
 
             Checkout the Pages - https://directord.com
-            Python Package - https://pypi.org/project/directord
+            #Python Package - https://pypi.org/project/directord
 
             ${{ github.event.release.html_url }}
 
