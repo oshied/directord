@@ -45,26 +45,6 @@ TEST_ORCHESTRATION_READ = """---
 """
 
 
-TEST_CATALOG = """---
-directord_server:
-  targets:
-  - host: 172.16.27.2
-    port: 22
-    username: centos
-  jobs:
-  - RUN: command1
-
-directord_clients:
-  args:
-    port: 22
-    username: centos
-  targets:
-  - host: 172.16.27.2
-  jobs:
-  - RUN: command1
-"""
-
-
 class TestMixin(unittest.TestCase):
     def setUp(self):
         self.args = tests.FakeArgs()
@@ -871,7 +851,7 @@ class TestMixin(unittest.TestCase):
         try:
             setattr(self.args, "catalog", ["/file.yaml"])
             setattr(self.args, "threads", 3)
-            m = unittest.mock.mock_open(read_data=TEST_CATALOG.encode())
+            m = unittest.mock.mock_open(read_data=tests.TEST_CATALOG.encode())
             with patch("builtins.open", m):
                 self.mixin.bootstrap_cluster()
         finally:

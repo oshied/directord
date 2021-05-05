@@ -20,6 +20,26 @@ from unittest import mock
 import paramiko
 
 
+TEST_CATALOG = """---
+directord_server:
+  targets:
+  - host: 172.16.27.2
+    port: 22
+    username: centos
+  jobs:
+  - RUN: command1
+
+directord_clients:
+  args:
+    port: 22
+    username: centos
+  targets:
+  - host: 172.16.27.2
+  jobs:
+  - RUN: command1
+"""
+
+
 MOCK_CURVE_KEY = """
 #   ****  Generated test key  ****
 #   ZeroMQ CURVE **Secret** Certificate

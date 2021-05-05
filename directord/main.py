@@ -29,7 +29,7 @@ from directord import user
 from directord import utils
 
 
-def _args():
+def _args(exec_args=None):
     """Setup client arguments."""
 
     parser = argparse.ArgumentParser(
@@ -303,7 +303,10 @@ def _args():
         default=int(os.getenv("DIRECTORD_BOOTSTRAP_THREADS", 10)),
         type=int,
     )
-    args = parser.parse_args()
+    if exec_args:
+        args = parser.parse_args(args=exec_args)
+    else:
+        args = parser.parse_args()
     # Check for configuration file and load it if found.
     if args.config_file:
         config_data = yaml.safe_load(args.config_file)
@@ -331,10 +334,7 @@ class SystemdInstall(object):
     def path_setup(self):
         """Create the configuration path and basic configuration file."""
 
-        if not os.path.isdir(self.config_path):
-            os.makedirs(self.config_path)
-            print("[+] Created directord configuration path")
-
+        os.makedirs(self.config_path, exist_ok=True)
         if not os.path.exists("/etc/directord/config.yaml"):
             with open("/etc/directord/config.yaml", "w") as f:
                 f.write("---\ndebug: false\n")
