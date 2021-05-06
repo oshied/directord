@@ -48,7 +48,7 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/cloudnull/directord/issues",
     },
     python_requires=">=3.6",
-    extras_require={"ui": ["flask"]},
+    extras_require={"ui": ["flask"], "pods": ["podman-py"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Information Technology",
@@ -78,6 +78,10 @@ setuptools.setup(
                 for i in glob.glob("orchestrations/files/*")
                 if os.path.isfile(i)
             ],
+        ),
+        (
+            "share/directord/pods",
+            [i for i in glob.glob("pods/*") if os.path.isfile(i)],
         ),
         (
             "share/directord/tools",
