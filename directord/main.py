@@ -150,6 +150,15 @@ def _args(exec_args=None):
         action="store_true",
     )
     parser_orchestrate.add_argument(
+        "--check",
+        help=(
+            "When polling is enabled this option can be used to check the"
+            " outcome of a given task. If the task fails the client will"
+            " fail too."
+        ),
+        action="store_true",
+    )
+    parser_orchestrate.add_argument(
         "orchestrate_files",
         help="YAML files to use for orchestration.",
         metavar="STRING",
@@ -188,6 +197,15 @@ def _args(exec_args=None):
     parser_exec.add_argument(
         "--poll",
         help="Block on client return for the completion of executed jobs.",
+        action="store_true",
+    )
+    parser_exec.add_argument(
+        "--check",
+        help=(
+            "When polling is enabled this option can be used to check the"
+            " outcome of a given task. If the task fails the client will"
+            " fail too."
+        ),
         action="store_true",
     )
     parser_server = subparsers.add_parser("server", help="Server mode help")
@@ -411,10 +429,15 @@ def main():
         job_items = [i.decode() for i in return_data if i]
 
         if args.poll:
+            failed = list()
             manage = user.Manage(args=args)
             for item in job_items:
-                _, status = manage.poll_job(job_id=item)
+                state, status = manage.poll_job(job_id=item)
+                if args.check and state is False:
+                    failed.append(True)
                 print(status)
+            if any(failed):
+                raise SystemExit("One or more jobs failed.")
         else:
             for item in job_items:
                 print(item)

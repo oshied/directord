@@ -1,0 +1,31 @@
+name: Functional Check
+on: [pull_request]
+jobs:
+  functional_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/prod-setup.sh
+      - name: Re-install self
+        run: sudo /opt/directord/bin/pip install --upgrade .
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl start directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl start directord-client
+      - name: Execute functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo /opt/directord/bin/directord --debug orchestrate functional-tests.yaml --poll --check

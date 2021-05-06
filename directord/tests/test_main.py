@@ -44,6 +44,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -69,6 +70,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -92,6 +94,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -115,6 +118,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -138,6 +142,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -161,6 +166,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -184,6 +190,8 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -207,6 +215,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -230,6 +239,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
@@ -253,6 +263,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
+                "check": False,
                 "shared_key": None,
                 "curve_encryption": False,
                 "debug": False,
