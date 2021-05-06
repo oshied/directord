@@ -48,7 +48,7 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/cloudnull/directord/issues",
     },
     python_requires=">=3.6",
-    extras_require={"ui": ["flask"], "pods": ["podman-py"]},
+    extras_require={"ui": ["flask"], "dev": ["podman-py"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Information Technology",

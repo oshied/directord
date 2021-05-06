@@ -226,35 +226,77 @@ class Mixin(object):
                 default="/var/run/podman/podman.sock",
                 help="Path to the podman socket.",
             )
+            parser.add_argument(
+                "--env",
+                help="Comma separated environment variables. KEY=VALUE,...",
+            )
+            parser.add_argument(
+                "--command",
+                help="Run a command in an exec container.",
+                nargs="+",
+            )
+            parser.add_argument(
+                "--privileged",
+                action="store_true",
+                help="Access a container with privleges.",
+            )
+            parser.add_argument(
+                "--tls-verify",
+                action="store_true",
+                help="Verify certificates when pulling container images.",
+            )
+            parser.add_argument(
+                "--force",
+                action="store_true",
+                help="When running removal operations, Enable|Disable force.",
+            )
+            parser.add_argument(
+                "--kill-signal",
+                default="SIGKILL",
+                help="Set the kill signal. Default: %(default)s",
+            )
             pod_group = parser.add_mutually_exclusive_group(required=True)
             pod_group.add_argument("--start", help="Start a pod.")
             pod_group.add_argument("--stop", help="Stop a pod.")
             pod_group.add_argument("--rm", help="Remove a pod.")
             pod_group.add_argument("--kill", help="Kill a pod.")
             pod_group.add_argument(
-                "--play",
-                help="Play a pod from a structured file."
+                "--play", help="Play a pod from a structured file."
             )
-            args, unknown_args = parser.parse_known_args(
+            pod_group.add_argument(
+                "--exec", help="Container to run a command within."
+            )
+            args, _ = parser.parse_known_args(
                 self.sanitized_args(execute=execute)
             )
             if args.start:
                 data["pod_action"] = "start"
-                data["podID"] = args.start
+                data["kwargs"] = dict(name=args.start, timeout=args.timeout)
             elif args.stop:
                 data["pod_action"] = "stop"
-                data["podID"] = args.stop
+                data["kwargs"] = dict(name=args.stop, timeout=args.timeout)
             elif args.rm:
                 data["pod_action"] = "rm"
-                data["podID"] = args.rm
+                data["kwargs"] = dict(name=args.rm, force=args.force)
             elif args.kill:
                 data["pod_action"] = "kill"
-                data["podID"] = args.kill
+                data["kwargs"] = dict(name=args.kill, signal=args.kill_signal)
             elif args.play:
                 data["pod_action"] = "play"
-                data["podID"] = args.play
+                data["kwargs"] = dict(
+                    pod_file=args.play, tls_verify=args.tls_verify
+                )
+            elif args.exec:
+                data["pod_action"] = "exec"
+                data["kwargs"] = dict(
+                    name=args.exec,
+                    privileged=args.privileged,
+                )
+                if args.env:
+                    data["kwargs"]["env"] = args.env.split(",")
 
-            data["kwargs"] = vars(unknown_args)
+            data["socket_path"] = args.socket_path
+
         else:
             raise SystemExit("No known verb defined.")
 
