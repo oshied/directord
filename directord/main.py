@@ -179,6 +179,7 @@ def _args(exec_args=None):
             "CACHEFILE",
             "CACHEEVICT",
             "QUERY",
+            "POD",
         ],
         required=True,
     )

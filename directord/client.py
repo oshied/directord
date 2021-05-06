@@ -23,6 +23,12 @@ import yaml
 import diskcache
 import zmq
 
+try:
+    from podman import PodmanClient
+    PODMAN_AVAILABLE = True
+except ImportError:
+    PODMAN_AVAILABLE = False
+
 from directord import manager
 from directord import utils
 
@@ -483,6 +489,17 @@ class Client(manager.Interface):
             else:
                 query = None
             return query, None, True
+        elif command == b"POD":
+            conn.start_processing()
+            if not PODMAN_AVAILABLE:
+                return None, "podman-py is not available", False
+
+            with PodmanClient(
+                'unix://{socket}'.format(socket=job["socket_path"])
+            ) as client:
+                action = getattr(client.pods, job["pod_action"], None)
+                if action:
+                    action(job["podID"])
         else:
             info = "Unknown command - COMMAND:{} ID:{}".format(
                 command.decode(),

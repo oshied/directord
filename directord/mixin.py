@@ -220,6 +220,41 @@ class Mixin(object):
                 self.sanitized_args(execute=execute)
             )
             data["query"] = args.query
+        elif verb == "POD":
+            parser.add_argument(
+                "--socket-path",
+                default="/var/run/podman/podman.sock",
+                help="Path to the podman socket.",
+            )
+            pod_group = parser.add_mutually_exclusive_group(required=True)
+            pod_group.add_argument("--start", help="Start a pod.")
+            pod_group.add_argument("--stop", help="Stop a pod.")
+            pod_group.add_argument("--rm", help="Remove a pod.")
+            pod_group.add_argument("--kill", help="Kill a pod.")
+            pod_group.add_argument(
+                "--play",
+                help="Play a pod from a structured file."
+            )
+            args, unknown_args = parser.parse_known_args(
+                self.sanitized_args(execute=execute)
+            )
+            if args.start:
+                data["pod_action"] = "start"
+                data["podID"] = args.start
+            elif args.stop:
+                data["pod_action"] = "stop"
+                data["podID"] = args.stop
+            elif args.rm:
+                data["pod_action"] = "rm"
+                data["podID"] = args.rm
+            elif args.kill:
+                data["pod_action"] = "kill"
+                data["podID"] = args.kill
+            elif args.play:
+                data["pod_action"] = "play"
+                data["podID"] = args.play
+
+            data["kwargs"] = vars(unknown_args)
         else:
             raise SystemExit("No known verb defined.")
 
