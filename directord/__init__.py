@@ -444,7 +444,7 @@ class DirectordConnect(object):
         )
 
     def list_jobs(self):
-        """Return a dictionary of all current directord jobs.
+        """Return a dictionary of all current Directord jobs.
 
         :returns: Dictionary
         """
