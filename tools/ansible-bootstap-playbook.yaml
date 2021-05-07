@@ -15,7 +15,6 @@
           dest: "/opt/{{ item | basename }}"
         loop:
         - "{{ playbook_dir }}/dev-setup.sh"
-        - "{{ playbook_dir }}/bindep.txt"
       - name: Execute development script
         command: "bash /opt/dev-setup.sh"
       when:

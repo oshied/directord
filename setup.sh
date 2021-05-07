@@ -1,1 +1,1 @@
-tools/dev-setup.sh
+tools/prod-setup.sh

@@ -4,6 +4,6 @@
 
 # Install podman
 - jobs:
-  - RUN: dnf -y install podman
+  - RUN: $(command -v dnf || command -v apt) -y install podman
   - RUN: systemctl enable podman.socket
   - RUN: systemctl restart podman.socket

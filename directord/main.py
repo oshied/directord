@@ -435,10 +435,14 @@ def main():
             for item in job_items:
                 state, status = manage.poll_job(job_id=item)
                 if args.check and state is False:
-                    failed.append(True)
-                print(status)
+                    failed.append(item)
+                else:
+                    print(status)
+
             if any(failed):
-                raise SystemExit("One or more jobs failed.")
+                for item in failed:
+                    print(item)
+                raise SystemExit(1)
         else:
             for item in job_items:
                 print(item)

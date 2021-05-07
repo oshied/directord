@@ -98,16 +98,16 @@ class TestMixin(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_format_exec_unknown(self):
+    def test_format_action_unknown(self):
         self.assertRaises(
             SystemExit,
-            self.mixin.format_exec,
+            self.mixin.format_action,
             verb="TEST",
             execute=self.execute,
         )
 
-    def test_format_exec_run(self):
-        result = self.mixin.format_exec(verb="RUN", execute=self.execute)
+    def test_format_action_run(self):
+        result = self.mixin.format_action(verb="RUN", execute=self.execute)
         self.assertEqual(
             result,
             json.dumps(
@@ -123,8 +123,8 @@ class TestMixin(unittest.TestCase):
             ),
         )
 
-    def test_format_exec_run_target(self):
-        result = self.mixin.format_exec(
+    def test_format_action_run_target(self):
+        result = self.mixin.format_action(
             verb="RUN", execute=self.execute, targets=["test_target"]
         )
         self.assertEqual(
@@ -143,8 +143,8 @@ class TestMixin(unittest.TestCase):
             ),
         )
 
-    def test_format_exec_run_ignore_cache(self):
-        result = self.mixin.format_exec(
+    def test_format_action_run_ignore_cache(self):
+        result = self.mixin.format_action(
             verb="RUN", execute=self.execute, ignore_cache=True
         )
         self.assertEqual(
@@ -162,8 +162,8 @@ class TestMixin(unittest.TestCase):
             ),
         )
 
-    def test_format_exec_run_restrict(self):
-        result = self.mixin.format_exec(
+    def test_format_action_run_restrict(self):
+        result = self.mixin.format_action(
             verb="RUN", execute=self.execute, restrict="RestrictedSHA1"
         )
         self.assertEqual(
@@ -182,8 +182,8 @@ class TestMixin(unittest.TestCase):
             ),
         )
 
-    def test_format_exec_run_parent_id(self):
-        result = self.mixin.format_exec(
+    def test_format_action_run_parent_id(self):
+        result = self.mixin.format_action(
             verb="RUN", execute=self.execute, parent_id="ParentID"
         )
         self.assertEqual(
@@ -204,7 +204,7 @@ class TestMixin(unittest.TestCase):
 
     @patch("glob.glob")
     @patch("os.path.isfile")
-    def test_format_exec_add_copy(self, mock_isfile, mock_glob):
+    def test_format_action_add_copy(self, mock_isfile, mock_glob):
         mock_isfile.return_value = True
         mock_glob.return_value = ["/from/one", "/from/two"]
         expected_result = {
@@ -218,17 +218,17 @@ class TestMixin(unittest.TestCase):
             "return_raw": False,
             "skip_cache": False,
         }
-        result = self.mixin.format_exec(
+        result = self.mixin.format_action(
             verb="COPY", execute=["/from/*", "/to/path/"]
         )
         self.assertEqual(result, json.dumps(expected_result))
-        result = self.mixin.format_exec(
+        result = self.mixin.format_action(
             verb="ADD", execute=["/from/*", "/to/path/"]
         )
         expected_result["verb"] = "ADD"
         self.assertEqual(result, json.dumps(expected_result))
 
-    def test_format_exec_args(self):
+    def test_format_action_args(self):
         expected_result = {
             "args": {"key": "value"},
             "verb": "ARG",
@@ -238,10 +238,10 @@ class TestMixin(unittest.TestCase):
             "return_raw": False,
             "skip_cache": False,
         }
-        result = self.mixin.format_exec(verb="ARG", execute=["key", "value"])
+        result = self.mixin.format_action(verb="ARG", execute=["key", "value"])
         self.assertEqual(result, json.dumps(expected_result))
 
-    def test_format_exec_envs(self):
+    def test_format_action_envs(self):
         expected_result = {
             "envs": {"key": "value"},
             "verb": "ENV",
@@ -251,11 +251,13 @@ class TestMixin(unittest.TestCase):
             "return_raw": False,
             "skip_cache": False,
         }
-        result = self.mixin.format_exec(verb="ENV", execute=["key", "value"])
+        result = self.mixin.format_action(verb="ENV", execute=["key", "value"])
         self.assertEqual(result, json.dumps(expected_result))
 
-    def test_format_exec_workdir(self):
-        result = self.mixin.format_exec(verb="WORKDIR", execute=["/test/path"])
+    def test_format_action_workdir(self):
+        result = self.mixin.format_action(
+            verb="WORKDIR", execute=["/test/path"]
+        )
         self.assertEqual(
             result,
             json.dumps(
@@ -271,8 +273,8 @@ class TestMixin(unittest.TestCase):
             ),
         )
 
-    def test_format_exec_cachefile(self):
-        result = self.mixin.format_exec(
+    def test_format_action_cachefile(self):
+        result = self.mixin.format_action(
             verb="CACHEFILE", execute=["/test/path"]
         )
         self.assertEqual(
@@ -290,8 +292,8 @@ class TestMixin(unittest.TestCase):
             ),
         )
 
-    def test_format_exec_cacheevict(self):
-        result = self.mixin.format_exec(verb="CACHEEVICT", execute=["test"])
+    def test_format_action_cacheevict(self):
+        result = self.mixin.format_action(verb="CACHEEVICT", execute=["test"])
         self.assertEqual(
             result,
             json.dumps(
@@ -307,8 +309,8 @@ class TestMixin(unittest.TestCase):
             ),
         )
 
-    def test_format_exec_query(self):
-        result = self.mixin.format_exec(verb="QUERY", execute=["test"])
+    def test_format_action_query(self):
+        result = self.mixin.format_action(verb="QUERY", execute=["test"])
         self.assertEqual(
             result,
             json.dumps(

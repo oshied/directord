@@ -492,8 +492,8 @@ class Client(manager.Interface):
                     "The required podman-py library is not installed",
                     False,
                 )
-            else:
-                with pods.PodmanConnect(socket=job["socket_path"]) as p:
+            try:
+                with pods.PodmanPod(socket=job["socket_path"]) as p:
                     action = getattr(p, job["pod_action"], None)
                     if action:
                         status, data = action(**job["kwargs"])
@@ -507,11 +507,13 @@ class Client(manager.Interface):
                         return (
                             None,
                             (
-                                "The action [ {action} ] failed to return a"
-                                " function".format(action=job["pod_action"])
+                                "The action [ {action} ] failed to return"
+                                "  a function".format(action=job["pod_action"])
                             ),
                             False,
                         )
+            except Exception as e:
+                return None, str(e), False
         else:
             info = "Unknown command - COMMAND:{} ID:{}".format(
                 command.decode(),

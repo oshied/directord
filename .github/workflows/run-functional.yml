@@ -14,7 +14,7 @@ jobs:
       - name: Run install
         run: sudo bash tools/prod-setup.sh
       - name: Re-install self
-        run: sudo /opt/directord/bin/pip install --upgrade .
+        run: sudo /opt/directord/bin/pip install --upgrade .[ui,dev]
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -28,4 +28,67 @@ jobs:
       - name: Execute functional check
         run: |
           cd /opt/directord/share/directord/orchestrations
-          sudo /opt/directord/bin/directord --debug orchestrate functional-tests.yaml --poll --check
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      orchestrate \
+                      functional-tests.yaml \
+                      podman.yaml \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            exit 1
+          fi
+      - name: Execute pod play check
+        run: |
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      exec \
+                      --verb POD \
+                      '--play /opt/directord/share/directord/pods/pod-directord-test-pod.yaml' \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            exit 1
+          fi
+          sleep 2
+          if ! sudo podman pod exists directord-test-pod; then
+            echo -e "FAILURE - [ directord-test-pod ] did not exist on the system."
+            exit 1
+          fi
+
+      - name: Create an exec container and check
+        run: |
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      exec \
+                      --verb POD \
+                      '--exec-run directord-test-pod-directord-server-1 --env TEST0=hello,TEST1=world --command "/usr/bin/echo ${TEST0} ${TEST1}"' \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            exit 1
+          fi
+      - name: Execute pod kill check
+        run: |
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      exec \
+                      --verb POD \
+                      '--signal SIGKILL --kill directord-test-pod' \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            exit 1
+          fi
+      - name: Execute pod rm check
+        run: |
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      exec \
+                      --verb POD \
+                      '--force --rm directord-test-pod' \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            exit 1
+          fi
+          sleep 2
+          if sudo podman pod exists directord-test-pod; then
+            echo -e "FAILURE - [ directord-test-pod ] was still active on the system"
+            exit 1
+          fi

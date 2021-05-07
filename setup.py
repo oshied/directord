@@ -27,7 +27,7 @@ setuptools.setup(
     description=(
         "A deployment framework built to manage the data center" " life cycle."
     ),
-    version="0.3.0",
+    version="0.4.0",
     packages=["directord"],
     include_package_data=True,
     zip_safe=False,
