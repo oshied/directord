@@ -1,0 +1,9 @@
+# This orchestration will install podman and start the system service
+#
+---
+
+# Install podman
+- jobs:
+  - RUN: $(command -v dnf || command -v apt) -y install podman
+  - RUN: systemctl enable podman.socket
+  - RUN: systemctl restart podman.socket

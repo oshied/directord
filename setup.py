@@ -27,7 +27,7 @@ setuptools.setup(
     description=(
         "A deployment framework built to manage the data center" " life cycle."
     ),
-    version="0.3.0",
+    version="0.4.0",
     packages=["directord"],
     include_package_data=True,
     zip_safe=False,
@@ -48,7 +48,7 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/cloudnull/directord/issues",
     },
     python_requires=">=3.6",
-    extras_require={"ui": ["flask"]},
+    extras_require={"ui": ["flask"], "dev": ["podman-py"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Information Technology",
@@ -78,6 +78,10 @@ setuptools.setup(
                 for i in glob.glob("orchestrations/files/*")
                 if os.path.isfile(i)
             ],
+        ),
+        (
+            "share/directord/pods",
+            [i for i in glob.glob("pods/*") if os.path.isfile(i)],
         ),
         (
             "share/directord/tools",

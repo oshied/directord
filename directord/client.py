@@ -24,6 +24,7 @@ import diskcache
 import zmq
 
 from directord import manager
+from directord import pods
 from directord import utils
 
 
@@ -483,6 +484,36 @@ class Client(manager.Interface):
             else:
                 query = None
             return query, None, True
+        elif command == b"POD":
+            conn.start_processing()
+            if not pods.AVAILABLE_PODMAN:
+                return (
+                    None,
+                    "The required podman-py library is not installed",
+                    False,
+                )
+            try:
+                with pods.PodmanPod(socket=job["socket_path"]) as p:
+                    action = getattr(p, job["pod_action"], None)
+                    if action:
+                        status, data = action(**job["kwargs"])
+                        if data:
+                            data = json.dumps(data)
+                        if status:
+                            return data, None, status
+                        else:
+                            return None, data, status
+                    else:
+                        return (
+                            None,
+                            (
+                                "The action [ {action} ] failed to return"
+                                "  a function".format(action=job["pod_action"])
+                            ),
+                            False,
+                        )
+            except Exception as e:
+                return None, str(e), False
         else:
             info = "Unknown command - COMMAND:{} ID:{}".format(
                 command.decode(),

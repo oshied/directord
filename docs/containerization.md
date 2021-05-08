@@ -110,13 +110,13 @@ rapidly instantiate infrastructure.
 ###### Server
 
 ``` shell
-$ podman play kube assets/pod-directord-server.yaml
+$ podman play kube pods/pod-directord-server.yaml
 ```
 
 ###### Client
 
 ``` shell
-$ podman play kube assets/pod-directord-client.yaml
+$ podman play kube pods/pod-directord-client.yaml
 ```
 
 #### Touchless Operations

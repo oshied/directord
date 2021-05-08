@@ -57,7 +57,319 @@ class Mixin(object):
 
         return [i for g in execute for i in g.split()]
 
-    def format_exec(
+    def _exec_parser(self, parser, exec_string):
+        """Run the parser and return parsed arguments.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :returns: Tuple
+        """
+
+        known_args, unknown_args = parser.parse_known_args(
+            self.sanitized_args(execute=exec_string)
+        )
+        if hasattr(known_args, "exec_help") and known_args.exec_help:
+            raise SystemExit(parser.print_help())
+        else:
+            return known_args, unknown_args
+
+    def _exec_action_run(self, parser, exec_string, data):
+        """Return data from formatted run action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :returns: Dictionary
+        """
+
+        parser.add_argument(
+            "--stdout-arg",
+            help=(
+                "Stores the stdout of a given command as a cached" " argument."
+            ),
+        )
+
+        args, command = self._exec_parser(
+            parser=parser, exec_string=exec_string
+        )
+        if args.stdout_arg:
+            data["stdout_arg"] = args.stdout_arg
+        data["command"] = " ".join(command)
+        return data
+
+    def _exec_action_transfer(self, parser, exec_string, data):
+        """Return data from formatted transfer action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :returns: Dictionary
+        """
+
+        parser.add_argument("--chown", help="Set the file ownership")
+        parser.add_argument(
+            "--blueprint",
+            action="store_true",
+            help="Instruct the remote file to be blueprinted.",
+        )
+        parser.add_argument(
+            "files",
+            nargs="+",
+            help="Set the file to transfer: 'FROM' 'TO'",
+        )
+        args, _ = self._exec_parser(parser=parser, exec_string=exec_string)
+        if args.chown:
+            chown = args.chown.split(":", 1)
+            if len(chown) == 1:
+                chown.append(None)
+            data["user"], data["group"] = chown
+        file_from, data["to"] = shlex.split(" ".join(args.files))
+        data["from"] = [
+            os.path.abspath(os.path.expanduser(i))
+            for i in glob.glob(file_from)
+            if os.path.isfile(os.path.expanduser(i))
+        ]
+        if not data["from"]:
+            raise AttributeError(
+                "The value of [ {} ] was not found.".format(file_from)
+            )
+        data["blueprint"] = args.blueprint
+        return data
+
+    def _exec_action_cache(self, parser, exec_string, data, verb):
+        """Return data from formatted transfer action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :param verb: Interaction key word.
+        :type verb: String
+        :returns: Dictionary
+        """
+
+        cache_type = "{}s".format(verb.lower())
+        parser.add_argument(
+            cache_type,
+            nargs="+",
+            action="append",
+            help="Set a given argument. KEY VALUE",
+        )
+        args, _ = self._exec_parser(parser=parser, exec_string=exec_string)
+        cache_obj = getattr(args, cache_type)
+        data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
+        return data
+
+    def _exec_action_workdir(self, parser, exec_string, data):
+        """Return data from formatted workdir action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :returns: Dictionary
+        """
+
+        parser.add_argument("workdir", help="Create a directory.")
+        args, _ = parser.parse_known_args(
+            self.sanitized_args(execute=exec_string)
+        )
+        data["workdir"] = args.workdir
+        return data
+
+    def _exec_action_cachefile(self, parser, exec_string, data):
+        """Return data from formatted cachefile action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :returns: Dictionary
+        """
+
+        parser.add_argument(
+            "cachefile",
+            help="Load a cached file and store it as an update to ARGs.",
+        )
+        args, _ = self._exec_parser(parser=parser, exec_string=exec_string)
+        data["cachefile"] = args.cachefile
+        return data
+
+    def _exec_action_cacheevict(self, parser, exec_string, data):
+        """Return data from formatted cacheevict action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :returns: Dictionary
+        """
+
+        parser.add_argument(
+            "cacheevict",
+            help=(
+                "Evict all tagged cached items from a client machine."
+                " Typical tags are, but not limited to:"
+                " [args, envs, jobs, parents, query, ...]. To evict 'all'"
+                " cached items use the keyword 'all'."
+            ),
+        )
+        args, _ = self._exec_parser(parser=parser, exec_string=exec_string)
+        data["cacheevict"] = args.cacheevict
+        return data
+
+    def _exec_action_query(self, parser, exec_string, data):
+        """Return data from formatted query action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :returns: Dictionary
+        """
+
+        parser.add_argument(
+            "query",
+            help=(
+                "Scan the environment for a given cached argument and"
+                " store the resultant on the target. The resultant is"
+                " set in dictionary format: `{'client-id': ...}`"
+            ),
+        )
+        args, _ = self._exec_parser(parser=parser, exec_string=exec_string)
+        if hasattr(args, "exec_help") and args.exec_help:
+            return parser.print_help(1)
+
+        data["query"] = args.query
+        return data
+
+    def _exec_action_pod(self, parser, exec_string, data):
+        """Return data from formatted query action.
+
+        :param parser: Argument parser.
+        :type parser: Object
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :returns: Dictionary
+        """
+
+        parser.add_argument(
+            "--socket-path",
+            default="/var/run/podman/podman.sock",
+            help="Path to the podman socket. Default: %(default)s",
+        )
+        parser.add_argument(
+            "--env",
+            help="Comma separated environment variables. KEY=VALUE,...",
+            metavar="KEY=VALUE",
+        )
+        parser.add_argument(
+            "--command",
+            help="Run a command in an exec container.",
+            nargs="+",
+        )
+        parser.add_argument(
+            "--privileged",
+            action="store_true",
+            help="Access a container with privleges.",
+        )
+        parser.add_argument(
+            "--tls-verify",
+            action="store_true",
+            help="Verify certificates when pulling container images.",
+        )
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="When running removal operations, Enable|Disable force.",
+        )
+        parser.add_argument(
+            "--kill-signal",
+            default="SIGKILL",
+            help="Set the kill signal. Default: %(default)s",
+            metavar="SIGNAL",
+        )
+        pod_group = parser.add_mutually_exclusive_group(required=True)
+        pod_group.add_argument(
+            "--start", help="Start a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--stop", help="Stop a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--rm", help="Remove a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--kill", help="Kill a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--inspect", help="Inspect a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--play",
+            help="Play a pod from a structured file.",
+            metavar="POD_FILE",
+        )
+        pod_group.add_argument(
+            "--exec-run",
+            help="Create an execution container to run a command within.",
+            metavar="CONTAINER_NAME",
+        )
+        args, _ = self._exec_parser(parser=parser, exec_string=exec_string)
+        if args.start:
+            data["pod_action"] = "start"
+            data["kwargs"] = dict(name=args.start, timeout=args.timeout)
+        elif args.stop:
+            data["pod_action"] = "stop"
+            data["kwargs"] = dict(name=args.stop, timeout=args.timeout)
+        elif args.rm:
+            data["pod_action"] = "rm"
+            data["kwargs"] = dict(name=args.rm, force=args.force)
+        elif args.kill:
+            data["pod_action"] = "kill"
+            data["kwargs"] = dict(name=args.kill, signal=args.kill_signal)
+        elif args.inspect:
+            data["pod_action"] = "inspect"
+            data["kwargs"] = dict(name=args.inspect)
+        elif args.play:
+            data["pod_action"] = "play"
+            data["kwargs"] = dict(
+                pod_file=args.play, tls_verify=args.tls_verify
+            )
+        elif args.exec_run:
+            data["pod_action"] = "exec_run"
+            data["kwargs"] = dict(
+                name=args.exec_run,
+                privileged=args.privileged,
+                command=args.command,
+            )
+            if args.env:
+                data["kwargs"]["env"] = args.env.split(",")
+
+        data["socket_path"] = args.socket_path
+        return data
+
+    def format_action(
         self,
         verb,
         execute,
@@ -121,130 +433,76 @@ class Mixin(object):
         )
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         if verb == "RUN":
-            parser.add_argument(
-                "--stdout-arg",
-                help=(
-                    "Stores the stdout of a given command as a cached"
-                    " argument."
-                ),
-            )
-            args, command = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
-            )
-            if args.stdout_arg:
-                data["stdout_arg"] = args.stdout_arg
-            data["command"] = " ".join(command)
-        elif verb in ["COPY", "ADD"]:
-            parser.add_argument("--chown", help="Set the file ownership")
-            parser.add_argument(
-                "--blueprint",
-                action="store_true",
-                help="Instruct the remote file to be blueprinted.",
-            )
-            parser.add_argument(
-                "files",
-                nargs="+",
-                help="Set the file to transfer: 'FROM' 'TO'",
-            )
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
-            )
-            if args.chown:
-                chown = args.chown.split(":", 1)
-                if len(chown) == 1:
-                    chown.append(None)
-                data["user"], data["group"] = chown
-            file_from, data["to"] = shlex.split(" ".join(args.files))
-            data["from"] = [
-                os.path.abspath(os.path.expanduser(i))
-                for i in glob.glob(file_from)
-                if os.path.isfile(os.path.expanduser(i))
-            ]
-            if not data["from"]:
-                raise AttributeError(
-                    "The value of [ {} ] was not found.".format(file_from)
+            data.update(
+                self._exec_action_run(
+                    parser=parser, exec_string=execute, data=data
                 )
-            data["blueprint"] = args.blueprint
+            )
+        elif verb in ["COPY", "ADD"]:
+            data.update(
+                self._exec_action_transfer(
+                    parser=parser, exec_string=execute, data=data
+                )
+            )
         elif verb in ["ARG", "ENV"]:
-            cache_type = "{}s".format(verb.lower())
-            parser.add_argument(
-                cache_type,
-                nargs="+",
-                action="append",
-                help="Set a given argument. KEY VALUE",
+            data.update(
+                self._exec_action_cache(
+                    parser=parser,
+                    exec_string=execute,
+                    data=data,
+                    verb=verb,
+                )
             )
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
-            )
-            cache_obj = getattr(args, cache_type)
-            data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
         elif verb == "WORKDIR":
-            parser.add_argument("workdir", help="Create a directory.")
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
+            data.update(
+                self._exec_action_workdir(
+                    parser=parser, exec_string=execute, data=data
+                )
             )
-            data["workdir"] = args.workdir
         elif verb == "CACHEFILE":
-            parser.add_argument(
-                "cachefile",
-                help="Load a cached file and store it as an update to ARGs.",
+            data.update(
+                self._exec_action_cachefile(
+                    parser=parser, exec_string=execute, data=data
+                )
             )
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
-            )
-            data["cachefile"] = args.cachefile
         elif verb == "CACHEEVICT":
-            parser.add_argument(
-                "cacheevict",
-                help=(
-                    "Evict all tagged cached items from a client machine."
-                    " Typical tags are, but not limited to:"
-                    " [args, envs, jobs, parents, query, ...]. To evict 'all'"
-                    " cached items use the keyword 'all'."
-                ),
+            data.update(
+                self._exec_action_cacheevict(
+                    parser=parser, exec_string=execute, data=data
+                )
             )
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
-            )
-            data["cacheevict"] = args.cacheevict
         elif verb == "QUERY":
-            parser.add_argument(
-                "query",
-                help=(
-                    "Scan the environment for a given cached argument and"
-                    " store the resultant on the target. The resultant is"
-                    " set in dictionary format: `{'client-id': ...}`"
-                ),
+            data.update(
+                self._exec_action_query(
+                    parser=parser, exec_string=execute, data=data
+                )
             )
-            args, _ = parser.parse_known_args(
-                self.sanitized_args(execute=execute)
+        elif verb == "POD":
+            data.update(
+                self._exec_action_pod(
+                    parser=parser, exec_string=execute, data=data
+                )
             )
-            data["query"] = args.query
         else:
-            raise SystemExit("No known verb defined.")
+            raise SystemExit(parser.print_help())
 
-        if hasattr(args, "exec_help") and args.exec_help:
-            return parser.print_help(1)
-        else:
-            if targets:
-                data["targets"] = targets
+        if targets:
+            data["targets"] = targets
 
-            data["verb"] = verb
-            data["timeout"] = args.timeout
-            data["run_once"] = getattr(args, "run_once", False)
-            data["task_sha1sum"] = utils.object_sha1(obj=data)
-            data["return_raw"] = return_raw
-            data["skip_cache"] = ignore_cache or getattr(
-                args, "skip_cache", False
-            )
+        data["verb"] = verb
+        data["timeout"] = getattr(args, "timeout", 600)
+        data["run_once"] = getattr(args, "run_once", False)
+        data["task_sha1sum"] = utils.object_sha1(obj=data)
+        data["return_raw"] = return_raw
+        data["skip_cache"] = ignore_cache or getattr(args, "skip_cache", False)
 
-            if parent_id:
-                data["parent_id"] = parent_id
+        if parent_id:
+            data["parent_id"] = parent_id
 
-            if restrict:
-                data["restrict"] = restrict
+        if restrict:
+            data["restrict"] = restrict
 
-            return json.dumps(data)
+        return json.dumps(data)
 
     def exec_orchestrations(
         self,
@@ -300,7 +558,7 @@ class Mixin(object):
         return_data = list()
         count = 0
         for job in job_to_run:
-            formatted_job = self.format_exec(**job)
+            formatted_job = self.format_action(**job)
             if getattr(self.args, "finger_print", False):
                 item = json.loads(formatted_job)
                 exec_str = " ".join(job["execute"])
@@ -386,7 +644,7 @@ class Mixin(object):
         return [
             directord.send_data(
                 socket_path=self.args.socket_path,
-                data=self.format_exec(**format_kwargs),
+                data=self.format_action(**format_kwargs),
             )
         ]
 

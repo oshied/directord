@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-set -eo
+set -exo
 
 VENV_PATH="${1:-/opt/directord}"
-PYTHON_BIN=${2:-python3}
+CLONE_PATH="${3:-/opt/directord-src}"
+SETUP="${4:-true}"
 
-# OS Detect
+#!/usr/bin/env bash
+set -eo
+
 . /etc/os-release
+
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   # Install lynx from the powertools repo
   if ! which lynx; then
@@ -32,28 +36,53 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   fi
 fi
 
-# Python is required for our application
-# Zeromq is for messaging
-# Libsodium is for ZMQ encryption
-dnf install -y zeromq libsodium
+if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
+  PACKAGES="git python38 zeromq libsodium"
+  dnf -y install ${PACKAGES}
+  PYTHON_BIN=${2:-python3.8}
+elif [[ ${ID} == "fedora" ]]; then
+  PACKAGES="git python3 zeromq libsodium"
+  dnf -y install ${PACKAGES}
+  PYTHON_BIN=${2:-python3}
+elif [[ ${ID} == "ubuntu" ]]; then
+  PACKAGES="git python3-all python3-venv python3-zmq"
+  apt update
+  apt -y install ${PACKAGES}
+  PYTHON_BIN=${2:-python3}
+else
+  echo -e "Failed unknown OS"
+  exit 99
+fi
 
 # Create development workspace
+rm -rf ${VENV_PATH}
 ${PYTHON_BIN} -m venv ${VENV_PATH}
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep
 
-# development packages
-BASE_PATH="$(dirname $(readlink -f ${BASH_SOURCE[0]}))"
-dnf install -y $(${VENV_PATH}/bin/bindep -b -f ${BASE_PATH}/bindep.txt test) python3
-if [[ -f "${BASE_PATH}/../setup.py" ]]; then
-  ${VENV_PATH}/bin/pip install "${BASE_PATH}/../[ui,dev]"
-else
-  rm -rf /opt/directord-src
-  git clone https://github.com/cloudnull/directord /opt/directord-src
-  ${VENV_PATH}/bin/pip install /opt/directord-src[ui,dev]
-fi
+${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
 
-echo -e "\nDirectord is setup and installed within [ ${VENV_PATH} ]"
-echo "Activate the venv or run directord directly."
-echo "Directord can be installed as a service using the following command(s):"
-echo "${VENV_PATH}/bin/directord-client-systemd"
-echo -e "${VENV_PATH}/bin/directord-server-systemd\n"
+if [ ! -d "${CLONE_PATH}" ]; then
+  git clone https://github.com/cloudnull/directord ${CLONE_PATH}
+fi
+${VENV_PATH}/bin/pip install ${CLONE_PATH}[ui,dev]
+
+if [ "${SETUP}" = true ]; then
+  echo -e "\nDirectord is setup and installed within [ ${VENV_PATH} ]"
+  echo "Activate the venv or run directord directly."
+
+  if systemctl is-active directord-server &> /dev/null; then
+    systemctl restart directord-server
+    echo "Directord Server Restarted"
+  else
+    echo "Directord Server can be installed as a service using the following command(s):"
+    echo "${VENV_PATH}/bin/directord-server-systemd"
+  fi
+
+  if systemctl is-active directord-client &> /dev/null; then
+    systemctl restart directord-client
+    echo "Directord Client Restarted"
+  else
+    echo "Directord Client can be installed as a service using the following command(s):"
+    echo "${VENV_PATH}/bin/directord-client-systemd"
+  fi
+fi

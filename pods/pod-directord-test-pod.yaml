@@ -1,0 +1,60 @@
+# Generation of Kubernetes YAML is still under development!
+#
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-3.1.0-dev
+_container: &container
+  args:
+  - directord
+  command:
+  - entrypoint
+  image: quay.io/cloudnull/directord
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: true
+    capabilities:
+      drop:
+      - CAP_MKNOD
+      - CAP_AUDIT_WRITE
+    privileged: false
+    readOnlyRootFilesystem: false
+    runAsGroup: 0
+    runAsUser: 0
+    seLinuxOptions: {}
+  workingDir: /
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2021-05-07T13:17:39Z"
+  labels:
+    app: directord-test-pod
+  name: directord-test-pod
+spec:
+  containers:
+    - <<: *container
+      name: directord-server-1
+      env:
+      - name: container
+        value: oci
+      - name: DIRECTORD_DEBUG
+        value: true
+      - name: DIRECTORD_MODE
+        value: server
+      - name: DIRECTORD_SHARED_KEY
+        value: secrete
+    - <<: *container
+      name: directord-client-1
+      env:
+      - name: container
+        value: oci
+      - name: DIRECTORD_DEBUG
+        value: true
+      - name: DIRECTORD_SERVER_ADDRESS
+        value: directord-test-pod
+      - name: DIRECTORD_SHARED_KEY
+        value: secrete
+  dnsConfig: {}
+  hostNetwork: false
+status: {}
