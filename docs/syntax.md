@@ -123,6 +123,8 @@ and intelligently parse/blueprint data based on node memberships.
 This features allows operators to run, manage, or manipulate pods across a
 Directord cluster.
 
+> At this time pod management requires **podman**.
+
 `--env`          **KEY=VALUE**       Comma separated environment variables. KEY=VALUE,...
 `--command`      **COMMAND**         Run a command in an exec container.
 `--privileged`                       Access a container with privleges.
@@ -137,10 +139,12 @@ Directord cluster.
 `--play`         **POD_FILE**        Play a pod from a structured file.
 `--exec-run`     **CONTAINER_NAME**  Container name or ID to use for an execution container.
 
-> At this time pod management requires **podman**.
-
 > When installing Directord with `pip`, the dev optional packages are
   needed on the client side to manage pods; `pip install directord[dev]`.
+
+> Client side **podman** needs to be setup to enable the socket API. The
+  orchestration [podman.yaml](https://github.com/cloudnull/directord/blob/main/orchestrations/podman.yaml)
+  can be used to automate the **podman** installation and setup process.
 
 ## Extra options
 
