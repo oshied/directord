@@ -30,8 +30,8 @@ Execute a command. The client terminal will execute using `/bin/sh`.
 
 Extra arguments available to the `RUN` verb.
 
-`--stdout-arg` **STRING** Sets the stdout of a given command to defined cached
-argument.
+* `--stdout-arg` **STRING** Sets the stdout of a given command to defined cached
+  argument.
 
 ##### `ARG`
 
@@ -64,11 +64,11 @@ glob of files within a given path.
 
 Extra arguments available to the `ADD` verb.
 
-`--chown` **user[:group]** - Sets the ownership of a recently transferred file to
-a defined user and group (optionally).
+* `--chown` **user[:group]** - Sets the ownership of a recently transferred file to
+  a defined user and group (optionally).
 
-`--blueprint` The blueprint option instructs the client to read and render
-a copied file. The file will be rendered using cached arguments.
+* `--blueprint` The blueprint option instructs the client to read and render
+  a copied file. The file will be rendered using cached arguments.
 
 > When a copy command has a brace expanded path, the value must be quoted:
   `example/path "/example/{{ target }}/path"`. The quotes around the brace
@@ -125,19 +125,19 @@ Directord cluster.
 
 > At this time pod management requires **podman**.
 
-`--env`          **KEY=VALUE**       Comma separated environment variables. KEY=VALUE,...
-`--command`      **COMMAND**         Run a command in an exec container.
-`--privileged`                       Access a container with privleges.
-`--tls-verify`                       Verify certificates when pulling container images.
-`--force`                            When running removal operations, Enable|Disable force.
-`--kill-signal`  **SIGNAL**          Set the kill signal. Default: SIGKILL
-`--start`        **POD_NAME**        Start a pod.
-`--stop`         **POD_NAME**        Stop a pod.
-`--rm`           **POD_NAME**        Remove a pod.
-`--kill`         **POD_NAME**        Kill a pod.
-`--inspect`      **POD_NAME**        Inspect a pod.
-`--play`         **POD_FILE**        Play a pod from a structured file.
-`--exec-run`     **CONTAINER_NAME**  Container name or ID to use for an execution container.
+* `--env`          **KEY=VALUE**       Comma separated environment variables. KEY=VALUE,...
+* `--command`      **COMMAND**         Run a command in an exec container.
+* `--privileged`                       Access a container with privleges.
+* `--tls-verify`                       Verify certificates when pulling container images.
+* `--force`                            When running removal operations, Enable|Disable force.
+* `--kill-signal`  **SIGNAL**          Set the kill signal. Default: SIGKILL
+* `--start`        **POD_NAME**        Start a pod.
+* `--stop`         **POD_NAME**        Stop a pod.
+* `--rm`           **POD_NAME**        Remove a pod.
+* `--kill`         **POD_NAME**        Kill a pod.
+* `--inspect`      **POD_NAME**        Inspect a pod.
+* `--play`         **POD_FILE**        Play a pod from a structured file.
+* `--exec-run`     **CONTAINER_NAME**  Container name or ID to use for an execution container.
 
 > When installing Directord with `pip`, the dev optional packages are
   needed on the client side to manage pods; `pip install directord[dev]`.
