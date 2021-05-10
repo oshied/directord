@@ -23,7 +23,7 @@ jobs:
           status: |
             Directord version ${{ github.event.release.tag_name }} has been released!
 
-            * ${{ steps.get-body.outputs.body }} ...
+            > ${{ steps.get-body.outputs.body }}
 
             Checkout the Pages - https://directord.com
             #Python Package - https://pypi.org/project/directord
