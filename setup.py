@@ -20,6 +20,14 @@ with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 
+REQUIREMENTS = {
+    "ui": ["flask"],
+    "dev": ["podman-py"],
+    "test": ["flake8", "coverage"],
+}
+REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
+
+
 setuptools.setup(
     name="directord",
     author="Kevin Carter",
@@ -48,7 +56,7 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/cloudnull/directord/issues",
     },
     python_requires=">=3.6",
-    extras_require={"ui": ["flask"], "dev": ["podman-py"]},
+    extras_require=REQUIREMENTS,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Information Technology",
