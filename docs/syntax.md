@@ -125,19 +125,19 @@ Directord cluster.
 
 > At this time pod management requires **podman**.
 
-* `--env`          **KEY=VALUE**       Comma separated environment variables. KEY=VALUE,...
-* `--command`      **COMMAND**         Run a command in an exec container.
-* `--privileged`                       Access a container with privleges.
-* `--tls-verify`                       Verify certificates when pulling container images.
-* `--force`                            When running removal operations, Enable|Disable force.
-* `--kill-signal`  **SIGNAL**          Set the kill signal. Default: SIGKILL
-* `--start`        **POD_NAME**        Start a pod.
-* `--stop`         **POD_NAME**        Stop a pod.
-* `--rm`           **POD_NAME**        Remove a pod.
-* `--kill`         **POD_NAME**        Kill a pod.
-* `--inspect`      **POD_NAME**        Inspect a pod.
-* `--play`         **POD_FILE**        Play a pod from a structured file.
-* `--exec-run`     **CONTAINER_NAME**  Container name or ID to use for an execution container.
+`--env` **KEY=VALUE** Comma separated environment variables. KEY=VALUE,...
+`--command` **COMMAND** Run a command in an exec container.
+`--privileged` Access a container with privleges.
+`--tls-verify` Verify certificates when pulling container images.
+`--force` When running removal operations, Enable|Disable force.
+`--kill-signal`  **SIGNAL** Set the kill signal. Default: SIGKILL
+`--start` **POD_NAME** Start a pod.
+`--stop` **POD_NAME** Stop a pod.
+`--rm` **POD_NAME** Remove a pod.
+`--kill` **POD_NAME** Kill a pod.
+`--inspect` **POD_NAME** Inspect a pod.
+`--play` **POD_FILE** Play a pod from a structured file.
+`--exec-run` **CONTAINER_NAME** Container name or ID to use for an execution container.
 
 > When installing Directord with `pip`, the dev optional packages are
   needed on the client side to manage pods; `pip install directord[dev]`.
