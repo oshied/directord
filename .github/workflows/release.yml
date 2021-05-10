@@ -12,8 +12,8 @@ jobs:
     steps:
       - id: get-body
         run: |
-          BODY="${{ github.event.release.body }}"
-          echo ""::set-output name=body::${BODY:0:70}"
+          BODY='''${{ github.event.release.body }}'''
+          echo """::set-output name=body::${BODY:0:77}..."""
       - uses: ethomson/send-tweet-action@v1
         with:
           consumer-key: ${{ secrets.TWITTER_CONSUMER_API_KEY }}
