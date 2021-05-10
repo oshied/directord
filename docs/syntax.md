@@ -129,7 +129,7 @@ Directord cluster.
 * `--command` **COMMAND** Run a command in an exec container.
 * `--privileged` Access a container with privleges.
 * `--tls-verify` Verify certificates when pulling container images.
-* `--force` When running removal operations, Enable|Disable force.
+* `--force` When running removal operations, Enable or Disable force.
 * `--kill-signal`  **SIGNAL** Set the kill signal. Default: SIGKILL
 * `--start` **POD_NAME** Start a pod.
 * `--stop` **POD_NAME** Stop a pod.
