@@ -80,5 +80,7 @@ jobs:
         push: true
         tags: |
           cloudnull/directord:stable
+          cloudnull/directord:${{ github.event.release.tag_name }}
           quay.io/cloudnull/directord:stable
+          quay.io/cloudnull/directord:${{ github.event.release.tag_name }}
         file: Containerfile
