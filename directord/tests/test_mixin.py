@@ -84,20 +84,6 @@ class TestMixin(unittest.TestCase):
     def tearDown(self):
         self.patched_object_sha1.stop()
 
-    def test_sanitize_args(self):
-
-        result = self.mixin.sanitized_args(execute=self.execute)
-        expected = [
-            "long",
-            "'{{",
-            "jinja",
-            "}}'",
-            "quoted",
-            "string",
-            "string",
-        ]
-        self.assertEqual(result, expected)
-
     def test_format_action_unknown(self):
         self.assertRaises(
             SystemExit,
@@ -112,8 +98,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "command": "long '{{ jinja }}' quoted string string",
                     "verb": "RUN",
+                    "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -131,9 +117,9 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "long '{{ jinja }}' quoted string string",
                     "targets": ["test_target"],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -151,8 +137,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "command": "long '{{ jinja }}' quoted string string",
                     "verb": "RUN",
+                    "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -170,8 +156,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "command": "long '{{ jinja }}' quoted string string",
                     "verb": "RUN",
+                    "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -190,8 +176,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "command": "long '{{ jinja }}' quoted string string",
                     "verb": "RUN",
+                    "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -208,10 +194,10 @@ class TestMixin(unittest.TestCase):
         mock_isfile.return_value = True
         mock_glob.return_value = ["/from/one", "/from/two"]
         expected_result = {
+            "verb": "COPY",
             "to": "/to/path/",
             "from": ["/from/one", "/from/two"],
             "blueprint": False,
-            "verb": "COPY",
             "timeout": 600,
             "run_once": False,
             "task_sha1sum": self.dummy_sha1,
@@ -230,8 +216,8 @@ class TestMixin(unittest.TestCase):
 
     def test_format_action_args(self):
         expected_result = {
-            "args": {"key": "value"},
             "verb": "ARG",
+            "args": {"key": "value"},
             "timeout": 600,
             "run_once": False,
             "task_sha1sum": self.dummy_sha1,
@@ -243,8 +229,8 @@ class TestMixin(unittest.TestCase):
 
     def test_format_action_envs(self):
         expected_result = {
-            "envs": {"key": "value"},
             "verb": "ENV",
+            "envs": {"key": "value"},
             "timeout": 600,
             "run_once": False,
             "task_sha1sum": self.dummy_sha1,
@@ -262,8 +248,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "workdir": "/test/path",
                     "verb": "WORKDIR",
+                    "workdir": "/test/path",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -281,8 +267,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "cachefile": "/test/path",
                     "verb": "CACHEFILE",
+                    "cachefile": "/test/path",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -298,8 +284,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "cacheevict": "test",
                     "verb": "CACHEEVICT",
+                    "cacheevict": "test",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -315,8 +301,8 @@ class TestMixin(unittest.TestCase):
             result,
             json.dumps(
                 {
-                    "query": "test",
                     "verb": "QUERY",
+                    "query": "test",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": self.dummy_sha1,
@@ -343,9 +329,9 @@ class TestMixin(unittest.TestCase):
             socket_path="/var/run/directord.sock",
             data=json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "command3",
                     "targets": ["test1", "test2", "test3"],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -380,13 +366,13 @@ class TestMixin(unittest.TestCase):
             socket_path="/var/run/directord.sock",
             data=json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "command3",
                     "targets": [
                         "test-override1",
                         "test-override2",
                         "test-override3",
                     ],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -414,9 +400,9 @@ class TestMixin(unittest.TestCase):
             socket_path="/var/run/directord.sock",
             data=json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "command3",
                     "targets": ["test1", "test2", "test3"],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -447,9 +433,9 @@ class TestMixin(unittest.TestCase):
             socket_path="/var/run/directord.sock",
             data=json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "command3",
                     "targets": ["test1", "test2", "test3"],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -479,9 +465,9 @@ class TestMixin(unittest.TestCase):
             socket_path="/var/run/directord.sock",
             data=json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "command3",
                     "targets": ["test1", "test2", "test3"],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -545,9 +531,9 @@ class TestMixin(unittest.TestCase):
             socket_path="/var/run/directord.sock",
             data=json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "command3",
                     "targets": ["test"],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
@@ -574,9 +560,9 @@ class TestMixin(unittest.TestCase):
             socket_path="/var/run/directord.sock",
             data=json.dumps(
                 {
+                    "verb": "RUN",
                     "command": "command 1",
                     "targets": ["test"],
-                    "verb": "RUN",
                     "timeout": 600,
                     "run_once": False,
                     "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",

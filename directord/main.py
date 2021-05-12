@@ -167,20 +167,8 @@ def _args(exec_args=None):
     parser_exec = subparsers.add_parser("exec", help="Execution mode help")
     parser_exec.add_argument(
         "--verb",
-        help="Module Invocation for exec. Choices: %(choices)s",
+        help="Module Invocation for exec.",
         metavar="STRING",
-        choices=[
-            "RUN",
-            "COPY",
-            "ADD",
-            "ARG",
-            "ENV",
-            "WORKDIR",
-            "CACHEFILE",
-            "CACHEEVICT",
-            "QUERY",
-            "POD",
-        ],
         required=True,
     )
     parser_exec.add_argument(

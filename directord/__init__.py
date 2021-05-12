@@ -14,12 +14,14 @@
 
 import contextlib
 import importlib
+import importlib.util as importlib_util
 import json
 import logging
 import multiprocessing
 import os
 import signal
 import socket
+import sys
 import time
 
 from logging import handlers
@@ -46,6 +48,87 @@ def getLogger(name, debug_logging=False):
         return LogSetup(debug_logging=debug_logging).default_logger(
             name=name.split(".")[0]
         )
+
+
+def send_data(socket_path, data):
+    """Send data to the socket path.
+
+    The send method takes serialized data and submits it to the given
+    socket path.
+
+    This method will return information provided by the server in
+    String format.
+
+    :returns: String
+    """
+
+    with UNIXSocketConnect(socket_path) as s:
+        s.sendall(data.encode())
+        fragments = []
+        while True:
+            chunk = s.recv(1024)
+            if not chunk:
+                break
+            else:
+                fragments.append(chunk)
+        return b"".join(fragments)
+
+
+def component_import(component, desc=None, job_id=None):
+    """Import a component and return a tuple with the class object.
+
+    If the component isn't a builtin the system will search
+    the shared path for a user defined component.
+
+    > Return: (Boolean, Boolean, Object|String)
+
+    :param component: String name of the component.
+    :type component: String
+    :param desc: Optional component description, used server side.
+    :type desc: String
+    :param job_id: Job UUID, used client side.
+    :type job_id: String
+    :returns: Tuple
+    """
+
+    try:
+        component_obj = importlib.import_module(
+            ".components.builtin_{}".format(component), package="directord"
+        )
+        transfer = None
+    except ImportError as e:
+        error = str(e)
+        paths = [
+            os.path.join(sys.base_prefix, "share/directord/components"),
+            "/etc/directord/components",
+        ]
+        if sys.base_prefix != sys.prefix:
+            paths.insert(
+                0, os.path.join(sys.prefix, "share/directord/components")
+            )
+
+        for path in paths:
+            try:
+                transfer = os.path.join(path, "{}.py".format(component))
+                name = "directord_user_component_{}".format(component)
+                spec = importlib_util.spec_from_file_location(name, transfer)
+                component_obj = importlib_util.module_from_spec(spec)
+                sys.modules[name] = component_obj
+                spec.loader.exec_module(component_obj)
+            except (ImportError, FileNotFoundError) as e:
+                error += "\n{}".format(str(e))
+            else:
+                break
+        else:
+            info = (
+                "Failure - Unknown Component\n"
+                "ERROR:{}\nCOMMAND:{}\nID:{}\nPATH:{}".format(
+                    error, component, job_id, paths
+                )
+            )
+            return False, transfer, info
+
+    return True, transfer, component_obj.Component()
 
 
 class LogSetup(object):
@@ -329,30 +412,6 @@ class UNIXSocketConnect(object):
         """Upon exit, close the unix socket."""
 
         self.sock.close()
-
-
-def send_data(socket_path, data):
-    """Send data to the socket path.
-
-    The send method takes serialized data and submits it to the given
-    socket path.
-
-    This method will return information provided by the server in
-    String format.
-
-    :returns: String
-    """
-
-    with UNIXSocketConnect(socket_path) as s:
-        s.sendall(data.encode())
-        fragments = []
-        while True:
-            chunk = s.recv(1024)
-            if not chunk:
-                break
-            else:
-                fragments.append(chunk)
-        return b"".join(fragments)
 
 
 class DirectordConnect(object):

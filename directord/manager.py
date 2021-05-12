@@ -12,8 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from directord import utils
-import jinja2
 import logging
 import os
 import socket
@@ -25,6 +23,7 @@ import zmq.auth as zmq_auth
 from zmq.auth.thread import ThreadAuthenticator
 
 import directord
+from directord import utils
 
 
 class Interface(directord.Processor):
@@ -84,7 +83,6 @@ class Interface(directord.Processor):
 
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
-        self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
         self.base_dir = "/etc/directord"
         self.public_keys_dir = os.path.join(self.base_dir, "public_keys")
         self.secret_keys_dir = os.path.join(self.base_dir, "private_keys")

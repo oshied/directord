@@ -7,6 +7,8 @@ Orchestration files allow directord to run any number of jobs against a given
 set of targets. The specification file is simple and made to be easy. Each
 file is loaded as an array and can contain many jobs.
 
+### Structure
+
 The values available within an orchestration file are `targets` and `jobs`.
 
 * `targets` is an array of strings.
@@ -19,7 +21,7 @@ The values available within an orchestration file are `targets` and `jobs`.
   jobs: []
 ```
 
-Within the orchestration file the "targets" key is optional. If this key is
+Within orchestration file the "targets" key is optional. If this key is
 undefined, Directord will run against all available targets.
 
 ``` yaml
@@ -36,11 +38,23 @@ the given command and the value is the execution.
   - RUN: "echo hello world"
 ```
 
+Each job can use either inline or YAML arguments. In the following example the
+orchestration is using a YAML argument to instruct the command to skip the
+cache.
+
+``` yaml
+---
+- jobs:
+  - RUN: "echo hello world"
+    vars:
+      skip_cache: true
+```
+
 > Several CLI options are available when orchestrating a deployment, such as
   `--restrict` and `--ignore-cache`. These option provide for the ability to
   replay specific tasks or forcefully ignore the client side cache.
 
-##### Example Orchestration file
+### Example Orchestration file
 
 This example orchestration file will copy the local client ssh keys from the
 directory `/home/centos/.ssh` to all nodes within the clister. Then, on the
@@ -51,7 +65,10 @@ three noted targets, `wget` will be installed.
 - jobs:
   - WORKDIR: /home/centos/.ssh
   - RUN: chmod 600 /home/centos/.ssh/* && chmod 700 /home/centos/.ssh
-  - ADD: --chown=centos:centos /home/centos/.ssh/* /home/centos/.ssh/
+  - ADD: /home/centos/.ssh/* /home/centos/.ssh/
+    vars:
+      chown: "centos:centos"
+  - RUN: --skip-cache echo hello world
 - targets:
   - df.next-c1.localdomain-client-1
   - df.next-c2.localdomain-client-1

@@ -38,7 +38,11 @@ Getting started is simple.
 * [Tutorials](tutorials.md)
 * [Library](library.md)
 
-Here's the documentation needed to be successful with Directord.
+Developing user defined components.
+
+* [Components](components.md)
+
+Documentation needed to be successful with Directord.
 
 * [Overview](overview.md)
 * [Installation](installation.md)

@@ -1,2 +1,3 @@
-recursive-include directord/templates *
+recursive-include directord/components *
 recursive-include directord/static *
+recursive-include directord/templates *
