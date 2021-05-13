@@ -23,6 +23,176 @@ try:
 except ImportError:
     AVAILABLE_PODMAN = False
 
+from directord import components
+
+
+class Component(components.ComponentBase):
+    def __init__(self):
+        super().__init__(desc="Process pod commands")
+
+    def args(self):
+        super().args()
+        self.parser.add_argument(
+            "--socket-path",
+            default="/var/run/podman/podman.sock",
+            help="Path to the podman socket. Default: %(default)s",
+        )
+        self.parser.add_argument(
+            "--env",
+            help="Comma separated environment variables. KEY=VALUE,...",
+            metavar="KEY=VALUE",
+        )
+        self.parser.add_argument(
+            "--command",
+            help="Run a command in an exec container.",
+            nargs="+",
+        )
+        self.parser.add_argument(
+            "--privileged",
+            action="store_true",
+            help="Access a container with privleges.",
+        )
+        self.parser.add_argument(
+            "--tls-verify",
+            action="store_true",
+            help="Verify certificates when pulling container images.",
+        )
+        self.parser.add_argument(
+            "--force",
+            action="store_true",
+            help="When running removal operations, Enable|Disable force.",
+        )
+        self.parser.add_argument(
+            "--kill-signal",
+            default="SIGKILL",
+            help="Set the kill signal. Default: %(default)s",
+            metavar="SIGNAL",
+        )
+        pod_group = self.parser.add_mutually_exclusive_group(required=True)
+        pod_group.add_argument(
+            "--start", help="Start a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--stop", help="Stop a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--rm", help="Remove a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--kill", help="Kill a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--inspect", help="Inspect a pod.", metavar="POD_NAME"
+        )
+        pod_group.add_argument(
+            "--play",
+            help="Play a pod from a structured file.",
+            metavar="POD_FILE",
+        )
+        pod_group.add_argument(
+            "--exec-run",
+            help="Create an execution container to run a command within.",
+            metavar="CONTAINER_NAME",
+        )
+
+    def server(self, exec_string, data, arg_vars):
+        """Return data from formatted transfer action.
+
+        :param exec_string: Inpute string from action
+        :type exec_string: String
+        :param data: Formatted data hash
+        :type data: Dictionary
+        :param arg_vars: Pre-Formatted arguments
+        :type arg_vars: Dictionary
+        :returns: Dictionary
+        """
+
+        super().server(exec_string=exec_string, data=data, arg_vars=arg_vars)
+        if self.known_args.start:
+            data["pod_action"] = "start"
+            data["kwargs"] = dict(
+                name=self.known_args.start, timeout=self.known_args.timeout
+            )
+        elif self.known_args.stop:
+            data["pod_action"] = "stop"
+            data["kwargs"] = dict(
+                name=self.known_args.stop, timeout=self.known_args.timeout
+            )
+        elif self.known_args.rm:
+            data["pod_action"] = "rm"
+            data["kwargs"] = dict(
+                name=self.known_args.rm, force=self.known_args.force
+            )
+        elif self.known_args.kill:
+            data["pod_action"] = "kill"
+            data["kwargs"] = dict(
+                name=self.known_args.kill, signal=self.known_args.kill_signal
+            )
+        elif self.known_args.inspect:
+            data["pod_action"] = "inspect"
+            data["kwargs"] = dict(name=self.known_args.inspect)
+        elif self.known_args.play:
+            data["pod_action"] = "play"
+            data["kwargs"] = dict(
+                pod_file=self.known_args.play,
+                tls_verify=self.known_args.tls_verify,
+            )
+        elif self.known_args.exec_run:
+            data["pod_action"] = "exec_run"
+            data["kwargs"] = dict(
+                name=self.known_args.exec_run,
+                privileged=self.known_args.privileged,
+                command=self.known_args.command,
+            )
+            if self.known_args.env:
+                data["kwargs"]["env"] = self.known_args.env.split(",")
+
+        data["socket_path"] = self.known_args.socket_path
+        return data
+
+    def client(self, cache, conn, job):
+        """Run pod command operation.
+
+        :param conn: Connection object used to store information used in a
+                     return message.
+        :type conn: Object
+        :param command: Work directory path.
+        :type command: String
+        :param job: Information containing the original job specification.
+        :type job: Dictionary
+        :returns: tuple
+        """
+
+        super().client(conn=conn, cache=cache, job=job)
+        if not AVAILABLE_PODMAN:
+            return (
+                None,
+                "The required podman-py library is not installed",
+                False,
+            )
+        try:
+            with PodmanPod(socket=job["socket_path"]) as p:
+                action = getattr(p, job["pod_action"], None)
+                if action:
+                    status, data = action(**job["kwargs"])
+                    if data:
+                        data = json.dumps(data)
+                    if status:
+                        return data, None, status
+                    else:
+                        return None, data, status
+                else:
+                    return (
+                        None,
+                        (
+                            "The action [ {action} ] failed to return"
+                            "  a function".format(action=job["pod_action"])
+                        ),
+                        False,
+                    )
+        except Exception as e:
+            return None, str(e), False
+
 
 class PodmanConnect(object):
     """Connect to the podman unix socket."""

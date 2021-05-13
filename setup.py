@@ -35,7 +35,7 @@ setuptools.setup(
     description=(
         "A deployment framework built to manage the data center" " life cycle."
     ),
-    version="0.4.0",
+    version="0.5.0",
     packages=["directord"],
     include_package_data=True,
     zip_safe=False,
@@ -75,6 +75,10 @@ setuptools.setup(
         ]
     },
     data_files=[
+        (
+            "share/directord/components",
+            [i for i in glob.glob("components/*") if os.path.isfile(i)],
+        ),
         (
             "share/directord/orchestrations",
             [i for i in glob.glob("orchestrations/*") if os.path.isfile(i)],

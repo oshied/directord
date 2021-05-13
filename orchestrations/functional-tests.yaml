@@ -15,6 +15,11 @@
   # Test setting a cached object using the the stdout of a RUN
   - RUN: --stdout-arg test_stdout_arg echo hello world 2
 
+  # Test setting a cached object using the the stdout of a RUN using an arg_var.
+  - RUN: echo hello world 3
+    vars:
+      stdout_arg: test_stdout_arg2
+
   # Test setting a cached object using the ARG verb
   - ARG: test_runtime_arg argument
 
@@ -54,6 +59,7 @@
   # Test ADD with --blueprint and test for blueprinted environment argument.
   - ADD: --blueprint files/test-blueprint.yaml.j2 /tmp/test/
   - RUN: grep test_stdout_arg /tmp/test/test-blueprint.yaml.j2 | grep "hello world 2"
+  - RUN: grep test_stdout_arg2 /tmp/test/test-blueprint.yaml.j2 | grep "hello world 3"
 
   # Test ADD with --chown user and --blueprint and test for blueprinted argument.
   - ADD: --chown=0 --blueprint files/test-blueprint.yaml.j2 /tmp/test/test-blueprint.yaml-0
