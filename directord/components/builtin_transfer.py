@@ -17,6 +17,7 @@ import grp
 import os
 import pwd
 import shlex
+import traceback
 
 from directord import components
 from directord import utils
@@ -24,9 +25,13 @@ from directord import utils
 
 class Component(components.ComponentBase):
     def __init__(self):
+        """Initialize the component cache class."""
+
         super().__init__(desc="Process transfer commands")
 
     def args(self):
+        """Set default arguments for a component."""
+
         super().args()
         self.parser.add_argument("--chown", help="Set the file ownership")
         self.parser.add_argument(
@@ -152,9 +157,8 @@ class Component(components.ComponentBase):
                     else:
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
-            stderr = "Failure when creating file. FAILURE:{}".format(e)
-            self.log.critical(stderr)
-            return None, stderr, False
+            self.log.critical(str(e))
+            return None, traceback.format_exc(), False
 
         if blueprint and not self.file_blueprinter(
             cache=cache, file_to=file_to

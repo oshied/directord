@@ -210,14 +210,6 @@ class Client(manager.Interface):
 
         self.log.debug("Running component:%s", command.decode())
 
-        if cached:
-            # TODO(cloudnull): Figure out how to skip cache when file
-            #                  transfering.
-            self.log.info("Cache hit on {}, task skipped.".format(job_sha1))
-            conn.info = b"job skipped"
-            conn.job_state = self.job_end
-            return None, None, None
-
         component_kwargs = dict(conn=conn, cache=cache, job=job)
 
         if command in [b"ARG", b"ENV"]:
@@ -238,7 +230,15 @@ class Client(manager.Interface):
             self.log.warning(component)
             return None, None, success
 
-        return component.client(**component_kwargs)
+        if cached and component.cacheable:
+            # TODO(cloudnull): Figure out how to skip cache when file
+            #                  transfering.
+            self.log.info("Cache hit on {}, task skipped.".format(job_sha1))
+            conn.info = b"job skipped"
+            conn.job_state = self.job_end
+            return None, None, None
+        else:
+            return component.client(**component_kwargs)
 
     def run_job(self, sentinel=False):
         """Job entry point.

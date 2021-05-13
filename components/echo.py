@@ -20,10 +20,12 @@ class Component(components.ComponentBase):
         super().__init__(desc="Process echo commands")
 
     def args(self):
+        """Set default arguments for a component."""
+
         super().args()
         self.parser.add_argument(
             "echo",
-            help=("add echo statement for tests and example."),
+            help="add echo statement for tests and example.",
         )
 
     def server(self, exec_string, data, arg_vars):

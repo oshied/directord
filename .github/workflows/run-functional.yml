@@ -14,17 +14,17 @@ jobs:
       - name: Run install
         run: sudo bash tools/prod-setup.sh
       - name: Re-install self
-        run: sudo /opt/directord/bin/pip install --upgrade .[ui,dev]
+        run: sudo /opt/directord/bin/pip install --upgrade .[all]
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
           sudo systemctl daemon-reload
-          sudo systemctl start directord-server
+          sudo systemctl restart directord-server
       - name: Run client service install
         run: |
           sudo /opt/directord/bin/directord-client-systemd
           sudo systemctl daemon-reload
-          sudo systemctl start directord-client
+          sudo systemctl restart directord-client
       - name: Execute functional check
         run: |
           cd /opt/directord/share/directord/orchestrations

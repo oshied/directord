@@ -33,20 +33,20 @@ def run_command(
 
     The options available:
 
-    * ``shell`` to be enabled or disabled, which provides the ability
-        to execute arbitrary stings or not. if disabled commands must be
-        in the format of a ``list``
+    * `shell` to be enabled or disabled, which provides the ability
+      to execute arbitrary stings or not. if disabled commands must be
+      in the format of a `list`
 
-    * ``env`` is an environment override and or manipulation setting
-        which sets environment variables within the locally executed
-        shell.
+    * `env` is an environment override and or manipulation setting
+      which sets environment variables within the locally executed
+      shell.
 
-    * ``execute`` changes the interpreter which is executing the
-        command(s).
+    * `execute` changes the interpreter which is executing the
+      command(s).
 
-    * ``return_codes`` defines the return code that the command must
-        have in order to ensure success. This can be a list of return
-        codes if multiple return codes are acceptable.
+    * `return_codes` defines the return code that the command must
+      have in order to ensure success. This can be a list of return
+      codes if multiple return codes are acceptable.
 
     :param command: String
     :param shell: Boolean

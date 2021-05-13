@@ -178,11 +178,11 @@ class Component(components.ComponentBase):
 
 To build a component, only three methods are required. `args`, `server`, `client`.
 
-| Method   | Description                                          |
-| ---------| ---------------------------------------------------- |
-| `args`   | Defines arguments used within a component            |
-| `server` | Encompasses everything that must be done server side |
-| `client` | Encompasses everything that will be done client side |
+| Method    | Return                             | Description                                                                   |
+| --------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| `args`    | None                               | Defines arguments used within a component. Sets component arguments.          |
+| `server`  | Dictionary -> {...}                | Encompasses everything that must be done server side. Returns formatted data. |
+| `client`  | Tuple -> (STDOUT, STDERR, OUTCOME) | Encompasses everything that will be done client side. Returns results.        |
 
 Once the user defined component is developed and in-place, it responds just like
 a built-in, with all the same syntactic guarantees across executions and

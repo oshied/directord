@@ -18,15 +18,17 @@ from directord import utils
 
 class Component(components.ComponentBase):
     def __init__(self):
+        """Initialize the component cache class."""
+
         super().__init__(desc="Process run commands")
 
     def args(self):
+        """Set default arguments for a component."""
+
         super().args()
         self.parser.add_argument(
             "--stdout-arg",
-            help=(
-                "Stores the stdout of a given command as a cached" " argument."
-            ),
+            help="Stores the stdout of a given command as a cached argument.",
         )
 
     def server(self, exec_string, data, arg_vars):

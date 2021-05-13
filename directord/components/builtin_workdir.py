@@ -13,15 +13,20 @@
 #   under the License.
 
 import os
+import traceback
 
 from directord import components
 
 
 class Component(components.ComponentBase):
     def __init__(self):
+        """Initialize the component cache class."""
+
         super().__init__(desc="Process workdir commands")
 
     def args(self):
+        """Set default arguments for a component."""
+
         super().args()
         self.parser.add_argument("workdir", help="Create a directory.")
 
@@ -65,7 +70,8 @@ class Component(components.ComponentBase):
         try:
             os.makedirs(workdir, exist_ok=True)
         except (FileExistsError, PermissionError) as e:
-            return None, str(e), False
+            self.log.critical(str(e))
+            return None, traceback.format_exc(), False
         else:
             update_info = "Directory {} OK".format(workdir)
             return update_info, None, True
