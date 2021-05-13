@@ -183,3 +183,75 @@ To build a component, only three methods are required. `args`, `server`, `client
 | `args`   | Defines arguments used within a component            |
 | `server` | Encompasses everything that must be done server side |
 | `client` | Encompasses everything that will be done client side |
+
+Once the user defined component is developed and in-place, it responds just like
+a built-in, with all the same syntactic guarantees across executions and
+orchestrations.
+
+> The following shell output is from the invocation of the above user-defined
+  component, which can also be seen
+  [here](https://github.com/cloudnull/directord/blob/main/components/echo.py).
+
+
+###### Help Information From User Defined Component
+
+``` shell
+$ directord exec --verb ECHO "--exec-help true"
+usage: directord [--exec-help] [--skip-cache] [--run-once] [--timeout TIMEOUT] echo
+
+Process echo commands
+
+positional arguments:
+  echo               add echo statement for tests and example.
+
+optional arguments:
+  --exec-help        Show this execution help message.
+  --skip-cache       For a task to skip the on client cache.
+  --run-once         Force a given task to run once.
+  --timeout TIMEOUT  Set the action timeout. Default 600.
+```
+
+###### Executing a User Defined Component
+
+``` shell
+$ directord exec --verb ECHO "true"
+Job received. Task ID: 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
+```
+
+###### Inspecting an Execution
+
+``` shell
+$ directord --debug manage --job-info 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
+DEBUG Executing Management Command:list-jobs
+KEY                   VALUE
+--------------------  -------------------------------------------------------
+ID                    09a0d4aa-ff84-40e4-a7e2-88be8dff841a
+ACCEPTED              True
+INFO                  df.next-c0.localdomain =
+STDOUT                df.next-c0.localdomain = true
+STDERR                df.next-c0.localdomain =
+NODES                 df.next-c0.localdomain
+VERB                  ECHO
+TASK_SHA1             86823a46fb4af75c9f93c8bedb301dfa8968321a
+JOB_DEFINITION        verb = ECHO
+                      echo = true
+                      timeout = 600
+                      task_sha1sum = 86823a46fb4af75c9f93c8bedb301dfa8968321a
+                      task = 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
+                      parent_id = 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
+PARENT_JOB_ID         09a0d4aa-ff84-40e4-a7e2-88be8dff841a
+PROCESSING
+SUCCESS               df.next-c0.localdomain
+EXECUTION_TIME        0.0037195682525634766
+TOTAL_ROUNDTRIP_TIME  0.023545026779174805
+
+Total Items: 14
+```
+
+###### Building an Orchestration
+
+``` yaml
+---
+- jobs:
+  - ECHO: Hello World
+```
