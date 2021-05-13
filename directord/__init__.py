@@ -228,7 +228,7 @@ class LogSetup(object):
     def return_logfile(filename, log_dir="/var/log"):
         """Return a path for logging file.
 
-        If ``log_dir`` exists and the userID is 0 the log file will be written
+        If `log_dir` exists and the userID is 0 the log file will be written
         to the provided log directory. If the UserID is not 0 or log_dir does
         not exist the log file will be written to the users home folder.
 

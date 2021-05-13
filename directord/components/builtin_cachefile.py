@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import traceback
 import yaml
 
 from directord import components
@@ -19,9 +20,17 @@ from directord import components
 
 class Component(components.ComponentBase):
     def __init__(self):
+        """Initialize the component cachefile class.
+
+        This component is not cacheable.
+        """
+
         super().__init__(desc="Process cachefile commands")
+        self.cacheable = False
 
     def args(self):
+        """Set default arguments for a component."""
+
         super().args()
         self.parser.add_argument(
             "cachefile",
@@ -62,7 +71,8 @@ class Component(components.ComponentBase):
             with open(job["cachefile"]) as f:
                 cachefile_args = yaml.safe_load(f)
         except Exception as e:
-            return None, str(e), False
+            self.log.critical(str(e))
+            return None, traceback.format_exc(), False
         else:
             self.set_cache(
                 cache=cache,

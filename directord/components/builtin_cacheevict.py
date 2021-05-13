@@ -17,9 +17,17 @@ from directord import components
 
 class Component(components.ComponentBase):
     def __init__(self):
+        """Initialize the component cacheevict class.
+
+        This component is not cacheable.
+        """
+
         super().__init__(desc="Process cacheevict commands")
+        self.cacheable = False
 
     def args(self):
+        """Set default arguments for a component."""
+
         super().args()
         self.parser.add_argument(
             "cacheevict",

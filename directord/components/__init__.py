@@ -21,11 +21,24 @@ from directord import utils
 
 
 class ComponentBase(object):
+    """Component base class."""
+
     def __init__(self, desc=None):
+        """Initialize the component base class.
+
+        When setting up a component, the init should be inheritted allowing
+        user defined components to have access to the full suite of defaults.
+
+        > Set the `self.cacheable` object True|False according to how the
+          component should be treated in terms of on system cache.
+        """
+
         self.desc = desc
         self.log = directord.getLogger(name="directord")
-        self.known_args, self.unknown_args = None, None
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
+        self.known_args = None
+        self.unknown_args = None
+        self.cacheable = True  # Enables|Disables component caching
 
     @staticmethod
     def sanitized_args(execute):

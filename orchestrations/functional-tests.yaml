@@ -80,3 +80,8 @@
 
   # Test evicting all the cache
   - CACHEEVICT: all
+
+  # Ensure custom components are working.
+  - ECHO: test
+    vars:
+      skip_cache: true

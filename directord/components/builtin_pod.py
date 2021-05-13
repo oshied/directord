@@ -14,6 +14,7 @@
 
 import json
 import os
+import traceback
 import yaml
 
 try:
@@ -28,9 +29,13 @@ from directord import components
 
 class Component(components.ComponentBase):
     def __init__(self):
+        """Initialize the component cache class."""
+
         super().__init__(desc="Process pod commands")
 
     def args(self):
+        """Set default arguments for a component."""
+
         super().args()
         self.parser.add_argument(
             "--socket-path",
@@ -191,7 +196,8 @@ class Component(components.ComponentBase):
                         False,
                     )
         except Exception as e:
-            return None, str(e), False
+            self.log.critical(str(e))
+            return None, traceback.format_exc(), False
 
 
 class PodmanConnect(object):
@@ -206,7 +212,9 @@ class PodmanConnect(object):
         :type socket: String
         """
 
-        self.pod = PodmanClient("unix://{socket}".format(socket=socket))
+        self.pod = PodmanClient(
+            base_url="unix://{socket}".format(socket=socket)
+        )
         self.api = self.pod.api
 
     def __exit__(self, *args, **kwargs):

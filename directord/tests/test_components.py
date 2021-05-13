@@ -481,9 +481,6 @@ class TestComponents(unittest.TestCase):
         )
 
         self.assertEqual(stdout, None)
-        self.assertEqual(
-            stderr, "[Errno 2] No such file or directory: '/target/file1'"
-        )
         self.assertEqual(outcome, False)
 
         mock_log_debug.assert_called()
@@ -550,9 +547,7 @@ class TestComponents(unittest.TestCase):
 
     @patch("logging.Logger.debug", autospec=True)
     @patch("logging.Logger.warning", autospec=True)
-    def test__job_executor_cacheevict_unknown(
-        self, mock_log_debug, mock_log_warning
-    ):
+    def test__job_executor_unknown(self, mock_log_debug, mock_log_warning):
         fake_cache = tests.FakeCache()
         stdout, stderr, outcome = self.client._job_executor(
             conn=MagicMock(),
