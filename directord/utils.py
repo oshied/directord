@@ -15,74 +15,10 @@
 import hashlib
 import json
 import os
-import subprocess
 import uuid
 import yaml
 
 import paramiko
-
-
-def run_command(
-    command,
-    shell=True,
-    env=None,
-    execute="/bin/sh",
-    return_codes=None,
-):
-    """Run a shell command.
-
-    The options available:
-
-    * `shell` to be enabled or disabled, which provides the ability
-      to execute arbitrary stings or not. if disabled commands must be
-      in the format of a `list`
-
-    * `env` is an environment override and or manipulation setting
-      which sets environment variables within the locally executed
-      shell.
-
-    * `execute` changes the interpreter which is executing the
-      command(s).
-
-    * `return_codes` defines the return code that the command must
-      have in order to ensure success. This can be a list of return
-      codes if multiple return codes are acceptable.
-
-    :param command: String
-    :param shell: Boolean
-    :param env: Dictionary
-    :param execute: String
-    :param return_codes: Integer
-    :returns: Truple
-    """
-
-    if env:
-        _env = dict(os.environ)
-        _env.update(env)
-        env = _env
-    else:
-        env = os.environ
-
-    stdout = subprocess.PIPE
-
-    if return_codes is None:
-        return_codes = [0]
-
-    stderr = subprocess.PIPE
-    process = subprocess.Popen(
-        command,
-        stdout=stdout,
-        stderr=stderr,
-        executable=execute,
-        env=env,
-        shell=shell,
-    )
-
-    output, error = process.communicate()
-    if process.returncode not in return_codes:
-        return output, error, False
-    else:
-        return output, error, True
 
 
 def dump_yaml(file_path, data):

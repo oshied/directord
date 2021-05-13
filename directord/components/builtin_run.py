@@ -13,7 +13,6 @@
 #   under the License.
 
 from directord import components
-from directord import utils
 
 
 class Component(components.ComponentBase):
@@ -74,7 +73,7 @@ class Component(components.ComponentBase):
         if not command:
             return None, None, False
 
-        stdout, stderr, outcome = utils.run_command(
+        stdout, stderr, outcome = self.run_command(
             command=command, env=cache.get("envs")
         )
         conn.info = command.encode()

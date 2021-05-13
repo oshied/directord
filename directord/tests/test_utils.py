@@ -17,25 +17,10 @@ import uuid
 
 from unittest.mock import patch
 
-from directord import tests
 from directord import utils
 
 
 class TestUtils(unittest.TestCase):
-    @patch("directord.utils.subprocess.Popen")
-    def test_run_command_success(self, popen):
-        popen.return_value = tests.FakePopen()
-        stdout, _, outcome = utils.run_command(command="test_command")
-        self.assertEqual(stdout, "stdout")
-        self.assertEqual(outcome, True)
-
-    @patch("directord.utils.subprocess.Popen")
-    def test_run_command_fail(self, popen):
-        popen.return_value = tests.FakePopen(return_code=1)
-        _, stderr, outcome = utils.run_command(command="test_command")
-        self.assertEqual(stderr, "stderr")
-        self.assertEqual(outcome, False)
-
     def test_dump_yaml(self):
         m = unittest.mock.mock_open()
         with patch("builtins.open", m):

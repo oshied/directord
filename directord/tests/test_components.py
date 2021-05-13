@@ -272,7 +272,25 @@ class TestComponents(unittest.TestCase):
         mock_log_debug.assert_called()
         mock_log_info.assert_called()
 
-    @patch("directord.utils.run_command", autospec=True)
+    @patch("subprocess.Popen")
+    def test_run_command_success(self, popen):
+        popen.return_value = tests.FakePopen()
+        stdout, _, outcome = components.ComponentBase().run_command(
+            command="test_command"
+        )
+        self.assertEqual(stdout, "stdout")
+        self.assertEqual(outcome, True)
+
+    @patch("subprocess.Popen")
+    def test_run_command_fail(self, popen):
+        popen.return_value = tests.FakePopen(return_code=1)
+        _, stderr, outcome = components.ComponentBase().run_command(
+            command="test_command"
+        )
+        self.assertEqual(stderr, "stderr")
+        self.assertEqual(outcome, False)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_run(self, mock_log_debug, mock_run_command):
         mock_run_command.return_value = None, None, True
@@ -591,7 +609,7 @@ class TestComponents(unittest.TestCase):
         )
         mock_log_critical.assert_called()
 
-    @patch("directord.utils.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__run_command(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         mock_conn = MagicMock()
@@ -603,7 +621,7 @@ class TestComponents(unittest.TestCase):
         mock_run_command.assert_called_with(command="command 1 test", env=None)
         self.assertEqual(mock_conn.info, b"command 1 test")
 
-    @patch("directord.utils.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__run_command_stdout_args(self, mock_run_command):
         mock_run_command.return_value = [b"testing", b"", True]
         mock_conn = MagicMock()

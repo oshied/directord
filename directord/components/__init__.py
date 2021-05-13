@@ -13,6 +13,9 @@
 #   under the License.
 
 import argparse
+import os
+import subprocess
+import yaml
 
 import jinja2
 
@@ -39,6 +42,118 @@ class ComponentBase(object):
         self.known_args = None
         self.unknown_args = None
         self.cacheable = True  # Enables|Disables component caching
+
+    @staticmethod
+    def run_command(
+        command,
+        shell=True,
+        env=None,
+        execute="/bin/sh",
+        return_codes=None,
+    ):
+        """Run a shell command.
+
+        The options available:
+
+        * `shell` to be enabled or disabled, which provides the ability
+        to execute arbitrary stings or not. if disabled commands must be
+        in the format of a `list`
+
+        * `env` is an environment override and or manipulation setting
+        which sets environment variables within the locally executed
+        shell.
+
+        * `execute` changes the interpreter which is executing the
+        command(s).
+
+        * `return_codes` defines the return code that the command must
+        have in order to ensure success. This can be a list of return
+        codes if multiple return codes are acceptable.
+
+        :param command: String
+        :param shell: Boolean
+        :param env: Dictionary
+        :param execute: String
+        :param return_codes: Integer
+        :returns: Truple
+        """
+
+        if env:
+            _env = dict(os.environ)
+            _env.update(env)
+            env = _env
+        else:
+            env = os.environ
+
+        stdout = subprocess.PIPE
+
+        if return_codes is None:
+            return_codes = [0]
+
+        stderr = subprocess.PIPE
+        process = subprocess.Popen(
+            command,
+            stdout=stdout,
+            stderr=stderr,
+            executable=execute,
+            env=env,
+            shell=shell,
+        )
+
+        output, error = process.communicate()
+        if process.returncode not in return_codes:
+            return output, error, False
+        else:
+            return output, error, True
+
+    def options_converter(self, documentation):
+        """Convert an options YAML to Arguments.
+
+        :param documentation: YAML content.
+        :type documentation: String
+        """
+
+        argument_spec = yaml.safe_load(documentation)["options"]
+        for key, value in argument_spec.items():
+            options = dict()
+            description = value.pop("description", None)
+            if description:
+                if isinstance(description, list):
+                    description = " ".join(description)
+                options["help"] = description
+
+            default = value.pop("default", None)
+            if default:
+                options["default"] = default
+
+            required = value.pop("required", None)
+            if isinstance(required, bool):
+                options["required"] = required
+            elif isinstance(required, str) and required.lower() in [
+                "yes",
+                "true",
+            ]:
+                options["required"] = True
+
+            arg_type = value.pop("type", None)
+            if isinstance(arg_type, str):
+                arg_type = arg_type.lower()
+                if arg_type == "bool":
+                    options["action"] = "store_true"
+                elif arg_type == "list":
+                    options["type"] = list
+                elif arg_type == "dict":
+                    options["type"] = dict
+                elif arg_type == "int":
+                    options["type"] = int
+                elif arg_type == "str":
+                    options["type"] = str
+
+            choices = value.pop("choices", None)
+            if choices:
+                options["choices"] = choices
+
+            self.parser.add_argument("--{}".format(key), **options)
 
     @staticmethod
     def sanitized_args(execute):
