@@ -52,16 +52,15 @@ else
 fi
 
 # Create development workspace
-if [ ! -d ${VENV_PATH} ]; then
-  ${PYTHON_BIN} -m venv ${VENV_PATH}
-else
-  ${PYTHON_BIN} -m venv --upgrade ${VENV_PATH}
+rm -rf ${VENV_PATH}
+${PYTHON_BIN} -m venv ${VENV_PATH}
+${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep
+
+${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
+
+if [ ! -d "${CLONE_PATH}" ]; then
+  git clone https://github.com/cloudnull/directord ${CLONE_PATH}
 fi
-
-${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep build
-
-rm -rf ${CLONE_PATH}
-git clone https://github.com/cloudnull/directord ${CLONE_PATH}
 ${VENV_PATH}/bin/pip install ${CLONE_PATH}[all]
 
 if [ "${SETUP}" = true ]; then
