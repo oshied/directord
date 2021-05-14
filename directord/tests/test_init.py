@@ -195,9 +195,9 @@ class TestProcessor(unittest.TestCase):
     def test_wq_prune_valid(self):
         workers = self.processor.wq_prune(
             workers={
-                "valid1": time.time() + 2,
-                "invalid1": time.time() - 2,
-                "invalid2": time.time() - 3,
+                "valid1": {"time": time.time() + 2},
+                "invalid1": {"time": time.time() - 2},
+                "invalid2": {"time": time.time() - 3},
             }
         )
         self.assertEqual(len(workers), 1)
@@ -205,9 +205,9 @@ class TestProcessor(unittest.TestCase):
         self.log.debug.called_once()
 
     def test_wq_empty(self):
-        self.processor.workers["valid1"] = (time.time() + 2,)
-        self.processor.workers["invalid1"] = (time.time() - 2,)
-        self.processor.workers["invalid2"] = time.time() - 3
+        self.processor.workers["valid1"] = {"time": time.time() + 2}
+        self.processor.workers["invalid1"] = {"time": time.time() - 2}
+        self.processor.workers["invalid2"] = {"time": time.time() - 3}
         self.assertEqual(len(self.processor.workers), 3)
         self.processor.wq_empty(workers=self.processor.workers)
         self.assertEqual(len(self.processor.workers), 0)

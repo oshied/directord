@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-set -exo
+set -evo
 
 VENV_PATH="${1:-/opt/directord}"
 CLONE_PATH="${3:-/opt/directord-src}"
+WHEEL_PATH="${WHEEL_PATH:-/opt/directord-src/dist}"
 SETUP="${4:-true}"
-
-#!/usr/bin/env bash
-set -eo
 
 . /etc/os-release
 
@@ -55,16 +53,26 @@ else
 fi
 
 # Create development workspace
-rm -rf ${VENV_PATH}
-${PYTHON_BIN} -m venv ${VENV_PATH}
-${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep
-
-${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
-
-if [ ! -d "${CLONE_PATH}" ]; then
-  git clone https://github.com/cloudnull/directord ${CLONE_PATH}
+if [ ! -d ${VENV_PATH} ]; then
+  ${PYTHON_BIN} -m venv ${VENV_PATH}
+else
+  ${PYTHON_BIN} -m venv --upgrade ${VENV_PATH}
 fi
-${VENV_PATH}/bin/pip install ${CLONE_PATH}[ui,dev]
+
+${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep build
+
+if [ -f "${WHEEL_PATH}" ]; then
+  ${VENV_PATH}/bin/pip install ${WHEEL_PATH}[all]
+else
+  if [ ! -d "${CLONE_PATH}" ]; then
+    git clone https://github.com/cloudnull/directord ${CLONE_PATH}
+  fi
+  ${VENV_PATH}/bin/pip install ${CLONE_PATH}[all]
+  pushd ${CLONE_PATH}
+    ${VENV_PATH}/bin/python3 -m build
+    cp dist/directord*.tar.gz /tmp/directord.tar.gz
+  popd
+fi
 
 if [ "${SETUP}" = true ]; then
   echo -e "\nDirectord is setup and installed within [ ${VENV_PATH} ]"

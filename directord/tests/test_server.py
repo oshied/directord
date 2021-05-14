@@ -85,7 +85,7 @@ class TestServer(unittest.TestCase):
                 self.server.heartbeat_ready,
                 None,
                 None,
-                None,
+                b"x.x.x",
                 None,
                 None,
             )
@@ -117,7 +117,7 @@ class TestServer(unittest.TestCase):
                 self.server.heartbeat_notice,
                 None,
                 None,
-                None,
+                b"x.x.x",
                 None,
                 None,
             )
@@ -819,14 +819,17 @@ class TestServer(unittest.TestCase):
         conn.recv.return_value = json.dumps({"manage": "list-nodes"}).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
-        self.server.workers = {b"test-node1": 12345, b"test-node2": 12345}
+        self.server.workers = {
+            b"test-node1": {"time": 12345, "version": "x.x.x"},
+            b"test-node2": {"time": 12345, "version": "x.x.x"},
+        }
         self.server.run_socket_server(sentinel=True)
         mock_unlink.assert_called_with(self.args.socket_path)
         conn.sendall.assert_called_with(
             json.dumps(
                 [
-                    ["test-node1", {"expiry": 12344}],
-                    ["test-node2", {"expiry": 12344}],
+                    ["test-node1", {"version": "x.x.x", "expiry": 12344}],
+                    ["test-node2", {"version": "x.x.x", "expiry": 12344}],
                 ]
             ).encode()
         )

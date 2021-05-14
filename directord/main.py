@@ -36,6 +36,11 @@ def _args(exec_args=None):
         description="Deployment Framework Next.", prog="Directord"
     )
     parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=directord.__version__),
+    )
+    parser.add_argument(
         "--config-file",
         help="File path for client configuration. Default: %(default)s",
         metavar="STRING",
@@ -477,6 +482,8 @@ def main():
                 else:
                     restrict_headings = [
                         "EXPIRY",
+                        "VERSION",
+                        "UPTIME",
                     ]
                 _tabulated_data = _mixin.return_tabulated_data(
                     data=data, restrict_headings=restrict_headings

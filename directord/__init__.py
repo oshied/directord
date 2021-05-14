@@ -27,6 +27,8 @@ import time
 from logging import handlers
 from types import SimpleNamespace
 
+from directord.meta import __version__  # noqa
+
 
 def getLogger(name, debug_logging=False):
     """Return a logger from a given name.
@@ -74,7 +76,7 @@ def send_data(socket_path, data):
         return b"".join(fragments)
 
 
-def component_import(component, desc=None, job_id=None):
+def component_import(component, job_id=None):
     """Import a component and return a tuple with the class object.
 
     If the component isn't a builtin the system will search
@@ -84,8 +86,6 @@ def component_import(component, desc=None, job_id=None):
 
     :param component: String name of the component.
     :type component: String
-    :param desc: Optional component description, used server side.
-    :type desc: String
     :param job_id: Job UUID, used client side.
     :type job_id: String
     :returns: Tuple
@@ -310,7 +310,7 @@ class Processor(object):
             return {
                 key: value
                 for (key, value) in workers.items()
-                if time.time() <= value
+                if time.time() <= value["time"]
             }
         finally:
             self.log.debug(

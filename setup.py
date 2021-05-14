@@ -15,6 +15,8 @@ import glob
 import os
 import setuptools
 
+from directord import meta
+
 
 with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
@@ -30,12 +32,12 @@ REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 
 setuptools.setup(
     name="directord",
-    author="Kevin Carter",
-    author_email="kevin@cloudnull.com",
+    author=meta.__author__,
+    author_email=meta.__email__,
     description=(
         "A deployment framework built to manage the data center" " life cycle."
     ),
-    version="0.5.0",
+    version=meta.__version__,
     packages=["directord"],
     include_package_data=True,
     zip_safe=False,

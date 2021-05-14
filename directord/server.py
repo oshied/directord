@@ -97,7 +97,7 @@ class Server(manager.Interface):
                     _,
                     control,
                     _,
-                    _,
+                    data,
                     _,
                     _,
                     _,
@@ -108,7 +108,16 @@ class Server(manager.Interface):
                             identity.decode()
                         )
                     )
-                    expire = self.workers[identity] = self.get_expiry
+                    expire = self.get_expiry
+                    worker_metadata = {"time": expire}
+                    try:
+                        loaded_data = json.loads(data.decode())
+                    except Exception:
+                        pass
+                    else:
+                        worker_metadata.update(loaded_data)
+
+                    self.workers[identity] = worker_metadata
                     heartbeat_at = self.get_heartbeat
                     self.socket_multipart_send(
                         zsocket=self.bind_heatbeat,
@@ -590,13 +599,11 @@ class Server(manager.Interface):
                 if "manage" in json_data:
                     manage = json_data["manage"]
                     if manage == "list-nodes":
-                        data = [
-                            (
-                                i.decode(),
-                                {"expiry": self.workers[i] - time.time()},
-                            )
-                            for i in self.workers.keys()
-                        ]
+                        data = list()
+                        for key, value in self.workers.items():
+                            expiry = value.pop("time") - time.time()
+                            value["expiry"] = expiry
+                            data.append((key.decode(), value))
 
                     elif manage == "list-jobs":
                         data = [
