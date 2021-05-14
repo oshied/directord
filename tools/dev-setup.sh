@@ -3,7 +3,6 @@ set -evo
 
 VENV_PATH="${1:-/opt/directord}"
 CLONE_PATH="${3:-/opt/directord-src}"
-WHEEL_PATH="${WHEEL_PATH:-/opt/directord-src/dist}"
 SETUP="${4:-true}"
 
 . /etc/os-release
@@ -61,18 +60,9 @@ fi
 
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep build
 
-if [ -f "${WHEEL_PATH}" ]; then
-  ${VENV_PATH}/bin/pip install ${WHEEL_PATH}[all]
-else
-  if [ ! -d "${CLONE_PATH}" ]; then
-    git clone https://github.com/cloudnull/directord ${CLONE_PATH}
-  fi
-  ${VENV_PATH}/bin/pip install ${CLONE_PATH}[all]
-  pushd ${CLONE_PATH}
-    ${VENV_PATH}/bin/python3 -m build
-    cp dist/directord*.tar.gz /tmp/directord.tar.gz
-  popd
-fi
+rm -rf ${CLONE_PATH}
+git clone https://github.com/cloudnull/directord ${CLONE_PATH}
+${VENV_PATH}/bin/pip install ${CLONE_PATH}[all]
 
 if [ "${SETUP}" = true ]; then
   echo -e "\nDirectord is setup and installed within [ ${VENV_PATH} ]"

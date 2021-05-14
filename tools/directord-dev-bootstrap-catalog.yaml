@@ -25,9 +25,8 @@ directord_server:
 
 directord_clients:
   jobs:
-  - ADD: /tmp/directord.tar.gz directord.tar.gz
   - ADD: dev-setup.sh dev-setup.sh
-  - RUN: sudo WHEEL_PATH=directord.tar.gz bash dev-setup.sh
+  - RUN: sudo bash dev-setup.sh
   - RUN: >-
       [[ ! -f /etc/directord/config.yaml ]] || echo "{}" | sudo tee /etc/directord/config.yaml
   - RUN: sudo mkdir -p /etc/directord/private_keys /etc/directord/public_keys
