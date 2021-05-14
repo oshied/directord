@@ -40,7 +40,7 @@ that represent a given data center. The second catalog file is referencing
 built-in file maintained by Directord to deploy Directord.
 
 ``` shell
-$ directord bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/directord-bootstrap-catalog.yaml
+$ directord bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/directord-prod-bootstrap-catalog.yaml
 ```
 
 > The catalog input can be used more than once and can be totally user
