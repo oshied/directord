@@ -27,6 +27,8 @@ import time
 from logging import handlers
 from types import SimpleNamespace
 
+from directord.meta import *
+
 
 def getLogger(name, debug_logging=False):
     """Return a logger from a given name.
