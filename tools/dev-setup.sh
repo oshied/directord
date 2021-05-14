@@ -62,7 +62,7 @@ fi
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep build
 
 if [ -f "${WHEEL_PATH}" ]; then
-  ${VENV_PATH}/bin/pip install ${WHEEL_PATH}
+  ${VENV_PATH}/bin/pip install ${WHEEL_PATH}[all]
 else
   if [ ! -d "${CLONE_PATH}" ]; then
     git clone https://github.com/cloudnull/directord ${CLONE_PATH}

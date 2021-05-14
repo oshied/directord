@@ -27,7 +27,7 @@ import time
 from logging import handlers
 from types import SimpleNamespace
 
-from directord.meta import *
+from directord.meta import __version__  # noqa
 
 
 def getLogger(name, debug_logging=False):
@@ -310,7 +310,7 @@ class Processor(object):
             return {
                 key: value
                 for (key, value) in workers.items()
-                if time.time() <= value
+                if time.time() <= value["time"]
             }
         finally:
             self.log.debug(

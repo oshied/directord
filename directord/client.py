@@ -12,7 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from directord import components
+import datetime
 import json
 import os
 import struct
@@ -22,6 +22,7 @@ import diskcache
 import zmq
 
 import directord
+from directord import components
 from directord import manager
 from directord import utils
 
@@ -98,6 +99,25 @@ class Client(manager.Interface):
         self.bind_heatbeat = self.heartbeat_connect()
         return self.get_heartbeat
 
+    def update_heartbeat(self):
+        with open("/proc/uptime", "r") as f:
+            uptime = float(f.readline().split()[0])
+
+        self.socket_multipart_send(
+            zsocket=self.bind_heatbeat,
+            control=self.heartbeat_notice,
+            data=json.dumps(
+                {
+                    "version": directord.__version__,
+                    "uptime": str(datetime.timedelta(seconds=uptime)),
+                }
+            ).encode(),
+        )
+        self.log.debug(
+            "Sent heartbeat to server [ %s ]",
+            self.connection_string,
+        )
+
     def run_heartbeat(self, sentinel=False):
         """Execute the heartbeat loop.
 
@@ -113,6 +133,7 @@ class Client(manager.Interface):
         """
 
         self.bind_heatbeat = self.heartbeat_connect()
+        self.update_heartbeat()
         heartbeat_at = self.get_heartbeat
         heartbeat_misses = 0
         while True:
@@ -162,14 +183,7 @@ class Client(manager.Interface):
                     heartbeat_at = self.get_expiry
                 else:
                     heartbeat_misses += 1
-                    self.socket_multipart_send(
-                        zsocket=self.bind_heatbeat,
-                        control=self.heartbeat_notice,
-                    )
-                    self.log.debug(
-                        "Sent heartbeat to server [ %s ]",
-                        self.connection_string,
-                    )
+                    self.update_heartbeat()
 
             if sentinel:
                 break
