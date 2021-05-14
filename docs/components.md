@@ -255,3 +255,16 @@ Total Items: 14
 - jobs:
   - ECHO: Hello World
 ```
+
+#### Developing Adapted Components
+
+User defined components can be developed from scratch or through adaptation of
+existing solutions. Because the Directord component implementation is so simple,k
+it is possible to create new modules from existing solutions, like Ansibe modules
+without a lot of effort.
+
+The `ComponentBase` offers an Ansible documentation to Directord argument
+conversion method `options_converter`, which will allow developers to create
+new Directord components with ease. An example of a converted module can be
+seen in the `container_config_data` component and found
+[here](https://github.com/cloudnull/directord/blob/main/components/container_config_data.py).
