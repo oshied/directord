@@ -47,6 +47,18 @@ def _args(exec_args=None):
         default=os.getenv("DIRECTORD_CONFIG_FILE", None),
         type=argparse.FileType(mode="r"),
     )
+    parser.add_argument(
+        "--datastore",
+        help=(
+            "Connect to an external datastore for job and worker tracking. The"
+            " connection string is RFC-1738 compatible >"
+            " driver://username:password@host:port/database. If undefined the"
+            " datastore falls back to an internal manager object."
+        ),
+        metavar="STRING",
+        default=os.getenv("DIRECTORD_DATASTORE", None),
+        type=str,
+    )
     auth_group = parser.add_mutually_exclusive_group()
     auth_group.add_argument(
         "--shared-key",

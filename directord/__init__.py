@@ -21,10 +21,7 @@ import os
 import signal
 import socket
 import sys
-import time
 
-from multiprocessing.managers import MakeProxyType
-from multiprocessing.managers import SyncManager
 from types import SimpleNamespace
 
 from directord import logger
@@ -55,6 +52,17 @@ def send_data(socket_path, data):
         return b"".join(fragments)
 
 
+def plugin_import(plugin):
+    """Import a plugin from string.
+
+    :param plugin: Python import in dot notation.
+    :type plugin: String
+    :returns: Object
+    """
+
+    return importlib.import_module(plugin, package="directord")
+
+
 def component_import(component, job_id=None):
     """Import a component and return a tuple with the class object.
 
@@ -71,8 +79,8 @@ def component_import(component, job_id=None):
     """
 
     try:
-        component_obj = importlib.import_module(
-            ".components.builtin_{}".format(component), package="directord"
+        component_obj = plugin_import(
+            plugin=".components.builtin_{}".format(component)
         )
         transfer = None
     except ImportError as e:
@@ -110,87 +118,6 @@ def component_import(component, job_id=None):
     return True, transfer, component_obj.Component()
 
 
-class BaseDocument(dict):
-    """Create a document store object."""
-
-    log = logger.getLogger(name="directord")
-
-    def empty(self):
-        """Empty all items from the datastore.
-
-        Because a Manager Dict is a proxy object we don't want to replace the
-        object we want to empty it keeping the original proxy intact. This
-        method will pop all items from the object.
-        """
-
-        try:
-            while self.popitem():
-                pass
-        except KeyError:
-            pass
-
-    def prune(self):
-        """Prune items that have a time based expiry."""
-
-        for (key, value) in list(self.items()):
-            try:
-                if time.time() >= value["time"]:
-                    self.pop(key)
-            except (KeyError, TypeError):
-                pass
-        else:
-            return len(self)
-
-    def set(self, key, value):
-        """Set key and value if key doesn't already exist.
-
-        :param key: Named object to set.
-        :type key: Object
-        :param value: Object to set.
-        :type value: Object
-        :returns: Object
-        """
-
-        if key in self:
-            return self[key]
-        else:
-            super().__setitem__(key, value)
-            return self[key]
-
-    def __repr__(self):
-        return f"{type(self).__name__}({super().__repr__()})"
-
-
-BaseDictProxy = MakeProxyType(
-    "BaseDictProxy",
-    (
-        "__contains__",
-        "__delitem__",
-        "__getitem__",
-        "__iter__",
-        "__len__",
-        "__setitem__",
-        "clear",
-        "copy",
-        "empty",
-        "get",
-        "items",
-        "keys",
-        "pop",
-        "popitem",
-        "prune",
-        "set",
-        "setdefault",
-        "update",
-        "values",
-    ),
-)
-BaseDictProxy._method_to_typeid_ = {
-    "__iter__": "Iterator",
-}
-SyncManager.register("document", BaseDocument, BaseDictProxy)
-
-
 class Processor(object):
     """Processing class, provides queing and threading utilities.
 
@@ -199,7 +126,6 @@ class Processor(object):
 
     job_queue = multiprocessing.Queue()
     thread = multiprocessing.Process
-    manager = multiprocessing.Manager()
     processes = list()
 
     def __init__(self):
@@ -209,8 +135,6 @@ class Processor(object):
         be shared across threads.
         """
 
-        self.workers = self.manager.document()
-        self.return_jobs = self.manager.document()
         self.log = logger.getLogger(name="directord")
 
     def run_threads(self, threads):
@@ -335,9 +259,9 @@ class DirectordConnect(object):
         """
 
         args = SimpleNamespace(**{"debug": debug, "socket_path": socket_path})
-        _mixin = importlib.import_module(".mixin", package="directord")
+        _mixin = plugin_import(plugin=".mixin")
         self.mixin = _mixin.Mixin(args=args)
-        _user = importlib.import_module(".user", package="directord")
+        _user = plugin_import(plugin=".user")
         self.manage = _user.Manage(args=args)
 
     def __enter__(self):

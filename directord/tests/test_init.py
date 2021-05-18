@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 import directord
 
+from directord import datastore
 from directord import logger
 from directord import tests
 
@@ -125,14 +126,14 @@ class TestProcessor(unittest.TestCase):
         self.log_patched.stop()
 
     def test_wq_prune_0(self):
-        workers = directord.BaseDocument()
+        workers = datastore.BaseDocument()
         workers["test"] = 1
         workers.empty()
         self.assertDictEqual(workers, dict())
         self.log.debug.called_once()
 
     def test_wq_prune_valid(self):
-        workers = directord.BaseDocument()
+        workers = datastore.BaseDocument()
         workers["valid1"] = {"time": time.time() + 2}
         workers["invalid1"] = {"time": time.time() - 2}
         workers["invalid2"] = {"time": time.time() - 3}
@@ -142,7 +143,7 @@ class TestProcessor(unittest.TestCase):
         self.log.debug.called_once()
 
     def test_wq_empty(self):
-        workers = directord.BaseDocument()
+        workers = datastore.BaseDocument()
         workers["valid1"] = {"time": time.time() + 2}
         workers["invalid1"] = {"time": time.time() - 2}
         workers["invalid2"] = {"time": time.time() - 3}
