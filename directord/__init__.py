@@ -16,7 +16,6 @@ import contextlib
 import importlib
 import importlib.util as importlib_util
 import json
-import logging
 import multiprocessing
 import os
 import signal
@@ -24,32 +23,12 @@ import socket
 import sys
 import time
 
-from logging import handlers
+from multiprocessing.managers import MakeProxyType
+from multiprocessing.managers import SyncManager
 from types import SimpleNamespace
 
+from directord import logger
 from directord.meta import __version__  # noqa
-
-
-def getLogger(name, debug_logging=False):
-    """Return a logger from a given name.
-
-    If the name does not have a log handler, this will create one for it based
-    on the module name which will log everything to a log file in a location
-    the executing user will have access to.
-
-    :param name: Log handler name to retrieve.
-    :type name: String
-    :returns: Object
-    """
-
-    log = logging.getLogger(name=name)
-    for handler in log.handlers:
-        if name == handler.name:
-            return log
-    else:
-        return LogSetup(debug_logging=debug_logging).default_logger(
-            name=name.split(".")[0]
-        )
 
 
 def send_data(socket_path, data):
@@ -131,127 +110,85 @@ def component_import(component, job_id=None):
     return True, transfer, component_obj.Component()
 
 
-class LogSetup(object):
-    """Logging Class."""
+class BaseDocument(dict):
+    """Create a document store object."""
 
-    def __init__(self, max_size=500, max_backup=5, debug_logging=False):
-        """Setup Logging.
+    log = logger.getLogger(name="directord")
 
-        :param max_size: Set max log file size
-        :type max_size: Integer
-        :param max_backup: Set max log file back rotations.
-        :type max_backup: Integer
-        :param debug_logging: Enable | Disable debug logging.
-        :type debug_logging: Boolean
+    def empty(self):
+        """Empty all items from the datastore.
+
+        Because a Manager Dict is a proxy object we don't want to replace the
+        object we want to empty it keeping the original proxy intact. This
+        method will pop all items from the object.
         """
 
-        self.max_size = max_size * 1024 * 1024
-        self.max_backup = max_backup
-        self.debug_logging = debug_logging
-        self.format = None
-        self.name = None
-        self.enable_stream = False
-        self.enable_file = False
+        try:
+            while self.popitem():
+                pass
+        except KeyError:
+            pass
 
-    def default_logger(
-        self, name=__name__, enable_stream=True, enable_file=False
-    ):
-        """Default Logger.
+    def prune(self):
+        """Prune items that have a time based expiry."""
 
-        This is set to use a rotating File handler and a stream handler.
-        If you use this logger all logged output that is INFO and above will
-        be logged, unless debug_logging is set then everything is logged.
-        The logger will send the same data to a stdout as it does to the
-        specified log file.
+        for (key, value) in list(self.items()):
+            try:
+                if time.time() >= value["time"]:
+                    self.pop(key)
+            except (KeyError, TypeError):
+                pass
+        else:
+            return len(self)
 
-        You can disable the default handlers by setting either `enable_file` or
-        `enable_stream` to `False`
+    def set(self, key, value):
+        """Set key and value if key doesn't already exist.
 
-        :param name: Log handler name to retrieve.
-        :type name: String
-        :param enable_stream: Enable | Disable log Streaming.
-        :type enable_stream: Boolean
-        :param enable_file: Enable | Disable log writting to a file.
-        :type enable_file: Boolean
+        :param key: Named object to set.
+        :type key: Object
+        :param value: Object to set.
+        :type value: Object
         :returns: Object
         """
 
-        log = logging.getLogger(name)
-        self.name = name
-
-        if enable_file:
-            self.enable_file = enable_file
-            file_handler = handlers.RotatingFileHandler(
-                filename=self.return_logfile(filename="%s.log" % name),
-                maxBytes=self.max_size,
-                backupCount=self.max_backup,
-            )
-            self.set_handler(log, handler=file_handler)
-
-        if enable_stream:
-            self.enable_stream = enable_stream
-            stream_handler = logging.StreamHandler()
-            self.set_handler(log, handler=stream_handler)
-
-        return log
-
-    def set_handler(self, log, handler):
-        """Set the logging level as well as the handlers.
-
-        :param log: Logging object.
-        :type log: Object
-        :param handler: Log handler object.
-        :type handler: Object
-        """
-
-        if self.debug_logging:
-            log.setLevel(logging.DEBUG)
-            handler.setLevel(logging.DEBUG)
+        if key in self:
+            return self[key]
         else:
-            log.setLevel(logging.INFO)
-            handler.setLevel(logging.INFO)
+            super().__setitem__(key, value)
+            return self[key]
 
-        handler.name = self.name
+    def __repr__(self):
+        return f"{type(self).__name__}({super().__repr__()})"
 
-        if not self.format:
-            if self.enable_file:
-                self.format = logging.Formatter(
-                    "%(asctime)s %(levelname)s %(message)s"
-                )
-            else:
-                self.format = logging.Formatter("%(levelname)s %(message)s")
 
-        handler.setFormatter(self.format)
-        log.addHandler(handler)
-
-    @staticmethod
-    def return_logfile(filename, log_dir="/var/log"):
-        """Return a path for logging file.
-
-        If `log_dir` exists and the userID is 0 the log file will be written
-        to the provided log directory. If the UserID is not 0 or log_dir does
-        not exist the log file will be written to the users home folder.
-
-        :param filename: File name to write log messages.
-        :type filename: String
-        :param log_dir: Directory where the log file will be stored.
-        :type log_dir: String
-        :returns: String
-        """
-
-        user = os.getuid()
-        home = os.path.expanduser("~")
-
-        if not os.path.isdir(log_dir):
-            return os.path.join(home, filename)
-
-        log_dir_stat = os.stat(log_dir)
-        if log_dir_stat.st_uid == user:
-            return os.path.join(log_dir, filename)
-        elif log_dir_stat.st_gid == user:
-            return os.path.join(log_dir, filename)
-        else:
-            return os.path.join(home, filename)
+BaseDictProxy = MakeProxyType(
+    "BaseDictProxy",
+    (
+        "__contains__",
+        "__delitem__",
+        "__getitem__",
+        "__iter__",
+        "__len__",
+        "__setitem__",
+        "clear",
+        "copy",
+        "empty",
+        "get",
+        "items",
+        "keys",
+        "pop",
+        "popitem",
+        "prune",
+        "set",
+        "setdefault",
+        "update",
+        "values",
+    ),
+)
+BaseDictProxy._method_to_typeid_ = {
+    "__iter__": "Iterator",
+}
+SyncManager.register("document", BaseDocument, BaseDictProxy)
 
 
 class Processor(object):
@@ -272,9 +209,9 @@ class Processor(object):
         be shared across threads.
         """
 
-        self.workers = self.manager.dict()
-        self.return_jobs = self.manager.dict()
-        self.log = getLogger(name="directord")
+        self.workers = self.manager.document()
+        self.return_jobs = self.manager.document()
+        self.log = logger.getLogger(name="directord")
 
     def run_threads(self, threads):
         """Execute process objects from an array.
@@ -294,43 +231,6 @@ class Processor(object):
 
         for t in self.processes:
             t.join()
-
-    def wq_prune(self, workers):
-        """Given a Manager.Dictionary object return a pruned hash.
-
-        This will ensure that the items contained within the provided hash
-        are valid.
-
-        :param workers: Hash containing workers.
-        :type workers: Manager.Dictionary()
-        :returns: Tuple
-        """
-
-        try:
-            return {
-                key: value
-                for (key, value) in workers.items()
-                if time.time() <= value["time"]
-            }
-        finally:
-            self.log.debug(
-                "workers after prune {workers}".format(workers=len(workers))
-            )
-
-    @staticmethod
-    def wq_empty(workers):
-        """Empty all items from a Manager.Dict.
-
-        Because a Manager Dict is a proxy object we don't want to replace the
-        object we want to empty it keeping the original proxy intact. This
-        method will pop all items from the object.
-        """
-
-        try:
-            while workers.popitem():
-                pass
-        except KeyError:
-            pass
 
     def read_in_chunks(self, file_object, chunk_size=10240):
         """Generator to read a file piece by piece.

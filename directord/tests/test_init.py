@@ -26,7 +26,7 @@ from directord import tests
 
 class TestLogger(unittest.TestCase):
     def setUp(self):
-        self.log = directord.LogSetup()
+        self.log = logger.LogSetup()
 
         self.uid_patched = unittest.mock.patch("directord.os.getuid")
         self.uid = self.uid_patched.start()
@@ -55,19 +55,19 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(self.log.debug_logging, False)
 
     def test_logger_override_backup(self):
-        log = directord.LogSetup(max_backup=10)
+        log = logger.LogSetup(max_backup=10)
         self.assertEqual(log.max_backup, 10)
 
     def test_logger_override_max_backup(self):
-        log = directord.LogSetup(max_backup=10)
+        log = logger.LogSetup(max_backup=10)
         self.assertEqual(log.max_backup, 10)
 
     def test_logger_override_max_size(self):
-        log = directord.LogSetup(max_size=10)
+        log = logger.LogSetup(max_size=10)
         self.assertEqual(log.max_size, 10485760)
 
     def test_logger_debug_logging_enabled(self):
-        log = directord.LogSetup(debug_logging=True)
+        log = logger.LogSetup(debug_logging=True)
         self.assertEqual(log.debug_logging, True)
 
     def test_logger_return_logfile_not_root_new_log_dir(self):
@@ -115,73 +115,9 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(logfile, "/root/test_file")
 
 
-class TestLoggerHandlers(unittest.TestCase):
-    def setUp(self):
-
-        self.rh_patched = unittest.mock.patch(
-            "directord.handlers.RotatingFileHandler"
-        )
-        self.rh = self.rh_patched.start()
-
-        self.sh_patched = unittest.mock.patch(
-            "directord.logging.StreamHandler"
-        )
-        self.sh = self.sh_patched.start()
-
-        self.log = directord.LogSetup()
-
-        self._log = unittest.mock.Mock()
-        self._handler = unittest.mock.Mock()
-
-    def tearDown(self):
-        self.rh_patched.stop()
-        self.sh_patched.stop()
-
-    def test_getlogger_new_logger(self):
-        log = logger.getLogger(name="testLogger")
-        for handler in log.handlers:
-            return self.assertTrue(handler.name == "testLogger")
-        else:
-            self.fail("The log handler name was not set")
-
-    def test_logger_default_logger(self):
-        self.log.format = "%(test)s"
-        self.log.default_logger(
-            name="test_log", enable_file=False, enable_stream=False
-        )
-        self.assertEqual(self.log.format, "%(test)s")
-
-    def test_logger_enable_file(self):
-        self.log.default_logger(
-            name="test_log", enable_file=True, enable_stream=False
-        )
-        self.assertTrue(self.rh.called)
-        self.assertFalse(self.sh.called)
-
-    def test_logger_enable_stream(self):
-        self.log.default_logger(
-            name="test_log", enable_file=False, enable_stream=True
-        )
-        self.assertFalse(self.rh.called)
-        self.assertTrue(self.sh.called)
-
-    def test_logger_enable_stream_enable_file(self):
-        self.log.default_logger(
-            name="test_log", enable_file=True, enable_stream=True
-        )
-        self.assertTrue(self.rh.called)
-        self.assertTrue(self.sh.called)
-
-    def test_logger_set_handler(self):
-        self.log.set_handler(log=self._log, handler=self._handler)
-        self.assertTrue(self._log.setLevel.called)
-        self.assertTrue(self._handler.setFormatter.called)
-        self.assertTrue(self._log.addHandler.called)
-
-
 class TestProcessor(unittest.TestCase):
     def setUp(self):
-        self.log_patched = unittest.mock.patch("directord.getLogger")
+        self.log_patched = unittest.mock.patch("directord.logger.getLogger")
         self.log = self.log_patched.start()
         self.processor = directord.Processor()
 
@@ -189,29 +125,30 @@ class TestProcessor(unittest.TestCase):
         self.log_patched.stop()
 
     def test_wq_prune_0(self):
-        workers = self.processor.wq_prune(workers={})
+        workers = directord.BaseDocument()
+        workers["test"] = 1
+        workers.empty()
         self.assertDictEqual(workers, dict())
         self.log.debug.called_once()
 
     def test_wq_prune_valid(self):
-        workers = self.processor.wq_prune(
-            workers={
-                "valid1": {"time": time.time() + 2},
-                "invalid1": {"time": time.time() - 2},
-                "invalid2": {"time": time.time() - 3},
-            }
-        )
+        workers = directord.BaseDocument()
+        workers["valid1"] = {"time": time.time() + 2}
+        workers["invalid1"] = {"time": time.time() - 2}
+        workers["invalid2"] = {"time": time.time() - 3}
+        workers.prune()
         self.assertEqual(len(workers), 1)
         self.assertIn("valid1", workers)
         self.log.debug.called_once()
 
     def test_wq_empty(self):
-        self.processor.workers["valid1"] = {"time": time.time() + 2}
-        self.processor.workers["invalid1"] = {"time": time.time() - 2}
-        self.processor.workers["invalid2"] = {"time": time.time() - 3}
-        self.assertEqual(len(self.processor.workers), 3)
-        self.processor.wq_empty(workers=self.processor.workers)
-        self.assertEqual(len(self.processor.workers), 0)
+        workers = directord.BaseDocument()
+        workers["valid1"] = {"time": time.time() + 2}
+        workers["invalid1"] = {"time": time.time() - 2}
+        workers["invalid2"] = {"time": time.time() - 3}
+        self.assertEqual(len(workers), 3)
+        workers.empty()
+        self.assertEqual(len(workers), 0)
 
     def test_read_in_chunks(self):
         chunks = list()

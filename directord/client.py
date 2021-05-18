@@ -23,11 +23,11 @@ import zmq
 
 import directord
 from directord import components
-from directord import manager
+from directord import interface
 from directord import utils
 
 
-class Client(manager.Interface):
+class Client(interface.Interface):
     """Directord client class."""
 
     def __init__(self, args):

@@ -21,6 +21,8 @@ from unittest.mock import patch
 
 import zmq
 
+import directord
+
 from directord import server
 from directord import tests
 
@@ -29,13 +31,13 @@ class TestServer(unittest.TestCase):
     def setUp(self):
         self.args = tests.FakeArgs()
         self.server = server.Server(args=self.args)
-        self.server.workers = dict()
-        self.server.return_jobs = dict()
+        self.server.workers = directord.BaseDocument()
+        self.server.return_jobs = directord.BaseDocument()
 
     def tearDown(self):
         pass
 
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     def test_heartbeat_bind(self, mock_socket_bind):
         self.server.heartbeat_bind()
         mock_socket_bind.assert_called_with(
@@ -45,7 +47,7 @@ class TestServer(unittest.TestCase):
             port=5557,
         )
 
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     def test_job_bind(self, mock_socket_bind):
         self.server.job_bind()
         mock_socket_bind.assert_called_with(
@@ -55,7 +57,7 @@ class TestServer(unittest.TestCase):
             port=5555,
         )
 
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     def test_transfer_bind(self, mock_socket_bind):
         self.server.transfer_bind()
         mock_socket_bind.assert_called_with(
@@ -66,7 +68,9 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server.heartbeat_bind", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_recv", autospec=True
+    )
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -98,7 +102,9 @@ class TestServer(unittest.TestCase):
         self.assertIn(b"test-node", self.server.workers)
 
     @patch("directord.server.Server.heartbeat_bind", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_recv", autospec=True
+    )
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -130,7 +136,9 @@ class TestServer(unittest.TestCase):
         self.assertIn(b"test-node", self.server.workers)
 
     @patch("directord.server.Server.heartbeat_bind", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_send", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_send", autospec=True
+    )
     @patch("time.time", autospec=True)
     @patch("logging.Logger.warning", autospec=True)
     def test_run_heartbeat_idle_workers(
@@ -454,7 +462,9 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("os.path.isfile", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_send", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_send", autospec=True
+    )
     @patch("logging.Logger.info", autospec=True)
     def test__run_transfer(
         self, mock_log_info, mock_multipart_send, mock_isfile
@@ -470,7 +480,7 @@ class TestServer(unittest.TestCase):
         mock_log_info.assert_called()
 
     def test_create_return_jobs(self):
-        self.server.return_jobs = dict()
+        self.server.return_jobs = directord.BaseDocument()
         status = self.server.create_return_jobs(
             task="XXX",
             job_item={
@@ -502,7 +512,8 @@ class TestServer(unittest.TestCase):
         )
 
     def test_create_return_jobs_exists(self):
-        self.server.return_jobs = {"XXX": {"exists": True}}
+        self.server.return_jobs = directord.BaseDocument()
+        self.server.return_jobs["XXX"] = {"exists": True}
         status = self.server.create_return_jobs(
             task="XXX",
             job_item={
@@ -517,7 +528,9 @@ class TestServer(unittest.TestCase):
             {"exists": True},
         )
 
-    @patch("directord.manager.Interface.socket_multipart_send", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_send", autospec=True
+    )
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job(self, mock_log_debug, mock_queue, mock_multipart_send):
@@ -527,7 +540,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
-    @patch("directord.manager.Interface.socket_multipart_send", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_send", autospec=True
+    )
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job_restricted_null(
@@ -547,7 +562,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
-    @patch("directord.manager.Interface.socket_multipart_send", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_send", autospec=True
+    )
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.critical", autospec=True)
     def test_run_job_run_node_fail(
@@ -566,7 +583,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_critical.assert_called()
 
-    @patch("directord.manager.Interface.socket_multipart_send", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_send", autospec=True
+    )
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job_run(
@@ -588,14 +607,14 @@ class TestServer(unittest.TestCase):
         mock_log_debug.assert_called()
         mock_multipart_send.assert_called()
 
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time, mock_socket_bind):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
         mock_socket_bind.assert_called()
 
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test_run_interactions_idle(
@@ -608,7 +627,7 @@ class TestServer(unittest.TestCase):
             ANY, "Directord server entering idle state."
         )
 
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test_run_interactions_ramp(
@@ -620,9 +639,11 @@ class TestServer(unittest.TestCase):
         mock_log_info.assert_called_with(ANY, "Directord server ramping down.")
 
     @patch("directord.server.Server._run_transfer", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_recv", autospec=True
+    )
     @patch("directord.server.Server.transfer_bind", autospec=True)
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -659,9 +680,11 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_recv", autospec=True
+    )
     @patch("directord.server.Server.transfer_bind", autospec=True)
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -702,9 +725,11 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_recv", autospec=True
+    )
     @patch("directord.server.Server.job_bind", autospec=True)
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_interactions_set_status(
@@ -744,9 +769,11 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("directord.manager.Interface.socket_multipart_recv", autospec=True)
+    @patch(
+        "directord.interface.Interface.socket_multipart_recv", autospec=True
+    )
     @patch("directord.server.Server.job_bind", autospec=True)
-    @patch("directord.manager.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -859,7 +886,9 @@ class TestServer(unittest.TestCase):
         conn.recv.return_value = json.dumps({"manage": "purge-nodes"}).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
-        self.server.workers = {b"test-node1": 12345, b"test-node2": 12345}
+        workers = self.server.workers = directord.BaseDocument()
+        workers[b"test-node1"] = {"version": "x.x.x", "expiry": 12344}
+        workers[b"test-node2"] = {"version": "x.x.x", "expiry": 12344}
         self.server.run_socket_server(sentinel=True)
         mock_unlink.assert_called_with(self.args.socket_path)
         self.assertDictEqual(self.server.workers, {})
@@ -875,7 +904,8 @@ class TestServer(unittest.TestCase):
         conn.recv.return_value = json.dumps({"manage": "purge-jobs"}).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
-        self.server.return_jobs = {"k": {"v": "test"}}
+        return_jobs = self.server.return_jobs = directord.BaseDocument()
+        return_jobs["k"] = {"v": "test"}
         self.server.run_socket_server(sentinel=True)
         mock_unlink.assert_called_with(self.args.socket_path)
         self.assertDictEqual(self.server.return_jobs, {})

@@ -20,11 +20,11 @@ import time
 
 import zmq
 
-from directord import manager
+from directord import interface
 from directord import utils
 
 
-class Server(manager.Interface):
+class Server(interface.Interface):
     """Directord server class."""
 
     def __init__(self, args):
@@ -148,7 +148,11 @@ class Server(manager.Interface):
                         )
                         self.workers.pop(worker)
             else:
-                self.wq_prune(workers=self.workers)
+                self.log.debug(
+                    "Items after prune {items}".format(
+                        items=self.workers.prune()
+                    )
+                )
 
             if sentinel:
                 break
@@ -281,8 +285,9 @@ class Server(manager.Interface):
                 )
 
     def create_return_jobs(self, task, job_item, targets):
-        if task not in self.return_jobs:
-            job_info = self.return_jobs[task] = {
+        return self.return_jobs.set(
+            task,
+            {
                 "ACCEPTED": True,
                 "INFO": dict(),
                 "STDOUT": dict(),
@@ -294,10 +299,8 @@ class Server(manager.Interface):
                 "JOB_DEFINITION": job_item,
                 "PARENT_JOB_ID": job_item.get("parent_id"),
                 "_createtime": time.time(),
-            }
-            return job_info
-        else:
-            return self.return_jobs[task]
+            },
+        )
 
     def run_job(self):
         """Run a job interaction
@@ -610,10 +613,10 @@ class Server(manager.Interface):
                             (str(k), v) for k, v in self.return_jobs.items()
                         ]
                     elif manage == "purge-nodes":
-                        self.wq_empty(workers=self.workers)
+                        self.workers.empty()
                         data = {"success": True}
                     elif manage == "purge-jobs":
-                        self.wq_empty(workers=self.return_jobs)
+                        self.return_jobs.empty()
                         data = {"success": True}
                     else:
                         data = {"failed": True}
