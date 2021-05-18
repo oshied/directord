@@ -19,7 +19,7 @@ import yaml
 
 import jinja2
 
-import directord
+from directord import logger
 from directord import utils
 
 
@@ -37,7 +37,7 @@ class ComponentBase(object):
         """
 
         self.desc = desc
-        self.log = directord.getLogger(name="directord")
+        self.log = logger.getLogger(name="directord")
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
         self.known_args = None
         self.unknown_args = None

@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 import directord
 
+from directord import logger
 from directord import tests
 
 
@@ -137,7 +138,7 @@ class TestLoggerHandlers(unittest.TestCase):
         self.sh_patched.stop()
 
     def test_getlogger_new_logger(self):
-        log = directord.getLogger(name="testLogger")
+        log = logger.getLogger(name="testLogger")
         for handler in log.handlers:
             return self.assertTrue(handler.name == "testLogger")
         else:
