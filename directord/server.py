@@ -13,12 +13,16 @@
 #   under the License.
 
 import json
+import multiprocessing
 import os
 import socket
 import struct
 import time
+import urllib.parse as urlparse
 
 import zmq
+
+import directord
 
 from directord import interface
 from directord import utils
@@ -37,6 +41,31 @@ class Server(interface.Interface):
         """
 
         super(Server, self).__init__(args=args)
+
+        datastore = getattr(self.args, "datastore", None)
+        if not datastore:
+            self.log.info("Connecting to internal datastore")
+            directord.plugin_import(plugin=".datastore.internal")
+            manager = multiprocessing.Manager()
+            self.workers = manager.document()
+            self.return_jobs = manager.document()
+        else:
+            url = urlparse.urlparse(datastore)
+            if url.scheme in ["redis", "rediss"]:
+                self.log.info("Connecting to redis datastore")
+                try:
+                    db = int(url.path.lstrip("/"))
+                except ValueError:
+                    db = 0
+                self.log.debug("Redis keyspace base is %s", db)
+                redis = directord.plugin_import(plugin=".datastore.redis")
+
+                self.workers = redis.BaseDocument(
+                    url=url._replace(path="").geturl(), database=(db + 1)
+                )
+                self.return_jobs = redis.BaseDocument(
+                    url=url._replace(path="").geturl(), database=(db + 2)
+                )
 
     def heartbeat_bind(self):
         """Bind an address to a heartbeat socket and return the socket.
@@ -130,7 +159,7 @@ class Server(interface.Interface):
                     )
 
             # Send heartbeats to idle workers if it's time
-            elif time.time() > idle_time and self.workers:
+            elif time.time() > idle_time:
                 for worker in list(self.workers.keys()):
                     self.log.warning(
                         "Sending idle worker [ {} ] a heartbeat".format(worker)
@@ -191,8 +220,6 @@ class Server(interface.Interface):
             else:
                 return 0
 
-        # NOTE(cloudnull): This is where we would need to implement a
-        #                  callback plugin for the client.
         job_metadata = self.return_jobs.get(job_id)
         if not job_metadata:
             return
@@ -606,8 +633,10 @@ class Server(interface.Interface):
                         for key, value in self.workers.items():
                             expiry = value.pop("time") - time.time()
                             value["expiry"] = expiry
-                            data.append((key.decode(), value))
-
+                            try:
+                                data.append((key.decode(), value))
+                            except AttributeError:
+                                data.append((str(key), value))
                     elif manage == "list-jobs":
                         data = [
                             (str(k), v) for k, v in self.return_jobs.items()

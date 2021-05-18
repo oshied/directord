@@ -13,7 +13,6 @@
 #   under the License.
 
 import logging
-import multiprocessing
 import os
 import socket
 import time
@@ -46,12 +45,6 @@ class Interface(directord.Processor):
         super(Interface, self).__init__()
 
         self.args = args
-
-        if getattr(self.args, "datastore", None):
-            directord.plugin_import(plugin=".datastore.internal")
-            manager = multiprocessing.Manager()
-            self.workers = manager.document()
-            self.return_jobs = manager.document()
 
         # Set log handlers to debug when enabled.
         if self.args.debug:
