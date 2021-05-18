@@ -53,7 +53,8 @@ def _args(exec_args=None):
             "Connect to an external datastore for job and worker tracking. The"
             " connection string is RFC-1738 compatible >"
             " driver://username:password@host:port/database. If undefined the"
-            " datastore falls back to an internal manager object."
+            " datastore falls back to an internal manager object. Driver"
+            " supports [None]."
         ),
         metavar="STRING",
         default=os.getenv("DIRECTORD_DATASTORE", None),

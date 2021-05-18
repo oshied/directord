@@ -48,7 +48,7 @@ class Interface(directord.Processor):
         self.args = args
 
         if getattr(self.args, "datastore", None):
-            directord.plugin_import(plugin=".datastore")
+            directord.plugin_import(plugin=".datastore.internal")
             manager = multiprocessing.Manager()
             self.workers = manager.document()
             self.return_jobs = manager.document()

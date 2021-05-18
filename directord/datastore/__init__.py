@@ -14,9 +14,6 @@
 
 import time
 
-from multiprocessing.managers import MakeProxyType
-from multiprocessing.managers import SyncManager
-
 
 class BaseDocument(dict):
     """Create a document store object."""
@@ -65,33 +62,3 @@ class BaseDocument(dict):
 
     def __repr__(self):
         return f"{type(self).__name__}({super().__repr__()})"
-
-
-BaseDictProxy = MakeProxyType(
-    "BaseDictProxy",
-    (
-        "__contains__",
-        "__delitem__",
-        "__getitem__",
-        "__iter__",
-        "__len__",
-        "__setitem__",
-        "clear",
-        "copy",
-        "empty",
-        "get",
-        "items",
-        "keys",
-        "pop",
-        "popitem",
-        "prune",
-        "set",
-        "setdefault",
-        "update",
-        "values",
-    ),
-)
-BaseDictProxy._method_to_typeid_ = {
-    "__iter__": "Iterator",
-}
-SyncManager.register("document", BaseDocument, BaseDictProxy)
