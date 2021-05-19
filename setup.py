@@ -26,6 +26,7 @@ REQUIREMENTS = {
     "ui": ["flask"],
     "dev": ["podman-py"],
     "test": ["flake8", "coverage"],
+    "redis": ["redis"],
 }
 REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 

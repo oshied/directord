@@ -33,7 +33,11 @@ def _args(exec_args=None):
     """Setup client arguments."""
 
     parser = argparse.ArgumentParser(
-        description="Deployment Framework Next.", prog="Directord"
+        description="Deployment Framework Next.",
+        prog="Directord",
+        formatter_class=lambda prog: argparse.HelpFormatter(
+            prog, max_help_position=32, width=128
+        ),
     )
     parser.add_argument(
         "--version",
@@ -46,6 +50,21 @@ def _args(exec_args=None):
         metavar="STRING",
         default=os.getenv("DIRECTORD_CONFIG_FILE", None),
         type=argparse.FileType(mode="r"),
+    )
+    parser.add_argument(
+        "--datastore",
+        help=(
+            "Connect to an external datastore for job and worker tracking. The"
+            " connection string is RFC-1738 compatible >"
+            " driver://username:password@host:port/database. If undefined the"
+            " datastore uses an internal manager object. Driver"
+            " supports [None, 'redis']. When using Redis, two keyspaces will"
+            " be used and are incremented by 1 using the database value (which"
+            " has a default of 0)."
+        ),
+        metavar="STRING",
+        default=os.getenv("DIRECTORD_DATASTORE", None),
+        type=str,
     )
     auth_group = parser.add_mutually_exclusive_group()
     auth_group.add_argument(

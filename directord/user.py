@@ -21,10 +21,10 @@ import zmq.auth as zmq_auth
 
 import directord
 
-from directord import manager
+from directord import interface
 
 
-class User(manager.Interface):
+class User(interface.Interface):
     """Directord User interface class."""
 
     def __init__(self, args):

@@ -78,6 +78,7 @@ class FakeStat(object):
 
 class FakeArgs(object):
     config_file = None
+    datastore = None
     debug = False
     heartbeat_interval = 60
     heartbeat_port = 5557

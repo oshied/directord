@@ -23,6 +23,8 @@ import zmq.auth as zmq_auth
 from zmq.auth.thread import ThreadAuthenticator
 
 import directord
+
+from directord import logger
 from directord import utils
 
 
@@ -188,7 +190,7 @@ class Interface(directord.Processor):
         retry=tenacity.retry_if_exception_type(TimeoutError),
         wait=tenacity.wait_fixed(5),
         before_sleep=tenacity.before_sleep_log(
-            directord.getLogger(name="directord"), logging.WARN
+            logger.getLogger(name="directord"), logging.WARN
         ),
     )
     def socket_connect(

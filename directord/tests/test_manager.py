@@ -16,14 +16,14 @@ import unittest
 
 from unittest.mock import patch
 
-from directord import manager
+from directord import interface
 from directord import tests
 
 
 class TestUtils(unittest.TestCase):
     def setUp(self):
         args = tests.FakeArgs()
-        self.interface = manager.Interface(args=args)
+        self.interface = interface.Interface(args=args)
         self.sockets = list()
 
     def tearDown(self):
@@ -44,7 +44,7 @@ class TestUtils(unittest.TestCase):
     @patch("zmq.Poller", autospec=True)
     def test_socket_bind_no_auth(self, mock_poller, mock_socket):
         bind = self.interface.socket_bind(
-            socket_type=manager.zmq.ROUTER,
+            socket_type=interface.zmq.ROUTER,
             connection="tcp://127.0.0.1",
             port=9000,
         )
@@ -53,13 +53,13 @@ class TestUtils(unittest.TestCase):
     @patch("logging.Logger.info", autospec=True)
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
-    @patch("directord.manager.ThreadAuthenticator", autospec=True)
+    @patch("directord.interface.ThreadAuthenticator", autospec=True)
     def test_socket_bind_shared_auth(
         self, mock_auth, mock_poller, mock_socket, mock_info_logging
     ):
         setattr(self.interface.args, "shared_key", "test")
         bind = self.interface.socket_bind(
-            socket_type=manager.zmq.ROUTER,
+            socket_type=interface.zmq.ROUTER,
             connection="tcp://127.0.0.1",
             port=9000,
         )
@@ -69,7 +69,7 @@ class TestUtils(unittest.TestCase):
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
-    @patch("directord.manager.ThreadAuthenticator", autospec=True)
+    @patch("directord.interface.ThreadAuthenticator", autospec=True)
     def test_socket_bind_shared_curve_auth(
         self, mock_auth, mock_poller, mock_socket
     ):
@@ -77,7 +77,7 @@ class TestUtils(unittest.TestCase):
         m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
         with patch("builtins.open", m):
             bind = self.interface.socket_bind(
-                socket_type=manager.zmq.ROUTER,
+                socket_type=interface.zmq.ROUTER,
                 connection="tcp://127.0.0.1",
                 port=9000,
             )
@@ -88,7 +88,7 @@ class TestUtils(unittest.TestCase):
     def test_socket_connect(self, mock_info_logging):
         self.interface.curve_keys_exist = False
         bind = self.interface.socket_connect(
-            socket_type=manager.zmq.PULL,
+            socket_type=interface.zmq.PULL,
             connection="tcp://test",
             port=1234,
         )
@@ -100,7 +100,7 @@ class TestUtils(unittest.TestCase):
         self.interface.curve_keys_exist = False
         setattr(self.interface.args, "shared_key", "test-key")
         bind = self.interface.socket_connect(
-            socket_type=manager.zmq.PULL,
+            socket_type=interface.zmq.PULL,
             connection="tcp://test",
             port=1234,
         )
@@ -114,7 +114,7 @@ class TestUtils(unittest.TestCase):
         m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
         with patch("builtins.open", m):
             bind = self.interface.socket_connect(
-                socket_type=manager.zmq.PULL,
+                socket_type=interface.zmq.PULL,
                 connection="tcp://test",
                 port=1234,
             )
