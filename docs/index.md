@@ -53,3 +53,9 @@ Documentation needed to be successful with Directord.
 * [Syntax](syntax.md)
 * [Orchestrations](orchestrations.md)
 * [Testing](testing.md)
+
+### Have Questions?
+
+Join us on [`freenode`](https://freenode.net) or [`OFTC`](https://oftc.net) at
+**#directord**. The community is just getting started: folks are here to help,
+answer questions, and support one another.
