@@ -34,6 +34,12 @@ This quick cast shows how easy it is to install, bootstrap, and deploy a scale t
 
 [![asciicast](https://asciinema.org/a/410759.svg)](https://asciinema.org/a/410759)
 
+## Have Questions?
+
+Join us on [`freenode`](https://freenode.net) or [`OFTC`](https://oftc.net) at
+**#directord**. The community is just getting started: folks are here to help,
+answer questions, and support one another.
+
 ## License
 
 Apache License Version 2.0
