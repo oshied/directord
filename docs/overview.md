@@ -34,14 +34,15 @@ instruction delivery network.
 
 ### Data storage and persistance
 
-Directord has two modes of operation when data-storage and persistence.
-Directord, by default, will run in ephemeral mode and will only retain cluster
-and job information so long as the server process is running. However, if
-there's a need or desire to retain information, even if the server process
-dies, Directord can be setup with an external datastore using Redis. The
-datastore option available in both config, or on the CLI uses a standard
-RFC-1738 compatible string allowing operators to connect to many different
-storage backends.
+Directord has two modes of operation for data-storage and persistence.
+
+* Ephemeral mode, only retain cluster and job information so long as the server
+  process is running.
+
+* Persistent mode, datastore using external datastore; supported datastores
+  are: Redis. The datastore option available in both config, or on the CLI and
+  uses a standard RFC-1738 compatible string. This allows operators to connect to
+  different storage backends to suit their environment needs.
 
 > Storing information persistently introduces a dependency on an external system
   and creates latency. While the latency should be minimal, and have nearly no
