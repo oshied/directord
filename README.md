@@ -28,17 +28,17 @@ diagrams, installation, usage, and more can all be
 
 * Information on running tests can be [found here](https://cloudnull.github.io/directord/testing).
 
+### Have Questions?
+
+Join us on [`libra chat`](https://libera.chat/guides/connect) at
+**#directord**. The community is just getting started: folks are here to help,
+answer questions, and support one another.
+
 ## Quick Introduction
 
 This quick cast shows how easy it is to install, bootstrap, and deploy a scale test environment.
 
 [![asciicast](https://asciinema.org/a/410759.svg)](https://asciinema.org/a/410759)
-
-## Have Questions?
-
-Join us on [`freenode`](https://freenode.net) or [`OFTC`](https://oftc.net) at
-**#directord**. The community is just getting started: folks are here to help,
-answer questions, and support one another.
 
 ## License
 
