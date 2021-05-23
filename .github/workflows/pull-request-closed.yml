@@ -15,6 +15,6 @@ jobs:
           channel: '#directord'
           nickname: directord-bot
           message: >
-            ${{ github.actor }} pushed ${{ github.event.pull_request.head.ref }}:
+            ${{ github.actor }} merged
             ${{ github.event.pull_request.title }}
-            ${{ github.event.pull_request.head.repo.compare_url }}
+            ${{ github.event.pull_request.html_url }}
