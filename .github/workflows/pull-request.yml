@@ -1,6 +1,35 @@
-name: Functional Check
+name: Run pull-request workflow
 on: [pull_request]
 jobs:
+  auto_blacken:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install black
+      - name: If needed, commit black changes to the pull request
+        run: |
+          if ! black --line-length 79 --safe --target-version py38 --check .; then
+            black --line-length 79 --safe --target-version py38 .
+            git config --global user.name '${{ github.event.pull_request.user.login }}'
+            git config --global user.email '${{ github.event.pull_request.user.login }}@users.noreply.github.com'
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+            git commit -am "FIX: Auto format Python code with Black"
+            git push
+          fi
+
+  container_build_check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build new directord container
+      run: docker build -t directord -f Containerfile .
+
   functional_check:
     runs-on: ubuntu-latest
     steps:
@@ -92,3 +121,28 @@ jobs:
             echo -e "FAILURE - [ directord-test-pod ] was still active on the system"
             exit 1
           fi
+
+  py_lint_and_unittest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install .[all] --upgrade
+    - name: Test with py-unittest
+      run: |
+        coverage run -a -m unittest
+        coverage report -m --omit="*/test*" --fail-under=70
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --show-source --max-complexity=25 --max-line-length=79 --statistics --benchmark --ignore=H104,W503
