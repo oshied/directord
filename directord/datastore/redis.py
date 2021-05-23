@@ -18,7 +18,7 @@ import time
 import redis
 
 
-class BaseDocument():
+class BaseDocument:
     """Create a document store object."""
 
     def __init__(self, url, database=0):

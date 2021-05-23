@@ -337,7 +337,7 @@ def _args(exec_args=None):
     return args, parser
 
 
-class SystemdInstall():
+class SystemdInstall:
     """Simple system service unit creation class."""
 
     def __init__(self):

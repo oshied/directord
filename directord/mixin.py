@@ -26,7 +26,7 @@ from directord import logger
 from directord import utils
 
 
-class Mixin():
+class Mixin:
     """Mixin class."""
 
     def __init__(self, args):
@@ -463,7 +463,7 @@ class Mixin():
         self.log.info("Running bootstrap for %s", job_def["host"])
         for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
             key, value = next(iter(job.items()))
-            self.log.debug("Executing: {} {}".format(key, value))
+            self.log.debug("Executing: %s %s", key, value)
             with utils.ParamikoConnect(
                 host=job_def["host"],
                 username=job_def["username"],

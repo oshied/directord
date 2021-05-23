@@ -118,7 +118,7 @@ class Component(components.ComponentBase):
             for mc in matched_configs:
                 name = os.path.splitext(os.path.basename(mc))[0]
                 config = json.loads(self._slurp(mc))
-                self.log.debug("Config found for {}: {}".format(name, config))
+                self.log.debug("Config found for %s: %s", name, config)
                 config_dict.update({name: config})
 
             # Merge the config dict with given overrides
@@ -131,9 +131,7 @@ class Component(components.ComponentBase):
                 tag="component",
             )
         else:
-            self.log.debug(
-                "{} does not exists, skipping step".format(config_path)
-            )
+            self.log.debug("%s does not exists, skipping step", config_path)
             configs = dict()
 
         return configs, None, True
@@ -148,5 +146,5 @@ class Component(components.ComponentBase):
             f = open(path, "r")
             return f.read()
         else:
-            self.log.warn("{} was not found.".format(path))
+            self.log.warn("%s was not found.", path)
             return ""

@@ -23,7 +23,7 @@ from directord import logger
 from directord import utils
 
 
-class ComponentBase():
+class ComponentBase:
     """Component base class."""
 
     def __init__(self, desc=None):

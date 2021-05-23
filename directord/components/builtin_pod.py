@@ -200,7 +200,7 @@ class Component(components.ComponentBase):
             return None, traceback.format_exc(), False
 
 
-class PodmanConnect():
+class PodmanConnect:
     """Connect to the podman unix socket."""
 
     def __init__(self, socket="/var/run/podman/podman.sock"):

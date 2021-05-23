@@ -169,9 +169,8 @@ class Client(interface.Interface):
                 if time.time() > heartbeat_at and heartbeat_misses > 5:
                     self.log.error("Heartbeat failure, can't reach server")
                     self.log.warning(
-                        "Reconnecting in {}s...".format(
-                            self.heartbeat_failure_interval
-                        )
+                        "Reconnecting in [ %s ]...",
+                        self.heartbeat_failure_interval,
                     )
 
                     time.sleep(self.heartbeat_failure_interval)
@@ -247,7 +246,7 @@ class Client(interface.Interface):
         if cached and component.cacheable:
             # TODO(cloudnull): Figure out how to skip cache when file
             #                  transfering.
-            self.log.info("Cache hit on {}, task skipped.".format(job_sha1))
+            self.log.info("Cache hit on %s, task skipped.", job_sha1)
             conn.info = b"job skipped"
             conn.job_state = self.job_end
             return None, None, None
@@ -330,7 +329,7 @@ class Client(interface.Interface):
                     job = json.loads(data.decode())
                     job_id = job.get("task", utils.get_uuid())
                     job_sha1 = job.get("task_sha1sum", utils.object_sha1(job))
-                    self.log.info("Job received {}".format(job_id))
+                    self.log.info("Job received %s", job_id)
                     self.socket_multipart_send(
                         zsocket=self.bind_job,
                         msg_id=job_id.encode(),
@@ -356,9 +355,9 @@ class Client(interface.Interface):
                     ) as c:
                         if cache.get(job_parent_id) is False:
                             self.log.error(
-                                "Parent failure {} skipping {}".format(
-                                    job_parent_id, job_id
-                                )
+                                "Parent failure %s skipping %s",
+                                job_parent_id,
+                                job_id,
                             )
                             status = (
                                 "Job [ {} ] was not allowed to run because"
@@ -410,7 +409,7 @@ class Client(interface.Interface):
 
                         if outcome is False:
                             state = c.job_state = self.job_failed
-                            self.log.error("Job failed {}".format(job_id))
+                            self.log.error("Job failed %s", job_id)
                             if job_parent_id:
                                 base_component.set_cache(
                                     cache=cache,
@@ -420,7 +419,7 @@ class Client(interface.Interface):
                                 )
                         elif outcome is True:
                             state = c.job_state = self.job_end
-                            self.log.info("Job complete {}".format(job_id))
+                            self.log.info("Job complete %s", job_id)
                             if job_parent_id:
                                 base_component.set_cache(
                                     cache=cache,
