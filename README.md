@@ -30,7 +30,7 @@ diagrams, installation, usage, and more can all be
 
 ### Have Questions?
 
-Join us on [`libra chat`](https://libera.chat/guides/connect) at
+Join us on [`libera.chat`](https://libera.chat/guides/connect) at
 **#directord**. The community is just getting started: folks are here to help,
 answer questions, and support one another.
 
