@@ -1,0 +1,18 @@
+name: PR Closed
+on:
+  pull_request:
+    types:
+      - closed
+jobs:
+  pr_merged:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: IRC Release Notification
+        uses: Gottox/irc-message-action@v1
+        with:
+          server: irc.libera.chat
+          channel: '#directord'
+          nickname: directord-bot
+          message: >
+            ${{ github.actor }} pushed ${{ github.event.ref }} ${{ github.event.compare }}
