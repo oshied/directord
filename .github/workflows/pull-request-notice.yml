@@ -3,6 +3,7 @@ on:
   pull_request:
     types:
       - opened
+      - reopened
 jobs:
   pr_open:
     runs-on: ubuntu-latest
