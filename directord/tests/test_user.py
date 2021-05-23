@@ -187,7 +187,9 @@ class TestManager(unittest.TestCase):
         self.manage.poll_job("test-id")
         mock_log_warn.assert_called_once_with(
             unittest.mock.ANY,
-            'Timeout encountered after %s seconds running %s.', 1, 'test-id'
+            "Timeout encountered after %s seconds running %s.",
+            1,
+            "test-id",
         )
         mock_log_error.assert_called_once_with(
             unittest.mock.ANY,

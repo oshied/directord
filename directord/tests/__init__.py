@@ -129,8 +129,8 @@ class FakeCache:
         if key not in self.cache:
             if "default" in kwargs:
                 return kwargs["default"]
-        else:
-            return self.cache.pop(key)
+
+        return self.cache.pop(key)
 
     def set(self, key, value, **kwargs):
         self.cache[key] = value

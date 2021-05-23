@@ -159,5 +159,5 @@ class LogSetup:
             return os.path.join(log_dir, filename)
         elif log_dir_stat.st_gid == user:
             return os.path.join(log_dir, filename)
-        else:
-            return os.path.join(home, filename)
+
+        return os.path.join(home, filename)

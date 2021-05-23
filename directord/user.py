@@ -147,8 +147,8 @@ class Manage(User):
                         return True, "Job Success: {}".format(job_id)
                     elif len(data_return.get("FAILED", list())) > 0:
                         return None, "Job Degrated: {}".format(job_id)
-                    else:
-                        return None, "Job Skipped: {}".format(job_id)
+
+                    return None, "Job Skipped: {}".format(job_id)
                 else:
                     miss += 1
                     if miss > 5:

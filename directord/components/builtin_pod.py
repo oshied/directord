@@ -184,17 +184,17 @@ class Component(components.ComponentBase):
                         data = json.dumps(data)
                     if status:
                         return data, None, status
-                    else:
-                        return None, data, status
-                else:
-                    return (
-                        None,
-                        (
-                            "The action [ {action} ] failed to return"
-                            "  a function".format(action=job["pod_action"])
-                        ),
-                        False,
-                    )
+
+                    return None, data, status
+
+                return (
+                    None,
+                    (
+                        "The action [ {action} ] failed to return"
+                        "  a function".format(action=job["pod_action"])
+                    ),
+                    False,
+                )
         except Exception as e:
             self.log.critical(str(e))
             return None, traceback.format_exc(), False
@@ -351,8 +351,8 @@ class PodmanPod(PodmanConnect):
                     params={"tlsVerify": tls_verify, "start": True},
                 )
             return resp.ok, self._decode(resp.content)
-        else:
-            return False, "Pod YAML did not exist"
+
+        return False, "Pod YAML did not exist"
 
     def exec_run(self, name, command, env, privileged=False):
         """Create an exec container and run it.

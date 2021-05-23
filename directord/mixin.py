@@ -368,8 +368,8 @@ class Mixin:
 
             seen_computed_key.append(key)
             tabulated_data.append(arranged_data)
-        else:
-            return tabulated_data, found_headings, computed_values
+
+        return tabulated_data, found_headings, computed_values
 
     @staticmethod
     def bootstrap_catalog_entry(entry):
@@ -413,8 +413,8 @@ class Mixin:
             else:
                 base_path = os.path.join(sys.prefix, "share/directord/tools")
             return os.path.join(base_path, localfile)
-        else:
-            return localfile
+
+        return localfile
 
     def bootstrap_flatten_jobs(self, jobs, return_jobs=None):
         """Return a flattened list of jobs.
@@ -439,6 +439,7 @@ class Mixin:
                 )
             else:
                 return_jobs.append(job)
+
         return return_jobs
 
     def bootstrap_run(self, job_def, catalog):

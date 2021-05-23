@@ -250,8 +250,8 @@ class Client(interface.Interface):
             conn.info = b"job skipped"
             conn.job_state = self.job_end
             return None, None, None
-        else:
-            return component.client(**component_kwargs)
+
+        return component.client(**component_kwargs)
 
     def run_job(self, sentinel=False):
         """Job entry point.
@@ -371,8 +371,8 @@ class Client(interface.Interface):
 
                             if sentinel:
                                 break
-                            else:
-                                continue
+
+                            continue
 
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id

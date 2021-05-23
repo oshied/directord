@@ -103,8 +103,8 @@ class ComponentBase:
         output, error = process.communicate()
         if process.returncode not in return_codes:
             return output, error, False
-        else:
-            return output, error, True
+
+        return output, error, True
 
     def options_converter(self, documentation):
         """Convert an options YAML to Arguments.
@@ -298,8 +298,8 @@ class ComponentBase:
                 return
             else:
                 return rendered_content
-        else:
-            return content
+
+        return content
 
     def parser_error(self):
         """Return parser help information."""

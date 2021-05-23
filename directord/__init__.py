@@ -47,8 +47,8 @@ def send_data(socket_path, data):
             chunk = s.recv(1024)
             if not chunk:
                 break
-            else:
-                fragments.append(chunk)
+
+            fragments.append(chunk)
         return b"".join(fragments)
 
 

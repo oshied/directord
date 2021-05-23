@@ -210,8 +210,8 @@ class Server(interface.Interface):
         def return_exec_time(started):
             if started:
                 return time.time() - started
-            else:
-                return 0
+
+            return 0
 
         job_metadata = self.return_jobs.get(job_id)
         if not job_metadata:

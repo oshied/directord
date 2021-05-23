@@ -75,4 +75,5 @@ class Component(components.ComponentBase):
             query = json.dumps(args.get(job["query"]))
         else:
             query = None
+
         return query, None, True
