@@ -18,7 +18,7 @@ import time
 import redis
 
 
-class BaseDocument(object):
+class BaseDocument:
     """Create a document store object."""
 
     def __init__(self, url, database=0):
@@ -120,9 +120,8 @@ class BaseDocument(object):
                     self.datastore.delete(item)
             except (KeyError, TypeError):
                 pass
-        else:
 
-            return len(self.datastore.keys("*"))
+        return len(self.datastore.keys("*"))
 
     def get(self, key):
         """Return the value of a given key.
@@ -147,6 +146,6 @@ class BaseDocument(object):
         item = self.__getitem__(key)
         if item:
             return item
-        else:
-            self.__setitem__(key, value)
-            return value
+
+        self.__setitem__(key, value)
+        return value

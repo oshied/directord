@@ -40,7 +40,7 @@ def getLogger(name, debug_logging=False):
         )
 
 
-class LogSetup(object):
+class LogSetup:
     """Logging Class."""
 
     def __init__(self, max_size=500, max_backup=5, debug_logging=False):
@@ -159,5 +159,5 @@ class LogSetup(object):
             return os.path.join(log_dir, filename)
         elif log_dir_stat.st_gid == user:
             return os.path.join(log_dir, filename)
-        else:
-            return os.path.join(home, filename)
+
+        return os.path.join(home, filename)

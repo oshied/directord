@@ -133,9 +133,8 @@ class Server(interface.Interface):
                 ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
                 if control in [self.heartbeat_ready, self.heartbeat_notice]:
                     self.log.debug(
-                        "Received Heartbeat from [ {} ], client online".format(
-                            identity.decode()
-                        )
+                        "Received Heartbeat from [ %s ], client online",
+                        identity.decode(),
                     )
                     expire = self.get_expiry
                     worker_metadata = {"time": expire}
@@ -155,14 +154,14 @@ class Server(interface.Interface):
                         info=struct.pack("<f", expire),
                     )
                     self.log.debug(
-                        "Sent Heartbeat to [ {} ]".format(identity.decode())
+                        "Sent Heartbeat to [ %s ]", identity.decode()
                     )
 
             # Send heartbeats to idle workers if it's time
             elif time.time() > idle_time:
                 for worker in list(self.workers.keys()):
                     self.log.warning(
-                        "Sending idle worker [ {} ] a heartbeat".format(worker)
+                        "Sending idle worker [ %s ] a heartbeat", worker
                     )
                     self.socket_multipart_send(
                         zsocket=self.bind_heatbeat,
@@ -172,16 +171,10 @@ class Server(interface.Interface):
                         info=struct.pack("<f", self.get_expiry),
                     )
                     if time.time() > idle_time + 3:
-                        self.log.warning(
-                            "Removing dead worker {}".format(worker)
-                        )
+                        self.log.warning("Removing dead worker %s", worker)
                         self.workers.pop(worker)
             else:
-                self.log.debug(
-                    "Items after prune {items}".format(
-                        items=self.workers.prune()
-                    )
-                )
+                self.log.debug("Items after prune %s", self.workers.prune())
 
             if sentinel:
                 break
@@ -217,8 +210,8 @@ class Server(interface.Interface):
         def return_exec_time(started):
             if started:
                 return time.time() - started
-            else:
-                return 0
+
+            return 0
 
         job_metadata = self.return_jobs.get(job_id)
         if not job_metadata:
@@ -240,15 +233,13 @@ class Server(interface.Interface):
         if job_status == self.job_ack:
             if not _createtime:
                 job_metadata["_createtime"] = time.time()
-            self.log.debug("{} received job {}".format(identity, job_id))
+            self.log.debug("%s received job %s", identity, job_id)
         elif job_status == self.job_processing:
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
-            self.log.debug("{} is processing {}".format(identity, job_id))
+            self.log.debug("%s is processing %s", identity, job_id)
         elif job_status in [self.job_end, self.nullbyte]:
-            self.log.debug(
-                "{} finished processing {}".format(identity, job_id)
-            )
+            self.log.debug("%s finished processing %s", identity, job_id)
             if "SUCCESS" in job_metadata:
                 job_metadata["SUCCESS"].append(identity)
             else:
@@ -371,9 +362,7 @@ class Server(interface.Interface):
                         targets.append(job_target)
                     else:
                         self.log.critical(
-                            "Target {} is in an unknown state.".format(
-                                job_target
-                            )
+                            "Target %s is in an unknown state.", job_target
                         )
                         return 512, time.time()
             else:
@@ -434,7 +423,7 @@ class Server(interface.Interface):
                         data=json.dumps(job_item).encode(),
                     )
 
-                self.log.debug("Sent job {} to {}".format(task, identity))
+                self.log.debug("Sent job %s to %s", task, identity)
             else:
                 self.return_jobs[task] = job_info
 
@@ -682,9 +671,7 @@ class Server(interface.Interface):
                             str(e),
                         )
                     else:
-                        self.log.debug(
-                            "Data sent to queue, {}".format(json_data)
-                        )
+                        self.log.debug("Data sent to queue, %s", json_data)
                     finally:
                         self.job_queue.put(json_data)
             if sentinel:

@@ -26,7 +26,7 @@ from directord import logger
 from directord import utils
 
 
-class Mixin(object):
+class Mixin:
     """Mixin class."""
 
     def __init__(self, args):
@@ -368,8 +368,8 @@ class Mixin(object):
 
             seen_computed_key.append(key)
             tabulated_data.append(arranged_data)
-        else:
-            return tabulated_data, found_headings, computed_values
+
+        return tabulated_data, found_headings, computed_values
 
     @staticmethod
     def bootstrap_catalog_entry(entry):
@@ -413,8 +413,8 @@ class Mixin(object):
             else:
                 base_path = os.path.join(sys.prefix, "share/directord/tools")
             return os.path.join(base_path, localfile)
-        else:
-            return localfile
+
+        return localfile
 
     def bootstrap_flatten_jobs(self, jobs, return_jobs=None):
         """Return a flattened list of jobs.
@@ -439,6 +439,7 @@ class Mixin(object):
                 )
             else:
                 return_jobs.append(job)
+
         return return_jobs
 
     def bootstrap_run(self, job_def, catalog):
@@ -463,7 +464,7 @@ class Mixin(object):
         self.log.info("Running bootstrap for %s", job_def["host"])
         for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
             key, value = next(iter(job.items()))
-            self.log.debug("Executing: {} {}".format(key, value))
+            self.log.debug("Executing: %s %s", key, value)
             with utils.ParamikoConnect(
                 host=job_def["host"],
                 username=job_def["username"],

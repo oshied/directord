@@ -47,8 +47,8 @@ def send_data(socket_path, data):
             chunk = s.recv(1024)
             if not chunk:
                 break
-            else:
-                fragments.append(chunk)
+
+            fragments.append(chunk)
         return b"".join(fragments)
 
 
@@ -118,7 +118,7 @@ def component_import(component, job_id=None):
     return True, transfer, component_obj.Component()
 
 
-class Processor(object):
+class Processor:
     """Processing class, provides queing and threading utilities.
 
     This is a base class.
@@ -170,9 +170,7 @@ class Processor(object):
             data = file_object.read(chunk_size)
             if not data:
                 break
-            self.log.debug(
-                "Transimitting a {size} Chunk ".format(size=len(data))
-            )
+            self.log.debug("Transimitting a %s Chunk ", len(data))
             yield data
 
     @contextlib.contextmanager
@@ -194,9 +192,9 @@ class Processor(object):
             yield
         except TimeoutError:
             self.log.warning(
-                "Timeout encountered after {} seconds running {}.".format(
-                    time, job_id
-                )
+                "Timeout encountered after %s seconds running %s.",
+                time,
+                job_id,
             )
             if reraise:
                 raise TimeoutError
@@ -210,7 +208,7 @@ class Processor(object):
         raise TimeoutError
 
 
-class UNIXSocketConnect(object):
+class UNIXSocketConnect:
     """Context manager for connecting to a UNIX socket."""
 
     def __init__(self, sock_path):
@@ -238,7 +236,7 @@ class UNIXSocketConnect(object):
         self.sock.close()
 
 
-class DirectordConnect(object):
+class DirectordConnect:
     """Library context manager providing easy access into Directord."""
 
     def __init__(self, debug=False, socket_path="/var/run/directord.sock"):

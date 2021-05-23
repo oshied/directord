@@ -41,8 +41,8 @@ class BaseDocument(dict):
                     self.pop(key)
             except (KeyError, TypeError):
                 pass
-        else:
-            return len(self)
+
+        return len(self)
 
     def set(self, key, value):
         """Set key and value if key doesn't already exist.
@@ -56,9 +56,9 @@ class BaseDocument(dict):
 
         if key in self:
             return self[key]
-        else:
-            super().__setitem__(key, value)
-            return self[key]
+
+        super().__setitem__(key, value)
+        return self[key]
 
     def __repr__(self):
         return f"{type(self).__name__}({super().__repr__()})"
