@@ -1,0 +1,19 @@
+name: PR Notifications
+on:
+  pull_request:
+    types:
+      - opened
+jobs:
+  pr_open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: IRC Release Notification
+        uses: Gottox/irc-message-action@v1
+        with:
+          server: irc.libera.chat
+          channel: '#directord'
+          nickname: directord-bot
+          message: >
+            ${{ github.event.pull_request.user.login }}
+            Submitted Pull Request ${{ github.event.pull_request.title }}
+            ${{ github.event.pull_request.html_url }}

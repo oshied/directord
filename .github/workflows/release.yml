@@ -7,6 +7,28 @@ on:
       - created
 
 jobs:
+  irc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: IRC Release Notification
+        uses: Gottox/irc-message-action@v1
+        with:
+          server: irc.libera.chat
+          channel: '#directord'
+          nickname: directord-bot
+          message: >
+            Directord version ${{ github.event.release.tag_name }} has been released!
+            ${{ github.event.release.html_url }}
+      - name: IRC Release Notification
+        uses: Gottox/irc-message-action@v1
+        with:
+          server: irc.libera.chat
+          channel: '#directord'
+          nickname: directord-bot
+          message: >
+            /topic Latest Directord Release ${{ github.event.release.html_url }}
+            -- checkout the pages for the latest project information directord.com
+
   tweet:
     runs-on: ubuntu-latest
     steps:
@@ -23,7 +45,7 @@ jobs:
           status: |
             Directord version ${{ github.event.release.tag_name }} has been released!
 
-            > ${{ steps.get-body.outputs.body }}
+            ${{ steps.get-body.outputs.body }}
 
             Checkout the Pages - https://directord.com
             #Python Package - https://pypi.org/project/directord
