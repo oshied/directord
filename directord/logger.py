@@ -40,7 +40,7 @@ def getLogger(name, debug_logging=False):
         )
 
 
-class LogSetup(object):
+class LogSetup():
     """Logging Class."""
 
     def __init__(self, max_size=500, max_backup=5, debug_logging=False):

@@ -46,7 +46,7 @@ class DirectordUI(MethodView):
         return response
 
 
-class UI(object):
+class UI():
     """The Directord UI execution class."""
 
     def __init__(self, args, jobs, nodes):

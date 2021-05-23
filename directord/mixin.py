@@ -26,7 +26,7 @@ from directord import logger
 from directord import utils
 
 
-class Mixin(object):
+class Mixin():
     """Mixin class."""
 
     def __init__(self, args):

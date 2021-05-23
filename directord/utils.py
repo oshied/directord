@@ -66,7 +66,7 @@ def merge_dict(base, new):
     return base
 
 
-class ClientStatus(object):
+class ClientStatus():
     """Context manager for transmitting client status."""
 
     def __init__(self, socket, job_id, command, ctx):
@@ -112,7 +112,7 @@ class ClientStatus(object):
         )
 
 
-class ParamikoConnect(object):
+class ParamikoConnect():
     """Context manager to remotly connect to servers using paramiko.
 
     The connection manager requires an SSH key to be defined, and exist,

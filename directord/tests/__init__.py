@@ -56,7 +56,7 @@ curve
 """
 
 
-class FakePopen(object):
+class FakePopen():
     """Fake Shell Commands."""
 
     def __init__(self, return_code=0, *args, **kwargs):
@@ -67,7 +67,7 @@ class FakePopen(object):
         return "stdout", "stderr"
 
 
-class FakeStat(object):
+class FakeStat():
     def __init__(self, uid, gid):
         self.st_uid = uid
         self.st_gid = gid
@@ -76,7 +76,7 @@ class FakeStat(object):
         self.st_mode = 0
 
 
-class FakeArgs(object):
+class FakeArgs():
     config_file = None
     datastore = None
     debug = False
@@ -118,7 +118,7 @@ class MockChannelFile(io.StringIO):
         self.channel.recv_exit_status.return_value = rc
 
 
-class FakeCache(object):
+class FakeCache():
     def __init__(self):
         self.cache = {"args": {"test": 1}}
 

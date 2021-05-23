@@ -118,7 +118,7 @@ def component_import(component, job_id=None):
     return True, transfer, component_obj.Component()
 
 
-class Processor(object):
+class Processor():
     """Processing class, provides queing and threading utilities.
 
     This is a base class.
@@ -210,7 +210,7 @@ class Processor(object):
         raise TimeoutError
 
 
-class UNIXSocketConnect(object):
+class UNIXSocketConnect():
     """Context manager for connecting to a UNIX socket."""
 
     def __init__(self, sock_path):
@@ -238,7 +238,7 @@ class UNIXSocketConnect(object):
         self.sock.close()
 
 
-class DirectordConnect(object):
+class DirectordConnect():
     """Library context manager providing easy access into Directord."""
 
     def __init__(self, debug=False, socket_path="/var/run/directord.sock"):
