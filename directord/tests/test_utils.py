@@ -13,14 +13,16 @@
 #   under the License.
 
 import unittest
+from unittest import mock
 import uuid
 
 from unittest.mock import patch
 
+from directord import tests
 from directord import utils
 
 
-class TestUtils(unittest.TestCase):
+class TestUtils(tests.TestConnectionBase):
     def test_dump_yaml(self):
         m = unittest.mock.mock_open()
         with patch("builtins.open", m):
@@ -98,21 +100,14 @@ class TestUtils(unittest.TestCase):
             stdout=unittest.mock.ANY,
         )
 
-    @patch("directord.utils.paramiko.RSAKey", autospec=True)
-    @patch("directord.utils.paramiko.SSHClient", autospec=True)
-    def test_paramikoconnect(self, mock_sshclient, mock_rsakey):
-        with utils.ParamikoConnect(
+    def test_sshconnect(
+        self,
+    ):
+        with utils.SSHConnect(
             host="test", username="testuser", port=22, key_file="/test/key"
         ) as ssh:
-            self.assertEqual(ssh, mock_sshclient())
-            ssh.connect.assert_called_once_with(
-                allow_agent=True,
-                hostname="test",
-                pkey=unittest.mock.ANY,
-                port=22,
-                username="testuser",
-            )
-        ssh.close.assert_called_once_with()
+            ssh.session.handshake(mock.ANY)
+            ssh.session.knownhost_init()
 
     def test_file_sha1(self):
         with unittest.mock.patch(

@@ -12,13 +12,12 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import unittest
 
-import io
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from collections import namedtuple
-from unittest import mock
-
-import paramiko
 
 
 TEST_BLUEPRINT_CONTENT = "This is a blueprint string {{ test }}"
@@ -74,6 +73,7 @@ class FakeStat:
         self.st_size = 0
         self.st_mtime = 0
         self.st_mode = 0
+        self.st_atime = 0
 
 
 class FakeArgs:
@@ -109,13 +109,6 @@ class MockSocket:
 
     def close(self):
         pass
-
-
-class MockChannelFile(io.StringIO):
-    channel = mock.MagicMock(spec=paramiko.Channel)()
-
-    def __init__(self, rc=0):
-        self.channel.recv_exit_status.return_value = rc
 
 
 class FakeCache:
@@ -158,3 +151,21 @@ class FakeCache:
 
     def __exit__(*args, **kwargs):
         pass
+
+
+class TestConnectionBase(unittest.TestCase):
+    def setUp(self):
+        self.patched_socket = patch("socket.socket.connect", autospec=True)
+        self.patched_socket.start()
+        fakesession = MagicMock()
+        self.fakechannel = fakesession.open_session.return_value = MagicMock()
+        self.fakechannel.read.return_value = (0, "test-exec-output")
+        self.fakechannel.get_exit_status.return_value = 0
+        self.patched_session = patch(
+            "directord.utils.Session", autospec=True, return_value=fakesession
+        )
+        self.patched_session.start()
+
+    def tearDown(self):
+        self.patched_socket.stop()
+        self.patched_session.stop()
