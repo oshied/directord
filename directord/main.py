@@ -303,6 +303,7 @@ def _args(exec_args=None):
         help="File path for SSH catalog.",
         metavar="STRING",
         action="append",
+        required=True,
         type=argparse.FileType(mode="r"),
     )
     parser_bootstrap.add_argument(

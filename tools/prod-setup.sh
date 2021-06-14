@@ -4,13 +4,13 @@ set -eo
 . /etc/os-release
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
-  PACKAGES="git python3 python3-paramiko python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium"
+  PACKAGES="git python3 python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium"
   dnf -y install ${PACKAGES}
 elif [[ ${ID} == "fedora" ]]; then
-  PACKAGES="git python3 python3-paramiko python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-diskcache"
+  PACKAGES="git python3 python3-ssh2-python python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-diskcache"
   dnf -y install ${PACKAGES}
 elif [[ ${ID} == "ubuntu" ]]; then
-  PACKAGES="git python3-all python3-venv python3-paramiko python3-tabulate python3-zmq python3-yaml python3-jinja2"
+  PACKAGES="git python3-all python3-venv python3-tabulate python3-zmq python3-yaml python3-jinja2"
   apt update
   apt -y install ${PACKAGES}
 else

@@ -15,10 +15,13 @@
 import hashlib
 import json
 import os
+import pwd
+import socket
 import uuid
 import yaml
 
-import paramiko
+import ssh2
+from ssh2.session import Session
 
 
 def dump_yaml(file_path, data):
@@ -112,8 +115,8 @@ class ClientStatus:
         )
 
 
-class ParamikoConnect:
-    """Context manager to remotly connect to servers using paramiko.
+class SSHConnect:
+    """Context manager to remotely connect to servers using libssh2.
 
     The connection manager requires an SSH key to be defined, and exist,
     however, upon enter the system will use the SSH agent is defined.
@@ -133,20 +136,21 @@ class ParamikoConnect:
         """
 
         self.key_file = key_file
-        self.ssh = paramiko.SSHClient()
-        self.ssh.load_system_host_keys()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.host = host
-        self.username = username
-        self.port = port
-        self.connect_kwargs = dict(
-            hostname=self.host,
-            username=self.username,
-            port=self.port,
-            allow_agent=True,
-        )
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((host, port))
+
+        self.session = Session()
+        self.session.handshake(self.sock)
+        try:
+            self.session.agent_auth(username)
+        except ssh2.exceptions.AgentConnectionError:
+            pass
+
+        self.known_hosts = self.session.knownhost_init()
         if key_file:
-            self.connect_kwargs["pkey"] = paramiko.RSAKey(filename=key_file)
+            self.session.userauth_publickey_fromfile(
+                pwd.getpwuid(os.geteuid()).pw_name, key_file
+            )
 
     def __enter__(self):
         """Connect to the remote node and return the ssh and session objects.
@@ -154,13 +158,13 @@ class ParamikoConnect:
         :returns: Tuple
         """
 
-        self.ssh.connect(**self.connect_kwargs)
-        return self.ssh
+        self.channel = self.session.open_session()
+        return self
 
     def __exit__(self, *args, **kwargs):
         """Upon exit, close the ssh connection."""
 
-        self.ssh.close()
+        pass
 
 
 def file_sha1(file_path, chunk_size=10240):
