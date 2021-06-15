@@ -15,7 +15,6 @@
 import json
 import unittest
 
-from unittest import mock
 from unittest.mock import patch
 
 from directord import mixin
@@ -45,8 +44,9 @@ TEST_ORCHESTRATION_READ = """---
 """
 
 
-class TestMixin(unittest.TestCase):
+class TestMixin(tests.TestConnectionBase):
     def setUp(self):
+        super().setUp()
         self.args = tests.FakeArgs()
         self.mixin = mixin.Mixin(args=self.args)
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
@@ -73,16 +73,16 @@ class TestMixin(unittest.TestCase):
         self.target_orchestrations = [self.orchestration, self.orchestration]
 
         # Fake SSH
-        self.buf = tests.MockChannelFile()
-        self.mock_ssh = mock.MagicMock()
-        self.mock_ssh.exec_command.return_value = (
-            self.buf,
-            self.buf,
-            self.buf,
-        )
+        self.mock_ssh = utils.SSHConnect(
+            host="test", username="tester", port=22
+        ).__enter__()
+        self.stat_patched = unittest.mock.patch("directord.os.stat")
+        self.stat = self.stat_patched.start()
 
     def tearDown(self):
+        super().tearDown()
         self.patched_object_sha1.stop()
+        self.stat_patched.stop()
 
     def test_format_action_unknown(self):
         self.assertRaises(
@@ -759,9 +759,7 @@ class TestMixin(unittest.TestCase):
         self.assertEqual(return_data, ["one", "two", "three", "four"])
 
     @patch("logging.Logger.info", autospec=True)
-    @patch("directord.utils.ParamikoConnect.__enter__", autospec=True)
-    def test_bootstrap_run(self, mock_paramikoconnect, mock_log_info):
-        mock_paramikoconnect.return_value = self.mock_ssh
+    def test_bootstrap_run(self, mock_log_info):
         job_def = {
             "host": "String",
             "port": 22,
@@ -773,27 +771,29 @@ class TestMixin(unittest.TestCase):
         mock_log_info.assert_called()
 
     def test_bootstrap_file_send(self):
-        self.mixin.bootstrap_file_send(
-            ssh=self.mock_ssh, localfile="/file1", remotefile="/file2"
-        )
+        self.stat.return_value = tests.FakeStat(uid=99, gid=99)
+        m = unittest.mock.mock_open(read_data=b"testing")
+        with patch("builtins.open", m):
+            self.mixin.bootstrap_file_send(
+                ssh=self.mock_ssh, localfile="/file1", remotefile="/file2"
+            )
 
     def test_bootstrap_file_get(self):
-        self.mixin.bootstrap_file_send(
-            ssh=self.mock_ssh, localfile="/file1", remotefile="/file2"
-        )
+        self.stat.return_value = tests.FakeStat(uid=99, gid=99)
+        m = unittest.mock.mock_open(read_data=b"testing")
+        with patch("builtins.open", m):
+            self.mixin.bootstrap_file_send(
+                ssh=self.mock_ssh, localfile="/file1", remotefile="/file2"
+            )
 
     def test_bootstrap_exec(self):
         self.mixin.bootstrap_exec(
             ssh=self.mock_ssh, command="command1", catalog={}
         )
-        self.mock_ssh.exec_command.assert_called_with("command1")
+        self.mock_ssh.channel.execute.assert_called_with("command1")
 
     def test_bootstrap_exec_failure(self):
-        self.mock_ssh.exec_command.return_value = (
-            self.buf,
-            tests.MockChannelFile(rc=2),
-            self.buf,
-        )
+        self.fakechannel.get_exit_status.return_value = 1
         self.assertRaises(
             SystemExit,
             self.mixin.bootstrap_exec,
@@ -808,16 +808,11 @@ class TestMixin(unittest.TestCase):
             command="command {{ test }} test",
             catalog={"test": 1},
         )
-        self.mock_ssh.exec_command.assert_called_with("command 1 test")
+        self.mock_ssh.channel.execute.assert_called_with("command 1 test")
 
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.info", autospec=True)
-    @patch("directord.utils.paramiko.SSHClient", autospec=True)
-    @patch("directord.utils.ParamikoConnect.__enter__", autospec=True)
-    def test_bootstrap_q_processor(
-        self, mock_paramikoconnect, mock_sshclient, mock_log_info, mock_queue
-    ):
-        mock_paramikoconnect.return_value = self.mock_ssh
+    def test_bootstrap_q_processor(self, mock_log_info, mock_queue):
         mock_queue.get.side_effect = [
             {
                 "host": "String",

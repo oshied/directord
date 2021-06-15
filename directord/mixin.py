@@ -20,6 +20,9 @@ import yaml
 
 import jinja2
 
+from ssh2.sftp import LIBSSH2_FXF_READ
+from ssh2.sftp import LIBSSH2_SFTP_S_IRUSR
+
 import directord
 
 from directord import logger
@@ -381,6 +384,13 @@ class Mixin:
         """
 
         ordered_entries = list()
+        for item in ["jobs", "targets"]:
+            if item not in entry:
+                raise SystemExit(
+                    "The bootstrap catalog is missing a"
+                    " required component: {}".format(item)
+                )
+
         args = entry.get("args", dict(port=22, username="root"))
         for target in entry["targets"]:
             item = dict(
@@ -465,7 +475,7 @@ class Mixin:
         for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
             key, value = next(iter(job.items()))
             self.log.debug("Executing: %s %s", key, value)
-            with utils.ParamikoConnect(
+            with utils.SSHConnect(
                 host=job_def["host"],
                 username=job_def["username"],
                 port=job_def["port"],
@@ -499,11 +509,17 @@ class Mixin:
         :type remotefile: String
         """
 
-        ftp_client = ssh.open_sftp()
-        try:
-            ftp_client.put(localfile, remotefile)
-        finally:
-            ftp_client.close()
+        fileinfo = os.stat(localfile)
+        chan = ssh.session.scp_send64(
+            remotefile,
+            fileinfo.st_mode & 0o777,
+            fileinfo.st_size,
+            fileinfo.st_mtime,
+            fileinfo.st_atime,
+        )
+        with open(localfile, "rb") as local_fh:
+            for data in local_fh:
+                chan.write(data)
 
     @staticmethod
     def bootstrap_file_get(ssh, localfile, remotefile):
@@ -517,11 +533,13 @@ class Mixin:
         :type remotefile: String
         """
 
-        ftp_client = ssh.open_sftp()
-        try:
-            ftp_client.get(remotefile, localfile)
-        finally:
-            ftp_client.close()
+        sftp = ssh.session.sftp_init()
+        with open(localfile, "wb") as f:
+            with sftp.open(
+                remotefile, LIBSSH2_FXF_READ, LIBSSH2_SFTP_S_IRUSR
+            ) as fh:
+                for _, data in fh:
+                    f.write(data)
 
     def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.
@@ -538,12 +556,18 @@ class Mixin:
         """
 
         t_command = self.blueprint.from_string(command)
-        _, stdout, stderr = ssh.exec_command(t_command.render(**catalog))
-        if stdout.channel.recv_exit_status() != 0:
+        ssh.channel.execute(t_command.render(**catalog))
+        ssh.channel.wait_eof()
+        ssh.channel.close()
+        ssh.channel.wait_closed()
+
+        if ssh.channel.get_exit_status() != 0:
+            size, data = ssh.channel.read()
+            while size > 0:
+                size, _data = ssh.channel.read()
+                data += _data
             raise SystemExit(
-                "Bootstrap command failed: {}, Error: {}".format(
-                    command, stderr
-                )
+                "Bootstrap command failed: {}, Error: {}".format(command, data)
             )
 
     def bootstrap_q_processor(self, queue, catalog):
@@ -579,6 +603,9 @@ class Mixin:
 
         q = multiprocessing.Queue()
         catalog = dict()
+        if not self.args.catalog:
+            raise SystemExit("No catalog was defined.")
+
         for c in self.args.catalog:
             utils.merge_dict(base=catalog, new=yaml.safe_load(c))
 

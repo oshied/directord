@@ -12,6 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 __author__ = "Kevin Carter"
 __email__ = "kevin@cloudnull.com"
