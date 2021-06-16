@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import getpass
 import json
 import multiprocessing
 import os
@@ -19,9 +20,6 @@ import sys
 import yaml
 
 import jinja2
-
-from ssh2.sftp import LIBSSH2_FXF_READ
-from ssh2.sftp import LIBSSH2_SFTP_S_IRUSR
 
 import directord
 
@@ -43,7 +41,9 @@ class Mixin:
 
         self.args = args
         self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
-        self.log = logger.getLogger(name="directord")
+        self.log = logger.getLogger(
+            name="directord", debug_logging=getattr(args, "debug", False)
+        )
 
     def format_action(
         self,
@@ -391,11 +391,13 @@ class Mixin:
                     " required component: {}".format(item)
                 )
 
-        args = entry.get("args", dict(port=22, username="root"))
+        args = entry.get("args", dict(port=22, username=getpass.getuser()))
         for target in entry["targets"]:
             item = dict(
                 host=target["host"],
-                username=target.get("username", args["username"]),
+                username=target.get(
+                    "username", args.get("username", getpass.getuser())
+                ),
                 port=target.get("port", args["port"]),
                 jobs=entry["jobs"],
             )
@@ -480,6 +482,7 @@ class Mixin:
                 username=job_def["username"],
                 port=job_def["port"],
                 key_file=job_def.get("key_file"),
+                debug=getattr(self.args, "debug", False),
             ) as ssh:
                 if key == "RUN":
                     self.bootstrap_exec(
@@ -497,8 +500,7 @@ class Mixin:
                         ssh=ssh, localfile=localfile, remotefile=remotefile
                     )
 
-    @staticmethod
-    def bootstrap_file_send(ssh, localfile, remotefile):
+    def bootstrap_file_send(self, ssh, localfile, remotefile):
         """Run a remote put command.
 
         :param ssh: SSH connection object.
@@ -517,6 +519,12 @@ class Mixin:
             fileinfo.st_mtime,
             fileinfo.st_atime,
         )
+        self.log.debug(
+            "channel: %s, local file: %s, remote file: %s",
+            chan,
+            localfile,
+            remotefile,
+        )
         with open(localfile, "rb") as local_fh:
             for data in local_fh:
                 chan.write(data)
@@ -533,13 +541,13 @@ class Mixin:
         :type remotefile: String
         """
 
-        sftp = ssh.session.sftp_init()
+        chan, _ = ssh.session.scp_recv2(remotefile)
         with open(localfile, "wb") as f:
-            with sftp.open(
-                remotefile, LIBSSH2_FXF_READ, LIBSSH2_SFTP_S_IRUSR
-            ) as fh:
-                for _, data in fh:
-                    f.write(data)
+            while True:
+                size, data = chan.read()
+                f.write(data)
+                if size > 0:
+                    break
 
     def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.
@@ -555,6 +563,7 @@ class Mixin:
         :type catalog: Dictionary
         """
 
+        ssh.open_channel()
         t_command = self.blueprint.from_string(command)
         ssh.channel.execute(t_command.render(**catalog))
         ssh.channel.wait_eof()

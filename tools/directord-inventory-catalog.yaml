@@ -1,19 +1,12 @@
 directord_server:
   targets:
-  - host: 172.16.27.2
+  - host: 127.0.0.1
     port: 22
-    username: centos
+    # username: centos  # If undefined the username is the same as the executing user.
 
 directord_clients:
   args:
     port: 22
-    username: centos
+    # username: centos  # If undefined the username is the same as the executing user.
   targets:
-  - host: 172.16.27.2
-  - host: 172.16.27.123
-  - host: 172.16.27.22
-  - host: 172.16.27.248
-  - host: 172.16.27.51
-  - host: 172.16.27.59
-  - host: 172.16.27.43
-  - host: 172.16.27.202
+  - host: 127.0.0.1

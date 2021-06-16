@@ -15,13 +15,14 @@
 import hashlib
 import json
 import os
-import pwd
 import socket
 import uuid
 import yaml
 
 import ssh2
 from ssh2.session import Session
+
+from directord import logger
 
 
 def dump_yaml(file_path, data):
@@ -122,7 +123,7 @@ class SSHConnect:
     however, upon enter the system will use the SSH agent is defined.
     """
 
-    def __init__(self, host, username, port, key_file=None):
+    def __init__(self, host, username, port, key_file=None, debug=False):
         """Initialize the connection manager.
 
         :param host: IP or Domain to connect to.
@@ -133,24 +134,42 @@ class SSHConnect:
         :type port: Int
         :param key_file: SSH key file used to connect.
         :type key_file: String
+        :param debug: Enable or disable debug mode
+        :type debug: Boolean
         """
 
+        self.log = logger.getLogger(name="directord", debug_logging=debug)
         self.key_file = key_file
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))
 
         self.session = Session()
         self.session.handshake(self.sock)
+        self.log.debug(
+            "Handshake with [ %s ] on port [ %s ] complete.", host, port
+        )
         try:
             self.session.agent_auth(username)
+            self.log.debug(
+                "User agent based authentication for [ %s ]", username
+            )
         except ssh2.exceptions.AgentConnectionError:
             pass
 
         self.known_hosts = self.session.knownhost_init()
         if key_file:
-            self.session.userauth_publickey_fromfile(
-                pwd.getpwuid(os.geteuid()).pw_name, key_file
-            )
+            self.session.userauth_publickey_fromfile(username, key_file)
+            self.log.debug("Key file [ %s ] added", key_file)
+
+        self.channel = None
+
+    def open_channel(self):
+        """Open a channel."""
+
+        self.channel = self.session.open_session()
+        if self.channel == 0:
+            raise SystemExit("SSH Connection has failed.")
+        self.log.debug("SSH channel is open.")
 
     def __enter__(self):
         """Connect to the remote node and return the ssh and session objects.
@@ -158,13 +177,14 @@ class SSHConnect:
         :returns: Tuple
         """
 
-        self.channel = self.session.open_session()
         return self
 
     def __exit__(self, *args, **kwargs):
         """Upon exit, close the ssh connection."""
 
-        pass
+        if self.channel:
+            self.channel.close()
+            self.log.debug("SSH channel is closed.")
 
 
 def file_sha1(file_path, chunk_size=10240):

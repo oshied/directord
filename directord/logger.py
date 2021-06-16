@@ -33,6 +33,9 @@ def getLogger(name, debug_logging=False):
     log = logging.getLogger(name=name)
     for handler in log.handlers:
         if name == handler.name:
+            if debug_logging:
+                handler.setLevel(logging.DEBUG)
+                log.setLevel(logging.DEBUG)
             return log
     else:
         return LogSetup(debug_logging=debug_logging).default_logger(
