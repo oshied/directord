@@ -716,6 +716,35 @@ class TestMixin(tests.TestConnectionBase):
             ],
         )
 
+    def test_bootstrap_catalog_entry_args_assumed_username(self):
+        entry = {
+            "args": {
+                "port": 22,
+            },
+            "targets": [
+                {
+                    "host": "example.com",
+                    "port": 2222,
+                }
+            ],
+            "jobs": {"RUN": "command1"},
+        }
+        with patch("directord.mixin.getpass.getuser") as p:
+            p.return_value = "assumed-user1"
+            return_data = self.mixin.bootstrap_catalog_entry(entry=entry)
+
+        self.assertEqual(
+            return_data,
+            [
+                {
+                    "host": "example.com",
+                    "jobs": {"RUN": "command1"},
+                    "port": 2222,
+                    "username": "assumed-user1",
+                }
+            ],
+        )
+
     def test_bootstrap_localfile_padding_shared(self):
         orig_prefix = mixin.sys.prefix
         orig_base_prefix = mixin.sys.base_prefix
