@@ -2,8 +2,10 @@ name: Issue Interactions
 on:
   issues:
     types:
-      - opened
       - closed
+      - deleted
+      - opened
+      - reopened
 jobs:
   issue_actions:
     runs-on: ubuntu-latest
