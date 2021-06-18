@@ -1,0 +1,21 @@
+name: Issue Interactions
+on:
+  issues:
+    types:
+      - opened
+      - closed
+jobs:
+  issue_actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: IRC notification for Issue
+        uses: Gottox/irc-message-action@v1
+        with:
+          server: irc.libera.chat
+          channel: '#directord'
+          nickname: directord-bot
+          message: >
+            Issue "${{ github.event.issue.title }}",
+            State "${{ github.event.issue.state }}",
+            Modified by ${{ github.event.issue.user.login }},
+            URL ${{ github.event.issue.html_url }}
