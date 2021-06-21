@@ -15,7 +15,7 @@
 from multiprocessing.managers import MakeProxyType
 from multiprocessing.managers import SyncManager
 
-from directord import datastore
+from directord import datastores
 
 
 BaseDictProxy = MakeProxyType(
@@ -45,4 +45,4 @@ BaseDictProxy = MakeProxyType(
 BaseDictProxy._method_to_typeid_ = {
     "__iter__": "Iterator",
 }
-SyncManager.register("document", datastore.BaseDocument, BaseDictProxy)
+SyncManager.register("document", datastores.BaseDocument, BaseDictProxy)

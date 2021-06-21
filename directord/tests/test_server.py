@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 import zmq
 
-from directord import datastore
+from directord import datastores
 from directord import server
 from directord import tests
 
@@ -30,8 +30,8 @@ class TestServer(unittest.TestCase):
     def setUp(self):
         self.args = tests.FakeArgs()
         self.server = server.Server(args=self.args)
-        self.server.workers = datastore.BaseDocument()
-        self.server.return_jobs = datastore.BaseDocument()
+        self.server.workers = datastores.BaseDocument()
+        self.server.return_jobs = datastores.BaseDocument()
 
     def tearDown(self):
         pass
@@ -479,7 +479,7 @@ class TestServer(unittest.TestCase):
         mock_log_info.assert_called()
 
     def test_create_return_jobs(self):
-        self.server.return_jobs = datastore.BaseDocument()
+        self.server.return_jobs = datastores.BaseDocument()
         status = self.server.create_return_jobs(
             task="XXX",
             job_item={
@@ -511,7 +511,7 @@ class TestServer(unittest.TestCase):
         )
 
     def test_create_return_jobs_exists(self):
-        self.server.return_jobs = datastore.BaseDocument()
+        self.server.return_jobs = datastores.BaseDocument()
         self.server.return_jobs["XXX"] = {"exists": True}
         status = self.server.create_return_jobs(
             task="XXX",
@@ -885,7 +885,7 @@ class TestServer(unittest.TestCase):
         conn.recv.return_value = json.dumps({"manage": "purge-nodes"}).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
-        workers = self.server.workers = datastore.BaseDocument()
+        workers = self.server.workers = datastores.BaseDocument()
         workers[b"test-node1"] = {"version": "x.x.x", "expiry": 12344}
         workers[b"test-node2"] = {"version": "x.x.x", "expiry": 12344}
         self.server.run_socket_server(sentinel=True)
@@ -903,7 +903,7 @@ class TestServer(unittest.TestCase):
         conn.recv.return_value = json.dumps({"manage": "purge-jobs"}).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
-        return_jobs = self.server.return_jobs = datastore.BaseDocument()
+        return_jobs = self.server.return_jobs = datastores.BaseDocument()
         return_jobs["k"] = {"v": "test"}
         self.server.run_socket_server(sentinel=True)
         mock_unlink.assert_called_with(self.args.socket_path)

@@ -45,7 +45,7 @@ class Server(interface.Interface):
         datastore = getattr(self.args, "datastore", None)
         if not datastore:
             self.log.info("Connecting to internal datastore")
-            directord.plugin_import(plugin=".datastore.internal")
+            directord.plugin_import(plugin=".datastores.internal")
             manager = multiprocessing.Manager()
             self.workers = manager.document()
             self.return_jobs = manager.document()
@@ -58,7 +58,7 @@ class Server(interface.Interface):
                 except ValueError:
                     db = 0
                 self.log.debug("Redis keyspace base is %s", db)
-                redis = directord.plugin_import(plugin=".datastore.redis")
+                redis = directord.plugin_import(plugin=".datastores.redis")
 
                 self.workers = redis.BaseDocument(
                     url=url._replace(path="").geturl(), database=(db + 1)
