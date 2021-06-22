@@ -230,7 +230,6 @@ class Client(interface.Interface):
                 if poller_interval != 2048:
                     self.log.info("Directord client entering idle state.")
                 poller_interval = 2048
-
             elif time.time() > poller_time + 32:
                 if poller_interval != 1024:
                     self.log.info("Directord client ramping down.")
@@ -260,11 +259,13 @@ class Client(interface.Interface):
                     cache_check_time = time.time()
 
             base_component = components.ComponentBase()
-            if self.driver.bind_check(bind=self.bind_job):
+            if self.driver.bind_check(
+                bind=self.bind_job, constant=poller_interval
+            ):
                 with diskcache.Cache(
                     self.args.cache_path, tag_index=True
                 ) as cache:
-                    poller_interval, poller_time = 128, time.time()
+                    poller_interval, poller_time = 64, time.time()
                     (
                         _,
                         _,

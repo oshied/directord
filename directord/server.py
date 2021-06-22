@@ -102,7 +102,7 @@ class Server(interface.Interface):
                         "Received Heartbeat from [ %s ], client online",
                         identity.decode(),
                     )
-                    expire = self.driver.self.get_expiry(
+                    expire = self.driver.get_expiry(
                         heartbeat_interval=self.heartbeat_interval,
                         interval=self.heartbeat_liveness,
                     )
@@ -432,14 +432,15 @@ class Server(interface.Interface):
                 if poller_interval != 2048:
                     self.log.info("Directord server entering idle state.")
                 poller_interval = 2048
-
             elif current_time > poller_time + 32:
                 if poller_interval != 1024:
                     self.log.info("Directord server ramping down.")
                 poller_interval = 1024
 
-            if self.driver.bind_check(bind=self.bind_transfer):
-                poller_interval, poller_time = 128, time.time()
+            if self.driver.bind_check(
+                bind=self.bind_transfer, constant=poller_interval
+            ):
+                poller_interval, poller_time = 64, time.time()
 
                 (
                     identity,
@@ -473,9 +474,10 @@ class Server(interface.Interface):
                         identity=identity.decode(),
                         job_output=info.decode(),
                     )
-
-            elif self.driver.bind_check(bind=self.bind_job):
-                poller_interval, poller_time = 128, time.time()
+            elif self.driver.bind_check(
+                bind=self.bind_job, constant=poller_interval
+            ):
+                poller_interval, poller_time = 64, time.time()
                 (
                     identity,
                     msg_id,
@@ -548,7 +550,6 @@ class Server(interface.Interface):
                                     command=data_item["verb"].encode(),
                                     data=json.dumps(data_item).encode(),
                                 )
-
             elif self.workers:
                 poller_interval, poller_time = self.run_job()
 

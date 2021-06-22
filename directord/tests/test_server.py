@@ -31,6 +31,7 @@ class TestServer(tests.TestDriverBase):
         self.server = server.Server(args=self.args)
         self.server.workers = datastores.BaseDocument()
         self.server.return_jobs = datastores.BaseDocument()
+        self.server.driver = self.mock_driver
 
     @patch("time.time", autospec=True)
     @patch("logging.Logger.warning", autospec=True)

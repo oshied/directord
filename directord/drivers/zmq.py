@@ -29,7 +29,7 @@ from directord import utils
 class Driver(drivers.BaseDriver):
     def __init__(
         self, args, encrypted_traffic_data=None, connection_string=None
-    ) -> None:
+    ):
         """Initialize the Driver.
 
         :param args: Arguments parsed by argparse.
@@ -48,7 +48,7 @@ class Driver(drivers.BaseDriver):
                 "secret_keys_dir"
             )
             self.public_keys_dir = encrypted_traffic_data.get(
-                "secret_keys_dir"
+                "public_keys_dir"
             )
         else:
             self.encrypted_traffic = False
@@ -85,9 +85,8 @@ class Driver(drivers.BaseDriver):
         """
 
         bind = self.ctx.socket(socket_type)
-        auth_enabled = self.args.shared_key or (
-            self.args.curve_encryption and self.encrypted_traffic
-        )
+        auth_enabled = self.args.shared_key or self.args.curve_encryption
+
         if auth_enabled:
             self.auth = ThreadAuthenticator(self.ctx, log=self.log)
             self.auth.start()
@@ -100,14 +99,15 @@ class Driver(drivers.BaseDriver):
                 )
                 bind.plain_server = True  # Enable shared key authentication
                 self.log.info("Shared key authentication enabled.")
-            elif self.args.curve_encryption or self.encrypted_traffic:
-                if not self.args.curve_encryption and self.encrypted_traffic:
-                    self.log.info(
-                        "Curve encryption enabled because key components are"
-                        " on the system and no other authentication method"
-                        " was defined."
-                    )
-                for item in [self.public_keys_dir, self.secret_keys_dir]:
+            elif self.args.curve_encryption:
+                server_secret_file = os.path.join(
+                    self.secret_keys_dir, "server.key_secret"
+                )
+                for item in [
+                    self.public_keys_dir,
+                    self.secret_keys_dir,
+                    server_secret_file,
+                ]:
                     if not os.path.exists(item):
                         raise SystemExit(
                             "The required path [ {} ] does not exist. Have"
@@ -116,15 +116,21 @@ class Driver(drivers.BaseDriver):
                 self.auth.configure_curve(
                     domain="*", location=self.public_keys_dir
                 )
-                server_secret_file = os.path.join(
-                    self.secret_keys_dir, "server.key_secret"
-                )
-                server_public, server_secret = zmq_auth.load_certificate(
-                    server_secret_file
-                )
-                bind.curve_secretkey = server_secret
-                bind.curve_publickey = server_public
-                bind.curve_server = True  # Enable curve authentication
+                try:
+                    server_public, server_secret = zmq_auth.load_certificate(
+                        server_secret_file
+                    )
+                except OSError as e:
+                    self.log.error(
+                        "Failed to load certificates: %s, Configuration: %s",
+                        str(e),
+                        vars(self.args),
+                    )
+                    raise SystemExit("Failed to load certificates")
+                else:
+                    bind.curve_secretkey = server_secret
+                    bind.curve_publickey = server_public
+                    bind.curve_server = True  # Enable curve authentication
         bind.bind(
             "{connection}:{port}".format(
                 connection=connection,
@@ -181,32 +187,42 @@ class Driver(drivers.BaseDriver):
             bind.plain_username = b"admin"  # User is hard coded.
             bind.plain_password = self.args.shared_key.encode()
             self.log.info("Shared key authentication enabled.")
-        elif self.args.curve_encryption or self.encrypted_traffic:
-            if not self.args.curve_encryption and self.encrypted_traffic:
-                self.log.info(
-                    "Curve encryption enabled because key components are"
-                    " on the system and no other authentication method"
-                    " was defined."
-                )
+        elif self.args.curve_encryption:
             client_secret_file = os.path.join(
                 self.secret_keys_dir, "client.key_secret"
             )
-            for item in [self.public_keys_dir, self.secret_keys_dir]:
+            server_public_file = os.path.join(
+                self.public_keys_dir, "server.key"
+            )
+            for item in [
+                self.public_keys_dir,
+                self.secret_keys_dir,
+                client_secret_file,
+                server_public_file,
+            ]:
                 if not os.path.exists(item):
                     raise SystemExit(
                         "The required path [ {} ] does not exist. Have"
                         " you generated your keys?".format(item)
                     )
-            client_public, client_secret = zmq_auth.load_certificate(
-                client_secret_file
-            )
-            bind.curve_secretkey = client_secret
-            bind.curve_publickey = client_public
-            server_public_file = os.path.join(
-                self.public_keys_dir, "server.key"
-            )
-            server_public, _ = zmq_auth.load_certificate(server_public_file)
-            bind.curve_serverkey = server_public
+            try:
+                client_public, client_secret = zmq_auth.load_certificate(
+                    client_secret_file
+                )
+                server_public, _ = zmq_auth.load_certificate(
+                    server_public_file
+                )
+            except OSError as e:
+                self.log.error(
+                    "Error while loading certificates: %s. Configuration: %s",
+                    str(e),
+                    vars(self.args),
+                )
+                raise SystemExit("Failed to load keys.")
+            else:
+                bind.curve_secretkey = client_secret
+                bind.curve_publickey = client_public
+                bind.curve_serverkey = server_public
 
         if socket_type == zmq.SUB:
             bind.setsockopt_string(zmq.SUBSCRIBE, self.identity)
@@ -455,19 +471,29 @@ class Driver(drivers.BaseDriver):
             port=self.args.transfer_port,
         )
 
-    def bind_check(self, bind, interval=1):
+    def bind_check(self, bind, interval=1, constant=1000):
         """Return True if a bind type contains work ready.
 
         :param bind: A given Socket bind to identify.
         :type bind: Object
-        :param interval: Interval used to determine the polling duration for a
-                         given socket.
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
         :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
         :returns: Object
         """
 
-        socks = dict(self.poller.poll(interval * 1000))
+        socks = dict(self.poller.poll(interval * constant))
         return socks.get(bind) == zmq.POLLIN
 
     def key_generate(self, keys_dir, key_type):
+        """Generate certificate.
+
+        :param keys_dir: Full Directory path where a given key will be stored.
+        :type keys_dir: String
+        :param key_type: Key type to be generated.
+        :type key_type: String
+        """
+
         zmq_auth.create_certificates(keys_dir, key_type)

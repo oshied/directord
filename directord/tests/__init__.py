@@ -175,14 +175,12 @@ class TestConnectionBase(unittest.TestCase):
 
 class TestDriverBase(unittest.TestCase):
     def setUp(self):
+        base_driver = drivers.BaseDriver(args=FakeArgs())
         self.mock_driver_patched = patch(
-            "directord.interface.Interface.driver", autospec=True
+            "directord.drivers.BaseDriver",
+            autospec=True,
         )
         self.mock_driver = self.mock_driver_patched.start()
-
-        base_driver = drivers.BaseDriver(
-            args=FakeArgs(), encrypted_traffic=False
-        )
         self.mock_driver.bind_check.return_value = True
         self.mock_driver.nullbyte = base_driver.nullbyte
         self.mock_driver.heartbeat_ready = base_driver.heartbeat_ready

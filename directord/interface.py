@@ -67,12 +67,9 @@ class Interface(directord.Processor):
             self.public_keys_dir
         ) and os.path.exists(self.secret_keys_dir)
 
-    @property
-    def driver(self):
-        """Return a driver."""
-        self.log.info("Connecting to messaging driver")
-        driver = directord.plugin_import(plugin=".drivers.zmq")
-        return driver.Driver(
+        self.log.debug("Loading messaging driver")
+        _driver = directord.plugin_import(plugin=".drivers.zmq")
+        self.driver = _driver.Driver(
             args=self.args,
             encrypted_traffic_data={
                 "enabled": self.keys_exist,

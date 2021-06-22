@@ -14,6 +14,8 @@
 
 import time
 
+from directord import utils
+
 
 class BaseDriver:
     nullbyte = b"\000"  # Signals null
@@ -26,7 +28,9 @@ class BaseDriver:
     transfer_start = b"\002"  # Signals start file transfer
     transfer_end = b"\003"  # Signals start file transfer
 
-    def __init__(self, args, encrypted_traffic) -> None:
+    def __init__(
+        self, args, encrypted_traffic_data=None, connection_string=None
+    ):
         """Initialize the Driver.
 
         :param args: Arguments parsed by argparse.
@@ -37,7 +41,7 @@ class BaseDriver:
 
         pass
 
-    def socket_bind(self, socket_type, connection, port, poller_type):
+    def socket_bind(self, socket_type, connection, port, poller_type=None):
         """Return a socket object which has been bound to a given address.
 
         When the socket_type is not PUB or PUSH, the bound socket will also be
@@ -62,8 +66,8 @@ class BaseDriver:
         socket_type,
         connection,
         port,
-        poller_type,
-        send_ready,
+        poller_type=None,
+        send_ready=True,
     ):
         """Return a socket object which has been bound to a given address.
 
@@ -128,6 +132,27 @@ class BaseDriver:
         :type stdout: Bytes
         """
 
+        if not msg_id:
+            msg_id = utils.get_uuid().encode()
+
+        if not control:
+            control = self.nullbyte
+
+        if not command:
+            command = self.nullbyte
+
+        if not data:
+            data = self.nullbyte
+
+        if not info:
+            info = self.nullbyte
+
+        if not stderr:
+            stderr = self.nullbyte
+
+        if not stdout:
+            stdout = self.nullbyte
+
         pass
 
     @staticmethod
@@ -188,21 +213,28 @@ class BaseDriver:
 
         pass
 
-    @property
-    def bind_check(self, bind, interval=1):
+    def bind_check(self, bind, interval=1, constant=1000):
         """Return True if a bind type contains work ready.
 
         :param bind: A given Socket bind to identify.
         :type bind: Object
-        :param interval: Interval used to determine the polling duration for a
-                         given socket.
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
         :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
         :returns: Object
         """
 
-        pass
-
     def key_generate(self, keys_dir, key_type):
+        """Generate certificate.
+
+        :param keys_dir: Full Directory path where a given key will be stored.
+        :type keys_dir: String
+        :param key_type: Key type to be generated.
+        :type key_type: String
+        """
+
         pass
 
     def get_heartbeat(self, interval=0):

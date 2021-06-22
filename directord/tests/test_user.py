@@ -40,12 +40,12 @@ class TestUser(unittest.TestCase):
         self.assertEqual(returned, b"return data")
 
 
-class TestManager(unittest.TestCase):
+class TestManager(tests.TestDriverBase):
     def setUp(self):
-        self.manage = user.Manage(args=tests.FakeArgs())
-
-    def tearDown(self):
-        pass
+        super(TestManager, self).setUp()
+        self.args = tests.FakeArgs()
+        self.manage = user.Manage(args=self.args)
+        self.manage.driver = self.mock_driver
 
     @patch("os.rename", autospec=True)
     @patch("os.listdir", autospec=True)
@@ -212,12 +212,11 @@ class TestManager(unittest.TestCase):
         self.manage.run(override="generate-keys")
         mock_send_data.assert_not_called()
 
-    @patch("directord.interface.Interface.driver", autospec=True)
     @patch("os.makedirs", autospec=True)
     @patch("os.rename", autospec=True)
     @patch("os.listdir", autospec=True)
     def test_generate_certificates(
-        self, mock_listdir, mock_rename, mock_makedirs, mock_driver
+        self, mock_listdir, mock_rename, mock_makedirs
     ):
         mock_listdir.return_value = ["item-one.test", "item-two.key"]
         self.manage.generate_certificates()
@@ -228,7 +227,7 @@ class TestManager(unittest.TestCase):
                 call("/etc/directord/private_keys", exist_ok=True),
             ]
         )
-        mock_driver.key_generate.assert_has_calls(
+        self.manage.driver.key_generate.assert_has_calls(
             [
                 call(
                     keys_dir="/etc/directord/certificates", key_type="server"

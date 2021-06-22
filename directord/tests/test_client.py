@@ -26,6 +26,7 @@ class TestClient(tests.TestDriverBase):
         super(TestClient, self).setUp()
         self.args = tests.FakeArgs()
         self.client = client.Client(args=self.args)
+        self.client.driver = self.mock_driver
 
     @patch("logging.Logger.debug", autospec=True)
     def test_run_heartbeat(self, mock_log_debug):
