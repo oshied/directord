@@ -89,17 +89,6 @@ class TestUtils(tests.TestConnectionBase):
                 control=unittest.mock.ANY,
             )
 
-        ctx.driver.socket_send.assert_called_with(
-            socket=socket,
-            msg_id=b"test-id-start",
-            command=b"test",
-            control=unittest.mock.ANY,
-            data=unittest.mock.ANY,
-            info=unittest.mock.ANY,
-            stderr=unittest.mock.ANY,
-            stdout=unittest.mock.ANY,
-        )
-
     def test_sshconnect(
         self,
     ):

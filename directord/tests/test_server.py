@@ -19,141 +19,37 @@ from unittest.mock import ANY
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-import zmq
-
 from directord import datastores
 from directord import server
 from directord import tests
 
 
-class TestServer(unittest.TestCase):
+class TestServer(tests.TestDriverBase):
     def setUp(self):
+        super(TestServer, self).setUp()
         self.args = tests.FakeArgs()
         self.server = server.Server(args=self.args)
         self.server.workers = datastores.BaseDocument()
         self.server.return_jobs = datastores.BaseDocument()
 
-    def tearDown(self):
-        pass
-
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
-    def test_heartbeat_bind(self, mock_socket_bind):
-        self.server.driver.heartbeat_bind()
-        mock_socket_bind.assert_called_with(
-            ANY,
-            socket_type=zmq.ROUTER,
-            connection="tcp://localhost",
-            port=5557,
-        )
-
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
-    def test_job_bind(self, mock_socket_bind):
-        self.server.driver.job_bind()
-        mock_socket_bind.assert_called_with(
-            ANY,
-            socket_type=zmq.ROUTER,
-            connection="tcp://localhost",
-            port=5555,
-        )
-
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
-    def test_transfer_bind(self, mock_socket_bind):
-        self.server.driver.transfer_bind()
-        mock_socket_bind.assert_called_with(
-            ANY,
-            socket_type=zmq.ROUTER,
-            connection="tcp://localhost",
-            port=5556,
-        )
-
-    @patch("directord.server.Serverdriver.heartbeat_bind", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
-    @patch("zmq.Poller.poll", autospec=True)
-    @patch("time.time", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_heartbeat_ready(
-        self,
-        mock_log_debug,
-        mock_time,
-        mock_poller,
-        mock_multipart_recv,
-        mock_heartbeat_bind,
-    ):
-        mock_multipart_recv.side_effect = [
-            (
-                b"test-node",
-                None,
-                self.server.heartbeat_ready,
-                None,
-                None,
-                b"x.x.x",
-                None,
-                None,
-            )
-        ]
-        bind = mock_heartbeat_bind.return_value = MagicMock()
-        mock_poller.return_value = [(bind, zmq.POLLIN)]
-        mock_time.side_effect = [1, 1000, 3000]
-        self.server.run_heartbeat(sentinel=True)
-        mock_log_debug.assert_called()
-        self.assertIn(b"test-node", self.server.workers)
-
-    @patch("directord.server.Serverdriver.heartbeat_bind", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
-    @patch("zmq.Poller.poll", autospec=True)
-    @patch("time.time", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_heartbeat_notice(
-        self,
-        mock_log_debug,
-        mock_time,
-        mock_poller,
-        mock_multipart_recv,
-        mock_heartbeat_bind,
-    ):
-        mock_multipart_recv.side_effect = [
-            (
-                b"test-node",
-                None,
-                self.server.heartbeat_notice,
-                None,
-                None,
-                b"x.x.x",
-                None,
-                None,
-            )
-        ]
-        bind = mock_heartbeat_bind.return_value = MagicMock()
-        mock_poller.return_value = [(bind, zmq.POLLIN)]
-        mock_time.side_effect = [1, 1000, 3000]
-        self.server.run_heartbeat(sentinel=True)
-        mock_log_debug.assert_called()
-        self.assertIn(b"test-node", self.server.workers)
-
-    @patch("directord.server.Serverdriver.heartbeat_bind", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.warning", autospec=True)
-    def test_run_heartbeat_idle_workers(
-        self,
-        mock_log_warning,
-        mock_time,
-        mock_multipart_send,
-        mock_heartbeat_bind,
-    ):
-        self.server.workers = {b"test-node": 10000}
-        mock_time.side_effect = [1, 1000, 3000, 6000, 9000]
-        self.server.run_heartbeat(sentinel=True)
+    def test_run_heartbeat_idle_workers(self, mock_log_warning, mock_time):
+        self.mock_driver.bind_check.side_effect = [False, True]
+        self.mock_driver.get_heartbeat.return_value = 1
+        self.server.workers.update({b"test-node": 10000})
+        mock_time.side_effect = [9000, 10000]
+        with patch.object(self.mock_driver, "bind_check", return_value=False):
+            self.server.run_heartbeat(sentinel=True)
         mock_log_warning.assert_called()
-        mock_multipart_send.assert_called_with(
-            ANY,
+        self.mock_driver.socket_send.assert_called_with(
             socket=ANY,
             identity=b"test-node",
             control=b"\x05",
             command=b"reset",
-            info=b"\x00\xc0FE",
+            info=b"\x00\x00\x80?",
         )
-        mock_heartbeat_bind.assert_called()
+        self.mock_driver.heartbeat_bind.assert_called()
 
     def test__set_job_status(self):
         self.server.return_jobs = {
@@ -172,7 +68,7 @@ class TestServer(unittest.TestCase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.job_ack,
+            job_status=self.server.driver.job_ack,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -213,7 +109,7 @@ class TestServer(unittest.TestCase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.job_ack,
+            job_status=self.server.driver.job_ack,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -255,7 +151,7 @@ class TestServer(unittest.TestCase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.job_ack,
+            job_status=self.server.driver.job_ack,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -297,7 +193,7 @@ class TestServer(unittest.TestCase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.job_processing,
+            job_status=self.server.driver.job_processing,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -339,7 +235,7 @@ class TestServer(unittest.TestCase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.job_end,
+            job_status=self.server.driver.job_end,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -383,7 +279,7 @@ class TestServer(unittest.TestCase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.nullbyte,
+            job_status=self.server.driver.nullbyte,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -427,7 +323,7 @@ class TestServer(unittest.TestCase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.job_failed,
+            job_status=self.server.driver.job_failed,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -455,11 +351,8 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("os.path.isfile", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("logging.Logger.info", autospec=True)
-    def test__run_transfer(
-        self, mock_log_info, mock_multipart_send, mock_isfile
-    ):
+    def test__run_transfer(self, mock_log_info, mock_isfile):
         self.server.bind_transfer = MagicMock()
         mock_isfile.return_value = True
         m = unittest.mock.mock_open(read_data="test data")
@@ -467,7 +360,7 @@ class TestServer(unittest.TestCase):
             self.server._run_transfer(
                 identity="test-node", verb=b"ADD", file_path="/test/file1"
             )
-        mock_multipart_send.assert_called()
+        self.mock_driver.socket_send.assert_called()
         mock_log_info.assert_called()
 
     def test_create_return_jobs(self):
@@ -519,22 +412,18 @@ class TestServer(unittest.TestCase):
             {"exists": True},
         )
 
-    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
-    def test_run_job(self, mock_log_debug, mock_queue, mock_multipart_send):
+    def test_run_job(self, mock_log_debug, mock_queue):
         mock_queue.return_value = MagicMock()
         self.server.job_queue = mock_queue
         return_int, _ = self.server.run_job()
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
-    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
-    def test_run_job_restricted_null(
-        self, mock_log_debug, mock_queue, mock_multipart_send
-    ):
+    def test_run_job_restricted_null(self, mock_log_debug, mock_queue):
         mock_queue.get.side_effect = [
             {
                 "verb": "RUN",
@@ -549,12 +438,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
-    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.critical", autospec=True)
-    def test_run_job_run_node_fail(
-        self, mock_log_critical, mock_queue, mock_multipart_send
-    ):
+    def test_run_job_run_node_fail(self, mock_log_critical, mock_queue):
         mock_queue.get.side_effect = [
             {
                 "verb": "RUN",
@@ -568,12 +454,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_critical.assert_called()
 
-    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
-    def test_run_job_run(
-        self, mock_log_debug, mock_queue, mock_multipart_send
-    ):
+    def test_run_job_run(self, mock_log_debug, mock_queue):
         self.server.bind_job = MagicMock()
         mock_queue.get.side_effect = [
             {
@@ -588,61 +471,79 @@ class TestServer(unittest.TestCase):
         return_int, _ = self.server.run_job()
         self.assertEqual(return_int, 128)
         mock_log_debug.assert_called()
-        mock_multipart_send.assert_called()
+        self.mock_driver.socket_send.assert_called()
 
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
-    def test_run_interactions(self, mock_time, mock_socket_bind):
+    def test_run_interactions(self, mock_time):
+        self.mock_driver.socket_recv.side_effect = [
+            (
+                b"test-node",
+                b"XXX",
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
+        ]
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_socket_bind.assert_called()
 
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.info", autospec=True)
-    def test_run_interactions_idle(
-        self, mock_log_info, mock_time, mock_socket_bind
-    ):
+    def test_run_interactions_idle(self, mock_log_info, mock_time):
+        self.mock_driver.socket_recv.side_effect = [
+            (
+                b"test-node",
+                b"XXX",
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
+        ]
         mock_time.side_effect = [1, 66, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_socket_bind.assert_called()
         mock_log_info.assert_called_with(
             ANY, "Directord server entering idle state."
         )
 
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.info", autospec=True)
-    def test_run_interactions_ramp(
-        self, mock_log_info, mock_time, mock_socket_bind
-    ):
+    def test_run_interactions_ramp(self, mock_log_info, mock_time):
+        self.mock_driver.socket_recv.side_effect = [
+            (
+                b"test-node",
+                b"XXX",
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
+        ]
         mock_time.side_effect = [1, 34, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_socket_bind.assert_called()
         mock_log_info.assert_called_with(ANY, "Directord server ramping down.")
 
     @patch("directord.server.Server._run_transfer", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
-    @patch("directord.server.Serverdriver.transfer_bind", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
-    @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_interactions_run_transfer(
         self,
         mock_log_debug,
         mock_time,
-        mock_poller,
-        mock_socket_bind,
-        mock_transfer_bind,
-        mock_multipart_recv,
         mock_run_transfer,
     ):
-        mock_multipart_recv.side_effect = [
+        self.mock_driver.socket_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
-                self.server.transfer_start,
+                self.server.driver.transfer_start,
                 b"transfer",
                 None,
                 b"/test/file1",
@@ -650,38 +551,28 @@ class TestServer(unittest.TestCase):
                 None,
             )
         ]
-        bind = mock_transfer_bind.return_value = MagicMock()
-        mock_poller.return_value = [(bind, zmq.POLLIN)]
+        self.mock_driver.transfer_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_socket_bind.assert_called()
         mock_log_debug.assert_called()
         mock_run_transfer.assert_called_with(
             ANY, identity=b"test-node", verb=b"ADD", file_path="/test/file1"
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
-    @patch("directord.server.Serverdriver.transfer_bind", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
-    @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_interactions_transfer_complete(
         self,
         mock_log_debug,
         mock_time,
-        mock_poller,
-        mock_socket_bind,
-        mock_transfer_bind,
-        mock_multipart_recv,
         mock_set_job_status,
     ):
-        mock_multipart_recv.side_effect = [
+        self.mock_driver.socket_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
-                self.server.transfer_end,
+                self.server.driver.transfer_end,
                 None,
                 None,
                 b"/test/file1",
@@ -689,11 +580,9 @@ class TestServer(unittest.TestCase):
                 None,
             )
         ]
-        bind = mock_transfer_bind.return_value = MagicMock()
-        mock_poller.return_value = [(bind, zmq.POLLIN)]
+        self.mock_driver.transfer_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_socket_bind.assert_called()
         mock_log_debug.assert_called()
         mock_set_job_status.assert_called_with(
             ANY,
@@ -704,25 +593,18 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
-    @patch("directord.server.Serverdriver.job_bind", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
-    @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_interactions_set_status(
         self,
         mock_time,
-        mock_poller,
-        mock_socket_bind,
-        mock_job_bind,
-        mock_multipart_recv,
         mock_set_job_status,
     ):
-        mock_multipart_recv.side_effect = [
+        self.mock_driver.bind_check.side_effect = [False, True]
+        self.mock_driver.socket_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
-                self.server.job_end,
+                self.server.driver.job_end,
                 b"RUN",
                 b"{}",
                 b"info",
@@ -730,11 +612,9 @@ class TestServer(unittest.TestCase):
                 None,
             )
         ]
-        bind = mock_job_bind.return_value = MagicMock()
-        mock_poller.return_value = [(bind, zmq.POLLIN)]
+        self.mock_driver.job_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_socket_bind.assert_called()
         mock_set_job_status.assert_called_with(
             ANY,
             job_status=b"\x04",
@@ -746,27 +626,18 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
-    @patch("directord.server.Serverdriver.job_bind", autospec=True)
-    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
-    @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     def test_run_interactions_run_query(
         self,
-        mock_log_debug,
         mock_time,
-        mock_poller,
-        mock_socket_bind,
-        mock_job_bind,
-        mock_multipart_recv,
         mock_set_job_status,
     ):
-        mock_multipart_recv.side_effect = [
+        self.mock_driver.bind_check.side_effect = [False, True]
+        self.mock_driver.socket_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
-                self.server.job_end,
+                self.server.driver.job_end,
                 b"QUERY",
                 json.dumps(
                     {
@@ -783,12 +654,9 @@ class TestServer(unittest.TestCase):
                 None,
             )
         ]
-        bind = mock_job_bind.return_value = MagicMock()
-        mock_poller.return_value = [(bind, zmq.POLLIN)]
+        self.mock_driver.job_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_socket_bind.assert_called()
-        mock_log_debug.assert_called()
         mock_set_job_status.assert_called_with(
             ANY,
             job_status=b"\x04",
@@ -947,3 +815,43 @@ class TestServer(unittest.TestCase):
         finally:
             self.args = tests.FakeArgs()
         mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
+
+    @patch("time.time", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
+    def test_run_heartbeat_ready(self, mock_log_debug, mock_time):
+        self.mock_driver.socket_recv.side_effect = [
+            (
+                b"test-node",
+                None,
+                self.mock_driver.heartbeat_ready,
+                None,
+                None,
+                b"x.x.x",
+                None,
+                None,
+            )
+        ]
+        mock_time.side_effect = [1, 1000, 3000]
+        self.server.run_heartbeat(sentinel=True)
+        mock_log_debug.assert_called()
+        self.assertIn(b"test-node", self.server.workers)
+
+    @patch("time.time", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
+    def test_run_heartbeat_notice(self, mock_log_debug, mock_time):
+        self.mock_driver.socket_recv.side_effect = [
+            (
+                b"test-node",
+                None,
+                self.mock_driver.heartbeat_notice,
+                None,
+                None,
+                b"x.x.x",
+                None,
+                None,
+            )
+        ]
+        mock_time.side_effect = [1, 1000, 3000]
+        self.server.run_heartbeat(sentinel=True)
+        mock_log_debug.assert_called()
+        self.assertIn(b"test-node", self.server.workers)

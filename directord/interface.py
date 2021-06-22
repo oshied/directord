@@ -14,9 +14,6 @@
 
 import logging
 import os
-import socket
-import time
-
 import directord
 
 
@@ -57,16 +54,11 @@ class Interface(directord.Processor):
             proto=self.proto, addr=self.bind_address
         )
 
-        self.identity = socket.gethostname()
-
         self.heartbeat_liveness = 3
         try:
             self.heartbeat_interval = self.args.heartbeat_interval
         except AttributeError:
             self.heartbeat_interval = 1
-
-        self.log.info("Connecting to messaging driver")
-        self.driver = directord.plugin_import(plugin=".drivers.zmq")
 
         self.base_dir = "/etc/directord"
         self.public_keys_dir = os.path.join(self.base_dir, "public_keys")
@@ -76,21 +68,16 @@ class Interface(directord.Processor):
         ) and os.path.exists(self.secret_keys_dir)
 
     @property
-    def get_heartbeat(self):
-        """Return a new hearbeat interval time.
-
-        :returns: Float
-        """
-
-        return time.time() + self.heartbeat_interval
-
-    @property
-    def get_expiry(self):
-        """Return a new expiry time.
-
-        :returns: Float
-        """
-
-        return time.time() + (
-            self.heartbeat_interval * self.heartbeat_liveness
+    def driver(self):
+        """Return a driver."""
+        self.log.info("Connecting to messaging driver")
+        driver = directord.plugin_import(plugin=".drivers.zmq")
+        return driver.Driver(
+            args=self.args,
+            encrypted_traffic_data={
+                "enabled": self.keys_exist,
+                "public_keys_dir": self.public_keys_dir,
+                "secret_keys_dir": self.secret_keys_dir,
+            },
+            connection_string=self.connection_string,
         )

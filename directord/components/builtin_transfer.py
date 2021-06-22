@@ -114,10 +114,10 @@ class Component(components.ComponentBase):
                 "File exists {} and SHA1 {} matches, nothing to"
                 " transfer".format(file_to, file_sha1)
             )
-            conn.driver.ctx.driver.socket_send(
-                socket=conn.driver.ctx.bind_transfer,
+            conn.driver.socket_send(
+                socket=conn.driver.bind_transfer,
                 msg_id=job_id.encode(),
-                control=conn.driver.ctx.transfer_end,
+                control=conn.driver.transfer_end,
             )
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
@@ -128,10 +128,10 @@ class Component(components.ComponentBase):
             self.log.debug(
                 "Requesting transfer of source file:%s", source_file
             )
-            conn.driver.ctx.driver.socket_send(
-                socket=conn.driver.ctx.bind_transfer,
+            conn.driver.socket_send(
+                socket=conn.driver.bind_transfer,
                 msg_id=job_id.encode(),
-                control=conn.driver.ctx.job_ack,
+                control=conn.driver.job_ack,
                 command=b"transfer",
                 info=source_file,
             )
@@ -147,10 +147,10 @@ class Component(components.ComponentBase):
                             _,
                             _,
                             _,
-                        ) = conn.driver.ctx.driver.socket_recv(
-                            socket=conn.driver.ctx.bind_transfer
+                        ) = conn.driver.socket_recv(
+                            socket=conn.driver.bind_transfer
                         )
-                        if control == conn.driver.ctx.transfer_end:
+                        if control == conn.driver.transfer_end:
                             break
                     except Exception:
                         break

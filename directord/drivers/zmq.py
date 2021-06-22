@@ -14,6 +14,7 @@
 
 import logging
 import os
+import socket
 
 import tenacity
 import zmq
@@ -26,10 +27,39 @@ from directord import utils
 
 
 class Driver(drivers.BaseDriver):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self, args, encrypted_traffic_data=None, connection_string=None
+    ) -> None:
+        """Initialize the Driver.
+
+        :param args: Arguments parsed by argparse.
+        :type args: Object
+        :param encrypted_traffic: Enable|Disable encrypted traffic.
+        :type encrypted_traffic: Boolean
+        :param connection_string: Connection string used to provide connection
+                                  instructions to the driver.
+        :type connection_string: String.
+        """
+
+        self.args = args
+        if encrypted_traffic_data:
+            self.encrypted_traffic = encrypted_traffic_data.get("enabled")
+            self.secret_keys_dir = encrypted_traffic_data.get(
+                "secret_keys_dir"
+            )
+            self.public_keys_dir = encrypted_traffic_data.get(
+                "secret_keys_dir"
+            )
+        else:
+            self.encrypted_traffic = False
+            self.secret_keys_dir = None
+            self.public_keys_dir = None
+
+        self.connection_string = connection_string
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
+        self.identity = socket.gethostname()
+        self.log = logger.getLogger(name="directord")
 
     def socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN
@@ -37,7 +67,7 @@ class Driver(drivers.BaseDriver):
         """Return a socket object which has been bound to a given address.
 
         When the socket_type is not PUB or PUSH, the bound socket will also be
-        registered with self.driver.poller as defined within the Interface
+        registered with self.poller as defined within the Interface
         class.
 
         :param socket_type: Set the Socket type, typically defined using a ZMQ
@@ -54,14 +84,15 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        bind = self.driver.ctx.socket(socket_type)
+        bind = self.ctx.socket(socket_type)
         auth_enabled = self.args.shared_key or (
-            self.args.curve_encryption and self.keys_exist
+            self.args.curve_encryption and self.encrypted_traffic
         )
         if auth_enabled:
-            self.auth = ThreadAuthenticator(self.driver.ctx, log=self.log)
+            self.auth = ThreadAuthenticator(self.ctx, log=self.log)
             self.auth.start()
             self.auth.allow()
+
             if self.args.shared_key:
                 # Enables basic auth
                 self.auth.configure_plain(
@@ -69,8 +100,8 @@ class Driver(drivers.BaseDriver):
                 )
                 bind.plain_server = True  # Enable shared key authentication
                 self.log.info("Shared key authentication enabled.")
-            elif self.args.curve_encryption or self.keys_exist:
-                if not self.args.curve_encryption and self.keys_exist:
+            elif self.args.curve_encryption or self.encrypted_traffic:
+                if not self.args.curve_encryption and self.encrypted_traffic:
                     self.log.info(
                         "Curve encryption enabled because key components are"
                         " on the system and no other authentication method"
@@ -102,7 +133,7 @@ class Driver(drivers.BaseDriver):
         )
 
         if socket_type not in [zmq.PUB]:
-            self.driver.poller.register(bind, poller_type)
+            self.poller.register(bind, poller_type)
 
         return bind
 
@@ -141,20 +172,17 @@ class Driver(drivers.BaseDriver):
         :param poller_type: Set the Socket type, typically defined using a ZMQ
                             constant.
         :type poller_type: Integer
-        :param poller_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
-        :type poller_type: Integer
         :returns: Object
         """
 
-        bind = self.driver.ctx.socket(socket_type)
+        bind = self.ctx.socket(socket_type)
 
         if self.args.shared_key:
             bind.plain_username = b"admin"  # User is hard coded.
             bind.plain_password = self.args.shared_key.encode()
             self.log.info("Shared key authentication enabled.")
-        elif self.args.curve_encryption or self.keys_exist:
-            if not self.args.curve_encryption and self.keys_exist:
+        elif self.args.curve_encryption or self.encrypted_traffic:
+            if not self.args.curve_encryption and self.encrypted_traffic:
                 self.log.info(
                     "Curve encryption enabled because key components are"
                     " on the system and no other authentication method"
@@ -186,19 +214,16 @@ class Driver(drivers.BaseDriver):
             bind.setsockopt_string(zmq.IDENTITY, self.identity)
 
         bind.linger = 0
-        self.driver.poller.register(bind, poller_type)
-        with self.timeout(time=10, job_id="Socket connect", reraise=True):
-            bind.connect(
-                "{connection}:{port}".format(
-                    connection=connection,
-                    port=port,
-                )
+        self.poller.register(bind, poller_type)
+        bind.connect(
+            "{connection}:{port}".format(
+                connection=connection,
+                port=port,
             )
+        )
 
         if send_ready and socket_type not in [zmq.SUB, zmq.PULL]:
-            self.driver.socket_send(
-                socket=bind, control=self.driver.heartbeat_ready
-            )
+            self.socket_send(socket=bind, control=self.heartbeat_ready)
 
         self.log.info("Socket connected to [ %s ].", connection)
         return bind
@@ -273,22 +298,22 @@ class Driver(drivers.BaseDriver):
             msg_id = utils.get_uuid().encode()
 
         if not control:
-            control = self.driver.nullbyte
+            control = self.nullbyte
 
         if not command:
-            command = self.driver.nullbyte
+            command = self.nullbyte
 
         if not data:
-            data = self.driver.nullbyte
+            data = self.nullbyte
 
         if not info:
-            info = self.driver.nullbyte
+            info = self.nullbyte
 
         if not stderr:
-            stderr = self.driver.nullbyte
+            stderr = self.nullbyte
 
         if not stdout:
-            stdout = self.driver.nullbyte
+            stdout = self.nullbyte
 
         message_parts = [msg_id, control, command, data, info, stderr, stdout]
 
@@ -345,7 +370,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing Job connection.")
-        return self.driver.socket_connect(
+        return self.socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.job_port,
@@ -359,7 +384,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing transfer connection.")
-        return self.driver.socket_connect(
+        return self.socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.transfer_port,
@@ -373,7 +398,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing Heartbeat connection.")
-        return self.driver.socket_connect(
+        return self.socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
@@ -385,11 +410,26 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.driver.socket_bind(
+        return self.socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
         )
+
+    def heartbeat_reset(self):
+        """Reset the connection on the heartbeat socket.
+
+        Returns a new ttl after reconnect.
+
+        :returns: Float
+        """
+
+        self.poller.unregister(self.bind_heatbeat)
+        self.log.debug("Unregistered heartbeat.")
+        self.bind_heatbeat.close()
+        self.log.debug("Heartbeat connection closed.")
+        self.bind_heatbeat = self.heartbeat_connect()
+        return self.get_heartbeat(interval=self.args.heartbeat_interval)
 
     def job_bind(self):
         """Bind an address to a job socket and return the socket.
@@ -397,7 +437,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.driver.socket_bind(
+        return self.socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.job_port,
@@ -409,13 +449,12 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.driver.socket_bind(
+        return self.socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.transfer_port,
         )
 
-    @property
     def bind_check(self, bind, interval=1):
         """Return True if a bind type contains work ready.
 
@@ -430,5 +469,5 @@ class Driver(drivers.BaseDriver):
         socks = dict(self.poller.poll(interval * 1000))
         return socks.get(bind) == zmq.POLLIN
 
-    def key_generate(keys_dir, key_type):
+    def key_generate(self, keys_dir, key_type):
         zmq_auth.create_certificates(keys_dir, key_type)

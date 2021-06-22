@@ -19,6 +19,8 @@ from unittest.mock import patch
 
 from collections import namedtuple
 
+from directord import drivers
+
 
 TEST_BLUEPRINT_CONTENT = "This is a blueprint string {{ test }}"
 
@@ -169,3 +171,28 @@ class TestConnectionBase(unittest.TestCase):
     def tearDown(self):
         self.patched_socket.stop()
         self.patched_session.stop()
+
+
+class TestDriverBase(unittest.TestCase):
+    def setUp(self):
+        self.mock_driver_patched = patch(
+            "directord.interface.Interface.driver", autospec=True
+        )
+        self.mock_driver = self.mock_driver_patched.start()
+
+        base_driver = drivers.BaseDriver(
+            args=FakeArgs(), encrypted_traffic=False
+        )
+        self.mock_driver.bind_check.return_value = True
+        self.mock_driver.nullbyte = base_driver.nullbyte
+        self.mock_driver.heartbeat_ready = base_driver.heartbeat_ready
+        self.mock_driver.heartbeat_notice = base_driver.heartbeat_notice
+        self.mock_driver.job_ack = base_driver.job_ack
+        self.mock_driver.job_end = base_driver.job_end
+        self.mock_driver.job_processing = base_driver.job_processing
+        self.mock_driver.job_failed = base_driver.job_failed
+        self.mock_driver.transfer_start = base_driver.transfer_start
+        self.mock_driver.transfer_end = base_driver.transfer_end
+
+    def tearDown(self) -> None:
+        self.mock_driver_patched.stop()

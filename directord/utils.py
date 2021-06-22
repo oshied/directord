@@ -76,21 +76,21 @@ class ClientStatus:
     def __init__(self, socket, job_id, command, ctx):
         """Initialize the UNIX socket connect context manager."""
 
-        self.driver.ctx = ctx
+        self.ctx = ctx
         self.job_id = job_id
         self.command = command
-        self.job_state = ctx.nullbyte
-        self.info = ctx.nullbyte
+        self.job_state = ctx.driver.nullbyte
+        self.info = ctx.driver.nullbyte
         self.socket = socket
         self.data = None
-        self.stderr = ctx.nullbyte
-        self.stdout = ctx.nullbyte
+        self.stderr = ctx.driver.nullbyte
+        self.stdout = ctx.driver.nullbyte
 
     def start_processing(self):
-        self.driver.ctx.driver.socket_send(
+        self.ctx.driver.socket_send(
             socket=self.socket,
             msg_id=self.job_id,
-            control=self.driver.ctx.job_processing,
+            control=self.ctx.driver.job_processing,
         )
 
     def __enter__(self):
@@ -104,7 +104,7 @@ class ClientStatus:
     def __exit__(self, *args, **kwargs):
         """Upon exit, send a final status message."""
 
-        self.driver.ctx.driver.socket_send(
+        self.ctx.driver.socket_send(
             socket=self.socket,
             msg_id=self.job_id,
             control=self.job_state,

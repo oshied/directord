@@ -78,7 +78,9 @@ class Server(interface.Interface):
         """
 
         self.bind_heatbeat = self.driver.heartbeat_bind()
-        heartbeat_at = self.get_heartbeat
+        heartbeat_at = self.driver.get_heartbeat(
+            interval=self.heartbeat_interval
+        )
         while True:
             idle_time = heartbeat_at + (self.heartbeat_interval * 3)
             if self.driver.bind_check(bind=self.bind_heatbeat):
@@ -100,7 +102,10 @@ class Server(interface.Interface):
                         "Received Heartbeat from [ %s ], client online",
                         identity.decode(),
                     )
-                    expire = self.get_expiry
+                    expire = self.driver.self.get_expiry(
+                        heartbeat_interval=self.heartbeat_interval,
+                        interval=self.heartbeat_liveness,
+                    )
                     worker_metadata = {"time": expire}
                     try:
                         loaded_data = json.loads(data.decode())
@@ -110,7 +115,9 @@ class Server(interface.Interface):
                         worker_metadata.update(loaded_data)
 
                     self.workers[identity] = worker_metadata
-                    heartbeat_at = self.get_heartbeat
+                    heartbeat_at = self.driver.get_heartbeat(
+                        interval=self.heartbeat_interval
+                    )
                     self.driver.socket_send(
                         socket=self.bind_heatbeat,
                         identity=identity,
@@ -132,7 +139,13 @@ class Server(interface.Interface):
                         identity=worker,
                         control=self.driver.heartbeat_notice,
                         command=b"reset",
-                        info=struct.pack("<f", self.get_expiry),
+                        info=struct.pack(
+                            "<f",
+                            self.driver.get_expiry(
+                                heartbeat_interval=self.heartbeat_interval,
+                                interval=self.heartbeat_liveness,
+                            ),
+                        ),
                     )
                     if time.time() > idle_time + 3:
                         self.log.warning("Removing dead worker %s", worker)
@@ -198,7 +211,7 @@ class Server(interface.Interface):
             if not _createtime:
                 job_metadata["_createtime"] = time.time()
             self.log.debug("%s received job %s", identity, job_id)
-        elif job_status == self.job_processing:
+        elif job_status == self.driver.job_processing:
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
             self.log.debug("%s is processing %s", identity, job_id)
@@ -214,7 +227,7 @@ class Server(interface.Interface):
             job_metadata["TOTAL_ROUNDTRIP_TIME"] = return_exec_time(
                 started=_createtime
             )
-        elif job_status == self.job_failed:
+        elif job_status == self.driver.job_failed:
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
@@ -262,7 +275,7 @@ class Server(interface.Interface):
                 self.driver.socket_send(
                     socket=self.bind_transfer,
                     identity=identity,
-                    control=self.transfer_end,
+                    control=self.driver.transfer_end,
                     command=verb,
                 )
 
@@ -450,7 +463,7 @@ class Server(interface.Interface):
                             os.path.expanduser(transfer_obj)
                         ),
                     )
-                elif control == self.transfer_end:
+                elif control == self.driver.transfer_end:
                     self.log.debug(
                         "Transfer complete for [ %s ]", info.decode()
                     )

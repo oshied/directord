@@ -42,21 +42,6 @@ class Client(interface.Interface):
 
         self.heartbeat_failure_interval = 2
 
-    def reset_heartbeat(self):
-        """Reset the connection on the heartbeat socket.
-
-        Returns a new ttl after reconnect.
-
-        :returns: Float
-        """
-
-        self.driver.poller.unregister(self.bind_heatbeat)
-        self.log.debug("Unregistered heartbeat.")
-        self.bind_heatbeat.close()
-        self.log.debug("Heartbeat connection closed.")
-        self.bind_heatbeat = self.driver.heartbeat_connect()
-        return self.get_heartbeat
-
     def update_heartbeat(self):
         with open("/proc/uptime", "r") as f:
             uptime = float(f.readline().split()[0])
@@ -72,8 +57,7 @@ class Client(interface.Interface):
             ).encode(),
         )
         self.log.debug(
-            "Sent heartbeat to server [ %s ]",
-            self.connection_string,
+            "Sent heartbeat to server.",
         )
 
     def run_heartbeat(self, sentinel=False):
@@ -92,7 +76,9 @@ class Client(interface.Interface):
 
         self.bind_heatbeat = self.driver.heartbeat_connect()
         self.update_heartbeat()
-        heartbeat_at = self.get_heartbeat
+        heartbeat_at = self.driver.get_heartbeat(
+            interval=self.heartbeat_interval
+        )
         heartbeat_misses = 0
         while True:
             self.log.debug("Heartbeat misses [ %s ]", heartbeat_misses)
@@ -108,17 +94,17 @@ class Client(interface.Interface):
                     _,
                     _,
                 ) = self.driver.socket_recv(socket=self.bind_heatbeat)
-                self.log.debug(
-                    "Heartbeat received from server [ %s ]",
-                    self.connection_string,
-                )
+                self.log.debug("Heartbeat received from server.")
                 if command == b"reset":
                     self.log.warning(
                         "Received heartbeat reset command. Connection"
                         " resetting."
                     )
-                    self.reset_heartbeat()
-                    heartbeat_at = self.get_expiry
+                    self.driver.heartbeat_reset()
+                    heartbeat_at = self.driver.get_expiry(
+                        heartbeat_interval=self.heartbeat_interval,
+                        interval=self.heartbeat_liveness,
+                    )
                 else:
                     heartbeat_at = struct.unpack("<f", info)[0]
                     heartbeat_misses = 0
@@ -137,8 +123,11 @@ class Client(interface.Interface):
                         self.heartbeat_failure_interval *= 2
 
                     self.log.debug("Running reconnection.")
-                    self.reset_heartbeat()
-                    heartbeat_at = self.get_expiry
+                    self.driver.heartbeat_reset()
+                    heartbeat_at = self.driver.get_expiry(
+                        heartbeat_interval=self.heartbeat_interval,
+                        interval=self.heartbeat_liveness,
+                    )
                 else:
                     heartbeat_misses += 1
                     self.update_heartbeat()
@@ -271,7 +260,7 @@ class Client(interface.Interface):
                     cache_check_time = time.time()
 
             base_component = components.ComponentBase()
-            if self.bind_job in dict(self.driver.poller.poll(poller_interval)):
+            if self.driver.bind_check(bind=self.bind_job):
                 with diskcache.Cache(
                     self.args.cache_path, tag_index=True
                 ) as cache:

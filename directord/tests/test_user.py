@@ -108,29 +108,6 @@ class TestManager(unittest.TestCase):
             "/test/path/item-one.test", "/test/path/item-one.test"
         )
 
-    @patch("zmq.auth.create_certificates", autospec=True)
-    @patch("os.makedirs", autospec=True)
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_generate_certificates(
-        self, mock_listdir, mock_rename, mock_makedirs, mock_zmqgencerts
-    ):
-        mock_listdir.return_value = ["item-one.test", "item-two.key"]
-        self.manage.generate_certificates()
-        mock_makedirs.assert_has_calls(
-            [
-                call("/etc/directord/certificates", exist_ok=True),
-                call("/etc/directord/public_keys", exist_ok=True),
-                call("/etc/directord/private_keys", exist_ok=True),
-            ]
-        )
-        mock_zmqgencerts.assert_has_calls(
-            [
-                call("/etc/directord/certificates", "server"),
-                call("/etc/directord/certificates", "client"),
-            ]
-        )
-
     @patch("directord.send_data", autospec=True)
     def test_poll_job_unknown(self, mock_send_data):
         mock_send_data.return_value = json.dumps(
@@ -234,3 +211,30 @@ class TestManager(unittest.TestCase):
     ):
         self.manage.run(override="generate-keys")
         mock_send_data.assert_not_called()
+
+    @patch("directord.interface.Interface.driver", autospec=True)
+    @patch("os.makedirs", autospec=True)
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_generate_certificates(
+        self, mock_listdir, mock_rename, mock_makedirs, mock_driver
+    ):
+        mock_listdir.return_value = ["item-one.test", "item-two.key"]
+        self.manage.generate_certificates()
+        mock_makedirs.assert_has_calls(
+            [
+                call("/etc/directord/certificates", exist_ok=True),
+                call("/etc/directord/public_keys", exist_ok=True),
+                call("/etc/directord/private_keys", exist_ok=True),
+            ]
+        )
+        mock_driver.key_generate.assert_has_calls(
+            [
+                call(
+                    keys_dir="/etc/directord/certificates", key_type="server"
+                ),
+                call(
+                    keys_dir="/etc/directord/certificates", key_type="client"
+                ),
+            ]
+        )
