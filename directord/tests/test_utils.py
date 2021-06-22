@@ -65,8 +65,8 @@ class TestUtils(tests.TestConnectionBase):
         ) as c:
             assert c.job_id == b"test-id"
 
-        ctx.socket_multipart_send.assert_called_with(
-            zsocket=socket,
+        ctx.driver.socket_send.assert_called_with(
+            socket=socket,
             msg_id=b"test-id",
             command=b"test",
             control=unittest.mock.ANY,
@@ -83,14 +83,14 @@ class TestUtils(tests.TestConnectionBase):
             socket=socket, job_id=b"test-id-start", command=b"test", ctx=ctx
         ) as c:
             c.start_processing()
-            ctx.socket_multipart_send.assert_called_with(
-                zsocket=socket,
+            ctx.driver.socket_send.assert_called_with(
+                socket=socket,
                 msg_id=b"test-id-start",
                 control=unittest.mock.ANY,
             )
 
-        ctx.socket_multipart_send.assert_called_with(
-            zsocket=socket,
+        ctx.driver.socket_send.assert_called_with(
+            socket=socket,
             msg_id=b"test-id-start",
             command=b"test",
             control=unittest.mock.ANY,

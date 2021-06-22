@@ -36,9 +36,9 @@ class TestServer(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     def test_heartbeat_bind(self, mock_socket_bind):
-        self.server.heartbeat_bind()
+        self.server.driver.heartbeat_bind()
         mock_socket_bind.assert_called_with(
             ANY,
             socket_type=zmq.ROUTER,
@@ -46,9 +46,9 @@ class TestServer(unittest.TestCase):
             port=5557,
         )
 
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     def test_job_bind(self, mock_socket_bind):
-        self.server.job_bind()
+        self.server.driver.job_bind()
         mock_socket_bind.assert_called_with(
             ANY,
             socket_type=zmq.ROUTER,
@@ -56,9 +56,9 @@ class TestServer(unittest.TestCase):
             port=5555,
         )
 
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     def test_transfer_bind(self, mock_socket_bind):
-        self.server.transfer_bind()
+        self.server.driver.transfer_bind()
         mock_socket_bind.assert_called_with(
             ANY,
             socket_type=zmq.ROUTER,
@@ -66,10 +66,8 @@ class TestServer(unittest.TestCase):
             port=5556,
         )
 
-    @patch("directord.server.Server.heartbeat_bind", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_recv", autospec=True
-    )
+    @patch("directord.server.Serverdriver.heartbeat_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -100,10 +98,8 @@ class TestServer(unittest.TestCase):
         mock_log_debug.assert_called()
         self.assertIn(b"test-node", self.server.workers)
 
-    @patch("directord.server.Server.heartbeat_bind", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_recv", autospec=True
-    )
+    @patch("directord.server.Serverdriver.heartbeat_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -134,10 +130,8 @@ class TestServer(unittest.TestCase):
         mock_log_debug.assert_called()
         self.assertIn(b"test-node", self.server.workers)
 
-    @patch("directord.server.Server.heartbeat_bind", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_send", autospec=True
-    )
+    @patch("directord.server.Serverdriver.heartbeat_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.warning", autospec=True)
     def test_run_heartbeat_idle_workers(
@@ -153,7 +147,7 @@ class TestServer(unittest.TestCase):
         mock_log_warning.assert_called()
         mock_multipart_send.assert_called_with(
             ANY,
-            zsocket=ANY,
+            socket=ANY,
             identity=b"test-node",
             control=b"\x05",
             command=b"reset",
@@ -461,9 +455,7 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("os.path.isfile", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_send", autospec=True
-    )
+    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test__run_transfer(
         self, mock_log_info, mock_multipart_send, mock_isfile
@@ -527,9 +519,7 @@ class TestServer(unittest.TestCase):
             {"exists": True},
         )
 
-    @patch(
-        "directord.interface.Interface.socket_multipart_send", autospec=True
-    )
+    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job(self, mock_log_debug, mock_queue, mock_multipart_send):
@@ -539,9 +529,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
-    @patch(
-        "directord.interface.Interface.socket_multipart_send", autospec=True
-    )
+    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job_restricted_null(
@@ -561,9 +549,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
-    @patch(
-        "directord.interface.Interface.socket_multipart_send", autospec=True
-    )
+    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.critical", autospec=True)
     def test_run_job_run_node_fail(
@@ -582,9 +568,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(return_int, 512)
         mock_log_critical.assert_called()
 
-    @patch(
-        "directord.interface.Interface.socket_multipart_send", autospec=True
-    )
+    @patch("directord.interface.Interface.driver.socket_send", autospec=True)
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job_run(
@@ -606,14 +590,14 @@ class TestServer(unittest.TestCase):
         mock_log_debug.assert_called()
         mock_multipart_send.assert_called()
 
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time, mock_socket_bind):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
         mock_socket_bind.assert_called()
 
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test_run_interactions_idle(
@@ -626,7 +610,7 @@ class TestServer(unittest.TestCase):
             ANY, "Directord server entering idle state."
         )
 
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test_run_interactions_ramp(
@@ -638,11 +622,9 @@ class TestServer(unittest.TestCase):
         mock_log_info.assert_called_with(ANY, "Directord server ramping down.")
 
     @patch("directord.server.Server._run_transfer", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_recv", autospec=True
-    )
-    @patch("directord.server.Server.transfer_bind", autospec=True)
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
+    @patch("directord.server.Serverdriver.transfer_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -679,11 +661,9 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_recv", autospec=True
-    )
-    @patch("directord.server.Server.transfer_bind", autospec=True)
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
+    @patch("directord.server.Serverdriver.transfer_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -724,11 +704,9 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_recv", autospec=True
-    )
-    @patch("directord.server.Server.job_bind", autospec=True)
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
+    @patch("directord.server.Serverdriver.job_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_interactions_set_status(
@@ -768,11 +746,9 @@ class TestServer(unittest.TestCase):
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch(
-        "directord.interface.Interface.socket_multipart_recv", autospec=True
-    )
-    @patch("directord.server.Server.job_bind", autospec=True)
-    @patch("directord.interface.Interface.socket_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_recv", autospec=True)
+    @patch("directord.server.Serverdriver.job_bind", autospec=True)
+    @patch("directord.interface.Interface.driver.socket_bind", autospec=True)
     @patch("zmq.Poller.poll", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
