@@ -38,7 +38,7 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
         with patch("builtins.open", m):
             with patch("os.path.exists") as mock_exists:
                 mock_exists.return_value = True
-                bind = self.driver.socket_connect(
+                bind = self.driver._socket_connect(
                     socket_type=zmq.PULL,
                     connection="tcp://test",
                     port=1234,
@@ -58,7 +58,7 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
             setattr(self.driver.args, "shared_key", None)
             with patch("os.path.exists") as mock_exists:
                 mock_exists.return_value = True
-                bind = self.driver.socket_bind(
+                bind = self.driver._socket_bind(
                     socket_type=zmq.ROUTER,
                     connection="tcp://127.0.0.1",
                     port=9000,
@@ -77,7 +77,7 @@ class TestDriverZMQ(unittest.TestCase):
         pass
 
     @patch("zmq.Poller.unregister", autospec=True)
-    @patch("directord.drivers.zmq.Driver.socket_connect", autospec=True)
+    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_reset_heartbeat(
         self, mock_log_debug, mock_socket_connect, mock_poller
@@ -91,7 +91,7 @@ class TestDriverZMQ(unittest.TestCase):
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
     def test_socket_bind_no_auth(self, mock_poller, mock_socket):
-        bind = self.driver.socket_bind(
+        bind = self.driver._socket_bind(
             socket_type=zmq.ROUTER,
             connection="tcp://127.0.0.1",
             port=9000,
@@ -106,7 +106,7 @@ class TestDriverZMQ(unittest.TestCase):
         self, mock_auth, mock_poller, mock_socket, mock_info_logging
     ):
         setattr(self.driver.args, "shared_key", "test")
-        bind = self.driver.socket_bind(
+        bind = self.driver._socket_bind(
             socket_type=zmq.ROUTER,
             connection="tcp://127.0.0.1",
             port=9000,
@@ -119,7 +119,7 @@ class TestDriverZMQ(unittest.TestCase):
     def test_socket_connect_shared_key(self, mock_info_logging):
         self.driver.encrypted_traffic = False
         setattr(self.driver.args, "shared_key", "test-key")
-        bind = self.driver.socket_connect(
+        bind = self.driver._socket_connect(
             socket_type=zmq.PULL,
             connection="tcp://test",
             port=1234,
@@ -131,7 +131,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("logging.Logger.info", autospec=True)
     def test_socket_connect(self, mock_info_logging):
-        bind = self.driver.socket_connect(
+        bind = self.driver._socket_connect(
             socket_type=zmq.PULL,
             connection="tcp://test",
             port=1234,
@@ -304,7 +304,7 @@ class TestDriverZMQ(unittest.TestCase):
             ]
         )
 
-    @patch("directord.drivers.zmq.Driver.socket_bind", autospec=True)
+    @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
     def test_heartbeat_bind(self, mock_socket_bind):
         self.driver.heartbeat_bind()
         mock_socket_bind.assert_called_with(
@@ -314,7 +314,7 @@ class TestDriverZMQ(unittest.TestCase):
             port=5557,
         )
 
-    @patch("directord.drivers.zmq.Driver.socket_bind", autospec=True)
+    @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
     def test_job_bind(self, mock_socket_bind):
         self.driver.job_bind()
         mock_socket_bind.assert_called_with(
@@ -324,7 +324,7 @@ class TestDriverZMQ(unittest.TestCase):
             port=5555,
         )
 
-    @patch("directord.drivers.zmq.Driver.socket_bind", autospec=True)
+    @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
     def test_transfer_bind(self, mock_socket_bind):
         self.driver.transfer_bind()
         mock_socket_bind.assert_called_with(
@@ -352,21 +352,21 @@ class TestDriverZMQ(unittest.TestCase):
                 1000000180.0000001,
             )
 
-    @patch("directord.drivers.zmq.Driver.socket_connect", autospec=True)
+    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_job_connect(self, mock_log_debug, mock_socket_connect):
         self.driver.job_connect()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()
 
-    @patch("directord.drivers.zmq.Driver.socket_connect", autospec=True)
+    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_transfer_connect(self, mock_log_debug, mock_socket_connect):
         self.driver.transfer_connect()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()
 
-    @patch("directord.drivers.zmq.Driver.socket_connect", autospec=True)
+    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_heartbeat_connect(self, mock_log_debug, mock_socket_connect):
         self.driver.heartbeat_connect()

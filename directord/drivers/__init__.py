@@ -49,56 +49,6 @@ class BaseDriver:
         self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
 
-    def socket_bind(self, socket_type, connection, port, poller_type=None):
-        """Return a socket object which has been bound to a given address.
-
-        When the socket_type is not PUB or PUSH, the bound socket will also be
-        registered with self.driver.poller as defined within the Interface
-        class.
-
-        :param socket_type: Set the Socket type, typically defined using a
-                            constant.
-        :type socket_type: Integer
-        :param connection: Set the Address information used for the bound
-                           socket.
-        :type connection: String
-        :param port: Define the port which the socket will be bound to.
-        :type port: Integer
-        :returns: Object
-        """
-
-        pass
-
-    def socket_connect(
-        self,
-        socket_type,
-        connection,
-        port,
-        poller_type=None,
-        send_ready=True,
-    ):
-        """Return a socket object which has been bound to a given address.
-
-        When send_ready is set True and the socket_type is not SUB or PULL,
-        the bound socket will send a single SOH ready message.
-
-        > A connection back to the server will wait 10 seconds for an ack
-          before going into a retry loop. This is done to forcefully cycle
-          the connection object to reset.
-
-        :param socket_type: Set the Socket type, typically defined using a
-                            constant.
-        :type socket_type: Integer
-        :param connection: Set the Address information used for the bound
-                           socket.
-        :type connection: String
-        :param port: Define the port which the socket will be bound to.
-        :type port: Integer
-        :returns: Object
-        """
-
-        pass
-
     def socket_send(
         self,
         socket,

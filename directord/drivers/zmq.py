@@ -62,7 +62,7 @@ class Driver(drivers.BaseDriver):
             connection_string=connection_string,
         )
 
-    def socket_bind(
+    def _socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN
     ):
         """Return a socket object which has been bound to a given address.
@@ -151,7 +151,7 @@ class Driver(drivers.BaseDriver):
             logger.getLogger(name="directord"), logging.WARN
         ),
     )
-    def socket_connect(
+    def _socket_connect(
         self,
         socket_type,
         connection,
@@ -387,7 +387,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing Job connection.")
-        return self.socket_connect(
+        return self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.job_port,
@@ -401,7 +401,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing transfer connection.")
-        return self.socket_connect(
+        return self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.transfer_port,
@@ -415,7 +415,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing Heartbeat connection.")
-        return self.socket_connect(
+        return self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
@@ -427,7 +427,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.socket_bind(
+        return self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
@@ -454,7 +454,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.socket_bind(
+        return self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.job_port,
@@ -466,7 +466,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.socket_bind(
+        return self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.transfer_port,
