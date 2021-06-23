@@ -27,6 +27,7 @@ REQUIREMENTS = {
     "dev": ["podman-py"],
     "test": ["flake8", "coverage"],
     "redis": ["redis"],
+    "qpid": ["python-qpid-proton"],
 }
 REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 
