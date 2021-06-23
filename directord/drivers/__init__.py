@@ -12,9 +12,15 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import socket
 import time
 
+from directord import logger
 from directord import utils
+
+
+__driver_options__ = ["zmq", "qpid"]
+__driver_default__ = "zmq"
 
 
 class BaseDriver:
@@ -39,7 +45,9 @@ class BaseDriver:
         :type encrypted_traffic: Boolean
         """
 
-        pass
+        self.connection_string = connection_string
+        self.identity = socket.gethostname()
+        self.log = logger.getLogger(name="directord")
 
     def socket_bind(self, socket_type, connection, port, poller_type=None):
         """Return a socket object which has been bound to a given address.

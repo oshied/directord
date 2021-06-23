@@ -14,7 +14,6 @@
 
 import logging
 import os
-import socket
 
 import tenacity
 import zmq
@@ -55,11 +54,13 @@ class Driver(drivers.BaseDriver):
             self.secret_keys_dir = None
             self.public_keys_dir = None
 
-        self.connection_string = connection_string
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
-        self.identity = socket.gethostname()
-        self.log = logger.getLogger(name="directord")
+        super(Driver, self).__init__(
+            args=args,
+            encrypted_traffic_data=encrypted_traffic_data,
+            connection_string=connection_string,
+        )
 
     def socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN

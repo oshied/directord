@@ -24,6 +24,7 @@ import sys
 
 from types import SimpleNamespace
 
+from directord import drivers
 from directord import logger
 from directord.meta import __version__  # noqa
 
@@ -239,7 +240,7 @@ class UNIXSocketConnect:
 class DirectordConnect:
     """Library context manager providing easy access into Directord."""
 
-    def __init__(self, debug=False, socket_path="/var/run/directord.sock"):
+    def __init__(self, debug=False, socket_path="/var/run/directord.sock", driver=drivers.__driver_default__):
         """Initialize the connection.
 
         Basic usage.
@@ -256,7 +257,7 @@ class DirectordConnect:
         :type socket_path: String
         """
 
-        args = SimpleNamespace(**{"debug": debug, "socket_path": socket_path})
+        args = SimpleNamespace(**{"debug": debug, "socket_path": socket_path, "driver": driver})
         _mixin = plugin_import(plugin=".mixin")
         self.mixin = _mixin.Mixin(args=args)
         _user = plugin_import(plugin=".user")
