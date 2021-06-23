@@ -17,8 +17,6 @@ import json
 import os
 import time
 
-import zmq.auth as zmq_auth
-
 import directord
 
 from directord import interface
@@ -103,7 +101,7 @@ class Manage(User):
 
         # create new keys in certificates dir
         for item in ["server", "client"]:
-            zmq_auth.create_certificates(keys_dir, item)
+            self.driver.key_generate(keys_dir=keys_dir, key_type=item)
 
         # Move generated certificates in place
         self.move_certificates(
@@ -137,11 +135,11 @@ class Manage(User):
                 data_return = data.get(job_id, dict())
                 job_state = data_return.get("PROCESSING", "unknown")
                 job_state = job_state.encode()
-                if job_state == self.job_processing:
+                if job_state == self.driver.job_processing:
                     time.sleep(1)
-                elif job_state == self.job_failed:
+                elif job_state == self.driver.job_failed:
                     return False, "Job Failed: {}".format(job_id)
-                elif job_state in [self.job_end, self.nullbyte]:
+                elif job_state in [self.driver.job_end, self.driver.nullbyte]:
                     nodes = len(data_return.get("NODES"))
                     if len(data_return.get("SUCCESS", list())) == nodes:
                         return True, "Job Success: {}".format(job_id)

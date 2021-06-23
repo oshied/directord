@@ -20,8 +20,6 @@ import struct
 import time
 import urllib.parse as urlparse
 
-import zmq
-
 import directord
 
 from directord import interface
@@ -45,7 +43,7 @@ class Server(interface.Interface):
         datastore = getattr(self.args, "datastore", None)
         if not datastore:
             self.log.info("Connecting to internal datastore")
-            directord.plugin_import(plugin=".datastore.internal")
+            directord.plugin_import(plugin=".datastores.internal")
             manager = multiprocessing.Manager()
             self.workers = manager.document()
             self.return_jobs = manager.document()
@@ -58,7 +56,7 @@ class Server(interface.Interface):
                 except ValueError:
                     db = 0
                 self.log.debug("Redis keyspace base is %s", db)
-                redis = directord.plugin_import(plugin=".datastore.redis")
+                redis = directord.plugin_import(plugin=".datastores.redis")
 
                 self.workers = redis.BaseDocument(
                     url=url._replace(path="").geturl(), database=(db + 1)
@@ -66,42 +64,6 @@ class Server(interface.Interface):
                 self.return_jobs = redis.BaseDocument(
                     url=url._replace(path="").geturl(), database=(db + 2)
                 )
-
-    def heartbeat_bind(self):
-        """Bind an address to a heartbeat socket and return the socket.
-
-        :returns: Object
-        """
-
-        return self.socket_bind(
-            socket_type=zmq.ROUTER,
-            connection=self.connection_string,
-            port=self.args.heartbeat_port,
-        )
-
-    def job_bind(self):
-        """Bind an address to a job socket and return the socket.
-
-        :returns: Object
-        """
-
-        return self.socket_bind(
-            socket_type=zmq.ROUTER,
-            connection=self.connection_string,
-            port=self.args.job_port,
-        )
-
-    def transfer_bind(self):
-        """Bind an address to a transfer socket and return the socket.
-
-        :returns: Object
-        """
-
-        return self.socket_bind(
-            socket_type=zmq.ROUTER,
-            connection=self.connection_string,
-            port=self.args.transfer_port,
-        )
 
     def run_heartbeat(self, sentinel=False):
         """Execute the heartbeat loop.
@@ -115,12 +77,13 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_heatbeat = self.heartbeat_bind()
-        heartbeat_at = self.get_heartbeat
+        self.bind_heatbeat = self.driver.heartbeat_bind()
+        heartbeat_at = self.driver.get_heartbeat(
+            interval=self.heartbeat_interval
+        )
         while True:
             idle_time = heartbeat_at + (self.heartbeat_interval * 3)
-            socks = dict(self.poller.poll(1000))
-            if socks.get(self.bind_heatbeat) == zmq.POLLIN:
+            if self.driver.bind_check(bind=self.bind_heatbeat):
                 (
                     identity,
                     _,
@@ -130,13 +93,19 @@ class Server(interface.Interface):
                     _,
                     _,
                     _,
-                ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
-                if control in [self.heartbeat_ready, self.heartbeat_notice]:
+                ) = self.driver.socket_recv(socket=self.bind_heatbeat)
+                if control in [
+                    self.driver.heartbeat_ready,
+                    self.driver.heartbeat_notice,
+                ]:
                     self.log.debug(
                         "Received Heartbeat from [ %s ], client online",
                         identity.decode(),
                     )
-                    expire = self.get_expiry
+                    expire = self.driver.get_expiry(
+                        heartbeat_interval=self.heartbeat_interval,
+                        interval=self.heartbeat_liveness,
+                    )
                     worker_metadata = {"time": expire}
                     try:
                         loaded_data = json.loads(data.decode())
@@ -146,11 +115,13 @@ class Server(interface.Interface):
                         worker_metadata.update(loaded_data)
 
                     self.workers[identity] = worker_metadata
-                    heartbeat_at = self.get_heartbeat
-                    self.socket_multipart_send(
-                        zsocket=self.bind_heatbeat,
+                    heartbeat_at = self.driver.get_heartbeat(
+                        interval=self.heartbeat_interval
+                    )
+                    self.driver.socket_send(
+                        socket=self.bind_heatbeat,
                         identity=identity,
-                        control=self.heartbeat_notice,
+                        control=self.driver.heartbeat_notice,
                         info=struct.pack("<f", expire),
                     )
                     self.log.debug(
@@ -163,12 +134,18 @@ class Server(interface.Interface):
                     self.log.warning(
                         "Sending idle worker [ %s ] a heartbeat", worker
                     )
-                    self.socket_multipart_send(
-                        zsocket=self.bind_heatbeat,
+                    self.driver.socket_send(
+                        socket=self.bind_heatbeat,
                         identity=worker,
-                        control=self.heartbeat_notice,
+                        control=self.driver.heartbeat_notice,
                         command=b"reset",
-                        info=struct.pack("<f", self.get_expiry),
+                        info=struct.pack(
+                            "<f",
+                            self.driver.get_expiry(
+                                heartbeat_interval=self.heartbeat_interval,
+                                interval=self.heartbeat_liveness,
+                            ),
+                        ),
                     )
                     if time.time() > idle_time + 3:
                         self.log.warning("Removing dead worker %s", worker)
@@ -230,15 +207,15 @@ class Server(interface.Interface):
 
         _starttime = job_metadata.get("_starttime")
         _createtime = job_metadata.get("_createtime")
-        if job_status == self.job_ack:
+        if job_status == self.driver.job_ack:
             if not _createtime:
                 job_metadata["_createtime"] = time.time()
             self.log.debug("%s received job %s", identity, job_id)
-        elif job_status == self.job_processing:
+        elif job_status == self.driver.job_processing:
             if not _starttime:
                 job_metadata["_starttime"] = time.time()
             self.log.debug("%s is processing %s", identity, job_id)
-        elif job_status in [self.job_end, self.nullbyte]:
+        elif job_status in [self.driver.job_end, self.driver.nullbyte]:
             self.log.debug("%s finished processing %s", identity, job_id)
             if "SUCCESS" in job_metadata:
                 job_metadata["SUCCESS"].append(identity)
@@ -250,7 +227,7 @@ class Server(interface.Interface):
             job_metadata["TOTAL_ROUNDTRIP_TIME"] = return_exec_time(
                 started=_createtime
             )
-        elif job_status == self.job_failed:
+        elif job_status == self.driver.job_failed:
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
@@ -288,17 +265,17 @@ class Server(interface.Interface):
         self.log.info("File transfer for [ %s ] starting", file_path)
         with open(file_path, "rb") as f:
             for chunk in self.read_in_chunks(file_object=f):
-                self.socket_multipart_send(
-                    zsocket=self.bind_transfer,
+                self.driver.socket_send(
+                    socket=self.bind_transfer,
                     identity=identity,
                     command=verb,
                     data=chunk,
                 )
             else:
-                self.socket_multipart_send(
-                    zsocket=self.bind_transfer,
+                self.driver.socket_send(
+                    socket=self.bind_transfer,
                     identity=identity,
-                    control=self.transfer_end,
+                    control=self.driver.transfer_end,
                     command=verb,
                 )
 
@@ -403,8 +380,8 @@ class Server(interface.Interface):
                             file_path,
                             identity.decode(),
                         )
-                        self.socket_multipart_send(
-                            zsocket=self.bind_job,
+                        self.driver.socket_send(
+                            socket=self.bind_job,
                             identity=identity,
                             command=job_item["verb"].encode(),
                             data=json.dumps(job_item).encode(),
@@ -416,8 +393,8 @@ class Server(interface.Interface):
                         job_item["verb"].encode(),
                         identity.decode(),
                     )
-                    self.socket_multipart_send(
-                        zsocket=self.bind_job,
+                    self.driver.socket_send(
+                        socket=self.bind_job,
                         identity=identity,
                         command=job_item["verb"].encode(),
                         data=json.dumps(job_item).encode(),
@@ -444,8 +421,8 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_job = self.job_bind()
-        self.bind_transfer = self.transfer_bind()
+        self.bind_job = self.driver.job_bind()
+        self.bind_transfer = self.driver.transfer_bind()
         poller_time = time.time()
         poller_interval = 128
 
@@ -455,16 +432,15 @@ class Server(interface.Interface):
                 if poller_interval != 2048:
                     self.log.info("Directord server entering idle state.")
                 poller_interval = 2048
-
             elif current_time > poller_time + 32:
                 if poller_interval != 1024:
                     self.log.info("Directord server ramping down.")
                 poller_interval = 1024
 
-            socks = dict(self.poller.poll(poller_interval))
-
-            if socks.get(self.bind_transfer) == zmq.POLLIN:
-                poller_interval, poller_time = 128, time.time()
+            if self.driver.bind_check(
+                bind=self.bind_transfer, constant=poller_interval
+            ):
+                poller_interval, poller_time = 64, time.time()
 
                 (
                     identity,
@@ -475,7 +451,7 @@ class Server(interface.Interface):
                     info,
                     _,
                     _,
-                ) = self.socket_multipart_recv(zsocket=self.bind_transfer)
+                ) = self.driver.socket_recv(socket=self.bind_transfer)
                 if command == b"transfer":
                     transfer_obj = info.decode()
                     self.log.debug(
@@ -488,7 +464,7 @@ class Server(interface.Interface):
                             os.path.expanduser(transfer_obj)
                         ),
                     )
-                elif control == self.transfer_end:
+                elif control == self.driver.transfer_end:
                     self.log.debug(
                         "Transfer complete for [ %s ]", info.decode()
                     )
@@ -498,9 +474,10 @@ class Server(interface.Interface):
                         identity=identity.decode(),
                         job_output=info.decode(),
                     )
-
-            elif socks.get(self.bind_job) == zmq.POLLIN:
-                poller_interval, poller_time = 128, time.time()
+            elif self.driver.bind_check(
+                bind=self.bind_job, constant=poller_interval
+            ):
+                poller_interval, poller_time = 64, time.time()
                 (
                     identity,
                     msg_id,
@@ -510,7 +487,7 @@ class Server(interface.Interface):
                     info,
                     stderr,
                     stdout,
-                ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                ) = self.driver.socket_recv(socket=self.bind_job)
                 node = identity.decode()
                 node_output = info.decode()
                 if stderr:
@@ -567,13 +544,12 @@ class Server(interface.Interface):
                                     " TARGET: %s",
                                     target.decode(),
                                 )
-                                self.socket_multipart_send(
-                                    zsocket=self.bind_job,
+                                self.driver.socket_send(
+                                    socket=self.bind_job,
                                     identity=target,
                                     command=data_item["verb"].encode(),
                                     data=json.dumps(data_item).encode(),
                                 )
-
             elif self.workers:
                 poller_interval, poller_time = self.run_job()
 

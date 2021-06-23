@@ -19,7 +19,6 @@ import struct
 import time
 
 import diskcache
-import zmq
 
 import directord
 from directord import components
@@ -43,69 +42,13 @@ class Client(interface.Interface):
 
         self.heartbeat_failure_interval = 2
 
-    def job_connect(self):
-        """Connect to a job socket and return the socket.
-
-        :returns: Object
-        """
-
-        self.log.debug("Establishing Job connection.")
-        return self.socket_connect(
-            socket_type=zmq.DEALER,
-            connection=self.connection_string,
-            port=self.args.job_port,
-            send_ready=False,
-        )
-
-    def transfer_connect(self):
-        """Connect to a transfer socket and return the socket.
-
-        :returns: Object
-        """
-
-        self.log.debug("Establishing transfer connection.")
-        return self.socket_connect(
-            socket_type=zmq.DEALER,
-            connection=self.connection_string,
-            port=self.args.transfer_port,
-            send_ready=False,
-        )
-
-    def heartbeat_connect(self):
-        """Connect to a heartbeat socket and return the socket.
-
-        :returns: Object
-        """
-
-        self.log.debug("Establishing Heartbeat connection.")
-        return self.socket_connect(
-            socket_type=zmq.DEALER,
-            connection=self.connection_string,
-            port=self.args.heartbeat_port,
-        )
-
-    def reset_heartbeat(self):
-        """Reset the connection on the heartbeat socket.
-
-        Returns a new ttl after reconnect.
-
-        :returns: Float
-        """
-
-        self.poller.unregister(self.bind_heatbeat)
-        self.log.debug("Unregistered heartbeat.")
-        self.bind_heatbeat.close()
-        self.log.debug("Heartbeat connection closed.")
-        self.bind_heatbeat = self.heartbeat_connect()
-        return self.get_heartbeat
-
     def update_heartbeat(self):
         with open("/proc/uptime", "r") as f:
             uptime = float(f.readline().split()[0])
 
-        self.socket_multipart_send(
-            zsocket=self.bind_heatbeat,
-            control=self.heartbeat_notice,
+        self.driver.socket_send(
+            socket=self.bind_heatbeat,
+            control=self.driver.heartbeat_notice,
             data=json.dumps(
                 {
                     "version": directord.__version__,
@@ -114,8 +57,7 @@ class Client(interface.Interface):
             ).encode(),
         )
         self.log.debug(
-            "Sent heartbeat to server [ %s ]",
-            self.connection_string,
+            "Sent heartbeat to server.",
         )
 
     def run_heartbeat(self, sentinel=False):
@@ -132,14 +74,17 @@ class Client(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_heatbeat = self.heartbeat_connect()
+        self.bind_heatbeat = self.driver.heartbeat_connect()
         self.update_heartbeat()
-        heartbeat_at = self.get_heartbeat
+        heartbeat_at = self.driver.get_heartbeat(
+            interval=self.heartbeat_interval
+        )
         heartbeat_misses = 0
         while True:
             self.log.debug("Heartbeat misses [ %s ]", heartbeat_misses)
-            socks = dict(self.poller.poll(self.heartbeat_interval * 1000))
-            if socks.get(self.bind_heatbeat) == zmq.POLLIN:
+            if self.driver.bind_check(
+                interval=self.heartbeat_interval, bind=self.bind_heatbeat
+            ):
                 (
                     _,
                     _,
@@ -148,18 +93,18 @@ class Client(interface.Interface):
                     info,
                     _,
                     _,
-                ) = self.socket_multipart_recv(zsocket=self.bind_heatbeat)
-                self.log.debug(
-                    "Heartbeat received from server [ %s ]",
-                    self.connection_string,
-                )
+                ) = self.driver.socket_recv(socket=self.bind_heatbeat)
+                self.log.debug("Heartbeat received from server.")
                 if command == b"reset":
                     self.log.warning(
                         "Received heartbeat reset command. Connection"
                         " resetting."
                     )
-                    self.reset_heartbeat()
-                    heartbeat_at = self.get_expiry
+                    self.driver.heartbeat_reset()
+                    heartbeat_at = self.driver.get_expiry(
+                        heartbeat_interval=self.heartbeat_interval,
+                        interval=self.heartbeat_liveness,
+                    )
                 else:
                     heartbeat_at = struct.unpack("<f", info)[0]
                     heartbeat_misses = 0
@@ -178,8 +123,11 @@ class Client(interface.Interface):
                         self.heartbeat_failure_interval *= 2
 
                     self.log.debug("Running reconnection.")
-                    self.reset_heartbeat()
-                    heartbeat_at = self.get_expiry
+                    self.driver.heartbeat_reset()
+                    heartbeat_at = self.driver.get_expiry(
+                        heartbeat_interval=self.heartbeat_interval,
+                        interval=self.heartbeat_liveness,
+                    )
                 else:
                     heartbeat_misses += 1
                     self.update_heartbeat()
@@ -248,7 +196,7 @@ class Client(interface.Interface):
             #                  transfering.
             self.log.info("Cache hit on %s, task skipped.", job_sha1)
             conn.info = b"job skipped"
-            conn.job_state = self.job_end
+            conn.job_state = self.driver.job_end
             return None, None, None
 
         return component.client(**component_kwargs)
@@ -269,8 +217,8 @@ class Client(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_job = self.job_connect()
-        self.bind_transfer = self.transfer_connect()
+        self.bind_job = self.driver.job_connect()
+        self.bind_transfer = self.driver.transfer_connect()
         poller_time = time.time()
         poller_interval = 128
         cache_check_time = time.time()
@@ -282,7 +230,6 @@ class Client(interface.Interface):
                 if poller_interval != 2048:
                     self.log.info("Directord client entering idle state.")
                 poller_interval = 2048
-
             elif time.time() > poller_time + 32:
                 if poller_interval != 1024:
                     self.log.info("Directord client ramping down.")
@@ -312,11 +259,13 @@ class Client(interface.Interface):
                     cache_check_time = time.time()
 
             base_component = components.ComponentBase()
-            if self.bind_job in dict(self.poller.poll(poller_interval)):
+            if self.driver.bind_check(
+                bind=self.bind_job, constant=poller_interval
+            ):
                 with diskcache.Cache(
                     self.args.cache_path, tag_index=True
                 ) as cache:
-                    poller_interval, poller_time = 128, time.time()
+                    poller_interval, poller_time = 64, time.time()
                     (
                         _,
                         _,
@@ -325,15 +274,15 @@ class Client(interface.Interface):
                         info,
                         _,
                         _,
-                    ) = self.socket_multipart_recv(zsocket=self.bind_job)
+                    ) = self.driver.socket_recv(socket=self.bind_job)
                     job = json.loads(data.decode())
                     job_id = job.get("task", utils.get_uuid())
                     job_sha1 = job.get("task_sha1sum", utils.object_sha1(job))
                     self.log.info("Job received %s", job_id)
-                    self.socket_multipart_send(
-                        zsocket=self.bind_job,
+                    self.driver.socket_send(
+                        socket=self.bind_job,
                         msg_id=job_id.encode(),
-                        control=self.job_ack,
+                        control=self.driver.job_ack,
                     )
 
                     job_skip_cache = job.get(
@@ -344,7 +293,7 @@ class Client(interface.Interface):
 
                     cache_hit = (
                         not job_skip_cache
-                        and cache.get(job_sha1) == self.job_end
+                        and cache.get(job_sha1) == self.driver.job_end
                     )
 
                     with utils.ClientStatus(
@@ -367,7 +316,7 @@ class Client(interface.Interface):
 
                             self.log.error(status)
                             c.info = status.encode()
-                            c.job_state = self.job_failed
+                            c.job_state = self.driver.job_failed
 
                             if sentinel:
                                 break
@@ -408,7 +357,7 @@ class Client(interface.Interface):
                                 c.info = stdout
 
                         if outcome is False:
-                            state = c.job_state = self.job_failed
+                            state = c.job_state = self.driver.job_failed
                             self.log.error("Job failed %s", job_id)
                             if job_parent_id:
                                 base_component.set_cache(
@@ -418,7 +367,7 @@ class Client(interface.Interface):
                                     tag="parents",
                                 )
                         elif outcome is True:
-                            state = c.job_state = self.job_end
+                            state = c.job_state = self.driver.job_end
                             self.log.info("Job complete %s", job_id)
                             if job_parent_id:
                                 base_component.set_cache(
@@ -428,7 +377,7 @@ class Client(interface.Interface):
                                     tag="parents",
                                 )
                         else:
-                            state = self.nullbyte
+                            state = self.driver.nullbyte
 
                     base_component.set_cache(
                         cache=cache,

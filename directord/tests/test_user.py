@@ -40,12 +40,12 @@ class TestUser(unittest.TestCase):
         self.assertEqual(returned, b"return data")
 
 
-class TestManager(unittest.TestCase):
+class TestManager(tests.TestDriverBase):
     def setUp(self):
-        self.manage = user.Manage(args=tests.FakeArgs())
-
-    def tearDown(self):
-        pass
+        super(TestManager, self).setUp()
+        self.args = tests.FakeArgs()
+        self.manage = user.Manage(args=self.args)
+        self.manage.driver = self.mock_driver
 
     @patch("os.rename", autospec=True)
     @patch("os.listdir", autospec=True)
@@ -106,29 +106,6 @@ class TestManager(unittest.TestCase):
         self.manage.move_certificates(directory="/test/path", suffix=".test")
         mock_rename.assert_called_once_with(
             "/test/path/item-one.test", "/test/path/item-one.test"
-        )
-
-    @patch("zmq.auth.create_certificates", autospec=True)
-    @patch("os.makedirs", autospec=True)
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_generate_certificates(
-        self, mock_listdir, mock_rename, mock_makedirs, mock_zmqgencerts
-    ):
-        mock_listdir.return_value = ["item-one.test", "item-two.key"]
-        self.manage.generate_certificates()
-        mock_makedirs.assert_has_calls(
-            [
-                call("/etc/directord/certificates", exist_ok=True),
-                call("/etc/directord/public_keys", exist_ok=True),
-                call("/etc/directord/private_keys", exist_ok=True),
-            ]
-        )
-        mock_zmqgencerts.assert_has_calls(
-            [
-                call("/etc/directord/certificates", "server"),
-                call("/etc/directord/certificates", "client"),
-            ]
         )
 
     @patch("directord.send_data", autospec=True)
@@ -234,3 +211,29 @@ class TestManager(unittest.TestCase):
     ):
         self.manage.run(override="generate-keys")
         mock_send_data.assert_not_called()
+
+    @patch("os.makedirs", autospec=True)
+    @patch("os.rename", autospec=True)
+    @patch("os.listdir", autospec=True)
+    def test_generate_certificates(
+        self, mock_listdir, mock_rename, mock_makedirs
+    ):
+        mock_listdir.return_value = ["item-one.test", "item-two.key"]
+        self.manage.generate_certificates()
+        mock_makedirs.assert_has_calls(
+            [
+                call("/etc/directord/certificates", exist_ok=True),
+                call("/etc/directord/public_keys", exist_ok=True),
+                call("/etc/directord/private_keys", exist_ok=True),
+            ]
+        )
+        self.manage.driver.key_generate.assert_has_calls(
+            [
+                call(
+                    keys_dir="/etc/directord/certificates", key_type="server"
+                ),
+                call(
+                    keys_dir="/etc/directord/certificates", key_type="client"
+                ),
+            ]
+        )
