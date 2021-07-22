@@ -74,7 +74,7 @@ class ComponentBase:
         :param shell: Boolean
         :param env: Dictionary
         :param execute: String
-        :param return_codes: Integer
+        :param return_codes: Integer|List
         :returns: Truple
         """
 
@@ -89,6 +89,8 @@ class ComponentBase:
 
         if return_codes is None:
             return_codes = [0]
+        if isinstance(return_codes, int):
+            return_codes = [return_codes]
 
         stderr = subprocess.PIPE
         process = subprocess.Popen(
