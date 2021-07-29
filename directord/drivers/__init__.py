@@ -19,10 +19,6 @@ from directord import logger
 from directord import utils
 
 
-__driver_options__ = ["zmq", "qpid"]
-__driver_default__ = "zmq"
-
-
 class BaseDriver:
     nullbyte = b"\000"  # Signals null
     heartbeat_ready = b"\001"  # Signals worker is ready

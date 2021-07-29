@@ -16,14 +16,14 @@ import argparse
 import json
 import os
 import sys
-import yaml
 
 import tabulate
+import yaml
 
 import directord
 
 from directord import client
-from directord import drivers
+from directord import meta
 from directord import mixin
 from directord import server
 from directord import user
@@ -70,9 +70,9 @@ def _args(exec_args=None):
     parser.add_argument(
         "--driver",
         help="Messaging driver used for workload transport.",
-        default=os.getenv("DIRECTORD_DRIVER", drivers.__driver_default__),
-        choices=drivers.__driver_options__,
-        type=str
+        default=os.getenv("DIRECTORD_DRIVER", meta.__driver_default__),
+        choices=meta.__driver_options__,
+        type=str,
     )
     auth_group = parser.add_mutually_exclusive_group()
     auth_group.add_argument(

@@ -17,9 +17,9 @@ import json
 import multiprocessing
 import os
 import sys
-import yaml
 
 import jinja2
+import yaml
 
 import directord
 

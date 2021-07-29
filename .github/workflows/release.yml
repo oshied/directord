@@ -76,6 +76,20 @@ jobs:
         files: dist/directord*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create RPMs
+      run: |
+        python3 -m pip install --upgrade pyp2rpm
+        pyp2rpm directord > directord.spec
+    - name: build RPM package
+      id: rpm
+      uses: naveenrajm7/rpmbuild@master
+      with:
+        spec_file: "directord.spec"
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Binary RPM
+        path: ${{ steps.rpm.outputs.rpm_dir_path }}
 
   build_stable_container:
     runs-on: ubuntu-latest
