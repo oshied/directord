@@ -27,6 +27,7 @@ REQUIREMENTS = {
     "dev": ["podman-py"],
     "test": ["flake8", "coverage"],
     "redis": ["redis"],
+    "qpid": ["python-qpid-proton"],
 }
 REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 
@@ -36,7 +37,7 @@ setuptools.setup(
     author=meta.__author__,
     author_email=meta.__email__,
     description=(
-        "A deployment framework built to manage the data center" " life cycle."
+        "A deployment framework built to manage the data center life cycle."
     ),
     version=meta.__version__,
     packages=["directord"],

@@ -15,9 +15,9 @@
 import argparse
 import os
 import subprocess
-import yaml
 
 import jinja2
+import yaml
 
 from directord import logger
 from directord import utils

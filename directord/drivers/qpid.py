@@ -12,38 +12,20 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import socket
-import time
-
-from directord import logger
 from directord import utils
+from directord import drivers
 
 
-class BaseDriver:
-    nullbyte = b"\000"  # Signals null
-    heartbeat_ready = b"\001"  # Signals worker is ready
-    heartbeat_notice = b"\005"  # Signals worker heartbeat
-    job_ack = b"\006"  # Signals job started
-    job_end = b"\004"  # Signals job ended
-    job_processing = b"\026"  # Signals job running
-    job_failed = b"\025"  # Signals job failed
-    transfer_start = b"\002"  # Signals start file transfer
-    transfer_end = b"\003"  # Signals start file transfer
-
-    def __init__(
-        self, args, encrypted_traffic_data=None, connection_string=None
-    ):
-        """Initialize the Driver.
-
-        :param args: Arguments parsed by argparse.
-        :type args: Object
-        "param encrypted_traffic: Enable|Disable encrypted traffic.
-        :type encrypted_traffic: Boolean
-        """
-
-        self.connection_string = connection_string
-        self.identity = socket.gethostname()
-        self.log = logger.getLogger(name="directord")
+class Driver(drivers.BaseDriver):
+    def __init__(self, args, encrypted_traffic_data, connection_string):
+        super(Driver, self).__init__(
+            args=args,
+            encrypted_traffic_data=encrypted_traffic_data,
+            connection_string=connection_string,
+        )
+        raise NotImplementedError(
+            "The QPID driver is not implemented at this time."
+        )
 
     def socket_send(
         self,
@@ -57,7 +39,32 @@ class BaseDriver:
         stderr=None,
         stdout=None,
     ):
-        """Send a message over a socket.
+        """Send a message over a ZM0 socket.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
 
         All message information is assumed to be byte encoded.
 
@@ -65,7 +72,7 @@ class BaseDriver:
         For more on control characters review the following
         URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
 
-        :param socket: Socket object.
+        :param socket: ZeroMQ socket object.
         :type socket: Object
         :param identity: Target where message will be sent.
         :type identity: Bytes
@@ -111,9 +118,40 @@ class BaseDriver:
 
     @staticmethod
     def socket_recv(socket):
-        """Receive a message over a socket.
+        """Receive a message over a ZM0 socket.
 
-        :param socket: socket object.
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        All message parts are byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param socket: ZeroMQ socket object.
         :type socket: Object
         """
 
@@ -151,6 +189,16 @@ class BaseDriver:
 
         pass
 
+    def heartbeat_reset(self):
+        """Reset the connection on the heartbeat socket.
+
+        Returns a new ttl after reconnect.
+
+        :returns: Float
+        """
+
+        pass
+
     def job_bind(self):
         """Bind an address to a job socket and return the socket.
 
@@ -180,6 +228,8 @@ class BaseDriver:
         :returns: Object
         """
 
+        pass
+
     def key_generate(self, keys_dir, key_type):
         """Generate certificate.
 
@@ -190,23 +240,3 @@ class BaseDriver:
         """
 
         pass
-
-    def get_heartbeat(self, interval=0):
-        """Return a new hearbeat interval time.
-
-        :param interval: Padding for heartbeat interval.
-        :type interval: Integer|Float
-        :returns: Float
-        """
-
-        return time.time() + interval
-
-    def get_expiry(self, heartbeat_interval=60, interval=1):
-        """Return a new expiry time.
-
-        :param interval: Exponential back off for expiration.
-        :type interval: Integer|Float
-        :returns: Float
-        """
-
-        return time.time() + (heartbeat_interval * interval)

@@ -16,13 +16,14 @@ import argparse
 import json
 import os
 import sys
-import yaml
 
 import tabulate
+import yaml
 
 import directord
 
 from directord import client
+from directord import meta
 from directord import mixin
 from directord import server
 from directord import user
@@ -66,12 +67,19 @@ def _args(exec_args=None):
         default=os.getenv("DIRECTORD_DATASTORE", None),
         type=str,
     )
+    parser.add_argument(
+        "--driver",
+        help="Messaging driver used for workload transport.",
+        default=os.getenv("DIRECTORD_DRIVER", meta.__driver_default__),
+        choices=meta.__driver_options__,
+        type=str,
+    )
     auth_group = parser.add_mutually_exclusive_group()
     auth_group.add_argument(
         "--shared-key",
         help="Shared key used for server client authentication.",
         metavar="STRING",
-        default=os.getenv("DIRECTORD_SHARED_KEY"),
+        default=os.getenv("DIRECTORD_SHARED_KEY", None),
     )
     auth_group.add_argument(
         "--curve-encryption",

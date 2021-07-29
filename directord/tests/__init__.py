@@ -82,6 +82,7 @@ class FakeArgs:
     config_file = None
     datastore = None
     debug = False
+    driver = "zmq"
     heartbeat_interval = 60
     heartbeat_port = 5557
     job_port = 5555

@@ -68,13 +68,22 @@ class Interface(directord.Processor):
         ) and os.path.exists(self.secret_keys_dir)
 
         self.log.debug("Loading messaging driver")
-        _driver = directord.plugin_import(plugin=".drivers.zmq")
-        self.driver = _driver.Driver(
-            args=self.args,
-            encrypted_traffic_data={
-                "enabled": self.keys_exist,
-                "public_keys_dir": self.public_keys_dir,
-                "secret_keys_dir": self.secret_keys_dir,
-            },
-            connection_string=self.connection_string,
-        )
+
+        try:
+            _driver = directord.plugin_import(
+                plugin=".drivers.{}".format(self.args.driver)
+            )
+        except Exception as e:
+            raise SystemExit(
+                "Driver was not able to be loaded: {}".format(str(e))
+            )
+        else:
+            self.driver = _driver.Driver(
+                args=self.args,
+                encrypted_traffic_data={
+                    "enabled": self.keys_exist,
+                    "public_keys_dir": self.public_keys_dir,
+                    "secret_keys_dir": self.secret_keys_dir,
+                },
+                connection_string=self.connection_string,
+            )

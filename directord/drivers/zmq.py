@@ -14,7 +14,6 @@
 
 import logging
 import os
-import socket
 
 import tenacity
 import zmq
@@ -55,13 +54,15 @@ class Driver(drivers.BaseDriver):
             self.secret_keys_dir = None
             self.public_keys_dir = None
 
-        self.connection_string = connection_string
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
-        self.identity = socket.gethostname()
-        self.log = logger.getLogger(name="directord")
+        super(Driver, self).__init__(
+            args=args,
+            encrypted_traffic_data=encrypted_traffic_data,
+            connection_string=connection_string,
+        )
 
-    def socket_bind(
+    def _socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN
     ):
         """Return a socket object which has been bound to a given address.
@@ -150,7 +151,7 @@ class Driver(drivers.BaseDriver):
             logger.getLogger(name="directord"), logging.WARN
         ),
     )
-    def socket_connect(
+    def _socket_connect(
         self,
         socket_type,
         connection,
@@ -386,7 +387,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing Job connection.")
-        return self.socket_connect(
+        return self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.job_port,
@@ -400,7 +401,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing transfer connection.")
-        return self.socket_connect(
+        return self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.transfer_port,
@@ -414,7 +415,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing Heartbeat connection.")
-        return self.socket_connect(
+        return self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
@@ -426,7 +427,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.socket_bind(
+        return self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
@@ -453,7 +454,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.socket_bind(
+        return self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.job_port,
@@ -465,7 +466,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.socket_bind(
+        return self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.transfer_port,

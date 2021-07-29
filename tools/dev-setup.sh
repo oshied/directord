@@ -34,15 +34,15 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
 fi
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
-  PACKAGES="git python38 zeromq libsodium"
+  PACKAGES="git python38 python3-pyyaml zeromq libsodium"
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3.8}
 elif [[ ${ID} == "fedora" ]]; then
-  PACKAGES="git python3 zeromq libsodium"
+  PACKAGES="git python3 python3-pyyaml zeromq libsodium"
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
 elif [[ ${ID} == "ubuntu" ]]; then
-  PACKAGES="git python3-all python3-venv python3-zmq"
+  PACKAGES="git python3-all python3-venv python3-yaml python3-zmq"
   apt update
   apt -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
@@ -54,7 +54,7 @@ fi
 # Create development workspace
 rm -rf ${VENV_PATH}
 ${PYTHON_BIN} -m venv ${VENV_PATH}
-${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep
+${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep pyyaml
 
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
 
