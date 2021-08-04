@@ -103,12 +103,20 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True]
         job_def = {
             "task": "XXX",
-            "task_sha1sum": "YYY",
+            "task_sha256sum": "YYY",
             "skip_cache": True,
             "command": "RUN",
         }
         self.mock_driver.socket_recv.side_effect = [
-            (None, None, b"RUN", json.dumps(job_def).encode(), b"", None, None)
+            (
+                None,
+                None,
+                b"RUN",
+                json.dumps(job_def).encode(),
+                b"",
+                None,
+                None,
+            )
         ]
         mock_diskcache.return_value = tests.FakeCache()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
@@ -122,7 +130,7 @@ class TestClient(tests.TestDriverBase):
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha1="YYY",
+            job_sha256="YYY",
             cached=False,
             command=b"RUN",
         )
@@ -143,12 +151,20 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True]
         job_def = {
             "task": "XXX",
-            "task_sha1sum": "YYY",
+            "task_sha256sum": "YYY",
             "ignore_cache": True,
             "command": "RUN",
         }
         self.mock_driver.socket_recv.side_effect = [
-            (None, None, b"RUN", json.dumps(job_def).encode(), b"", None, None)
+            (
+                None,
+                None,
+                b"RUN",
+                json.dumps(job_def).encode(),
+                b"",
+                None,
+                None,
+            )
         ]
         mock_diskcache.return_value = tests.FakeCache()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
@@ -162,7 +178,7 @@ class TestClient(tests.TestDriverBase):
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha1="YYY",
+            job_sha256="YYY",
             cached=False,
             command=b"RUN",
         )
@@ -185,12 +201,20 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True]
         job_def = {
             "task": "XXX",
-            "task_sha1sum": "YYY",
+            "task_sha256sum": "YYY",
             "parent_id": "ZZZ",
             "command": "RUN",
         }
         self.mock_driver.socket_recv.side_effect = [
-            (None, None, b"RUN", json.dumps(job_def).encode(), b"", None, None)
+            (
+                None,
+                None,
+                b"RUN",
+                json.dumps(job_def).encode(),
+                b"",
+                None,
+                None,
+            )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
         cache.set(key="ZZZ", value=False)
@@ -216,11 +240,19 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True]
         job_def = {
             "task": "XXX",
-            "task_sha1sum": "YYY",
+            "task_sha256sum": "YYY",
             "command": "RUN",
         }
         self.mock_driver.socket_recv.side_effect = [
-            (None, None, b"RUN", json.dumps(job_def).encode(), b"", None, None)
+            (
+                None,
+                None,
+                b"RUN",
+                json.dumps(job_def).encode(),
+                b"",
+                None,
+                None,
+            )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
         cache.set(key="YYY", value=self.mock_driver.job_end)
@@ -235,7 +267,7 @@ class TestClient(tests.TestDriverBase):
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha1="YYY",
+            job_sha256="YYY",
             cached=True,
             command=b"RUN",
         )
@@ -256,12 +288,20 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True]
         job_def = {
             "task": "XXX",
-            "task_sha1sum": "YYY",
+            "task_sha256sum": "YYY",
             "command": "RUN",
             "parent_id": "ZZZ",
         }
         self.mock_driver.socket_recv.side_effect = [
-            (None, None, b"RUN", json.dumps(job_def).encode(), b"", None, None)
+            (
+                None,
+                None,
+                b"RUN",
+                json.dumps(job_def).encode(),
+                b"",
+                None,
+                None,
+            )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
         cache.set(key="YYY", value=self.mock_driver.job_end)
@@ -276,7 +316,7 @@ class TestClient(tests.TestDriverBase):
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha1="YYY",
+            job_sha256="YYY",
             cached=True,
             command=b"RUN",
         )
@@ -301,11 +341,19 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", False]
         job_def = {
             "task": "XXX",
-            "task_sha1sum": "YYY",
+            "task_sha256sum": "YYY",
             "command": "RUN",
         }
         self.mock_driver.socket_recv.side_effect = [
-            (None, None, b"RUN", json.dumps(job_def).encode(), b"", None, None)
+            (
+                None,
+                None,
+                b"RUN",
+                json.dumps(job_def).encode(),
+                b"",
+                None,
+                None,
+            )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
@@ -320,7 +368,7 @@ class TestClient(tests.TestDriverBase):
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha1="YYY",
+            job_sha256="YYY",
             cached=False,
             command=b"RUN",
         )

@@ -25,7 +25,7 @@
   - RUN: --stdout-arg rabbitmq_host ip -o r g 1 | awk '{print $7}'
   - QUERY: rabbitmq_host
   - RUN: >-
-      --run-once --stdout-arg rabbitmq_cookie uuidgen | sha1sum | awk '{print $1}'
+      --run-once --stdout-arg rabbitmq_cookie uuidgen | sha256sum | awk '{print $1}'
   - RUN: --stdout-arg directord_hostname hostname -f
   - QUERY: directord_hostname
   - RUN: --skip-cache dnf -y install rabbitmq-server erlang

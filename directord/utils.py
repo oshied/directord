@@ -188,8 +188,8 @@ class SSHConnect:
             self.log.debug("SSH channel is closed.")
 
 
-def file_sha1(file_path, chunk_size=10240):
-    """Return the SHA1 sum of a given file.
+def file_sha256(file_path, chunk_size=10240):
+    """Return the SHA256 sum of a given file.
 
     Default chunk size: 10K.
 
@@ -200,7 +200,7 @@ def file_sha1(file_path, chunk_size=10240):
     :returns: String
     """
 
-    sha1 = hashlib.sha1()
+    sha256 = hashlib.sha256()
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             while True:
@@ -208,22 +208,22 @@ def file_sha1(file_path, chunk_size=10240):
                 if not data:
                     break
                 else:
-                    sha1.update(data)
+                    sha256.update(data)
 
-        return sha1.hexdigest()
+        return sha256.hexdigest()
 
 
-def object_sha1(obj):
-    """Return the SHA1 sum of a given object.
+def object_sha256(obj):
+    """Return the SHA256 sum of a given object.
 
-    The object used for generating a SHA1 must be JSON compatible.
+    The object used for generating a SHA256 must be JSON compatible.
 
     :param file_path: File path
     :type file_path: String
     :returns: String
     """
 
-    return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(obj).encode()).hexdigest()
 
 
 def get_uuid():

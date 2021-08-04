@@ -81,7 +81,7 @@ class Component(components.ComponentBase):
         """Run file transfer operation.
 
         File transfer operations will look at the cache, then look for an
-        existing file, and finally compare the original SHA1 to what is on
+        existing file, and finally compare the original SHA256 to what is on
         disk. If everything checks out the client will request the file
         from the server.
 
@@ -106,13 +106,16 @@ class Component(components.ComponentBase):
         file_to = job["file_to"]
         user = job.get("user")
         group = job.get("group")
-        file_sha1 = job.get("file_sha1sum")
+        file_sha256 = job.get("file_sha256sum")
         blueprint = job.get("blueprint", False)
         file_to = self.blueprinter(content=file_to, values=cache.get("args"))
-        if os.path.isfile(file_to) and utils.file_sha1(file_to) == file_sha1:
+        if (
+            os.path.isfile(file_to)
+            and utils.file_sha256(file_to) == file_sha256
+        ):
             info = (
-                "File exists {} and SHA1 {} matches, nothing to"
-                " transfer".format(file_to, file_sha1)
+                "File exists {} and SHA256 {} matches, nothing to"
+                " transfer".format(file_to, file_sha256)
             )
             conn.ctx.driver.socket_send(
                 socket=conn.ctx.bind_transfer,
@@ -122,7 +125,7 @@ class Component(components.ComponentBase):
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
             ):
-                return utils.file_sha1(file_to), None, None
+                return utils.file_sha256(file_to), None, None
             return info, None, True
         else:
             self.log.debug(
@@ -163,7 +166,7 @@ class Component(components.ComponentBase):
         if blueprint and not self.file_blueprinter(
             cache=cache, file_to=file_to
         ):
-            return utils.file_sha1(file_to), None, None
+            return utils.file_sha256(file_to), None, None
 
         stderr = None
         outcome = True
@@ -191,4 +194,4 @@ class Component(components.ComponentBase):
                 os.chown(file_to, uid, gid)
                 outcome = True
 
-        return utils.file_sha1(file_to), stderr, outcome
+        return utils.file_sha256(file_to), stderr, outcome

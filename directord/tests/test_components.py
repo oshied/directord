@@ -76,15 +76,15 @@ class TestComponents(unittest.TestCase):
             tag="test",
         )
 
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
-    def test__run_transfer_exists(self, mock_isfile, mock_file_sha1):
+    def test__run_transfer_exists(self, mock_isfile, mock_file_sha256):
         mock_isfile.return_value = True
-        mock_file_sha1.return_value = "YYYYYYYYY"
+        mock_file_sha256.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
             job = dict(
                 file_to="/test/file",
-                file_sha1sum="YYYYYYYYY",
+                file_sha256sum="YYYYYYYYY",
             )
             stdout, stderr, outcome = self._transfer.client(
                 job_id="XXX",
@@ -96,24 +96,24 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(
             stdout,
             (
-                "File exists /test/file and SHA1"
+                "File exists /test/file and SHA256"
                 " YYYYYYYYY matches, nothing to transfer"
             ),
         )
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, True)
 
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
     def test__run_transfer_exists_blueprinted(
-        self, mock_isfile, mock_file_sha1
+        self, mock_isfile, mock_file_sha256
     ):
         mock_isfile.return_value = True
-        mock_file_sha1.return_value = "YYYYYYYYY"
+        mock_file_sha256.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
             job = dict(
                 file_to="/test/file",
-                file_sha1sum="YYYYYYYYY",
+                file_sha256sum="YYYYYYYYY",
                 blueprint=True,
             )
             stdout, stderr, outcome = self._transfer.client(
@@ -127,16 +127,16 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, None)
 
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test__run_transfer_not_exists(
-        self, mock_log_debug, mock_isfile, mock_file_sha1
+        self, mock_log_debug, mock_isfile, mock_file_sha256
     ):
         mock_isfile.return_value = False
-        mock_file_sha1.return_value = "YYYYYYYYY"
+        mock_file_sha256.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
-            job = dict(file_to="/test/file", file_sha1="YYYYYYYYY")
+            job = dict(file_to="/test/file", file_sha256="YYYYYYYYY")
             stdout, stderr, outcome = self._transfer.client(
                 job_id="XXX",
                 source_file="/orig/file",
@@ -149,18 +149,18 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(outcome, True)
         mock_log_debug.assert_called()
 
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test__run_transfer_not_exists_blueprinted(
-        self, mock_log_debug, mock_isfile, mock_file_sha1
+        self, mock_log_debug, mock_isfile, mock_file_sha256
     ):
         mock_isfile.return_value = False
-        mock_file_sha1.return_value = "YYYYYYYYY"
+        mock_file_sha256.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
             job = dict(
                 file_to="/test/file",
-                file_sha1="YYYYYYYYY",
+                file_sha256="YYYYYYYYY",
                 blueprint=True,
             )
             stdout, stderr, outcome = self._transfer.client(
@@ -177,7 +177,7 @@ class TestComponents(unittest.TestCase):
 
     @patch("pwd.getpwnam", autospec=True)
     @patch("grp.getgrnam", autospec=True)
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("os.chown", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -186,12 +186,12 @@ class TestComponents(unittest.TestCase):
         mock_log_debug,
         mock_chown,
         mock_isfile,
-        mock_file_sha1,
+        mock_file_sha256,
         mock_pwd,
         mock_grp,
     ):
         mock_isfile.return_value = False
-        mock_file_sha1.return_value = "YYYYYYYYY"
+        mock_file_sha256.return_value = "YYYYYYYYY"
         uid = MagicMock()
         uid.pw_uid = 9999
         mock_pwd.return_value = uid
@@ -201,7 +201,7 @@ class TestComponents(unittest.TestCase):
         with patch("builtins.open", unittest.mock.mock_open()):
             job = dict(
                 file_to="/test/file",
-                file_sha1="YYYYYYYYY",
+                file_sha256="YYYYYYYYY",
                 user="nobody",
                 group="nobody",
             )
@@ -218,7 +218,7 @@ class TestComponents(unittest.TestCase):
         mock_log_debug.assert_called()
         mock_chown.assert_called()
 
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("os.chown", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -227,14 +227,14 @@ class TestComponents(unittest.TestCase):
         mock_log_debug,
         mock_chown,
         mock_isfile,
-        mock_file_sha1,
+        mock_file_sha256,
     ):
         mock_isfile.return_value = False
-        mock_file_sha1.return_value = "YYYYYYYYY"
+        mock_file_sha256.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
             job = dict(
                 file_to="/test/file",
-                file_sha1="YYYYYYYYY",
+                file_sha256="YYYYYYYYY",
                 user=9999,
                 group=9999,
             )
@@ -262,7 +262,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=True,
             command=b"RUN",
         )
@@ -305,7 +305,7 @@ class TestComponents(unittest.TestCase):
                 "stdout_arg": False,
             },
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"RUN",
         )
@@ -314,33 +314,33 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(outcome, True)
         mock_log_debug.assert_called()
 
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_copy(
         self,
         mock_log_debug,
         mock_isfile,
-        mock_file_sha1,
+        mock_file_sha256,
     ):
         mock_isfile.return_value = True
-        mock_file_sha1.return_value = "YYYYYY"
+        mock_file_sha256.return_value = "YYYYYY"
         mock_conn = MagicMock()
         fake_cache = tests.FakeCache()
         stdout, stderr, outcome = self.client._job_executor(
             conn=mock_conn,
             cache=fake_cache,
             info="/source/file1",
-            job={"file_to": "/target/file1", "file_sha1sum": "YYYYYY"},
+            job={"file_to": "/target/file1", "file_sha256sum": "YYYYYY"},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"COPY",
         )
         self.assertEqual(
             stdout,
             (
-                "File exists /target/file1 and SHA1"
+                "File exists /target/file1 and SHA256"
                 " YYYYYY matches, nothing to transfer"
             ),
         )
@@ -348,33 +348,33 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(outcome, True)
         mock_log_debug.assert_called()
 
-    @patch("directord.utils.file_sha1", autospec=True)
+    @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_add(
         self,
         mock_log_debug,
         mock_isfile,
-        mock_file_sha1,
+        mock_file_sha256,
     ):
         mock_isfile.return_value = True
-        mock_file_sha1.return_value = "YYYYYY"
+        mock_file_sha256.return_value = "YYYYYY"
         mock_conn = MagicMock()
         fake_cache = tests.FakeCache()
         stdout, stderr, outcome = self.client._job_executor(
             conn=mock_conn,
             cache=fake_cache,
             info="/source/file1",
-            job={"file_to": "/target/file1", "file_sha1sum": "YYYYYY"},
+            job={"file_to": "/target/file1", "file_sha256sum": "YYYYYY"},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"ADD",
         )
         self.assertEqual(
             stdout,
             (
-                "File exists /target/file1 and SHA1"
+                "File exists /target/file1 and SHA256"
                 " YYYYYY matches, nothing to transfer"
             ),
         )
@@ -393,7 +393,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={"workdir": "/target"},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"WORKDIR",
         )
@@ -412,7 +412,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={"args": {"key-arg": "value-arg"}},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"ARG",
         )
@@ -431,7 +431,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={"envs": {"key-env": "value-env"}},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"ENV",
         )
@@ -454,7 +454,7 @@ class TestComponents(unittest.TestCase):
                 info=None,
                 job={"cachefile": "/target/file1"},
                 job_id="XXXXXX",
-                job_sha1="YYYYYY",
+                job_sha256="YYYYYY",
                 cached=False,
                 command=b"CACHEFILE",
             )
@@ -493,7 +493,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={"cachefile": "/target/file1"},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"CACHEFILE",
         )
@@ -512,7 +512,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={"cacheevict": "all"},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"CACHEEVICT",
         )
@@ -532,7 +532,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={"cacheevict": "args"},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"CACHEEVICT",
         )
@@ -552,7 +552,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={"query": "test"},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"QUERY",
         )
@@ -573,7 +573,7 @@ class TestComponents(unittest.TestCase):
             info=None,
             job={},
             job_id="XXXXXX",
-            job_sha1="YYYYYY",
+            job_sha256="YYYYYY",
             cached=False,
             command=b"UNKNOWN",
         )
@@ -629,7 +629,10 @@ class TestComponents(unittest.TestCase):
         self._run.client(
             cache=fake_cache,
             conn=mock_conn,
-            job={"command": "command {{ test }} test", "stdout_arg": "VALUE1"},
+            job={
+                "command": "command {{ test }} test",
+                "stdout_arg": "VALUE1",
+            },
         )
         mock_run_command.assert_called_with(command="command 1 test", env=None)
         self.assertEqual(mock_conn.info, b"command 1 test")
