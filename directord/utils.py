@@ -151,9 +151,7 @@ class SSHConnect:
         )
         try:
             self.session.agent_auth(username)
-            self.log.debug(
-                "User agent based authentication for [ %s ]", username
-            )
+            self.log.debug("User agent based authentication enabled")
         except ssh2.exceptions.AgentConnectionError:
             pass
 
