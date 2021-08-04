@@ -2,7 +2,7 @@ LINKER(8)                                                                     LI
 
 NAME
        linker - Application server which provides a simple
-       return URL for hashed content. Linker return a SHA1
+       return URL for hashed content. Linker return a SHA256
        response for all simplified URLs.
 
 SYNOPSIS
@@ -10,8 +10,8 @@ SYNOPSIS
            GET
                Return data from a given request.
 
-               Used to create a SHA1 resource through arguments.
-               Creating an a SHA1 resource requires the use of
+               Used to create a SHA256 resource through arguments.
+               Creating an a SHA256 resource requires the use of
                the `link` argument in the request URL.
 
                    {{ remote_url }}?link=https://peznauts.com
@@ -20,7 +20,7 @@ SYNOPSIS
 
                    {{ remote_url }}/be9b8fc6fc5057a7d18c7b6245e3eee2dc5bd544
 
-               Because the hashing algorithm is SHA1 the return
+               Because the hashing algorithm is SHA256 the return
                data will always remain consistent should another
                request be made to simplify the same link.
 
@@ -29,7 +29,7 @@ SYNOPSIS
 
 DESCRIPTION
        Application server which provides a simple return URL for
-       hashed content. Linker return a SHA1 response for all
+       hashed content. Linker return a SHA256 response for all
        simplified URLs.
 
        This application responds to two HTTP methods, GET and
@@ -216,13 +216,13 @@ EXIT CODES
            Request succeeded.
 
        201
-           SHA1 resource created
+           SHA256 resource created
 
        308
-           Redirect URL from SHA1 resource lookup
+           Redirect URL from SHA256 resource lookup
 
        400
-           Bad request regarding a SHA1 resource
+           Bad request regarding a SHA256 resource
 
        404
            Request not found

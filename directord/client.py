@@ -142,7 +142,7 @@ class Client(interface.Interface):
         info,
         job,
         job_id,
-        job_sha1,
+        job_sha256,
         cached,
         command,
     ):
@@ -159,8 +159,8 @@ class Client(interface.Interface):
         :type job: Dictionary
         :param job_id: Job UUID
         :type job_id: String
-        :param job_sha1: Job fingerprint in SHA1 format.
-        :type job_sha1: String
+        :param job_sha256: Job fingerprint in SHA256 format.
+        :type job_sha256: String
         :param cached: Boolean option to determin if a command is to be
                        treated as cached.
         :type cached: Boolean
@@ -194,7 +194,7 @@ class Client(interface.Interface):
         if cached and component.cacheable:
             # TODO(cloudnull): Figure out how to skip cache when file
             #                  transfering.
-            self.log.info("Cache hit on %s, task skipped.", job_sha1)
+            self.log.info("Cache hit on %s, task skipped.", job_sha256)
             conn.info = b"job skipped"
             conn.job_state = self.driver.job_end
             return None, None, None
@@ -277,7 +277,9 @@ class Client(interface.Interface):
                     ) = self.driver.socket_recv(socket=self.bind_job)
                     job = json.loads(data.decode())
                     job_id = job.get("task", utils.get_uuid())
-                    job_sha1 = job.get("task_sha1sum", utils.object_sha1(job))
+                    job_sha256 = job.get(
+                        "task_sha256sum", utils.object_sha256(job)
+                    )
                     self.log.info("Job received %s", job_id)
                     self.driver.socket_send(
                         socket=self.bind_job,
@@ -293,7 +295,7 @@ class Client(interface.Interface):
 
                     cache_hit = (
                         not job_skip_cache
-                        and cache.get(job_sha1) == self.driver.job_end
+                        and cache.get(job_sha256) == self.driver.job_end
                     )
 
                     with utils.ClientStatus(
@@ -332,7 +334,7 @@ class Client(interface.Interface):
                                 info=info,
                                 job=job,
                                 job_id=job_id,
-                                job_sha1=job_sha1,
+                                job_sha256=job_sha256,
                                 cached=cache_hit,
                                 command=command,
                             )
@@ -381,7 +383,7 @@ class Client(interface.Interface):
 
                     base_component.set_cache(
                         cache=cache,
-                        key=job_sha1,
+                        key=job_sha256,
                         value=state,
                         tag="jobs",
                     )

@@ -50,14 +50,14 @@ class TestMixin(tests.TestConnectionBase):
         self.args = tests.FakeArgs()
         self.mixin = mixin.Mixin(args=self.args)
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
-        self.dummy_sha1 = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        self.patched_object_sha1 = patch.object(
+        self.dummy_sha256 = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        self.patched_object_sha256 = patch.object(
             utils,
-            "object_sha1",
+            "object_sha256",
             autospec=True,
-            return_value=self.dummy_sha1,
+            return_value=self.dummy_sha256,
         )
-        self.patched_object_sha1.start()
+        self.patched_object_sha256.start()
         self.orchestration = {
             "targets": [
                 "test1",
@@ -81,7 +81,7 @@ class TestMixin(tests.TestConnectionBase):
 
     def tearDown(self):
         super().tearDown()
-        self.patched_object_sha1.stop()
+        self.patched_object_sha256.stop()
         self.stat_patched.stop()
 
     def test_format_action_unknown(self):
@@ -102,7 +102,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -122,7 +122,7 @@ class TestMixin(tests.TestConnectionBase):
                     "targets": ["test_target"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -141,7 +141,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": True,
                 }
@@ -150,7 +150,7 @@ class TestMixin(tests.TestConnectionBase):
 
     def test_format_action_run_restrict(self):
         result = self.mixin.format_action(
-            verb="RUN", execute=self.execute, restrict="RestrictedSHA1"
+            verb="RUN", execute=self.execute, restrict="RestrictedSHA256"
         )
         self.assertEqual(
             result,
@@ -160,10 +160,10 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
-                    "restrict": "RestrictedSHA1",
+                    "restrict": "RestrictedSHA256",
                 }
             ),
         )
@@ -180,7 +180,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "ParentID",
@@ -200,7 +200,7 @@ class TestMixin(tests.TestConnectionBase):
             "blueprint": False,
             "timeout": 600,
             "run_once": False,
-            "task_sha1sum": self.dummy_sha1,
+            "task_sha256sum": self.dummy_sha256,
             "return_raw": False,
             "skip_cache": False,
         }
@@ -220,7 +220,7 @@ class TestMixin(tests.TestConnectionBase):
             "args": {"key": "value"},
             "timeout": 600,
             "run_once": False,
-            "task_sha1sum": self.dummy_sha1,
+            "task_sha256sum": self.dummy_sha256,
             "return_raw": False,
             "skip_cache": False,
         }
@@ -233,7 +233,7 @@ class TestMixin(tests.TestConnectionBase):
             "envs": {"key": "value"},
             "timeout": 600,
             "run_once": False,
-            "task_sha1sum": self.dummy_sha1,
+            "task_sha256sum": self.dummy_sha256,
             "return_raw": False,
             "skip_cache": False,
         }
@@ -252,7 +252,7 @@ class TestMixin(tests.TestConnectionBase):
                     "workdir": "/test/path",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -271,7 +271,7 @@ class TestMixin(tests.TestConnectionBase):
                     "cachefile": "/test/path",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -288,7 +288,7 @@ class TestMixin(tests.TestConnectionBase):
                     "cacheevict": "test",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -305,7 +305,7 @@ class TestMixin(tests.TestConnectionBase):
                     "query": "test",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": self.dummy_sha1,
+                    "task_sha256sum": self.dummy_sha256,
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -334,7 +334,7 @@ class TestMixin(tests.TestConnectionBase):
                     "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -375,7 +375,7 @@ class TestMixin(tests.TestConnectionBase):
                     ],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -405,7 +405,7 @@ class TestMixin(tests.TestConnectionBase):
                     "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -438,7 +438,7 @@ class TestMixin(tests.TestConnectionBase):
                     "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -470,7 +470,7 @@ class TestMixin(tests.TestConnectionBase):
                     "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": True,
                     "skip_cache": False,
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -536,7 +536,7 @@ class TestMixin(tests.TestConnectionBase):
                     "targets": ["test"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -565,7 +565,7 @@ class TestMixin(tests.TestConnectionBase):
                     "targets": ["test"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha1sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }

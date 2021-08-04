@@ -150,7 +150,7 @@ def _args(exec_args=None):
     )
     parser_orchestrate.add_argument(
         "--restrict",
-        help="Restrict orchestration to a set of Task SHA1(s).",
+        help="Restrict orchestration to a set of Task SHA256(s).",
         metavar="STRING",
         nargs="+",
     )

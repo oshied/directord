@@ -74,7 +74,8 @@ class Mixin:
         :param ignore_cache: Instruct the entire execution to
                              ignore client caching.
         :type ignore_cache: Boolean
-        :param restrict: Restrict job execution based on a provided task SHA1.
+        :param restrict: Restrict job execution based on a provided task
+                         SHA256.
         :type restrict: List
         :param parent_id: Set the parent UUID for execution jobs.
         :type parent_id: String
@@ -111,7 +112,7 @@ class Mixin:
 
         data["timeout"] = getattr(component.known_args, "timeout", 600)
         data["run_once"] = getattr(component.known_args, "run_once", False)
-        data["task_sha1sum"] = utils.object_sha1(obj=data)
+        data["task_sha256sum"] = utils.object_sha256(obj=data)
         data["return_raw"] = return_raw
         data["skip_cache"] = ignore_cache or getattr(
             component.known_args, "skip_cache", False
@@ -162,7 +163,7 @@ class Mixin:
                                 This target list provides an override for
                                 targets found within a given orchestation.
         :type defined_targets: List
-        :param restrict: Restrict a given orchestration job to a set of SHA1
+        :param restrict: Restrict a given orchestration job to a set of SHA256
                          job fingerprints.
         :type restrict: Array
         :param ignore_cache: Instruct the orchestartion job to ignore cached
@@ -210,7 +211,7 @@ class Mixin:
                         or "\n{a}\n{b:<5}".format(a="*" * 100, b=0),
                         verb=item["verb"],
                         execute=exec_str,
-                        fingerprint=item["task_sha1sum"],
+                        fingerprint=item["task_sha256sum"],
                     ).encode()
                 )
                 count += 1

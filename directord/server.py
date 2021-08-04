@@ -290,7 +290,7 @@ class Server(interface.Interface):
                 "NODES": [i.decode() for i in targets],
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
-                "TASK_SHA1": job_item["task_sha1sum"],
+                "TASK_SHA256": job_item["task_sha256sum"],
                 "JOB_DEFINITION": job_item,
                 "PARENT_JOB_ID": job_item.get("parent_id"),
                 "_createtime": time.time(),
@@ -319,11 +319,11 @@ class Server(interface.Interface):
             )
             return 512, time.time()
         else:
-            restrict_sha1 = job_item.get("restrict")
-            if restrict_sha1:
-                if job_item["task_sha1sum"] not in restrict_sha1:
+            restrict_sha256 = job_item.get("restrict")
+            if restrict_sha256:
+                if job_item["task_sha256sum"] not in restrict_sha256:
                     self.log.debug(
-                        "Job restriction %s is unknown.", restrict_sha1
+                        "Job restriction %s is unknown.", restrict_sha256
                     )
                     return 512, time.time()
 
@@ -360,7 +360,7 @@ class Server(interface.Interface):
             for identity in targets:
                 if job_item["verb"] in ["ADD", "COPY"]:
                     for file_path in job_item["from"]:
-                        job_item["file_sha1sum"] = utils.file_sha1(
+                        job_item["file_sha256sum"] = utils.file_sha256(
                             file_path=file_path
                         )
                         if job_item["to"].endswith(os.sep):
@@ -528,15 +528,16 @@ class Server(interface.Interface):
                                     node: {data_item.pop("query"): query_value}
                                 }
                             }
-                            data_item.pop("task_sha1sum", None)
-                            data_item["task_sha1sum"] = utils.object_sha1(
+                            data_item.pop("task_sha256sum", None)
+                            data_item["task_sha256sum"] = utils.object_sha256(
                                 data_item
                             )
                             self.create_return_jobs(
                                 task=task, job_item=data_item, targets=targets
                             )
                             self.log.debug(
-                                "Runing query against with DATA: %s", data_item
+                                "Runing query against with DATA: %s",
+                                data_item,
                             )
                             for target in targets:
                                 self.log.debug(
@@ -564,7 +565,7 @@ class Server(interface.Interface):
         message of 10M before requiring the client to reconnect.
 
         All received data is expected to be JSON serialized data. Before
-        being added to the queue, a task ID and SHA1 SUM is added to the
+        being added to the queue, a task ID and SHA256 SUM is added to the
         content. This is done for tracking and caching purposes. The task
         ID can be defined in the data. If a task ID is not defined one will
         be generated.
