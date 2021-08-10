@@ -4,7 +4,7 @@
 {:toc}
 
 Directord can be installed and used on systems or in containers. If installing
-on a system, the `toos/dev-setup.sh` script can be used to install Directord
+on a system, the `tools/dev-setup.sh` script can be used to install Directord
 into a virtual environment.
 
 ### Bootstrap natively
