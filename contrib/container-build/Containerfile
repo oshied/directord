@@ -6,7 +6,8 @@ RUN dnf -y update && \
                    yum-utils \
                    rpm-build \
                    dnf-plugins-core \
-                   centos-release-openstack-wallaby && \
+                   centos-release-openstack-wallaby \
+                   python3-rpm && \
     useradd builder -u 1000 -m -G users,wheel && \
     echo "builder ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     echo "# macros"                        >  /home/builder/.rpmmacros && \
