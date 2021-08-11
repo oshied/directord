@@ -1,0 +1,27 @@
+FROM quay.io/centos/centos:stream8
+LABEL maintainer="Alex Schultz <aschultz@redhat.com>"
+
+RUN dnf -y update && \
+    dnf -y install sudo \
+                   yum-utils \
+                   rpm-build \
+                   dnf-plugins-core \
+                   centos-release-openstack-wallaby && \
+    useradd builder -u 1000 -m -G users,wheel && \
+    echo "builder ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    echo "# macros"                        >  /home/builder/.rpmmacros && \
+    echo "%_topdir    /home/builder/build" >> /home/builder/.rpmmacros && \
+    echo "%_sourcedir %{_topdir}"          >> /home/builder/.rpmmacros && \
+    echo "%_builddir  %{_topdir}"          >> /home/builder/.rpmmacros && \
+    echo "%_specdir   %{_topdir}"          >> /home/builder/.rpmmacros && \
+    echo "%_rpmdir    %{_topdir}"          >> /home/builder/.rpmmacros && \
+    echo "%_srcrpmdir %{_topdir}"          >> /home/builder/.rpmmacros && \
+    mkdir -p /home/builder/rpm && \
+    chown -R builder /home/builder/rpm && \
+    mkdir -p /home/builder/build && \
+    chown -R builder /home/builder/build && \
+    echo '%builder ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+COPY builder.sh /home/builder/
+USER builder
+CMD /home/builder/builder.sh

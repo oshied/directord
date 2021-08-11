@@ -76,20 +76,21 @@ jobs:
         files: dist/directord*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Create RPMs
-      run: |
-        python3 -m pip install --upgrade pyp2rpm
-        pyp2rpm directord > directord.spec
-    - name: build RPM package
-      id: rpm
-      uses: naveenrajm7/rpmbuild@master
+    - name: Build builder container image
+      run: docker build -t directord-builder -f ./contrib/container-build/Containerfile ./contrib/container-build
+    - name: Run builder container
+      run: docker run --net=host -v ${{ github.workspace }}/contrib:/home/builder/rpm directord-builder
+    - name: Upload build Log artifacts on failure
+      if: failure()
+      uses: actions/upload-artifact@v2
       with:
-        spec_file: "directord.spec"
-    - name: Upload artifact
-      uses: actions/upload-artifact@v1.0.0
+        name: build-logs-el8
+        path: contrib/build-*/*.log
+    - name: Upload RPM artifacts
+      uses: softprops/action-gh-release@v1
       with:
-        name: Binary RPM
-        path: ${{ steps.rpm.outputs.rpm_dir_path }}
+        files: contrib/build-*/*.rpm
+        fail_on_unmatched_files: true
 
   build_stable_container:
     runs-on: ubuntu-latest
