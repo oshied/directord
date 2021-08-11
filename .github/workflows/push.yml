@@ -15,3 +15,24 @@ jobs:
           registry: docker.pkg.github.com
           repository: cloudnull/directord/directord
           tag_with_ref: true
+
+  build_rpms:
+    name: Build artifact RPMs with Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build builder container image
+        run: docker build -t directord-builder -f ./contrib/container-build/Containerfile ./contrib/container-build
+      - name: Run builder container
+        run: docker run --net=host -v ${{ github.workspace }}/contrib:/home/builder/rpm directord-builder
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-logs-el8
+          path: contrib/build-*/*.log
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Upload RPM artifact
+          path: |
+            contrib/build-*/*.rpm
