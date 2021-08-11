@@ -15,7 +15,7 @@ mkdir -p $ARTIFACT_PATH
 
 echo "Installing build deps..."
 echo "Logging to $ARTIFACT_DIR/builddep.log"
-sudo dnf -y builddep "${RPM_DIR}/${TASK_SPEC}" &> $ARTIFACT_PATH/builddep.log
+sudo dnf -y python3-rpm builddep "${RPM_DIR}/${TASK_SPEC}" &> $ARTIFACT_PATH/builddep.log
 
 echo "Building: $SPEC_PATH"
 echo "Logging to $ARTIFACT_DIR/rpmbuild.log"
