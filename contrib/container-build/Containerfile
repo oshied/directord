@@ -1,5 +1,5 @@
 FROM quay.io/centos/centos:stream8
-LABEL maintainer="Alex Schultz <aschultz@redhat.com>"
+LABEL maintainer="Kevin Carter <kecarter@redhat.com>"
 
 RUN dnf -y update && \
     dnf -y install sudo \
@@ -7,7 +7,8 @@ RUN dnf -y update && \
                    rpm-build \
                    dnf-plugins-core \
                    centos-release-openstack-wallaby \
-                   python3-rpm && \
+                   python3-rpm \
+                   python3-wheel && \
     useradd builder -u 1000 -m -G users,wheel && \
     echo "builder ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     echo "# macros"                        >  /home/builder/.rpmmacros && \
@@ -22,6 +23,15 @@ RUN dnf -y update && \
     mkdir -p /home/builder/build && \
     chown -R builder /home/builder/build && \
     echo '%builder ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# TODO(cloudnull): remove all this when diskcache and podman-py are packaged
+RUN dnf -y install rpmdevtools python3-pytoml python3-pyxdg python38-requests && \
+    python3 -m venv /home/builder/pyp2rpm --system-site-packages && \
+    /home/builder/pyp2rpm/bin/pip install pyp2rpm && \
+    /home/builder/pyp2rpm/bin/pyp2rpm --srpm diskcache -d /home/builder/rpm -b 3 && \
+    rpmbuild --rebuild "$(ls -1 /home/builder/rpm/python*-diskcache*.src.rpm)"  --nodeps --nocheck && \
+    find ~/rpmbuild/RPMS -name '*.rpm' -exec cp "{}" /home/builder/build/ \; && \
+    dnf -y install $(find /home/builder/build/ -name '*rpm' ! -name '*src*' -type f)
 
 COPY builder.sh /home/builder/
 USER builder

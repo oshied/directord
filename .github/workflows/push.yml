@@ -30,9 +30,10 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: build-logs-el8
-          path: contrib/build-*/*.log
+          path: contrib/build/*.log
       - uses: actions/upload-artifact@v2
         with:
           name: Upload RPM artifact
           path: |
-            contrib/build-*/*.rpm
+            contrib/build/*.rpm
+
