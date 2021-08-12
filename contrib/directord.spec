@@ -38,7 +38,6 @@ documentation covering...
 Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{pypi_name}}
 
-Requires:       python3-flake8
 Requires:       python3-flask
 Requires:       python3-jinja2
 Requires:       python3-pyyaml
@@ -50,8 +49,8 @@ Requires:       python3-tenacity
 Requires:       python3-diskcache
 
 # Recommends
-Requires:       python3-zmq
-Requires:       python3-redis
+Recommends:       python3-zmq
+Recommends:       python3-redis
 
 # Source Recommends
 # TODO(cloudnull): This needs to be packaged officially

@@ -36,4 +36,3 @@ jobs:
           name: Upload RPM artifact
           path: |
             contrib/build/*.rpm
-
