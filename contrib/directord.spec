@@ -13,19 +13,18 @@ Source0:        %{pypi_source}
 BuildArch:      noarch
 
 BuildRequires:  python3-devel
-BuildRequires:  python3dist(coverage)
-BuildRequires:  python3dist(diskcache)
-BuildRequires:  python3dist(flake8)
-BuildRequires:  python3dist(flask)
-BuildRequires:  python3dist(jinja2)
-BuildRequires:  python3dist(paramiko)
-BuildRequires:  python3dist(podman-py)
-BuildRequires:  python3dist(pyyaml)
-BuildRequires:  python3dist(pyzmq)
-BuildRequires:  python3dist(redis)
-BuildRequires:  python3dist(setuptools)
-BuildRequires:  python3dist(tabulate)
-BuildRequires:  python3dist(tenacity)
+BuildRequires:  python3-coverage
+BuildRequires:  python3-flake8
+BuildRequires:  python3-flask
+BuildRequires:  python3-jinja2
+BuildRequires:  python3-pyyaml
+BuildRequires:  python3-setuptools
+BuildRequires:  python3-tabulate
+BuildRequires:  python3-tenacity
+
+# Source Build Requirements
+# TODO(cloudnull): This needs to be packaged officially
+BuildRequires:  python3-diskcache
 
 %description
  DirectordA deployment framework built to manage the data center life cycle.>
@@ -39,19 +38,25 @@ documentation covering...
 Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{pypi_name}}
 
-Requires:       python3dist(coverage)
-Requires:       python3dist(diskcache)
-Requires:       python3dist(flake8)
-Requires:       python3dist(flask)
-Requires:       python3dist(jinja2)
-Requires:       python3dist(paramiko)
-Requires:       python3dist(podman-py)
-Requires:       python3dist(pyyaml)
-Requires:       python3dist(pyzmq)
-Requires:       python3dist(redis)
-Requires:       python3dist(setuptools)
-Requires:       python3dist(tabulate)
-Requires:       python3dist(tenacity)
+Requires:       python3-flake8
+Requires:       python3-flask
+Requires:       python3-jinja2
+Requires:       python3-pyyaml
+Requires:       python3-tabulate
+Requires:       python3-tenacity
+
+# Source Requirements
+# TODO(cloudnull): This needs to be packaged officially
+Requires:       python3-diskcache
+
+# Recommends
+Requires:       python3-zmq
+Requires:       python3-redis
+
+# Source Recommends
+# TODO(cloudnull): This needs to be packaged officially
+Recommends:     python3dist(podman-py)
+
 %description -n python3-%{pypi_name}
  DirectordA deployment framework built to manage the data center life cycle.>
 Task driven deployment, simplified, directed by you.Directord is an
@@ -77,10 +82,15 @@ rm -rf %{pypi_name}.egg-info
 
 %files -n python3-%{pypi_name}
 %license LICENSE
-%doc README.md orchestrations/README.md
+%doc README.md
 %{_bindir}/directord
 %{_bindir}/directord-client-systemd
 %{_bindir}/directord-server-systemd
+%{_datadir}/directord/components
+%{_datadir}/directord/orchestrations
+%{_datadir}/directord/pods
+%{_datadir}/directord/tools
+
 %{python3_sitelib}/%{pypi_name}
 %{python3_sitelib}/%{pypi_name}-%{pypi_version}-py%{python3_version}.egg-info
 

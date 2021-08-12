@@ -85,11 +85,11 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: build-logs-el8
-        path: contrib/build-*/*.log
+        path: contrib/build/*.log
     - name: Upload RPM artifacts
       uses: softprops/action-gh-release@v1
       with:
-        files: contrib/build-*/*.rpm
+        files: contrib/build/*.rpm
         fail_on_unmatched_files: true
 
   build_stable_container:

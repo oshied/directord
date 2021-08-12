@@ -2,7 +2,7 @@
 set -e
 
 RPM_DIR=${RPM_DIR:-/home/builder/rpm}
-ARTIFACT_DIR="build-$(date +%s)"
+ARTIFACT_DIR="build"
 ARTIFACT_PATH=${ARTIFACT_PATH:-"${RPM_DIR}/$ARTIFACT_DIR"}
 TASK_SPEC=${TASK_SPEC:-directord.spec}
 SPEC_PATH="${RPM_DIR}/${TASK_SPEC}"
@@ -21,7 +21,7 @@ echo "Building: $SPEC_PATH"
 echo "Logging to $ARTIFACT_DIR/rpmbuild.log"
 rpmbuild --undefine=_disable_source_fetch \
          --define "release_version $RELEASE_VERSION" \
-         -ba $SPEC_PATH &> $ARTIFACT_PATH/rpmbuild.log
+         -ba $SPEC_PATH --nocheck &> $ARTIFACT_PATH/rpmbuild.log
 
 echo "Copying rpms to $ARTIFACT_DIR"
 find /home/builder/build -name '*.rpm' -exec cp "{}" $ARTIFACT_PATH \;
