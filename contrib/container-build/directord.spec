@@ -1,15 +1,15 @@
 # Created by pyp2rpm-3.3.7
 %global pypi_name directord
-%global pypi_version 0.6.0
+%define _unpackaged_files_terminate_build 0
 
 Name:           python-%{pypi_name}
-Version:        %{pypi_version}
 Release:        1%{?dist}
 Summary:        A deployment framework built to manage the data center life cycle
 
 License:        None
 URL:            https://github.com/cloudnull/directord
-Source0:        %{pypi_source}
+Version:        XXX
+Source0:        directord.tar.gz
 BuildArch:      noarch
 
 BuildRequires:  python3-devel
@@ -66,7 +66,7 @@ documentation covering...
 
 
 %prep
-%autosetup -n %{pypi_name}-%{pypi_version}
+%autosetup -n %{pypi_name}
 # Remove bundled egg-info
 rm -rf %{pypi_name}.egg-info
 
@@ -91,8 +91,7 @@ rm -rf %{pypi_name}.egg-info
 %{_datadir}/directord/tools
 
 %{python3_sitelib}/%{pypi_name}
-%{python3_sitelib}/%{pypi_name}-%{pypi_version}-py%{python3_version}.egg-info
 
 %changelog
-* Thu Jul 29 2021 Kevin Carter <kecarter@redhat.com> - 0.6.0-1
+* Thu Jul 29 2021 Kevin Carter <kecarter@redhat.com>
 - Initial package.
