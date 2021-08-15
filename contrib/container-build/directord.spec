@@ -1,6 +1,5 @@
-# Created by pyp2rpm-3.3.7
 %global pypi_name directord
-%define _unpackaged_files_terminate_build 0
+%{?!released_version: %global released_version 0.0.2}
 
 Name:           python-%{pypi_name}
 Release:        1%{?dist}
@@ -8,7 +7,7 @@ Summary:        A deployment framework built to manage the data center life cycl
 
 License:        None
 URL:            https://github.com/cloudnull/directord
-Version:        XXX
+Version:        %{released_version}
 Source0:        directord.tar.gz
 BuildArch:      noarch
 
@@ -25,6 +24,7 @@ BuildRequires:  python3-tenacity
 # Source Build Requirements
 # TODO(cloudnull): This needs to be packaged officially
 BuildRequires:  python3-diskcache
+BuildRequires:  python3-ssh2-python
 
 %description
  DirectordA deployment framework built to manage the data center life cycle.>
@@ -38,7 +38,6 @@ documentation covering...
 Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{pypi_name}}
 
-Requires:       python3-flask
 Requires:       python3-jinja2
 Requires:       python3-pyyaml
 Requires:       python3-tabulate
@@ -47,10 +46,12 @@ Requires:       python3-tenacity
 # Source Requirements
 # TODO(cloudnull): This needs to be packaged officially
 Requires:       python3-diskcache
+Requires:       python3-ssh2-python
 
 # Recommends
 Recommends:       python3-zmq
 Recommends:       python3-redis
+Recommends:       python3-flask
 
 # Source Recommends
 # TODO(cloudnull): This needs to be packaged officially
@@ -89,8 +90,8 @@ rm -rf %{pypi_name}.egg-info
 %{_datadir}/directord/orchestrations
 %{_datadir}/directord/pods
 %{_datadir}/directord/tools
-
 %{python3_sitelib}/%{pypi_name}
+%{python3_sitelib}/%{pypi_name}-%{released_version}-py%{python3_version}.egg-info
 
 %changelog
 * Thu Jul 29 2021 Kevin Carter <kecarter@redhat.com>

@@ -4,7 +4,7 @@ set -e
 ARTIFACT_DIR="build"
 ARTIFACT_PATH=${ARTIFACT_PATH:-"/home/builder/rpm/$ARTIFACT_DIR"}
 SPEC_PATH="/home/builder/build/directord.spec"
-RELEASE_VERSION=${RELEASE_VERSION:-0.0.0}
+RELEASE_VERSION=${RELEASE_VERSION:-XXX}
 
 sudo chown builder: /home/builder/rpm
 
@@ -18,8 +18,9 @@ sudo dnf -y builddep "${SPEC_PATH}" &> ${ARTIFACT_PATH}/builddep.log
 echo "Building: ${SPEC_PATH}"
 echo "Logging to ${ARTIFACT_DIR}/rpmbuild.log"
 rpmbuild --undefine=_disable_source_fetch \
-         --define "release_version ${RELEASE_VERSION}" \
-         -ba ${SPEC_PATH} --nocheck &> ${ARTIFACT_PATH}/rpmbuild.log
+         --define "released_version ${RELEASE_VERSION}" \
+         -ba ${SPEC_PATH} \
+         --nocheck &> ${ARTIFACT_PATH}/rpmbuild.log
 
 echo "Copying rpms to ${ARTIFACT_DIR}"
 find /home/builder/build -name '*.rpm' -exec cp "{}" ${ARTIFACT_PATH} \;
