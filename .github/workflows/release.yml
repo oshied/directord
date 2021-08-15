@@ -76,10 +76,22 @@ jobs:
         files: dist/directord*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release_rpms:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Create source tarball
+      run: tar -czf ./contrib/container-build/directord.tar.gz ../$(pwd)
     - name: Build builder container image
       run: docker build -t directord-builder -f ./contrib/container-build/Containerfile ./contrib/container-build
     - name: Run builder container
-      run: docker run --net=host -v ${{ github.workspace }}/contrib:/home/builder/rpm directord-builder
+      run: |
+        export RELEASE_VERSION=$(awk -F'"' '/version/ {print $2}' ${{ github.workspace }}/directord/meta.py)
+        docker run --env RELEASE_VERSION="${RELEASE_VERSION}" --net=host -v ${{ github.workspace }}/contrib:/home/builder/rpm directord-builder
     - name: Upload build Log artifacts on failure
       if: failure()
       uses: actions/upload-artifact@v2
