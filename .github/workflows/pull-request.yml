@@ -60,10 +60,51 @@ jobs:
           if ! JOBS=$(sudo /opt/directord/bin/directord \
                       orchestrate \
                       functional-tests.yaml \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional.log
+            exit 1
+          fi
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-test-logs
+          path: /tmp/directord-*.log
+
+  functional_pod_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/prod-setup.sh
+      - name: Re-install self
+        run: sudo /opt/directord/bin/pip install --upgrade '.[all]'
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Execute functional podman install
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      orchestrate \
                       podman.yaml \
                       --poll \
                       --check); then
-            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-podman.log
             exit 1
           fi
       - name: Execute pod play check
@@ -74,53 +115,55 @@ jobs:
                       '--play /opt/directord/share/directord/pods/pod-directord-test-pod.yaml' \
                       --poll \
                       --check); then
-            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-create.log
             exit 1
           fi
-          sleep 2
+          sleep 10
           if ! sudo podman pod exists directord-test-pod; then
             echo -e "FAILURE - [ directord-test-pod ] did not exist on the system."
+            sudo podman pod list &> /tmp/directord-podman-list.log
+            sudo /opt/directord/bin/directord manage --list-jobs | awk '/([aA-zZ]|[0-9])-/ {print $1}' | xargs -n 1 -i sudo /opt/directord/bin/directord manage --job-info {} &> /tmp/directord-failure.log
             exit 1
           fi
-
-      - name: Create an exec container and check
-        run: |
           if ! JOBS=$(sudo /opt/directord/bin/directord \
                       exec \
                       --verb POD \
                       '--exec-run directord-test-pod-directord-server-1 --env TEST0=hello,TEST1=world --command "/usr/bin/echo ${TEST0} ${TEST1}"' \
                       --poll \
                       --check); then
-            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-command.log
             exit 1
           fi
-      - name: Execute pod kill check
-        run: |
           if ! JOBS=$(sudo /opt/directord/bin/directord \
                       exec \
                       --verb POD \
                       '--signal SIGKILL --kill directord-test-pod' \
                       --poll \
                       --check); then
-            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-kill.log
             exit 1
           fi
-      - name: Execute pod rm check
-        run: |
           if ! JOBS=$(sudo /opt/directord/bin/directord \
                       exec \
                       --verb POD \
                       '--force --rm directord-test-pod' \
                       --poll \
                       --check); then
-            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-rm.log
             exit 1
           fi
-          sleep 2
+          sleep 10
           if sudo podman pod exists directord-test-pod; then
             echo -e "FAILURE - [ directord-test-pod ] was still active on the system"
+            sudo /opt/directord/bin/directord manage --list-jobs | awk '/([aA-zZ]|[0-9])-/ {print $1}' | xargs -n 1 -i sudo /opt/directord/bin/directord manage --job-info {} &> /tmp/directord-failure.log
             exit 1
           fi
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-test-logs
+          path: /tmp/directord-*.log
 
   functional_bootstrap_check:
     runs-on: ubuntu-latest

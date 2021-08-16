@@ -711,7 +711,7 @@ class TestComponents(unittest.TestCase):
 
     @patch("os.chown", autospec=True)
     @patch("os.makedirs", autospec=True)
-    def test__run_workdir_mode(self, mock_makedirs, mock_chown):
+    def test__run_workdir_mode_user_group(self, mock_makedirs, mock_chown):
         fake_cache = tests.FakeCache()
         self._workdir.client(
             cache=fake_cache,
