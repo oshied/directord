@@ -60,7 +60,7 @@ class Client(interface.Interface):
             "Sent heartbeat to server.",
         )
 
-    def run_heartbeat(self, sentinel=False):
+    def run_heartbeat(self, sentinel=False, heartbeat_misses=0):
         """Execute the heartbeat loop.
 
         If the heartbeat loop detects a problem, the connection will be
@@ -72,6 +72,9 @@ class Client(interface.Interface):
 
         :param sentinel: Breaks the loop
         :type sentinel: Boolean
+
+        :param heartbeat_misses: Sets the current misses.
+        :type heartbeat_misses: Integer
         """
 
         self.bind_heatbeat = self.driver.heartbeat_connect()
@@ -79,7 +82,6 @@ class Client(interface.Interface):
         heartbeat_at = self.driver.get_heartbeat(
             interval=self.heartbeat_interval
         )
-        heartbeat_misses = 0
         while True:
             self.log.debug("Heartbeat misses [ %s ]", heartbeat_misses)
             if self.driver.bind_check(

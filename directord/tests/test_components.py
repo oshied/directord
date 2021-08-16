@@ -251,6 +251,38 @@ class TestComponents(unittest.TestCase):
         mock_log_debug.assert_called()
         mock_chown.assert_called()
 
+    @patch("directord.utils.file_sha256", autospec=True)
+    @patch("os.path.isfile", autospec=True)
+    @patch("os.chmod", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
+    def test__run_transfer_not_mode(
+        self,
+        mock_log_debug,
+        mock_chmod,
+        mock_isfile,
+        mock_file_sha256,
+    ):
+        mock_isfile.return_value = False
+        mock_file_sha256.return_value = "YYYYYYYYY"
+        with patch("builtins.open", unittest.mock.mock_open()):
+            job = dict(
+                file_to="/test/file",
+                file_sha256="YYYYYYYYY",
+                mode="0o777",
+            )
+            stdout, stderr, outcome = self._transfer.client(
+                job_id="XXX",
+                source_file="/orig/file",
+                conn=MagicMock(),
+                cache=tests.FakeCache(),
+                job=job,
+            )
+        self.assertEqual(stdout, "YYYYYYYYY")
+        self.assertEqual(stderr, None)
+        self.assertEqual(outcome, True)
+        mock_log_debug.assert_called()
+        mock_chmod.assert_called()
+
     @patch("logging.Logger.debug", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test__job_executor_cached(self, mock_log_info, mock_log_debug):
@@ -664,6 +696,30 @@ class TestComponents(unittest.TestCase):
         self._workdir.client(
             cache=fake_cache, conn=MagicMock(), job={"workdir": ""}
         )
+
+    @patch("os.chmod", autospec=True)
+    @patch("os.makedirs", autospec=True)
+    def test__run_workdir_mode(self, mock_makedirs, mock_chmod):
+        fake_cache = tests.FakeCache()
+        self._workdir.client(
+            cache=fake_cache,
+            conn=MagicMock(),
+            job={"workdir": "/test/path", "mode": "0o777"},
+        )
+        mock_makedirs.assert_called_with("/test/path", exist_ok=True)
+        mock_chmod.assert_called()
+
+    @patch("os.chown", autospec=True)
+    @patch("os.makedirs", autospec=True)
+    def test__run_workdir_mode_user_group(self, mock_makedirs, mock_chown):
+        fake_cache = tests.FakeCache()
+        self._workdir.client(
+            cache=fake_cache,
+            conn=MagicMock(),
+            job={"workdir": "/test/path", "user": 9999, "group": 9999},
+        )
+        mock_makedirs.assert_called_with("/test/path", exist_ok=True)
+        mock_chown.assert_called()
 
     def test_blueprinter(self):
         blueprinted_content = self.components.blueprinter(

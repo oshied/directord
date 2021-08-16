@@ -33,7 +33,10 @@ class Component(components.ComponentBase):
         """Set default arguments for a component."""
 
         super().args()
-        self.parser.add_argument("--chown", help="Set the file ownership")
+        self.parser.add_argument(
+            "--chown", help="Set the file ownership", type=str
+        )
+        self.parser.add_argument("--chmod", help="Set the file mode", type=str)
         self.parser.add_argument(
             "--blueprint",
             action="store_true",
@@ -63,6 +66,10 @@ class Component(components.ComponentBase):
             if len(chown) == 1:
                 chown.append(None)
             data["user"], data["group"] = chown
+
+        if self.known_args.chmod:
+            data["mode"] = oct(int(self.known_args.chmod, 8))
+
         file_from, data["to"] = shlex.split(" ".join(self.known_args.files))
         data["from"] = [
             os.path.abspath(os.path.expanduser(i))
@@ -109,6 +116,7 @@ class Component(components.ComponentBase):
         file_sha256 = job.get("file_sha256sum")
         blueprint = job.get("blueprint", False)
         file_to = self.blueprinter(content=file_to, values=cache.get("args"))
+        mode = job.get("mode")
         if (
             os.path.isfile(file_to)
             and utils.file_sha256(file_to) == file_sha256
@@ -193,5 +201,8 @@ class Component(components.ComponentBase):
             else:
                 os.chown(file_to, uid, gid)
                 outcome = True
+
+        if mode:
+            os.chmod(file_to, mode)
 
         return utils.file_sha256(file_to), stderr, outcome

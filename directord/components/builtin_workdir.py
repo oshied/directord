@@ -12,7 +12,9 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import grp
 import os
+import pwd
 import traceback
 
 from directord import components
@@ -28,6 +30,10 @@ class Component(components.ComponentBase):
         """Set default arguments for a component."""
 
         super().args()
+        self.parser.add_argument(
+            "--chown", help="Set the file ownership", type=str
+        )
+        self.parser.add_argument("--chmod", help="Set the file mode", type=str)
         self.parser.add_argument("workdir", help="Create a directory.")
 
     def server(self, exec_string, data, arg_vars):
@@ -43,6 +49,15 @@ class Component(components.ComponentBase):
         """
 
         super().server(exec_string=exec_string, data=data, arg_vars=arg_vars)
+        if self.known_args.chown:
+            chown = self.known_args.chown.split(":", 1)
+            if len(chown) == 1:
+                chown.append(None)
+            data["user"], data["group"] = chown
+
+        if self.known_args.chmod:
+            data["mode"] = oct(int(self.known_args.chmod, 8))
+
         data["workdir"] = self.known_args.workdir
         return data
 
@@ -65,8 +80,13 @@ class Component(components.ComponentBase):
         workdir = self.blueprinter(
             content=job["workdir"], values=cache.get("args")
         )
+        user = job.get("user")
+        group = job.get("group")
+        mode = job.get("mode")
+
         if not workdir:
             return None, None, False
+
         try:
             os.makedirs(workdir, exist_ok=True)
         except (FileExistsError, PermissionError) as e:
@@ -74,4 +94,33 @@ class Component(components.ComponentBase):
             return None, traceback.format_exc(), False
         else:
             update_info = "Directory {} OK".format(workdir)
-            return update_info, None, True
+            outcome = True
+            stderr = None
+            if user:
+                try:
+                    try:
+                        uid = int(user)
+                    except ValueError:
+                        uid = pwd.getpwnam(user).pw_uid
+
+                    if group:
+                        try:
+                            gid = int(group)
+                        except ValueError:
+                            gid = grp.getgrnam(group).gr_gid
+                    else:
+                        gid = -1
+                except KeyError:
+                    outcome = False
+                    stderr = (
+                        "Failed to set ownership properties."
+                        " USER:{} GROUP:{}".format(user, group)
+                    )
+                else:
+                    os.chown(workdir, uid, gid)
+                    outcome = True
+
+            if mode:
+                os.chmod(workdir, mode)
+
+            return update_info, stderr, outcome
