@@ -54,6 +54,10 @@ Extra arguments available to the `ADD` component.
 * `--chown` **user[:group]** - Sets the ownership of a recently transferred file to
   a defined user and group (optionally).
 
+* `--chmod` **OCTAL_STRING** - Set the permissions (mode) of the transferred file.
+  Permissions need to be written in octal form as a string: e.g. "0755", "2644",
+  etc.
+
 * `--blueprint` The blueprint option instructs the client to read and render
   a copied file. The file will be rendered using cached arguments.
 
@@ -70,12 +74,21 @@ The same as `ADD`.
 
 Syntax: `STRING`
 
+Extra arguments available to the `WORKDIR` component.
+
+* `--chown` **user[:group]** - Sets the ownership of a recently transferred file to
+  a defined user and group (optionally).
+
+* `--chmod` **OCTAL_STRING** - Set the permissions (mode) of the transferred file.
+  Permissions need to be written in octal form as a string: e.g. "0755", "2644",
+  etc.
+
 Create a directory on the client system.
 
 ##### `CACHEFILE`
 
 Syntax: `STRING`
-
+0000
 Read a **JSON** or **YAML** file on the client side and load the contents into
 argument cache. While cached arguments can easily be defined using the `ARG` or
 `ENV` component, the `CACHEFILE` component provides a way to load thousands of
