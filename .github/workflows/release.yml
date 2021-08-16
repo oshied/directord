@@ -103,6 +103,16 @@ jobs:
       with:
         files: contrib/build/*.rpm
         fail_on_unmatched_files: true
+    - name: Create rpm tarball
+      run: |
+        pushd ./contrib/build
+          tar -czf rpm-bundle.tar.gz *.rpm
+        popd
+    - name: Upload RPM bundle
+      uses: softprops/action-gh-release@v1
+      with:
+        files: contrib/build/rpm-bundle.tar.gz
+        fail_on_unmatched_files: true
 
   build_stable_container:
     runs-on: ubuntu-latest

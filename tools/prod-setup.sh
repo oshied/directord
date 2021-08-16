@@ -35,16 +35,26 @@ fi
 
 RELEASE="$(get_latest_release cloudnull/directord)"
 
-mkdir -p ~/directord-RPMS
-pushd ~/directord-RPMS
-  for item in python3-directord-0.7.3-1.el8.noarch.rpm python3-diskcache-5.2.1-1.el8.noarch.rpm python3-ssh2-python-0.26.0-1.el8.x86_64.rpm; do
-    wget https://github.com/cloudnull/directord/releases/download/${RELEASE}/${item}
-  done
-  eval "${COMMAND} *.rpm"
-popd
+if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; then
+  mkdir -p ~/directord-RPMS
+  pushd ~/directord-RPMS
+    wget https://github.com/cloudnull/directord/releases/download/${RELEASE}/rpm-bundle.tar.gz
+    tar xf rpm-bundle.tar.gz
+    eval "${COMMAND} *.rpm"
+  popd
+  echo -e "\nDirectord is setup and installed within [ /usr/bin ]"
+  echo "Activate the venv or run directord directly."
+  echo "Directord can be installed as a service using the following command(s):"
+  echo "/usr/bin/directord-client-systemd"
+  echo -e "/usr/bin/directord-server-systemd\n"
+else
+  python3 -m venv --system-site-packages /opt/directord
+  /opt/directord/bin/pip install --upgrade pip setuptools wheel
+  /opt/directord/bin/pip install directord
 
-echo -e "\nDirectord is setup and installed within [ /usr/bin ]"
-echo "Activate the venv or run directord directly."
-echo "Directord can be installed as a service using the following command(s):"
-echo "/usr/bin/directord-client-systemd"
-echo -e "/usr/bin/directord-server-systemd\n"
+  echo -e "\nDirectord is setup and installed within [ /opt/directord ]"
+  echo "Activate the venv or run directord directly."
+  echo "Directord can be installed as a service using the following command(s):"
+  echo "/opt/directord/bin/directord-client-systemd"
+  echo -e "/opt/directord/bin/directord-server-systemd\n"
+fi
