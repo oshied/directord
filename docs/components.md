@@ -88,7 +88,7 @@ Create a directory on the client system.
 ##### `CACHEFILE`
 
 Syntax: `STRING`
-0000
+
 Read a **JSON** or **YAML** file on the client side and load the contents into
 argument cache. While cached arguments can easily be defined using the `ARG` or
 `ENV` component, the `CACHEFILE` component provides a way to load thousands of
@@ -118,6 +118,13 @@ Note that the key `query` stores all of the queried values for a given item
 from across the cluster. This provides the ability to store multiple items
 and intelligently parse/blueprint data based on node memberships.
 
+### Contributed Components
+
+The following section covers all of the contributed components Directord ships with.
+
+> Contributed components are not fully integrated and may lack testing, but
+  otherwise are supported within Directord.
+
 ##### `POD`
 
 This features allows operators to run, manage, or manipulate pods across a
@@ -145,6 +152,18 @@ Directord cluster.
 > Client side **podman** needs to be setup to enable the socket API. The
   orchestration [podman.yaml](https://github.com/cloudnull/directord/blob/main/orchestrations/podman.yaml)
   can be used to automate the **podman** installation and setup process.
+
+##### `SECONTEXT`
+
+Syntax: `STRING`
+
+> Sets SELinux context for a given target.
+
+* `--ftype` **STRING** The contexts type.
+* `--reload` **BOOLEAN** Reload policy after commit.
+* `--selevel` **STRING** Selinux level.
+* `--setype` **STRING** Selinux type.
+* `--seuser` **STRING** Selinux user.
 
 ### User defined Components
 
