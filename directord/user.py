@@ -146,7 +146,7 @@ class Manage(User):
                 return None, "Job Skipped: {}".format(job_id)
             else:
                 miss += 1
-                if miss > 5:
+                if miss > getattr(self.args, "timeout", 600):
                     return None, "Job in an unknown state: {}".format(job_id)
                 else:
                     time.sleep(1)
