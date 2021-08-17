@@ -94,6 +94,9 @@ argument cache. While cached arguments can easily be defined using the `ARG` or
 `ENV` component, the `CACHEFILE` component provides a way to load thousands of
 arguments using a single action.
 
+> A cache file allows Directord to rapidly ingest large sets of arguments which
+  can later be used in blueprints or dynamic commands.
+
 ##### `CACHEEVICT`
 
 Syntax: `STRING`
