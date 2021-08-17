@@ -68,7 +68,7 @@ class Component(components.ComponentBase):
             data["user"], data["group"] = chown
 
         if self.known_args.chmod:
-            data["mode"] = oct(int(self.known_args.chmod, 8))
+            data["mode"] = int(oct(int(self.known_args.chmod, 8)), 8)
 
         file_from, data["to"] = shlex.split(" ".join(self.known_args.files))
         data["from"] = [

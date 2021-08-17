@@ -90,6 +90,7 @@ class FakeArgs:
     server_address = "localhost"
     shared_key = None
     socket_path = "/var/run/directord.sock"
+    socket_group = "root"
     cache_path = "/var/cache/directord"
     transfer_port = 5556
     curve_encryption = None

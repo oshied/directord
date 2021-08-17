@@ -4,7 +4,8 @@ After=network.target
 
 [Service]
 User=root
-ExecStart=/usr/bin/directord --config-file /etc/directord/config.yaml server
+Group={{ directord_group }}
+ExecStart={{ directord_binary }} --config-file /etc/directord/config.yaml client
 Restart=on-failure
 RestartSec=10
 CPUAccounting=true
