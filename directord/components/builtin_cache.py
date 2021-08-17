@@ -12,6 +12,8 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import ast
+
 from directord import components
 
 
@@ -77,10 +79,16 @@ class Component(components.ComponentBase):
         super().client(conn=conn, cache=cache, job=job)
         # Sets the cache type to "args" or "envs"
         cache_type = "{}s".format(command.decode().lower())
+
+        try:
+            cache_value = ast.literal_eval(job[cache_type])
+        except ValueError:
+            cache_value = job[cache_type]
+
         self.set_cache(
             cache=cache,
             key=cache_type,
-            value=job[cache_type],
+            value=cache_value,
             value_update=True,
             tag=cache_type,
         )
