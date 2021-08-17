@@ -17,6 +17,7 @@ import json
 import os
 import sys
 
+import jinja2
 import tabulate
 import yaml
 
@@ -134,6 +135,15 @@ def _args(exec_args=None):
             os.getenv("DIRECTORD_SOCKET_PATH", "/var/run/directord.sock")
         ),
         type=str,
+    )
+    parser.add_argument(
+        "--socket-group",
+        help=(
+            "Server file socket group ownership for user interactions."
+            " Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(os.getenv("DIRECTORD_SOCKET_GROUP", 0)),
     )
     parser.add_argument(
         "--cache-path",
@@ -349,7 +359,7 @@ def _args(exec_args=None):
 class SystemdInstall:
     """Simple system service unit creation class."""
 
-    def __init__(self):
+    def __init__(self, group="root"):
         """Class to create systemd service units.
 
         This class is used with the directord-server-systemd and
@@ -357,6 +367,7 @@ class SystemdInstall:
         """
 
         self.config_path = "/etc/directord"
+        self.socket_group = group
 
     def path_setup(self):
         """Create the configuration path and basic configuration file."""
@@ -384,15 +395,19 @@ class SystemdInstall:
                 "[-] Service file was not created because it already exists."
             )
             return
-        with open(os.path.join(base, "static", service_file)) as f:
-            with open(service_file_path, "w") as service_f:
-                for line in f.readlines():
-                    service_f.write(
-                        line.replace(
-                            "/usr/bin/directord",
-                            os.path.join(path, "directord"),
-                        )
-                    )
+
+        blueprintLoader = jinja2.FileSystemLoader(
+            searchpath=os.path.join(base, "templates")
+        )
+        blueprintEnv = jinja2.Environment(loader=blueprintLoader)
+        blueprint = blueprintEnv.get_template("{}.j2".format(service_file))
+        blueprint_args = {
+            "directord_binary": os.path.join(path, "directord"),
+            "directord_group": self.socket_group,
+        }
+        outputText = blueprint.render(**blueprint_args)
+        with open(service_file_path, "w") as f:
+            f.write(outputText)
 
         print("[+] Installed {} service unit file".format(service_file))
         print(
@@ -410,17 +425,36 @@ class SystemdInstall:
         self.writer(service_file="directord-client.service")
 
 
+def _systemd_loader():
+    parser = argparse.ArgumentParser(
+        description="Systemd install args.",
+        prog="Directord-service",
+        formatter_class=lambda prog: argparse.HelpFormatter(
+            prog, max_help_position=32, width=128
+        ),
+    )
+    parser.add_argument(
+        "--group",
+        help="Server group. Default: %(default)s",
+        metavar="STRING",
+        default="root",
+        type=str,
+    )
+    args = parser.parse_args()
+    return SystemdInstall(group=args.group)
+
+
 def _systemd_server():
     """Execute the systemd server unit file creation process."""
 
-    _systemd = SystemdInstall()
+    _systemd = _systemd_loader()
     _systemd.server()
 
 
 def _systemd_client():
     """Execute the systemd client unit file creation process."""
 
-    _systemd = SystemdInstall()
+    _systemd = _systemd_loader()
     _systemd.client()
 
 

@@ -668,21 +668,29 @@ class TestServer(tests.TestDriverBase):
             job_stderr=None,
         )
 
+    @patch("os.chown", autospec=True)
+    @patch("os.chmod", autospec=True)
     @patch("os.unlink", autospec=True)
     @patch("socket.socket", autospec=True)
-    def test_run_socket_server(self, mock_socket, mock_unlink):
+    def test_run_socket_server(
+        self, mock_socket, mock_unlink, mock_chmod, mock_chown
+    ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
         conn.recv.return_value = json.dumps({}).encode()
         socket.accept.return_value = [conn, MagicMock()]
         self.server.run_socket_server(sentinel=True)
         mock_unlink.assert_called_with(self.args.socket_path)
+        mock_chmod.assert_called()
+        mock_chown.assert_called()
 
+    @patch("os.chown", autospec=True)
+    @patch("os.chmod", autospec=True)
     @patch("time.time", autospec=True)
     @patch("os.unlink", autospec=True)
     @patch("socket.socket", autospec=True)
     def test_run_socket_server_manage_list_nodes(
-        self, mock_socket, mock_unlink, mock_time
+        self, mock_socket, mock_unlink, mock_time, mock_chmod, mock_chown
     ):
         mock_time.return_value = 1
         socket = mock_socket.return_value = MagicMock()
@@ -704,11 +712,15 @@ class TestServer(tests.TestDriverBase):
                 ]
             ).encode()
         )
+        mock_chmod.assert_called()
+        mock_chown.assert_called()
 
+    @patch("os.chown", autospec=True)
+    @patch("os.chmod", autospec=True)
     @patch("os.unlink", autospec=True)
     @patch("socket.socket", autospec=True)
     def test_run_socket_server_manage_list_jobs(
-        self, mock_socket, mock_unlink
+        self, mock_socket, mock_unlink, mock_chmod, mock_chown
     ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
@@ -719,11 +731,15 @@ class TestServer(tests.TestDriverBase):
         self.server.run_socket_server(sentinel=True)
         mock_unlink.assert_called_with(self.args.socket_path)
         conn.sendall.assert_called_with(b'[["k", {"v": "test"}]]')
+        mock_chmod.assert_called()
+        mock_chown.assert_called()
 
+    @patch("os.chown", autospec=True)
+    @patch("os.chmod", autospec=True)
     @patch("os.unlink", autospec=True)
     @patch("socket.socket", autospec=True)
     def test_run_socket_server_manage_purge_nodes(
-        self, mock_socket, mock_unlink
+        self, mock_socket, mock_unlink, mock_chmod, mock_chown
     ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
@@ -737,11 +753,15 @@ class TestServer(tests.TestDriverBase):
         mock_unlink.assert_called_with(self.args.socket_path)
         self.assertDictEqual(self.server.workers, {})
         conn.sendall.assert_called_with(b'{"success": true}')
+        mock_chmod.assert_called()
+        mock_chown.assert_called()
 
+    @patch("os.chown", autospec=True)
+    @patch("os.chmod", autospec=True)
     @patch("os.unlink", autospec=True)
     @patch("socket.socket", autospec=True)
     def test_run_socket_server_manage_purge_jobs(
-        self, mock_socket, mock_unlink
+        self, mock_socket, mock_unlink, mock_chmod, mock_chown
     ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
@@ -754,10 +774,16 @@ class TestServer(tests.TestDriverBase):
         mock_unlink.assert_called_with(self.args.socket_path)
         self.assertDictEqual(self.server.return_jobs, {})
         conn.sendall.assert_called_with(b'{"success": true}')
+        mock_chmod.assert_called()
+        mock_chown.assert_called()
 
+    @patch("os.chown", autospec=True)
+    @patch("os.chmod", autospec=True)
     @patch("os.unlink", autospec=True)
     @patch("socket.socket", autospec=True)
-    def test_run_socket_server_run(self, mock_socket, mock_unlink):
+    def test_run_socket_server_run(
+        self, mock_socket, mock_unlink, mock_chmod, mock_chown
+    ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
         conn.recv.return_value = json.dumps(
@@ -776,10 +802,16 @@ class TestServer(tests.TestDriverBase):
         mock_unlink.assert_called_with(self.args.socket_path)
         self.assertDictEqual(self.server.return_jobs, {})
         conn.sendall.assert_called_with(b"Job received. Task ID: XXX")
+        mock_chmod.assert_called()
+        mock_chown.assert_called()
 
+    @patch("os.chown", autospec=True)
+    @patch("os.chmod", autospec=True)
     @patch("os.unlink", autospec=True)
     @patch("socket.socket", autospec=True)
-    def test_run_socket_server_run_raw(self, mock_socket, mock_unlink):
+    def test_run_socket_server_run_raw(
+        self, mock_socket, mock_unlink, mock_chmod, mock_chown
+    ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
         conn.recv.return_value = json.dumps(
@@ -798,6 +830,8 @@ class TestServer(tests.TestDriverBase):
         mock_unlink.assert_called_with(self.args.socket_path)
         self.assertDictEqual(self.server.return_jobs, {})
         conn.sendall.assert_called_with(b"XXX")
+        mock_chmod.assert_called()
+        mock_chown.assert_called()
 
     @patch("directord.server.Server.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads):

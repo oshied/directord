@@ -46,9 +46,9 @@ Requires:       python3-tenacity
 # Source Requirements
 # TODO(cloudnull): This needs to be packaged officially
 Requires:       python3-diskcache
-Requires:       python3-ssh2-python
 
 # Recommends
+Recommends:       python3-ssh2-python
 Recommends:       python3-zmq
 Recommends:       python3-redis
 Recommends:       python3-flask
@@ -65,6 +65,11 @@ simplicity, faster time to delivery, and consistency. Design PrinciplesThe
 Directord design principles can be [found here]( DocumentationAdditional
 documentation covering...
 
+Requires(pre):    shadow-utils
+
+%pre
+getent group directord >/dev/null || groupadd -r directord
+exit 0
 
 %prep
 %autosetup -n %{pypi_name}

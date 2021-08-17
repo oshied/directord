@@ -56,6 +56,7 @@ class TestMain(unittest.TestCase):
                 "heartbeat_port": 5557,
                 "ignore_cache": False,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "orchestrate",
@@ -82,6 +83,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -108,6 +110,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -134,6 +137,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -160,6 +164,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -186,6 +191,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -213,6 +219,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -239,6 +246,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -265,6 +273,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -291,6 +300,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "exec",
@@ -316,6 +326,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "server",
@@ -340,6 +351,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "client",
@@ -366,6 +378,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": False,
@@ -395,6 +408,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": True,
@@ -424,6 +438,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": False,
@@ -453,6 +468,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": False,
@@ -482,6 +498,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": False,
@@ -511,6 +528,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": False,
@@ -540,6 +558,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": False,
@@ -569,6 +588,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "list_jobs": False,
@@ -598,6 +618,7 @@ class TestMain(unittest.TestCase):
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,
                 "heartbeat_interval": 60,
+                "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "threads": 10,
                 "cache_path": "/var/cache/directord",
@@ -629,17 +650,19 @@ class TestMain(unittest.TestCase):
             m.assert_not_called()
         mock_makedirs.assert_called()
 
+    @patch("jinja2.FileSystemLoader", autospec=True)
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
     @patch("os.makedirs", autospec=True)
     def test_systemdinstall_writer(
-        self, mock_makedirs, mock_exists, mock_print
+        self, mock_makedirs, mock_exists, mock_print, mock_jinja
     ):
         mock_exists.return_value = False
         with patch("builtins.open", unittest.mock.mock_open()) as m:
             main.SystemdInstall().writer(service_file="testfile")
             m.assert_called()
         mock_print.assert_called()
+        mock_jinja.assert_called()
 
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
@@ -653,11 +676,12 @@ class TestMain(unittest.TestCase):
             m.assert_not_called()
         mock_print.assert_called()
 
+    @patch("jinja2.FileSystemLoader", autospec=True)
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
     @patch("os.makedirs", autospec=True)
     def test_systemdinstall_server(
-        self, mock_makedirs, mock_exists, mock_print
+        self, mock_makedirs, mock_exists, mock_print, mock_jinja
     ):
         mock_exists.return_value = False
         with patch("builtins.open", unittest.mock.mock_open()) as m:
@@ -668,12 +692,14 @@ class TestMain(unittest.TestCase):
                 "/etc/systemd/system/directord-client.service", "w"
             )
         mock_print.assert_called()
+        mock_jinja.assert_called()
 
+    @patch("jinja2.FileSystemLoader", autospec=True)
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
     @patch("os.makedirs", autospec=True)
     def test_systemdinstall_client(
-        self, mock_makedirs, mock_exists, mock_print
+        self, mock_makedirs, mock_exists, mock_print, mock_jinja
     ):
         mock_exists.return_value = False
         with patch("builtins.open", unittest.mock.mock_open()) as m:
@@ -684,6 +710,7 @@ class TestMain(unittest.TestCase):
                 "/etc/systemd/system/directord-server.service", "w"
             )
         mock_print.assert_called()
+        mock_jinja.assert_called()
 
     @patch("directord.main._args", autospec=True)
     def test_main_server(self, mock__args):

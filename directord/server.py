@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import grp
 import json
 import multiprocessing
 import os
@@ -585,6 +586,14 @@ class Server(interface.Interface):
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(self.args.socket_path)
+        os.chmod(self.args.socket_path, 509)
+        uid = 0
+        group = getattr(self.args, "socket_group", "root")
+        try:
+            gid = int(group)
+        except ValueError:
+            gid = grp.getgrnam(group).gr_gid
+        os.chown(self.args.socket_path, uid, gid)
         sock.listen(1)
         while True:
             conn, _ = sock.accept()
