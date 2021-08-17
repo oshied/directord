@@ -266,7 +266,7 @@ class ComponentBase:
                 file_contents = self.blueprinter(
                     content=f.read(), values=cache.get("args")
                 )
-                if not file_contents:
+                if file_contents is None:
                     return False
 
             with open(file_to, "w") as f:
