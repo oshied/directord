@@ -54,6 +54,28 @@ class TestUtils(tests.TestConnectionBase):
         new = utils.merge_dict(base=a, new=b)
         self.assertEqual(new, merge)
 
+    def test_merge_dict_no_extend(self):
+        a = {
+            "dict": {"a": "test", "b": {"int1": 1}},
+            "list": ["a"],
+            "str": "a",
+            "int": 1,
+        }
+        b = {
+            "dict": {"b": {"int2": 2}, "c": "test2"},
+            "list": ["b"],
+            "key": "value",
+        }
+        merge = {
+            "dict": {"b": {"int2": 2}, "c": "test2"},
+            "int": 1,
+            "key": "value",
+            "list": ["b"],
+            "str": "a",
+        }
+        new = utils.merge_dict(base=a, new=b, extend=False)
+        self.assertEqual(new, merge)
+
     def test_ctx_mgr_clientstatus_enter_exit(self):
         ctx = unittest.mock.MagicMock()
         socket = unittest.mock.MagicMock()

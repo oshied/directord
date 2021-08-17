@@ -44,6 +44,12 @@ with DirectordConnect() as d:
     jobs = d.list_jobs()
 ```
 
+When polling for jobs there are only three valid statuses.
+
+* **True** This status indicates the job has succeeded or skipped.
+* **False** This status indicates the job has failed.
+* **None** This status indicates the job has no known state.
+
 The return from `orchestrate` is an array of UUIDs, which are the ID's for the
 submitted jobs.
 

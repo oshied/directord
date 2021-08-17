@@ -110,16 +110,17 @@ class TestManager(tests.TestDriverBase):
 
     @patch("directord.send_data", autospec=True)
     def test_poll_job_unknown(self, mock_send_data):
-        mock_send_data.return_value = json.dumps(
-            {
-                "test-id": {
-                    "SUCCESS": ["hostname-node1"],
-                    "NODES": ["hostname-node1", "hostname-node2"],
-                    "PROCESSING": "UNDEFINED",
+        with patch.object(self.args, "timeout", 1):
+            mock_send_data.return_value = json.dumps(
+                {
+                    "test-id": {
+                        "SUCCESS": ["hostname-node1"],
+                        "NODES": ["hostname-node1", "hostname-node2"],
+                        "PROCESSING": "UNDEFINED",
+                    }
                 }
-            }
-        )
-        status, info = self.manage.poll_job("test-id")
+            )
+            status, info = self.manage.poll_job("test-id")
         self.assertEqual(status, None)
         self.assertEqual(info, "Job in an unknown state: test-id")
 

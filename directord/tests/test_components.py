@@ -123,9 +123,13 @@ class TestComponents(unittest.TestCase):
                 cache=tests.FakeCache(),
                 job=job,
             )
-        self.assertEqual(stdout, "YYYYYYYYY")
+        self.assertEqual(
+            stdout,
+            "File exists /test/file and SHA256 YYYYYYYYY matches,"
+            " nothing to transfer",
+        )
         self.assertEqual(stderr, None)
-        self.assertEqual(outcome, None)
+        self.assertEqual(outcome, True)
 
     @patch("directord.utils.file_sha256", autospec=True)
     @patch("os.path.isfile", autospec=True)
@@ -172,7 +176,7 @@ class TestComponents(unittest.TestCase):
             )
         self.assertEqual(stdout, "YYYYYYYYY")
         self.assertEqual(stderr, None)
-        self.assertEqual(outcome, None)
+        self.assertEqual(outcome, True)
         mock_log_debug.assert_called()
 
     @patch("pwd.getpwnam", autospec=True)

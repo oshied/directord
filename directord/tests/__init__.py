@@ -93,6 +93,7 @@ class FakeArgs:
     socket_group = "root"
     cache_path = "/var/cache/directord"
     transfer_port = 5556
+    timeout = 600
     curve_encryption = None
 
 

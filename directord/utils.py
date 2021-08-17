@@ -41,13 +41,16 @@ def dump_yaml(file_path, data):
     return file_path
 
 
-def merge_dict(base, new):
+def merge_dict(base, new, extend=True):
     """Recursively merge new into base.
 
     :param base: Base dictionary to load items into
     :type base: Dictionary
     :param new: New dictionary to merge items from
     :type new: Dictionary
+    :param extend: Boolean option to enable or disable extending
+                   iterable arrays.
+    :type extend: Boolean
     :returns: Dictionary
     """
 
@@ -55,11 +58,13 @@ def merge_dict(base, new):
         for key, value in new.items():
             if key not in base:
                 base[key] = value
-            elif isinstance(value, dict):
-                base[key] = merge_dict(base=base.get(key, {}), new=value)
-            elif isinstance(value, list):
+            elif extend and isinstance(value, dict):
+                base[key] = merge_dict(
+                    base=base.get(key, {}), new=value, extend=extend
+                )
+            elif extend and isinstance(value, list):
                 base[key].extend(value)
-            elif isinstance(value, (tuple, set)):
+            elif extend and isinstance(value, (tuple, set)):
                 if isinstance(base.get(key), tuple):
                     base[key] += tuple(value)
                 elif isinstance(base.get(key), list):
@@ -67,7 +72,11 @@ def merge_dict(base, new):
             else:
                 base[key] = new[key]
     elif isinstance(new, list):
-        base.extend(new)
+        if extend:
+            base.extend(new)
+        else:
+            base = new
+
     return base
 
 
