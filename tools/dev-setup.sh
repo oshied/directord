@@ -34,11 +34,11 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
 fi
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
-  PACKAGES="git python38 python3-pyyaml zeromq libsodium"
+  PACKAGES="git python38-devel gcc python3-pyyaml zeromq libsodium"
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3.8}
 elif [[ ${ID} == "fedora" ]]; then
-  PACKAGES="git python3 python3-pyyaml zeromq libsodium"
+  PACKAGES="git python3-devel gcc python3-pyyaml zeromq libsodium"
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
 elif [[ ${ID} == "ubuntu" ]]; then
