@@ -41,16 +41,24 @@ def send_data(socket_path, data):
     :returns: String
     """
 
-    with UNIXSocketConnect(socket_path) as s:
-        s.sendall(data.encode())
-        fragments = []
-        while True:
-            chunk = s.recv(1024)
-            if not chunk:
-                break
+    try:
+        with UNIXSocketConnect(socket_path) as s:
+            s.sendall(data.encode())
+            fragments = []
+            while True:
+                chunk = s.recv(1024)
+                if not chunk:
+                    break
 
-            fragments.append(chunk)
-        return b"".join(fragments)
+                fragments.append(chunk)
+            return b"".join(fragments)
+    except PermissionError:
+        log = logger.getLogger(name="directord")
+        log.error(
+            "Permission error writing to %s. Check write permissions.",
+            socket_path,
+        )
+        raise
 
 
 def plugin_import(plugin):
