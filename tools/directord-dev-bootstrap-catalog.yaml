@@ -14,6 +14,7 @@ directord_server:
       with open('/etc/directord/config.yaml') as f:
           config = yaml.safe_load(f)
       config["curve_encryption"] = True
+      config["debug"] = True
       with open('/etc/directord/config.yaml', 'w') as f:
           f.write(yaml.safe_dump(config, default_flow_style=False))
       EOC
@@ -43,6 +44,7 @@ directord_clients:
       with open('/etc/directord/config.yaml') as f:
           config = yaml.safe_load(f)
       config["curve_encryption"] = True
+      config["debug"] = True
       config['server_address'] = "{{ directord_server['targets'][0]['host'] }}"
       with open('/etc/directord/config.yaml', 'w') as f:
           f.write(yaml.safe_dump(config, default_flow_style=False))
