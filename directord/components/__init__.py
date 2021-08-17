@@ -247,7 +247,7 @@ class ComponentBase:
 
         if value_update:
             orig = cache.pop(key, default=dict())
-            value = utils.merge_dict(orig, value)
+            value = utils.merge_dict(orig, value, extend=False)
 
         cache.set(key, value, tag=tag, expire=expire)
 
