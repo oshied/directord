@@ -149,16 +149,29 @@ class SSHConnect:
         self.log.debug(
             "Handshake with [ %s ] on port [ %s ] complete.", host, port
         )
-        try:
-            self.session.agent_auth(username)
-            self.log.debug("User agent based authentication enabled")
-        except ssh2.exceptions.AgentConnectionError:
-            pass
 
         self.known_hosts = self.session.knownhost_init()
+
         if key_file:
             self.session.userauth_publickey_fromfile(username, key_file)
             self.log.debug("Key file [ %s ] added", key_file)
+        else:
+            try:
+                self.session.agent_auth(username)
+                self.log.debug("User agent based authentication enabled")
+            except ssh2.exceptions.AgentConnectionError as e:
+                self.log.warning(
+                    "SSH Agent connection has failed: %s."
+                    " Attempting to connect with the user's implicit ssh key.",
+                    str(e),
+                )
+                home = os.path.abspath(os.path.expanduser("~"))
+                default_keyfile = os.path.join(home, ".ssh/id_rsa")
+                if os.path.exists(default_keyfile):
+                    self.session.userauth_publickey_fromfile(
+                        username, default_keyfile
+                    )
+                    self.log.debug("Key file [ %s ] added", key_file)
 
         self.channel = None
 
