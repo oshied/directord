@@ -46,7 +46,7 @@ with DirectordConnect() as d:
 
 When polling for jobs there are only three valid statuses.
 
-* **True** This status indicates the job has succeeded.
+* **True** This status indicates the job has succeeded or skipped.
 * **False** This status indicates the job has failed.
 * **None** This status indicates the job has no known state.
 

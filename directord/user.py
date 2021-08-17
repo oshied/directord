@@ -143,7 +143,7 @@ class Manage(User):
                 elif len(data_return.get("FAILED", list())) > 0:
                     return None, "Job Degrated: {}".format(job_id)
 
-                return None, "Job Skipped: {}".format(job_id)
+                return True, "Job Skipped: {}".format(job_id)
             else:
                 miss += 1
                 if miss > getattr(self.args, "timeout", 600):
