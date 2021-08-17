@@ -127,34 +127,29 @@ class Manage(User):
         :returns: Tuple
         """
 
-        with self.timeout(
-            time=getattr(self.args, "timeout", 600), job_id=job_id
-        ):
-            while True:
-                data = dict(json.loads(self.run(override="list-jobs")))
-                data_return = data.get(job_id, dict())
-                job_state = data_return.get("PROCESSING", "unknown")
-                job_state = job_state.encode()
-                if job_state == self.driver.job_processing:
-                    time.sleep(1)
-                elif job_state == self.driver.job_failed:
-                    return False, "Job Failed: {}".format(job_id)
-                elif job_state in [self.driver.job_end, self.driver.nullbyte]:
-                    nodes = len(data_return.get("NODES"))
-                    if len(data_return.get("SUCCESS", list())) == nodes:
-                        return True, "Job Success: {}".format(job_id)
-                    elif len(data_return.get("FAILED", list())) > 0:
-                        return None, "Job Degrated: {}".format(job_id)
+        while True:
+            data = dict(json.loads(self.run(override="list-jobs")))
+            data_return = data.get(job_id, dict())
+            job_state = data_return.get("PROCESSING", "unknown")
+            job_state = job_state.encode()
+            if job_state == self.driver.job_processing:
+                time.sleep(1)
+            elif job_state == self.driver.job_failed:
+                return False, "Job Failed: {}".format(job_id)
+            elif job_state in [self.driver.job_end, self.driver.nullbyte]:
+                nodes = len(data_return.get("NODES"))
+                if len(data_return.get("SUCCESS", list())) == nodes:
+                    return True, "Job Success: {}".format(job_id)
+                elif len(data_return.get("FAILED", list())) > 0:
+                    return None, "Job Degrated: {}".format(job_id)
 
-                    return None, "Job Skipped: {}".format(job_id)
+                return None, "Job Skipped: {}".format(job_id)
+            else:
+                miss += 1
+                if miss > 5:
+                    return None, "Job in an unknown state: {}".format(job_id)
                 else:
-                    miss += 1
-                    if miss > 5:
-                        return None, "Job in an unknown state: {}".format(
-                            job_id
-                        )
-                    else:
-                        time.sleep(1)
+                    time.sleep(1)
 
     def run(self, override=None):
         """Send the management command to the server.

@@ -153,26 +153,6 @@ class TestManager(tests.TestDriverBase):
         self.assertEqual(status, False)
         self.assertEqual(info, "Job Failed: test-id")
 
-    @patch("logging.Logger.error", autospec=True)
-    @patch("logging.Logger.warning", autospec=True)
-    @patch("directord.send_data", autospec=True)
-    def test_poll_job_timeout(
-        self, mock_send_data, mock_log_warn, mock_log_error
-    ):
-        setattr(self.manage.args, "timeout", 1)
-        mock_send_data.return_value = '{"test-id-null": {}}'
-        self.manage.poll_job("test-id")
-        mock_log_warn.assert_called_once_with(
-            unittest.mock.ANY,
-            "Timeout encountered after %s seconds running %s.",
-            1,
-            "test-id",
-        )
-        mock_log_error.assert_called_once_with(
-            unittest.mock.ANY,
-            "Task timeout encountered.",
-        )
-
     def test_run_override_unknown(self):
         self.assertRaises(SystemExit, self.manage.run, override="UNKNOWN")
 
