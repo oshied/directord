@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=root
 Group={{ directord_group }}
-ExecStart={{ directord_binary }} --config-file /etc/directord/config.yaml server
+ExecStart={{ directord_binary }} --config-file /etc/directord/config.yaml --socket-group {{ directord_group }} server
 Restart=on-failure
 RestartSec=10
 CPUAccounting=true
