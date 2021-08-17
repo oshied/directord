@@ -85,9 +85,11 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
     - name: Create source tarball
-      run: tar -czf ./contrib/container-build/directord.tar.gz ../$(pwd)
+      run: |
+        tar -czf /tmp/directord.tar.gz -C ${{ github.workspace }}/../ ${{ github.workspace }}
+        mv /tmp/directord.tar.gz ${{ github.workspace }}/contrib/container-build/directord.tar.gz
     - name: Build builder container image
-      run: docker build -t directord-builder -f ./contrib/container-build/Containerfile ./contrib/container-build
+      run: docker build -t directord-builder -f ${{ github.workspace }}/contrib/container-build/Containerfile ${{ github.workspace }}/contrib/container-build
     - name: Run builder container
       run: |
         export RELEASE_VERSION=$(awk -F'"' '/version/ {print $2}' ${{ github.workspace }}/directord/meta.py)
@@ -105,7 +107,7 @@ jobs:
         fail_on_unmatched_files: true
     - name: Create rpm tarball
       run: |
-        pushd ./contrib/build
+        pushd ${{ github.workspace }}/contrib/build
           tar -czf rpm-bundle.tar.gz *.rpm
         popd
     - name: Upload RPM bundle
