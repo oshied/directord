@@ -576,9 +576,18 @@ class Mixin:
             while size > 0:
                 size, _data = ssh.channel.read()
                 data += _data
-            raise SystemExit(
-                "Bootstrap command failed: {}, Error: {}".format(command, data)
+            print(
+                "{line} Start Error Information {line}".format(line=("=" * 10))
             )
+            try:
+                data = data.decode()
+            except AttributeError:
+                pass
+            print(data)
+            print(
+                "{line} End Error Information {line}".format(line=("=" * 10))
+            )
+            raise SystemExit("Bootstrap command failed: {}".format(command))
 
     def bootstrap_q_processor(self, queue, catalog):
         """Run a queing execution thread.
