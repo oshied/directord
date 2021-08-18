@@ -14,6 +14,7 @@
 
 import unittest
 
+from unittest.mock import call
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -21,6 +22,7 @@ from directord import client
 from directord import components
 from directord import tests
 
+from directord.components import builtin_dnf
 from directord.components import builtin_run
 from directord.components import builtin_transfer
 from directord.components import builtin_workdir
@@ -33,6 +35,7 @@ class TestComponents(unittest.TestCase):
         self.fake_cache = tests.FakeCache()
         self.components = components.ComponentBase(desc="test")
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
+        self._dnf = builtin_dnf.Component()
         self._transfer = builtin_transfer.Component()
         self._run = builtin_run.Component()
         self._workdir = builtin_workdir.Component()
@@ -307,6 +310,79 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(outcome, None)
         mock_log_debug.assert_called()
         mock_log_info.assert_called()
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_success(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        mock_conn = MagicMock()
+        stdout, stderr, outcome = self._dnf.client(
+            cache=tests.FakeCache(),
+            conn=mock_conn,
+            job={"packages": ["kernel", "gcc"]},
+        )
+        calls = [call(command="dnf -q -y -C install kernel gcc", env=None)]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_fail(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", False]
+        mock_conn = MagicMock()
+        stdout, stderr, outcome = self._dnf.client(
+            cache=tests.FakeCache(),
+            conn=mock_conn,
+            job={"packages": ["kernel", "gcc"]},
+        )
+        calls = [call(command="dnf -q -y -C install kernel gcc", env=None)]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertFalse(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_clear_cache(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        mock_conn = MagicMock()
+        stdout, stderr, outcome = self._dnf.client(
+            cache=tests.FakeCache(),
+            conn=mock_conn,
+            job={"packages": ["kernel", "gcc"], "clear": True},
+        )
+        calls = [
+            call(command="dnf clean all", env=None),
+            call(command="dnf makecache", env=None),
+            call(command="dnf -q -y -C install kernel gcc", env=None),
+        ]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_latest(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        mock_conn = MagicMock()
+        stdout, stderr, outcome = self._dnf.client(
+            cache=tests.FakeCache(),
+            conn=mock_conn,
+            job={"packages": ["kernel", "gcc"], "state": "latest"},
+        )
+        calls = [
+            call(command="dnf list --installed kernel", env=None),
+            call(command="dnf list --installed gcc", env=None),
+            call(command="dnf -q -y -C update kernel gcc", env=None),
+        ]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_absent(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        mock_conn = MagicMock()
+        stdout, stderr, outcome = self._dnf.client(
+            cache=tests.FakeCache(),
+            conn=mock_conn,
+            job={"packages": ["kernel", "gcc"], "state": "absent"},
+        )
+        calls = [call(command="dnf -q -y remove kernel gcc", env=None)]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
 
     @patch("subprocess.Popen")
     def test_run_command_success(self, popen):

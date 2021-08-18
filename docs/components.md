@@ -168,6 +168,19 @@ Syntax: `STRING`
 * `--setype` **STRING** Selinux type.
 * `--seuser` **STRING** Selinux user.
 
+##### `DNF
+
+Syntax: `PACKAGE [PACKAGE ...]`
+
+> Install/Update/Remove packages using dnf.
+
+* `--clear-metadata` **BOOLEAN** Clear dnf metadata and build cache before running install.
+* `--latest` **BOOLEAN** Ensure latest package is installed.
+* `--absent` **BOOLEAN** Remove package.
+
+> NOTE: Installation assumes metadata cache is available.  Use --clear-metadata
+  to ensure it's available at least once during an orchestration.
+
 ### User defined Components
 
 User defined components are expected to be in the
