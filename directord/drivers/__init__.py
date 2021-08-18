@@ -44,7 +44,7 @@ class BaseDriver:
         self.connection_string = connection_string
         self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
-        self.bind_heatbeat = None
+        self.args = args
 
     def socket_send(
         self,
@@ -152,15 +152,20 @@ class BaseDriver:
 
         pass
 
-    def heartbeat_reset(self):
+    def heartbeat_reset(self, bind_heatbeat=None):
         """Reset the connection on the heartbeat socket.
 
         Returns a new ttl after reconnect.
 
-        :returns: Float
+        :param bind_heatbeat: heart beat bind object.
+        :type bind_heatbeat: Object
+        :returns: Tuple
         """
 
-        pass
+        return (
+            self.get_heartbeat(interval=self.args.heartbeat_interval),
+            self.heartbeat_connect(),
+        )
 
     def job_bind(self):
         """Bind an address to a job socket and return the socket.

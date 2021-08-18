@@ -189,16 +189,6 @@ class Driver(drivers.BaseDriver):
 
         pass
 
-    def heartbeat_reset(self):
-        """Reset the connection on the heartbeat socket.
-
-        Returns a new ttl after reconnect.
-
-        :returns: Float
-        """
-
-        pass
-
     def job_bind(self):
         """Bind an address to a job socket and return the socket.
 

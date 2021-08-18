@@ -188,6 +188,7 @@ class TestDriverBase(unittest.TestCase):
         self.mock_driver.nullbyte = base_driver.nullbyte
         self.mock_driver.heartbeat_ready = base_driver.heartbeat_ready
         self.mock_driver.heartbeat_notice = base_driver.heartbeat_notice
+        self.mock_driver.heartbeat_reset = base_driver.heartbeat_reset
         self.mock_driver.job_ack = base_driver.job_ack
         self.mock_driver.job_end = base_driver.job_end
         self.mock_driver.job_processing = base_driver.job_processing

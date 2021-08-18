@@ -66,7 +66,6 @@ class TestClient(tests.TestDriverBase):
             ):
                 self.client.run_heartbeat(sentinel=True, heartbeat_misses=10)
         mock_log_debug.assert_called()
-        self.mock_driver.heartbeat_reset.assert_called()
         mock_sleep.assert_called()
 
     @patch("time.time", autospec=True)
@@ -86,7 +85,6 @@ class TestClient(tests.TestDriverBase):
                 self.client.heartbeat_failure_interval = 64
                 self.client.run_heartbeat(sentinel=True, heartbeat_misses=10)
         mock_log_debug.assert_called()
-        self.mock_driver.heartbeat_reset.assert_called()
         mock_sleep.assert_called()
 
     @patch("time.time", autospec=True)
