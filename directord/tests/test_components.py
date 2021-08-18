@@ -320,7 +320,7 @@ class TestComponents(unittest.TestCase):
             conn=mock_conn,
             job={"packages": ["kernel", "gcc"]},
         )
-        calls = [call(command="dnf -q -y -C install kernel gcc", env=None)]
+        calls = [call(command="dnf -q -y install kernel gcc", env=None)]
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
@@ -333,7 +333,7 @@ class TestComponents(unittest.TestCase):
             conn=mock_conn,
             job={"packages": ["kernel", "gcc"]},
         )
-        calls = [call(command="dnf -q -y -C install kernel gcc", env=None)]
+        calls = [call(command="dnf -q -y install kernel gcc", env=None)]
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertFalse(outcome)
 
@@ -349,7 +349,7 @@ class TestComponents(unittest.TestCase):
         calls = [
             call(command="dnf clean all", env=None),
             call(command="dnf makecache", env=None),
-            call(command="dnf -q -y -C install kernel gcc", env=None),
+            call(command="dnf -q -y install kernel gcc", env=None),
         ]
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
@@ -366,7 +366,7 @@ class TestComponents(unittest.TestCase):
         calls = [
             call(command="dnf list --installed kernel", env=None),
             call(command="dnf list --installed gcc", env=None),
-            call(command="dnf -q -y -C update kernel gcc", env=None),
+            call(command="dnf -q -y update kernel gcc", env=None),
         ]
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)

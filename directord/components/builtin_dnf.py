@@ -143,7 +143,7 @@ class Component(components.ComponentBase):
             job_stderr.append(stderr)
 
         if to_install:
-            cmd = "dnf -q -y -C install {}".format(" ".join(to_install))
+            cmd = "dnf -q -y install {}".format(" ".join(to_install))
             job_stdout.append(b"=== dnf install ===\n")
             stdout, stderr, outcome = self.run_command(
                 command=cmd, env=cache.get("envs")
@@ -152,7 +152,7 @@ class Component(components.ComponentBase):
             job_stderr.append(stderr)
 
         if to_update:
-            cmd = "dnf -q -y -C update {}".format(" ".join(to_update))
+            cmd = "dnf -q -y update {}".format(" ".join(to_update))
             job_stdout.append(b"=== dnf update ===\n")
             stdout, stderr, outcome = self.run_command(
                 command=cmd, env=cache.get("envs")
