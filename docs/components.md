@@ -168,7 +168,7 @@ Syntax: `STRING`
 * `--setype` **STRING** Selinux type.
 * `--seuser` **STRING** Selinux user.
 
-##### `DNF
+##### `DNF`
 
 Syntax: `PACKAGE [PACKAGE ...]`
 

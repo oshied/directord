@@ -30,7 +30,7 @@ class Component(components.ComponentBase):
             action="store_true",
             help="Clear dnf metadata and make cache before running action.",
         )
-        state_group = self.parser.add_mutual_exclusive_group()
+        state_group = self.parser.add_mutually_exclusive_group()
         state_group.add_argument(
             "--latest",
             help="Ensure latest package is installed.",
