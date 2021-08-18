@@ -109,13 +109,12 @@ jobs:
         fail_on_unmatched_files: true
     - name: Create rpm tarball
       run: |
-        pushd ${{ github.workspace }}/contrib/build
-          tar -czf rpm-bundle.tar.gz *.rpm
-        popd
+        cd ${{ github.workspace }}/contrib/build
+        tar -czf /tmp/rpm-bundle.tar.gz *.rpm
     - name: Upload RPM bundle
       uses: softprops/action-gh-release@v1
       with:
-        files: contrib/build/rpm-bundle.tar.gz
+        files: /tmp/rpm-bundle.tar.gz
         fail_on_unmatched_files: true
 
   build_stable_container:
