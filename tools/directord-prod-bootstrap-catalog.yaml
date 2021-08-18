@@ -7,7 +7,7 @@ directord_server:
   - RUN: >-
       [[ ! -f /etc/directord/config.yaml ]] || echo "{}" | sudo tee /etc/directord/config.yaml
   - RUN: sudo /usr/bin/directord manage --generate-keys
-  - RUN: getent group directord >/dev/null || groupadd -r directord
+  - RUN: sudo getent group directord || sudo groupadd -r directord
   - RUN: sudo /usr/bin/directord-server-systemd --group directord
   - RUN: |-
       sudo python3 <<EOC
@@ -37,7 +37,7 @@ directord_clients:
   - RUN: sudo mv /tmp/client.key-stash /etc/directord/public_keys/client.key
   - ADD: /tmp/server.key /tmp/server.key-stash
   - RUN: sudo mv /tmp/server.key-stash /etc/directord/public_keys/server.key
-  - RUN: getent group directord >/dev/null || groupadd -r directord
+  - RUN: sudo getent group directord || sudo groupadd -r directord
   - RUN: sudo /usr/bin/directord-client-systemd --group directord
   - RUN: |-
       sudo python3 <<EOC

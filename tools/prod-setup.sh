@@ -38,9 +38,11 @@ RELEASE="$(get_latest_release cloudnull/directord)"
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; then
   mkdir -p ~/directord-RPMS
   pushd ~/directord-RPMS
+    rm -f rpm-bundle.tar.gz
     wget https://github.com/cloudnull/directord/releases/download/${RELEASE}/rpm-bundle.tar.gz
     tar xf rpm-bundle.tar.gz
-    eval "${COMMAND} *.rpm"
+    RPMS=$(ls -1 *.rpm | egrep -v '(debug|src)')
+    dnf -y install ${RPMS}
   popd
   echo -e "\nDirectord is setup and installed within [ /usr/bin ]"
   echo "Activate the venv or run directord directly."
