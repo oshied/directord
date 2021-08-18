@@ -394,12 +394,16 @@ class Mixin:
 
         args = entry.get("args", dict(port=22, username=getpass.getuser()))
         for target in entry["targets"]:
+            try:
+                target_host = target["host"]
+            except KeyError:
+                raise SystemExit("[host] is undefined in bootstrap catalog")
             item = dict(
-                host=target["host"],
+                host=target_host,
                 username=target.get(
                     "username", args.get("username", getpass.getuser())
                 ),
-                port=target.get("port", args["port"]),
+                port=target.get("port", args.get("port", 22)),
                 jobs=entry["jobs"],
             )
             ordered_entries.append(item)

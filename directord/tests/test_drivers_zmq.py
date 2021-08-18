@@ -82,8 +82,8 @@ class TestDriverZMQ(unittest.TestCase):
     def test_reset_heartbeat(
         self, mock_log_debug, mock_socket_connect, mock_poller
     ):
-        self.driver.bind_heatbeat = self.driver.heartbeat_connect()
-        self.driver.heartbeat_reset()
+        bind_heatbeat = self.driver.heartbeat_connect()
+        self.driver.heartbeat_reset(bind_heatbeat=bind_heatbeat)
         mock_poller.assert_called()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()

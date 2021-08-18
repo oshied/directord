@@ -19,6 +19,7 @@ directord_server:
           f.write(yaml.safe_dump(config, default_flow_style=False))
       EOC
   - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl enable directord-server.service
   - RUN: sudo systemctl restart directord-server.service
   - GET: /etc/directord/private_keys/client.key_secret /tmp/client.key_secret
   - GET: /etc/directord/public_keys/client.key /tmp/client.key
@@ -50,4 +51,5 @@ directord_clients:
           f.write(yaml.safe_dump(config, default_flow_style=False))
       EOC
   - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl enable directord-client.service
   - RUN: sudo systemctl restart directord-client.service

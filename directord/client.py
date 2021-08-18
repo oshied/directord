@@ -41,6 +41,7 @@ class Client(interface.Interface):
         super(Client, self).__init__(args=args)
 
         self.heartbeat_failure_interval = 2
+        self.bind_heatbeat = None
 
     def update_heartbeat(self):
         with open("/proc/uptime", "r") as f:
@@ -84,7 +85,7 @@ class Client(interface.Interface):
         )
         while True:
             self.log.debug("Heartbeat misses [ %s ]", heartbeat_misses)
-            if self.driver.bind_check(
+            if self.bind_heatbeat and self.driver.bind_check(
                 interval=self.heartbeat_interval, bind=self.bind_heatbeat
             ):
                 (
@@ -102,10 +103,13 @@ class Client(interface.Interface):
                         "Received heartbeat reset command. Connection"
                         " resetting."
                     )
-                    self.driver.heartbeat_reset()
-                    heartbeat_at = self.driver.get_expiry(
-                        heartbeat_interval=self.heartbeat_interval,
-                        interval=self.heartbeat_liveness,
+                    dir(self.driver.heartbeat_reset)
+                    print(self.driver.heartbeat_reset)
+                    (
+                        heartbeat_at,
+                        self.bind_heatbeat,
+                    ) = self.driver.heartbeat_reset(
+                        bind_heatbeat=self.bind_heatbeat
                     )
                 else:
                     heartbeat_at = struct.unpack("<f", info)[0]
@@ -125,7 +129,12 @@ class Client(interface.Interface):
                         self.heartbeat_failure_interval *= 2
 
                     self.log.debug("Running reconnection.")
-                    self.driver.heartbeat_reset()
+                    (
+                        heartbeat_at,
+                        self.bind_heatbeat,
+                    ) = self.driver.heartbeat_reset(
+                        bind_heatbeat=self.bind_heatbeat
+                    )
                     heartbeat_at = self.driver.get_expiry(
                         heartbeat_interval=self.heartbeat_interval,
                         interval=self.heartbeat_liveness,

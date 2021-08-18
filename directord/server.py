@@ -40,7 +40,7 @@ class Server(interface.Interface):
         """
 
         super(Server, self).__init__(args=args)
-
+        self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
         if not datastore:
             self.log.info("Connecting to internal datastore")
@@ -84,7 +84,9 @@ class Server(interface.Interface):
         )
         while True:
             idle_time = heartbeat_at + (self.heartbeat_interval * 3)
-            if self.driver.bind_check(bind=self.bind_heatbeat):
+            if self.bind_heatbeat and self.driver.bind_check(
+                bind=self.bind_heatbeat
+            ):
                 (
                     identity,
                     _,
