@@ -44,6 +44,7 @@ class BaseDriver:
         self.connection_string = connection_string
         self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
+        self.bind_heatbeat = None
 
     def socket_send(
         self,
