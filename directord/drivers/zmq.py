@@ -441,10 +441,11 @@ class Driver(drivers.BaseDriver):
         :returns: Float
         """
 
-        self.poller.unregister(self.bind_heatbeat)
-        self.log.debug("Unregistered heartbeat.")
-        self.bind_heatbeat.close()
-        self.log.debug("Heartbeat connection closed.")
+        if self.bind_heatbeat:
+            self.poller.unregister(self.bind_heatbeat)
+            self.log.debug("Unregistered heartbeat.")
+            self.bind_heatbeat.close()
+            self.log.debug("Heartbeat connection closed.")
         self.bind_heatbeat = self.heartbeat_connect()
         return self.get_heartbeat(interval=self.args.heartbeat_interval)
 
