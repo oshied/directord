@@ -164,7 +164,7 @@ class Processor:
 
         return multiprocessing.Manager()
 
-    def run_threads(self, threads, join=True):
+    def run_threads(self, threads, join=True, daemon=True):
         """Execute process objects from an array.
 
         The array of threads are processed and started in a "daemon" mode.
@@ -175,10 +175,12 @@ class Processor:
         :type threads: List
         :param join: Enable or Disable process joining
         :type join: Boolean
+        :param daemon: Enable or Disable process daemonic processes
+        :type daemon: Boolean
         """
 
         for t in threads:
-            t.daemon = True
+            t.daemon = daemon
             self.processes.append(t)
             t.start()
 

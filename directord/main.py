@@ -308,6 +308,11 @@ def _args(exec_args=None):
         action="store_true",
         help="Generate encryption keys for Curve authentication.",
     )
+    manage_group.add_argument(
+        "--dump-cache",
+        action="store_true",
+        help="Dump the local cache to stdout.",
+    )
     parser_bootstrap = subparsers.add_parser(
         "bootstrap",
         help=(
