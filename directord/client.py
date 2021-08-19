@@ -42,6 +42,9 @@ class Client(interface.Interface):
 
         self.heartbeat_failure_interval = 2
         self.bind_heatbeat = None
+        manager = self.get_manager
+        self.q_manger = dict(general=manager.Queue())
+        self.q_results = self.get_queue
 
     def update_heartbeat(self):
         with open("/proc/uptime", "r") as f:
@@ -212,6 +215,157 @@ class Client(interface.Interface):
 
         return component.client(**component_kwargs)
 
+    def _client_q_processor(self, queue):
+        while True:
+            try:
+                q_data = queue.get(timeout=10)
+            except Exception:
+                break
+            else:
+                self.q_results.put(self._client_processor(**q_data))
+
+    def _client_processor(
+        self,
+        job_id,
+        command,
+        cache,
+        job_parent_id,
+        sentinel,
+        job,
+        info,
+        job_sha256,
+        cache_hit,
+    ):
+        base_component = components.ComponentBase()
+        with utils.ClientStatus(
+            socket=self.bind_job,
+            job_id=job_id.encode(),
+            command=command,
+            ctx=self,
+        ) as c:
+            if cache.get(job_parent_id) is False:
+                self.log.error(
+                    "Parent failure %s skipping %s",
+                    job_parent_id,
+                    job_id,
+                )
+                status = (
+                    "Job [ {} ] was not allowed to run because"
+                    " there was a failure under this partent ID"
+                    " [ {} ]".format(job_id, job_parent_id)
+                )
+
+                self.log.error(status)
+                c.info = status.encode()
+                c.job_state = self.driver.job_failed
+
+                if sentinel:
+                    return True
+
+                return False
+
+            with self.timeout(time=job.get("timeout", 600), job_id=job_id):
+                stdout, stderr, outcome = self._job_executor(
+                    conn=c,
+                    cache=cache,
+                    info=info,
+                    job=job,
+                    job_id=job_id,
+                    job_sha256=job_sha256,
+                    cached=cache_hit,
+                    command=command,
+                )
+
+            if stdout:
+                stdout = stdout.strip()
+                if not isinstance(stdout, bytes):
+                    stdout = stdout.encode()
+                c.stdout = stdout
+                self.log.info(stdout)
+
+            if stderr:
+                stderr = stderr.strip()
+                if not isinstance(stderr, bytes):
+                    stderr = stderr.encode()
+                c.stderr = stderr
+                self.log.error(stderr)
+
+            if command == b"QUERY":
+                c.data = json.dumps(job).encode()
+                if stdout:
+                    c.info = stdout
+
+            if outcome is False:
+                state = c.job_state = self.driver.job_failed
+                self.log.error("Job failed %s", job_id)
+                if job_parent_id:
+                    base_component.set_cache(
+                        cache=cache,
+                        key=job_parent_id,
+                        value=False,
+                        tag="parents",
+                    )
+            elif outcome is True:
+                state = c.job_state = self.driver.job_end
+                self.log.info("Job complete %s", job_id)
+                if job_parent_id:
+                    base_component.set_cache(
+                        cache=cache,
+                        key=job_parent_id,
+                        value=True,
+                        tag="parents",
+                    )
+            else:
+                state = self.driver.nullbyte
+
+        base_component.set_cache(
+            cache=cache,
+            key=job_sha256,
+            value=state,
+            tag="jobs",
+        )
+
+        return False
+
+    def q_run_job(self, sentinel=False):
+        while True:
+            threads = list()
+            q_list = list()
+            for key, value in self.q_manger.keys()[5]:
+                q_list.append(key)
+                threads.append(
+                    self.thread(
+                        target=self._client_q_processor,
+                        args=(
+                            value,
+                            self.q_results,
+                        ),
+                    )
+                )
+                try:
+                    self.run_threads(threads=threads, join=False)
+                    while True:
+                        try:
+                            sentinel = self.q_results.get(timeout=10)
+                        except Exception:
+                            break
+                        else:
+                            if sentinel:
+                                raise StopIteration()
+                except Exception:
+                    break
+            else:
+                for t in threads:
+                    t.join()
+
+                for item in q_list:
+                    self.q_manger.pop(item)
+
+                time.sleep(0.5)
+
+            if sentinel:
+                break
+
     def run_job(self, sentinel=False):
         """Job entry point.
 
@@ -269,7 +423,6 @@ class Client(interface.Interface):
                     cache.expire()
                     cache_check_time = time.time()
 
-            base_component = components.ComponentBase()
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
@@ -309,95 +462,27 @@ class Client(interface.Interface):
                         and cache.get(job_sha256) == self.driver.job_end
                     )
 
-                    with utils.ClientStatus(
-                        socket=self.bind_job,
-                        job_id=job_id.encode(),
+                    client_data = dict(
+                        job_id=job_id,
                         command=command,
-                        ctx=self,
-                    ) as c:
-                        if cache.get(job_parent_id) is False:
-                            self.log.error(
-                                "Parent failure %s skipping %s",
-                                job_parent_id,
-                                job_id,
-                            )
-                            status = (
-                                "Job [ {} ] was not allowed to run because"
-                                " there was a failure under this partent ID"
-                                " [ {} ]".format(job_id, job_parent_id)
-                            )
-
-                            self.log.error(status)
-                            c.info = status.encode()
-                            c.job_state = self.driver.job_failed
-
-                            if sentinel:
-                                break
-
-                            continue
-
-                        with self.timeout(
-                            time=job.get("timeout", 600), job_id=job_id
-                        ):
-                            stdout, stderr, outcome = self._job_executor(
-                                conn=c,
-                                cache=cache,
-                                info=info,
-                                job=job,
-                                job_id=job_id,
-                                job_sha256=job_sha256,
-                                cached=cache_hit,
-                                command=command,
-                            )
-
-                        if stdout:
-                            stdout = stdout.strip()
-                            if not isinstance(stdout, bytes):
-                                stdout = stdout.encode()
-                            c.stdout = stdout
-                            self.log.info(stdout)
-
-                        if stderr:
-                            stderr = stderr.strip()
-                            if not isinstance(stderr, bytes):
-                                stderr = stderr.encode()
-                            c.stderr = stderr
-                            self.log.error(stderr)
-
-                        if command == b"QUERY":
-                            c.data = json.dumps(job).encode()
-                            if stdout:
-                                c.info = stdout
-
-                        if outcome is False:
-                            state = c.job_state = self.driver.job_failed
-                            self.log.error("Job failed %s", job_id)
-                            if job_parent_id:
-                                base_component.set_cache(
-                                    cache=cache,
-                                    key=job_parent_id,
-                                    value=False,
-                                    tag="parents",
-                                )
-                        elif outcome is True:
-                            state = c.job_state = self.driver.job_end
-                            self.log.info("Job complete %s", job_id)
-                            if job_parent_id:
-                                base_component.set_cache(
-                                    cache=cache,
-                                    key=job_parent_id,
-                                    value=True,
-                                    tag="parents",
-                                )
-                        else:
-                            state = self.driver.nullbyte
-
-                    base_component.set_cache(
                         cache=cache,
-                        key=job_sha256,
-                        value=state,
-                        tag="jobs",
+                        job_parent_id=job_parent_id,
+                        sentinel=sentinel,
+                        job=job,
+                        info=info,
+                        job_sha256=job_sha256,
+                        cache_hit=cache_hit,
                     )
+
+                    if job.get("parent_async", False):
+                        if job_parent_id in self.q_manger:
+                            q = self.q_manger[job_parent_id]
+                        else:
+                            q = self.q_manger[job_parent_id] = self.get_queue
+                    else:
+                        q = self.q_manger["general"]
+
+                    q.put(client_data)
 
             if sentinel:
                 break
@@ -411,6 +496,7 @@ class Client(interface.Interface):
 
         threads = [
             self.thread(target=self.run_heartbeat),
+            self.thread(target=self.q_run_job),
             self.thread(target=self.run_job),
         ]
         self.run_threads(threads=threads)

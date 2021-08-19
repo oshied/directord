@@ -18,6 +18,8 @@ import multiprocessing
 import os
 import sys
 
+from distutils import util as dist_utils
+
 import jinja2
 import yaml
 
@@ -55,6 +57,7 @@ class Mixin:
         restrict=None,
         parent_id=None,
         return_raw=False,
+        parent_async=False,
     ):
         """Return a JSON encode object for task execution.
 
@@ -81,6 +84,8 @@ class Mixin:
         :type parent_id: String
         :param return_raw: Enable a raw return from the server.
         :type return_raw: Boolean
+        :param parent_async: Enable a parent job to run asynchronously.
+        :type parent_async: Boolean
         :returns: String
         """
 
@@ -117,6 +122,9 @@ class Mixin:
         data["skip_cache"] = ignore_cache or getattr(
             component.known_args, "skip_cache", False
         )
+
+        if parent_async:
+            data["parent_async"] = parent_async
 
         if parent_id:
             data["parent_id"] = parent_id
@@ -178,6 +186,12 @@ class Mixin:
         for orchestrate in orchestrations:
             parent_id = utils.get_uuid()
             targets = defined_targets or orchestrate.get("targets", list())
+            try:
+                parent_async = bool(
+                    dist_utils.strtobool(orchestrate.get("async", "False"))
+                )
+            except (ValueError, AttributeError):
+                parent_async = bool(orchestrate.get("async", False))
             jobs = orchestrate["jobs"]
             for job in jobs:
                 arg_vars = job.pop("vars", None)
@@ -192,6 +206,7 @@ class Mixin:
                         ignore_cache=ignore_cache,
                         parent_id=parent_id,
                         return_raw=return_raw,
+                        parent_async=parent_async,
                     )
                 )
 
