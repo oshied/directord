@@ -637,8 +637,11 @@ class Server(interface.Interface):
                         )
                 else:
                     json_data["task"] = json_data.get("task", utils.get_uuid())
+
                     if "parent_id" not in json_data:
-                        json_data["parent_id"] = json_data["task"]
+                        json_data["parent_id"] = utils.object_sha1(
+                            obj=json_data
+                        )
 
                     # Returns the message in reverse to show a return. This
                     # will be a standard client return in JSON format under

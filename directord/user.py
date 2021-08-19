@@ -196,7 +196,7 @@ class Manage(User):
                 disk=diskcache.JSONDisk,
             ) as cache:
                 cache_dict = {}
-                for item in cache:
+                for item in cache.iterkeys():
                     cache_dict[item] = cache[item]
                 print(json.dumps(cache_dict, indent=4))
                 return

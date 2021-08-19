@@ -317,7 +317,10 @@ class Client(interface.Interface):
                         command=command,
                         ctx=self,
                     ) as c:
-                        if cache.get(job_parent_id) is False:
+                        if (
+                            cache.get(job_parent_id)
+                            == self.driver.job_failed.decode()
+                        ):
                             self.log.error(
                                 "Parent failure %s skipping %s",
                                 job_parent_id,
@@ -374,25 +377,19 @@ class Client(interface.Interface):
                         if outcome is False:
                             state = c.job_state = self.driver.job_failed
                             self.log.error("Job failed %s", job_id)
-                            if job_parent_id:
-                                base_component.set_cache(
-                                    cache=cache,
-                                    key=job_parent_id,
-                                    value=False,
-                                    tag="parents",
-                                )
                         elif outcome is True:
                             state = c.job_state = self.driver.job_end
                             self.log.info("Job complete %s", job_id)
-                            if job_parent_id:
-                                base_component.set_cache(
-                                    cache=cache,
-                                    key=job_parent_id,
-                                    value=True,
-                                    tag="parents",
-                                )
                         else:
                             state = self.driver.nullbyte
+
+                    if job_parent_id:
+                        base_component.set_cache(
+                            cache=cache,
+                            key=job_parent_id,
+                            value=state,
+                            tag="parents",
+                        )
 
                     base_component.set_cache(
                         cache=cache,

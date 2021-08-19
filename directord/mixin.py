@@ -80,7 +80,7 @@ class Mixin:
         :param restrict: Restrict job execution based on a provided task
                          SHA256.
         :type restrict: List
-        :param parent_id: Set the parent UUID for execution jobs.
+        :param parent_id: Set the parent SHA1 for execution jobs.
         :type parent_id: String
         :param return_raw: Enable a raw return from the server.
         :type return_raw: Boolean
@@ -184,7 +184,7 @@ class Mixin:
 
         job_to_run = list()
         for orchestrate in orchestrations:
-            parent_id = utils.get_uuid()
+            parent_id = utils.object_sha1(obj=orchestrate)
             targets = defined_targets or orchestrate.get("targets", list())
             try:
                 parent_async = bool(
@@ -220,10 +220,11 @@ class Mixin:
                 if len(exec_str) >= 30:
                     exec_str = "{execute}...".format(execute=exec_str[:27])
                 return_data.append(
-                    "{count:<5} {verb:<13}"
+                    "{count:<5} {parent:<5} {verb:<13}"
                     " {execute:<39} {fingerprint:>13}".format(
                         count=count
                         or "\n{a}\n{b:<5}".format(a="*" * 100, b=0),
+                        parent=job["parent_id"],
                         verb=item["verb"],
                         execute=exec_str,
                         fingerprint=item["task_sha256sum"],

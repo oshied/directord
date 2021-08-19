@@ -246,6 +246,19 @@ def object_sha256(obj):
     return hashlib.sha256(json.dumps(obj).encode()).hexdigest()
 
 
+def object_sha1(obj):
+    """Return the SHA1 sum of a given object.
+
+    The object used for generating a SHA1 must be JSON compatible.
+
+    :param file_path: File path
+    :type file_path: String
+    :returns: String
+    """
+
+    return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
+
+
 def get_uuid():
     """Return a new UUID in String format.
 

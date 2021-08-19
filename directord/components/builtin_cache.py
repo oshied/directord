@@ -58,7 +58,13 @@ class Component(components.ComponentBase):
             parser=self.parser, exec_string=exec_string, arg_vars=arg_vars
         )
         cache_obj = getattr(args, cache_type)
-        data[cache_type] = dict([" ".join(cache_obj[0]).split(" ", 1)])
+        key, value = " ".join(cache_obj[0]).split(" ", 1)
+        try:
+            value = ast.literal_eval(value)
+        except ValueError:
+            pass
+
+        data[cache_type] = {key: value}
         return data
 
     def client(self, command, conn, cache, job):
