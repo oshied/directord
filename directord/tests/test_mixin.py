@@ -23,13 +23,13 @@ from directord import utils
 
 
 TEST_FINGER_PRINTS = [
-    b"\n****************************************************************************************************\n"
-    b"0     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    b"1     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    b"2     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    b"3     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    b"4     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    b"5     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    b"\n****************************************************************************************************\n"  # noqa
+    b"0     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"1     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"2     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"3     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"4     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"5     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
 ]
 
 
@@ -114,6 +114,7 @@ class TestMixin(tests.TestConnectionBase):
         result = self.mixin.format_action(
             verb="RUN", execute=self.execute, targets=["test_target"]
         )
+        sha256sum = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
         self.assertEqual(
             result,
             json.dumps(
@@ -122,7 +123,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                    "task_sha256sum": sha256sum,
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test_target"],

@@ -146,47 +146,28 @@ class Processor:
 
         self.log = logger.getLogger(name="directord")
 
-    @property
-    def get_queue(self):
-        """Return a multiprocessing queue.
-
-        :returns: Object
-        """
-
-        return multiprocessing.Queue()
-
-    @property
-    def get_manager(self):
-        """Return a multiprocessing manager object.
-
-        :returns: Object
-        """
-
-        return multiprocessing.Manager()
-
-    def run_threads(self, threads, join=True, daemon=True):
+    def run_threads(self, threads):
         """Execute process objects from an array.
 
         The array of threads are processed and started in a "daemon" mode.
         Once started the thread object is added into a cleanup array which
         is then joined.
 
+        > Each item within the threads list consists of a tuple
+          (Process(), Boolean). The boolean is used to enable or disable
+          a daemonic process.
+
         :param threads: An array of Process objects.
         :type threads: List
-        :param join: Enable or Disable process joining
-        :type join: Boolean
-        :param daemon: Enable or Disable process daemonic processes
-        :type daemon: Boolean
         """
 
-        for t in threads:
+        for t, daemon in threads:
             t.daemon = daemon
             self.processes.append(t)
             t.start()
 
-        if join:
-            for t in self.processes:
-                t.join()
+        for t in self.processes:
+            t.join()
 
     def read_in_chunks(self, file_object, chunk_size=10240):
         """Generator to read a file piece by piece.

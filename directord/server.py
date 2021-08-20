@@ -674,9 +674,9 @@ class Server(interface.Interface):
         """
 
         threads = [
-            self.thread(target=self.run_socket_server),
-            self.thread(target=self.run_heartbeat),
-            self.thread(target=self.run_interactions),
+            (self.thread(target=self.run_socket_server), True),
+            (self.thread(target=self.run_heartbeat), True),
+            (self.thread(target=self.run_interactions), True),
         ]
 
         if self.args.run_ui:
@@ -686,6 +686,6 @@ class Server(interface.Interface):
             ui_obj = ui.UI(
                 args=self.args, jobs=self.return_jobs, nodes=self.workers
             )
-            threads.append(self.thread(target=ui_obj.start_app))
+            threads.append((self.thread(target=ui_obj.start_app), True))
 
         self.run_threads(threads=threads)

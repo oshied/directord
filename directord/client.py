@@ -208,7 +208,7 @@ class Client(interface.Interface):
             self.log.info("Cache hit on %s, task skipped.", job_sha256)
             conn.info = b"job skipped"
             conn.job_state = self.driver.job_end
-            return None, None, None
+            return None, None, success
 
         return component.client(**component_kwargs)
 
@@ -293,7 +293,6 @@ class Client(interface.Interface):
                     job_sha256 = job.get(
                         "task_sha256sum", utils.object_sha256(job)
                     )
-                    self.log.info("Job received %s", job_id)
                     self.driver.socket_send(
                         socket=self.bind_job,
                         msg_id=job_id.encode(),
@@ -305,6 +304,17 @@ class Client(interface.Interface):
                     )
 
                     job_parent_id = job.get("parent_id")
+                    job_parent_sha1 = job.get("parent_sha1")
+
+                    self.log.info(
+                        "Job received: parent job UUID [ %s ],"
+                        " parent job SHA1 [ %s ], task UUID [ %s ],"
+                        " task SHA256 [ %s ]",
+                        job_parent_id,
+                        job_parent_sha1,
+                        job_id,
+                        job_sha256,
+                    )
 
                     cache_hit = (
                         cache.get(job_sha256) == self.driver.job_end.decode()
@@ -367,7 +377,9 @@ class Client(interface.Interface):
                             if not isinstance(stdout, bytes):
                                 stdout = stdout.encode()
                             c.stdout = stdout
-                            self.log.info(stdout)
+                            self.log.debug(
+                                "Job [ %s ], stdout: %s", job_id, stdout
+                            )
 
                         if stderr:
                             stderr = stderr.strip()
@@ -416,7 +428,7 @@ class Client(interface.Interface):
         """
 
         threads = [
-            self.thread(target=self.run_heartbeat),
-            self.thread(target=self.run_job),
+            (self.thread(target=self.run_heartbeat), True),
+            (self.thread(target=self.run_job), True),
         ]
         self.run_threads(threads=threads)
