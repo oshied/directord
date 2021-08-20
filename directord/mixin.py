@@ -56,6 +56,7 @@ class Mixin:
         ignore_cache=False,
         restrict=None,
         parent_id=None,
+        parent_sha1=None,
         return_raw=False,
         parent_async=False,
     ):
@@ -80,7 +81,9 @@ class Mixin:
         :param restrict: Restrict job execution based on a provided task
                          SHA256.
         :type restrict: List
-        :param parent_id: Set the parent SHA1 for execution jobs.
+        :param parent_id: Set the parent UUID for execution jobs.
+        :type parent_id: String
+        :param parent_sha1: Set the parent SHA1 for execution jobs.
         :type parent_id: String
         :param return_raw: Enable a raw return from the server.
         :type return_raw: Boolean
@@ -112,9 +115,6 @@ class Mixin:
 
         data.update(component.server(**component_kwargs))
 
-        if targets:
-            data["targets"] = targets
-
         data["timeout"] = getattr(component.known_args, "timeout", 600)
         data["run_once"] = getattr(component.known_args, "run_once", False)
         data["task_sha256sum"] = utils.object_sha256(obj=data)
@@ -123,11 +123,17 @@ class Mixin:
             component.known_args, "skip_cache", False
         )
 
+        if targets:
+            data["targets"] = targets
+
         if parent_async:
             data["parent_async"] = parent_async
 
         if parent_id:
             data["parent_id"] = parent_id
+
+        if parent_sha1:
+            data["parent_sha1"] = parent_sha1
 
         if restrict:
             data["restrict"] = restrict
@@ -184,7 +190,8 @@ class Mixin:
 
         job_to_run = list()
         for orchestrate in orchestrations:
-            parent_id = utils.object_sha1(obj=orchestrate)
+            parent_sha1 = utils.object_sha1(obj=orchestrate)
+            parent_id = utils.get_uuid()
             targets = defined_targets or orchestrate.get("targets", list())
             try:
                 parent_async = bool(
@@ -205,6 +212,7 @@ class Mixin:
                         restrict=restrict,
                         ignore_cache=ignore_cache,
                         parent_id=parent_id,
+                        parent_sha1=parent_sha1,
                         return_raw=return_raw,
                         parent_async=parent_async,
                     )
@@ -220,11 +228,11 @@ class Mixin:
                 if len(exec_str) >= 30:
                     exec_str = "{execute}...".format(execute=exec_str[:27])
                 return_data.append(
-                    "{count:<5} {parent:<5} {verb:<13}"
+                    "{count:<5} {parent:<44} {verb:<13}"
                     " {execute:<39} {fingerprint:>13}".format(
                         count=count
                         or "\n{a}\n{b:<5}".format(a="*" * 100, b=0),
-                        parent=job["parent_id"],
+                        parent=job["parent_sha1"],
                         verb=item["verb"],
                         execute=exec_str,
                         fingerprint=item["task_sha256sum"],

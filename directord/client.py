@@ -336,6 +336,13 @@ class Client(interface.Interface):
                             c.info = status.encode()
                             c.job_state = self.driver.job_failed
 
+                            base_component.set_cache(
+                                cache=cache,
+                                key=job_sha256,
+                                value=self.driver.job_failed,
+                                tag="jobs",
+                            )
+
                             if sentinel:
                                 break
 
