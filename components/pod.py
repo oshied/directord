@@ -156,12 +156,9 @@ class Component(components.ComponentBase):
         data["socket_path"] = self.known_args.socket_path
         return data
 
-    def client(self, cache, conn, job):
+    def client(self, cache, job):
         """Run pod command operation.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param command: Work directory path.
         :type command: String
         :param job: Information containing the original job specification.
@@ -169,12 +166,12 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         if not AVAILABLE_PODMAN:
             return (
                 None,
                 "The required podman-py library is not installed",
                 False,
+                None,
             )
         try:
             with PodmanPod(socket=job["socket_path"]) as p:
@@ -184,9 +181,9 @@ class Component(components.ComponentBase):
                     if data:
                         data = json.dumps(data)
                     if status:
-                        return data, None, status
+                        return data, None, status, None
 
-                    return None, data, status
+                    return None, data, status, None
 
                 return (
                     None,
@@ -195,10 +192,11 @@ class Component(components.ComponentBase):
                         "  a function".format(action=job["pod_action"])
                     ),
                     False,
+                    None,
                 )
         except Exception as e:
             self.log.critical(str(e))
-            return None, traceback.format_exc(), False
+            return None, traceback.format_exc(), False, None
 
 
 class PodmanConnect:

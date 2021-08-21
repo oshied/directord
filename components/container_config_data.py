@@ -89,20 +89,15 @@ class Component(components.ComponentBase):
         data.update(vars(self.known_args))
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run cache echo command operation.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
         :type job: Dictionary
         :returns: tuple
         """
-
-        super().client(conn=conn, cache=cache, job=job)
 
         # Set parameters
         config_path = job["config_path"]
@@ -134,7 +129,7 @@ class Component(components.ComponentBase):
             self.log.debug("%s does not exists, skipping step", config_path)
             configs = dict()
 
-        return configs, None, True
+        return configs, None, True, None
 
     def _slurp(self, path):
         """Slurps a file and return its content.

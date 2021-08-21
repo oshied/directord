@@ -44,12 +44,9 @@ class Component(components.ComponentBase):
         data["echo"] = self.known_args.echo
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run cache echo command operation.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -57,6 +54,5 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         print(job["echo"])
-        return job["echo"], None, True
+        return job["echo"], None, True, None

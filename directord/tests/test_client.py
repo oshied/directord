@@ -171,7 +171,7 @@ class TestClient(tests.TestDriverBase):
         mock_diskcache,
         mock_job_executor,
     ):
-        mock_job_executor.return_value = [b"", b"", True]
+        mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
             "task_sha256sum": "YYY",
@@ -219,7 +219,7 @@ class TestClient(tests.TestDriverBase):
         mock_diskcache,
         mock_job_executor,
     ):
-        mock_job_executor.return_value = [b"", b"", True]
+        mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
             "task_sha256sum": "YYY",
@@ -267,7 +267,7 @@ class TestClient(tests.TestDriverBase):
         mock_diskcache,
         mock_job_executor,
     ):
-        mock_job_executor.return_value = [b"", b"", True]
+        mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
             "task_sha256sum": "YYY",
@@ -305,7 +305,7 @@ class TestClient(tests.TestDriverBase):
         mock_diskcache,
         mock_job_executor,
     ):
-        mock_job_executor.return_value = [b"", b"", True]
+        mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
             "task_sha256sum": "YYY",
@@ -353,7 +353,7 @@ class TestClient(tests.TestDriverBase):
         mock_diskcache,
         mock_job_executor,
     ):
-        mock_job_executor.return_value = [b"", b"", True]
+        mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
             "task_sha256sum": "YYY",
@@ -406,7 +406,7 @@ class TestClient(tests.TestDriverBase):
         mock_diskcache,
         mock_job_executor,
     ):
-        mock_job_executor.return_value = [b"", b"", False]
+        mock_job_executor.return_value = [b"", b"", False, None]
         job_def = {
             "task": "XXX",
             "task_sha256sum": "YYY",

@@ -61,14 +61,11 @@ class Component(components.ComponentBase):
         data["workdir"] = self.known_args.workdir
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run file work directory operation.
 
         Command operations are rendered with cached data from the args dict.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -76,7 +73,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         workdir = self.blueprinter(
             content=job["workdir"], values=cache.get("args")
         )
@@ -123,4 +119,4 @@ class Component(components.ComponentBase):
             if mode:
                 os.chmod(workdir, mode)
 
-            return update_info, stderr, outcome
+            return update_info, stderr, outcome, None

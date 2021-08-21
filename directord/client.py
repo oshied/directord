@@ -182,7 +182,7 @@ class Client(interface.Interface):
 
         self.log.debug("Running component:%s", command.decode())
 
-        component_kwargs = dict(conn=conn, cache=cache, job=job)
+        component_kwargs = dict(cache=cache, job=job)
 
         if command in [b"ARG", b"ENV"]:
             component_name = b"cache"
@@ -191,6 +191,8 @@ class Client(interface.Interface):
             component_name = b"transfer"
             component_kwargs["source_file"] = info
             component_kwargs["job_id"] = job_id
+            # Remove this when we can separate transfer's connection dep.
+            component_kwargs["conn"] = conn
         else:
             component_name = command
 
@@ -200,7 +202,7 @@ class Client(interface.Interface):
         )
         if not success:
             self.log.warning(component)
-            return None, None, success
+            return None, None, success, None
 
         if cached and component.cacheable:
             # TODO(cloudnull): Figure out how to skip cache when file
@@ -208,8 +210,9 @@ class Client(interface.Interface):
             self.log.info("Cache hit on %s, task skipped.", job_sha256)
             conn.info = b"job skipped"
             conn.job_state = self.driver.job_end
-            return None, None, success
+            return None, None, success, None
 
+        conn.start_processing()
         return component.client(**component_kwargs)
 
     def run_job(self, sentinel=False):
@@ -361,7 +364,12 @@ class Client(interface.Interface):
                         with self.timeout(
                             time=job.get("timeout", 600), job_id=job_id
                         ):
-                            stdout, stderr, outcome = self._job_executor(
+                            (
+                                stdout,
+                                stderr,
+                                outcome,
+                                return_info,
+                            ) = self._job_executor(
                                 conn=c,
                                 cache=cache,
                                 info=info,
@@ -388,11 +396,6 @@ class Client(interface.Interface):
                             c.stderr = stderr
                             self.log.error(stderr)
 
-                        if command == b"QUERY":
-                            c.data = json.dumps(job).encode()
-                            if stdout:
-                                c.info = stdout
-
                         if outcome is False:
                             state = c.job_state = self.driver.job_failed
                             self.log.error("Job failed %s", job_id)
@@ -401,6 +404,14 @@ class Client(interface.Interface):
                             self.log.info("Job complete %s", job_id)
                         else:
                             state = self.driver.nullbyte
+
+                        if return_info:
+                            c.info = return_info
+
+                        if command == b"QUERY":
+                            c.data = json.dumps(job).encode()
+                            if stdout:
+                                c.info = stdout
 
                     if job_parent_id:
                         base_component.set_cache(
