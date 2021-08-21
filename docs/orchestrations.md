@@ -15,10 +15,19 @@ The values available within an orchestration file are `targets` and `jobs`.
 
 * `jobs` is an array of hashes.
 
+* `async` **Optional** is a boolean. This allow an orchestration to run
+  asynchronously. This will instruct all jobs to run in an independent queue
+  within the targets for a given orchestration.
+
+##### Example Orchestrations
+
+This is the basic, syntax.
+
 ``` yaml
 ---
 - targets: []
   jobs: []
+  async: False
 ```
 
 Within orchestration file the "targets" key is optional. If this key is
@@ -54,7 +63,7 @@ cache.
   `--restrict` and `--ignore-cache`. These option provide for the ability to
   replay specific tasks or forcefully ignore the client side cache.
 
-### Example Orchestration file
+#### Example Orchestration file
 
 This example orchestration file will copy the local client ssh keys from the
 directory `/home/centos/.ssh` to all nodes within the clister. Then, on the

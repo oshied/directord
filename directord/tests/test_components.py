@@ -307,7 +307,7 @@ class TestComponents(unittest.TestCase):
         )
         self.assertEqual(stdout, None)
         self.assertEqual(stderr, None)
-        self.assertEqual(outcome, None)
+        self.assertEqual(outcome, True)
         mock_log_debug.assert_called()
         mock_log_info.assert_called()
 

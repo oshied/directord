@@ -23,12 +23,13 @@ from directord import utils
 
 
 TEST_FINGER_PRINTS = [
-    b"\n****************************************************************************************************\n0     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"1     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"2     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"3     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"4     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"5     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"\n****************************************************************************************************\n"  # noqa
+    b"0     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"1     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"2     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"3     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"4     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"5     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
 ]
 
 
@@ -113,18 +114,19 @@ class TestMixin(tests.TestConnectionBase):
         result = self.mixin.format_action(
             verb="RUN", execute=self.execute, targets=["test_target"]
         )
+        sha256sum = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
         self.assertEqual(
             result,
             json.dumps(
                 {
                     "verb": "RUN",
                     "command": "long '{{ jinja }}' quoted string string",
-                    "targets": ["test_target"],
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha256sum": sha256sum,
                     "return_raw": False,
                     "skip_cache": False,
+                    "targets": ["test_target"],
                 }
             ),
         )
@@ -331,13 +333,14 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "command": "command3",
-                    "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
                     "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
+                    "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
                 }
             ),
         )
@@ -368,17 +371,18 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "command": "command3",
-                    "targets": [
-                        "test-override1",
-                        "test-override2",
-                        "test-override3",
-                    ],
                     "timeout": 600,
                     "run_once": False,
                     "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
+                    "targets": [
+                        "test-override1",
+                        "test-override2",
+                        "test-override3",
+                    ],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
                 }
             ),
         )
@@ -402,13 +406,14 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "command": "command3",
-                    "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
                     "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
+                    "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
                     "restrict": ["a", "b", "c"],
                 }
             ),
@@ -435,13 +440,14 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "command": "command3",
-                    "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
                     "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
+                    "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
                 }
             ),
         )
@@ -467,13 +473,14 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "command": "command3",
-                    "targets": ["test1", "test2", "test3"],
                     "timeout": 600,
                     "run_once": False,
                     "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": True,
                     "skip_cache": False,
+                    "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
                 }
             ),
         )
@@ -533,13 +540,14 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "command": "command3",
-                    "targets": ["test"],
                     "timeout": 600,
                     "run_once": False,
                     "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
+                    "targets": ["test"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
                 }
             ),
         )
@@ -562,12 +570,12 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "command": "command 1",
-                    "targets": ["test"],
                     "timeout": 600,
                     "run_once": False,
                     "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
+                    "targets": ["test"],
                 }
             ),
         )

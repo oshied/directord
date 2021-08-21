@@ -308,6 +308,11 @@ def _args(exec_args=None):
         action="store_true",
         help="Generate encryption keys for Curve authentication.",
     )
+    manage_group.add_argument(
+        "--dump-cache",
+        action="store_true",
+        help="Dump the local cache to stdout.",
+    )
     parser_bootstrap = subparsers.add_parser(
         "bootstrap",
         help=(
@@ -359,15 +364,21 @@ def _args(exec_args=None):
 class SystemdInstall:
     """Simple system service unit creation class."""
 
-    def __init__(self, group="root"):
+    def __init__(self, group="root", force=False):
         """Class to create systemd service units.
 
         This class is used with the directord-server-systemd and
         directord-client-systemd entrypoints.
+
+        :param group: Name of the group used within the systemd service units.
+        :type group: String
+        :param force: Force install systemd service units.
+        :type force: Boolean
         """
 
         self.config_path = "/etc/directord"
         self.socket_group = group
+        self.force = force
 
     def path_setup(self):
         """Create the configuration path and basic configuration file."""
@@ -390,7 +401,7 @@ class SystemdInstall:
         self.path_setup()
         base = os.path.dirname(directord.__file__)
         service_file_path = "/etc/systemd/system/{}".format(service_file)
-        if os.path.exists(service_file_path):
+        if os.path.exists(service_file_path) and not self.force:
             print(
                 "[-] Service file was not created because it already exists."
             )
@@ -435,13 +446,18 @@ def _systemd_loader():
     )
     parser.add_argument(
         "--group",
-        help="Server group. Default: %(default)s",
+        help="Server group. Default: %(default)s.",
         metavar="STRING",
         default="root",
         type=str,
     )
+    parser.add_argument(
+        "--force",
+        help="Force install systemd service unit file.",
+        action="store_true",
+    )
     args = parser.parse_args()
-    return SystemdInstall(group=args.group)
+    return SystemdInstall(group=args.group, force=args.force)
 
 
 def _systemd_server():

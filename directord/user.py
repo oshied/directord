@@ -17,6 +17,8 @@ import json
 import os
 import time
 
+import diskcache
+
 import directord
 
 from directord import interface
@@ -184,6 +186,20 @@ class Manage(User):
             self.args, "generate_keys", False
         ):
             return self.generate_certificates()
+        elif override == "dump-cache" or getattr(
+            self.args, "dump_cache", False
+        ):
+            manage = "dump-cache"
+            with diskcache.Cache(
+                self.args.cache_path,
+                tag_index=True,
+                disk=diskcache.JSONDisk,
+            ) as cache:
+                cache_dict = {}
+                for item in cache.iterkeys():
+                    cache_dict[item] = cache[item]
+                print(json.dumps(cache_dict, indent=4))
+                return
         else:
             raise SystemExit("No known management function was defined.")
 

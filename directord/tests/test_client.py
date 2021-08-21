@@ -256,7 +256,6 @@ class TestClient(tests.TestDriverBase):
 
     @patch("directord.client.Client._job_executor", autospec=True)
     @patch("diskcache.Cache", autospec=True)
-    @patch("logging.Logger.error", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("os.makedirs", autospec=True)
     @patch("time.time", autospec=True)
@@ -265,7 +264,6 @@ class TestClient(tests.TestDriverBase):
         mock_time,
         mock_makedirs,
         mock_log_info,
-        mock_log_error,
         mock_diskcache,
         mock_job_executor,
     ):
@@ -293,7 +291,6 @@ class TestClient(tests.TestDriverBase):
         self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
         mock_log_info.assert_called()
-        mock_log_error.assert_called()
 
     @patch("directord.client.Client._job_executor", autospec=True)
     @patch("diskcache.Cache", autospec=True)
@@ -326,7 +323,7 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
-        cache.set(key="YYY", value=self.mock_driver.job_end)
+        cache.set(key="YYY", value=self.mock_driver.job_end.decode())
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
@@ -375,7 +372,7 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
-        cache.set(key="YYY", value=self.mock_driver.job_end)
+        cache.set(key="YYY", value=self.mock_driver.job_end.decode())
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
@@ -391,8 +388,8 @@ class TestClient(tests.TestDriverBase):
             cached=True,
             command=b"RUN",
         )
-        self.assertEqual(cache.get("ZZZ"), True)
-        self.assertEqual(cache.get("YYY"), self.mock_driver.job_end)
+        self.assertEqual(cache.get("ZZZ"), "\x04")
+        self.assertEqual(cache.get("YYY"), self.mock_driver.job_end.decode())
 
     @patch("directord.client.Client._job_executor", autospec=True)
     @patch("diskcache.Cache", autospec=True)
@@ -444,7 +441,9 @@ class TestClient(tests.TestDriverBase):
             command=b"RUN",
         )
 
-        self.assertEqual(cache.get("YYY"), self.mock_driver.job_failed)
+        self.assertEqual(
+            cache.get("YYY"), self.mock_driver.job_failed.decode()
+        )
 
     @patch("directord.client.Client.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads):

@@ -208,7 +208,7 @@ class Client(interface.Interface):
             self.log.info("Cache hit on %s, task skipped.", job_sha256)
             conn.info = b"job skipped"
             conn.job_state = self.driver.job_end
-            return None, None, None
+            return None, None, success
 
         return component.client(**component_kwargs)
 
@@ -274,7 +274,9 @@ class Client(interface.Interface):
                 bind=self.bind_job, constant=poller_interval
             ):
                 with diskcache.Cache(
-                    self.args.cache_path, tag_index=True
+                    self.args.cache_path,
+                    tag_index=True,
+                    disk=diskcache.JSONDisk,
                 ) as cache:
                     poller_interval, poller_time = 64, time.time()
                     (
@@ -291,7 +293,6 @@ class Client(interface.Interface):
                     job_sha256 = job.get(
                         "task_sha256sum", utils.object_sha256(job)
                     )
-                    self.log.info("Job received %s", job_id)
                     self.driver.socket_send(
                         socket=self.bind_job,
                         msg_id=job_id.encode(),
@@ -303,10 +304,21 @@ class Client(interface.Interface):
                     )
 
                     job_parent_id = job.get("parent_id")
+                    job_parent_sha1 = job.get("parent_sha1")
+
+                    self.log.info(
+                        "Job received: parent job UUID [ %s ],"
+                        " parent job SHA1 [ %s ], task UUID [ %s ],"
+                        " task SHA256 [ %s ]",
+                        job_parent_id,
+                        job_parent_sha1,
+                        job_id,
+                        job_sha256,
+                    )
 
                     cache_hit = (
-                        not job_skip_cache
-                        and cache.get(job_sha256) == self.driver.job_end
+                        cache.get(job_sha256) == self.driver.job_end.decode()
+                        and not job_skip_cache
                     )
 
                     with utils.ClientStatus(
@@ -315,7 +327,10 @@ class Client(interface.Interface):
                         command=command,
                         ctx=self,
                     ) as c:
-                        if cache.get(job_parent_id) is False:
+                        if (
+                            cache.get(job_parent_id)
+                            == self.driver.job_failed.decode()
+                        ):
                             self.log.error(
                                 "Parent failure %s skipping %s",
                                 job_parent_id,
@@ -330,6 +345,13 @@ class Client(interface.Interface):
                             self.log.error(status)
                             c.info = status.encode()
                             c.job_state = self.driver.job_failed
+
+                            base_component.set_cache(
+                                cache=cache,
+                                key=job_sha256,
+                                value=self.driver.job_failed,
+                                tag="jobs",
+                            )
 
                             if sentinel:
                                 break
@@ -355,7 +377,9 @@ class Client(interface.Interface):
                             if not isinstance(stdout, bytes):
                                 stdout = stdout.encode()
                             c.stdout = stdout
-                            self.log.info(stdout)
+                            self.log.debug(
+                                "Job [ %s ], stdout: %s", job_id, stdout
+                            )
 
                         if stderr:
                             stderr = stderr.strip()
@@ -372,25 +396,19 @@ class Client(interface.Interface):
                         if outcome is False:
                             state = c.job_state = self.driver.job_failed
                             self.log.error("Job failed %s", job_id)
-                            if job_parent_id:
-                                base_component.set_cache(
-                                    cache=cache,
-                                    key=job_parent_id,
-                                    value=False,
-                                    tag="parents",
-                                )
                         elif outcome is True:
                             state = c.job_state = self.driver.job_end
                             self.log.info("Job complete %s", job_id)
-                            if job_parent_id:
-                                base_component.set_cache(
-                                    cache=cache,
-                                    key=job_parent_id,
-                                    value=True,
-                                    tag="parents",
-                                )
                         else:
                             state = self.driver.nullbyte
+
+                    if job_parent_id:
+                        base_component.set_cache(
+                            cache=cache,
+                            key=job_parent_id,
+                            value=state,
+                            tag="parents",
+                        )
 
                     base_component.set_cache(
                         cache=cache,
@@ -410,7 +428,7 @@ class Client(interface.Interface):
         """
 
         threads = [
-            self.thread(target=self.run_heartbeat),
-            self.thread(target=self.run_job),
+            (self.thread(target=self.run_heartbeat), True),
+            (self.thread(target=self.run_job), True),
         ]
         self.run_threads(threads=threads)

@@ -153,12 +153,16 @@ class Processor:
         Once started the thread object is added into a cleanup array which
         is then joined.
 
+        > Each item within the threads list consists of a tuple
+          (Process(), Boolean). The boolean is used to enable or disable
+          a daemonic process.
+
         :param threads: An array of Process objects.
         :type threads: List
         """
 
-        for t in threads:
-            t.daemon = True
+        for t, daemon in threads:
+            t.daemon = daemon
             self.processes.append(t)
             t.start()
 
