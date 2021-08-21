@@ -67,15 +67,15 @@ class Component(components.ComponentBase):
         data[cache_type] = {key: value}
         return data
 
-    def client(self, command, cache, job):
+    def client(self, cache, job, command):
         """Run cache command operation.
 
-        :param command: Work directory path.
-        :type command: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
         :type job: Dictionary
+        :param command: Work directory path.
+        :type command: String
         :returns: tuple
         """
 

@@ -42,6 +42,10 @@ class Client(interface.Interface):
 
         self.heartbeat_failure_interval = 2
         self.bind_heatbeat = None
+        self.q_async = self.get_queue()
+        self.q_general = self.get_queue()
+        self.q_return = self.get_queue()
+        self.base_component = components.ComponentBase()
 
     def update_heartbeat(self):
         with open("/proc/uptime", "r") as f:
@@ -103,8 +107,6 @@ class Client(interface.Interface):
                         "Received heartbeat reset command. Connection"
                         " resetting."
                     )
-                    dir(self.driver.heartbeat_reset)
-                    print(self.driver.heartbeat_reset)
                     (
                         heartbeat_at,
                         self.bind_heatbeat,
@@ -182,7 +184,7 @@ class Client(interface.Interface):
 
         self.log.debug("Running component:%s", command.decode())
 
-        component_kwargs = dict(cache=cache, job=job)
+        component_kwargs = dict(cache=None, job=job)
 
         if command in [b"ARG", b"ENV"]:
             component_name = b"cache"
@@ -190,9 +192,6 @@ class Client(interface.Interface):
         elif command in [b"ADD", b"COPY"]:
             component_name = b"transfer"
             component_kwargs["source_file"] = info
-            component_kwargs["job_id"] = job_id
-            # Remove this when we can separate transfer's connection dep.
-            component_kwargs["conn"] = conn
         else:
             component_name = command
 
@@ -202,18 +201,123 @@ class Client(interface.Interface):
         )
         if not success:
             self.log.warning(component)
-            return None, None, success, None
+            return None, None, success, None, job, command
 
         if cached and component.cacheable:
-            # TODO(cloudnull): Figure out how to skip cache when file
-            #                  transfering.
             self.log.info("Cache hit on %s, task skipped.", job_sha256)
             conn.info = b"job skipped"
             conn.job_state = self.driver.job_end
-            return None, None, success, None
+            return None, None, success, None, job, command
 
         conn.start_processing()
-        return component.client(**component_kwargs)
+        if job.get("parent_async") and component.asyncable:
+            self.log.debug("Running [ %s ] in parent async", job_id)
+            self.q_async.put((component_kwargs, component_name, command))
+            conn.info = b"job queued"
+        elif component.asyncable:
+            self.log.debug("Running [ %s ] in general queue", job_id)
+            self.q_general.put((component_kwargs, component_name, command))
+            conn.info = b"job queued"
+        else:
+            # TODO REVISE THIS - ITS BROKEN
+            self.log.debug("Running [ %s ] blocking", job_id)
+            with self.timeout(time=job.get("timeout", 600), job_id=job_id):
+                component_kwargs["cache"] = cache
+                return component.client(**component_kwargs) + (job, command)
+
+    def job_q_component_run(
+        self, component_kwargs, component_name, command, lock
+    ):
+        locked = False
+        if component_name == b"transfer":
+            component_kwargs["driver"] = self.driver
+            lock.acquire()
+            locked = True
+
+        _, _, component = directord.component_import(
+            component=component_name.decode().lower(),
+            job_id=component_kwargs["job"]["job_id"],
+        )
+        with self.timeout(
+            time=component_kwargs["job"].get("timeout", 600),
+            job_id=component_kwargs["job"]["job_id"],
+        ):
+            with diskcache.Cache(
+                self.args.cache_path,
+                tag_index=True,
+                disk=diskcache.JSONDisk,
+            ) as cache:
+                component_kwargs["cache"] = cache
+                try:
+                    self.q_return.put(
+                        component.client(**component_kwargs)
+                        + (component_kwargs["job"], command)
+                    )
+                finally:
+                    if locked:
+                        lock.release()
+
+    def job_q_processor(self, queue, processes=1):
+        lock = self.get_lock()
+        while True:
+            threads = list()
+            for _ in range(processes):
+                try:
+                    (
+                        component_kwargs,
+                        component_name,
+                        command,
+                    ) = queue.get_nowait()
+                except Exception:
+                    time.sleep(0.1)
+                else:
+                    t = self.thread(
+                        target=self.job_q_component_run,
+                        args=(
+                            component_kwargs,
+                            component_name,
+                            command,
+                            lock,
+                        ),
+                    )
+                    t.daemon = True
+                    t.start()
+                    threads.append(t)
+                    self.log.debug("Worker threads: %s", len(threads))
+            else:
+                for t in threads:
+                    t.join()
+
+    def job_q_results(self):
+        try:
+            (
+                stdout,
+                stderr,
+                outcome,
+                return_info,
+                job,
+                command,
+            ) = self.q_return.get_nowait()
+        except Exception:
+            pass
+        else:
+            self.log.debug("Found job results for job [ %s ].", job["job_id"])
+            with utils.ClientStatus(
+                socket=self.bind_job,
+                job_id=job["job_id"].encode(),
+                command=command,
+                ctx=self,
+            ) as c:
+                c.info = b"job finished"
+                self._set_job_status(
+                    stdout,
+                    stderr,
+                    outcome,
+                    return_info,
+                    job,
+                    command,
+                    c,
+                )
 
     def run_job(self, sentinel=False):
         """Job entry point.
@@ -232,7 +336,6 @@ class Client(interface.Interface):
         """
 
         self.bind_job = self.driver.job_connect()
-        self.bind_transfer = self.driver.transfer_connect()
         poller_time = time.time()
         poller_interval = 128
         cache_check_time = time.time()
@@ -240,6 +343,8 @@ class Client(interface.Interface):
         # Ensure that the cache path exists before executing.
         os.makedirs(self.args.cache_path, exist_ok=True)
         while True:
+            self.job_q_results()
+
             if time.time() > poller_time + 64:
                 if poller_interval != 2048:
                     self.log.info("Directord client entering idle state.")
@@ -272,7 +377,6 @@ class Client(interface.Interface):
                     cache.expire()
                     cache_check_time = time.time()
 
-            base_component = components.ComponentBase()
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
@@ -292,8 +396,8 @@ class Client(interface.Interface):
                         _,
                     ) = self.driver.socket_recv(socket=self.bind_job)
                     job = json.loads(data.decode())
-                    job_id = job.get("task", utils.get_uuid())
-                    job_sha256 = job.get(
+                    job["job_id"] = job_id = job.get("task", utils.get_uuid())
+                    job["job_sha256"] = job_sha256 = job.get(
                         "task_sha256sum", utils.object_sha256(job)
                     )
                     self.driver.socket_send(
@@ -349,7 +453,7 @@ class Client(interface.Interface):
                             c.info = status.encode()
                             c.job_state = self.driver.job_failed
 
-                            base_component.set_cache(
+                            self.base_component.set_cache(
                                 cache=cache,
                                 key=job_sha256,
                                 value=self.driver.job_failed,
@@ -361,75 +465,81 @@ class Client(interface.Interface):
 
                             continue
 
-                        with self.timeout(
-                            time=job.get("timeout", 600), job_id=job_id
-                        ):
-                            (
-                                stdout,
-                                stderr,
-                                outcome,
-                                return_info,
-                            ) = self._job_executor(
-                                conn=c,
-                                cache=cache,
-                                info=info,
-                                job=job,
-                                job_id=job_id,
-                                job_sha256=job_sha256,
-                                cached=cache_hit,
-                                command=command,
-                            )
-
-                        if stdout:
-                            stdout = stdout.strip()
-                            if not isinstance(stdout, bytes):
-                                stdout = stdout.encode()
-                            c.stdout = stdout
-                            self.log.debug(
-                                "Job [ %s ], stdout: %s", job_id, stdout
-                            )
-
-                        if stderr:
-                            stderr = stderr.strip()
-                            if not isinstance(stderr, bytes):
-                                stderr = stderr.encode()
-                            c.stderr = stderr
-                            self.log.error(stderr)
-
-                        if outcome is False:
-                            state = c.job_state = self.driver.job_failed
-                            self.log.error("Job failed %s", job_id)
-                        elif outcome is True:
-                            state = c.job_state = self.driver.job_end
-                            self.log.info("Job complete %s", job_id)
-                        else:
-                            state = self.driver.nullbyte
-
-                        if return_info:
-                            c.info = return_info
-
-                        if command == b"QUERY":
-                            c.data = json.dumps(job).encode()
-                            if stdout:
-                                c.info = stdout
-
-                    if job_parent_id:
-                        base_component.set_cache(
+                        _job_exec = self._job_executor(
+                            conn=c,
                             cache=cache,
-                            key=job_parent_id,
-                            value=state,
-                            tag="parents",
+                            info=info,
+                            job=job,
+                            job_id=job_id,
+                            job_sha256=job_sha256,
+                            cached=cache_hit,
+                            command=command,
                         )
 
-                    base_component.set_cache(
-                        cache=cache,
-                        key=job_sha256,
-                        value=state,
-                        tag="jobs",
-                    )
+                        if _job_exec is None:
+                            c.job_state = self.driver.job_processing
+                        else:
+                            self._set_job_status(
+                                *_job_exec,
+                                c,
+                            )
 
             if sentinel:
                 break
+
+    def _set_job_status(
+        self, stdout, stderr, outcome, return_info, job, command, c
+    ):
+        if stdout:
+            stdout = stdout.strip()
+            if not isinstance(stdout, bytes):
+                stdout = stdout.encode()
+            c.stdout = stdout
+            self.log.debug("Job [ %s ], stdout: %s", job["job_id"], stdout)
+
+        if stderr:
+            stderr = stderr.strip()
+            if not isinstance(stderr, bytes):
+                stderr = stderr.encode()
+            c.stderr = stderr
+            self.log.error(stderr)
+
+        if outcome is False:
+            state = c.job_state = self.driver.job_failed
+            self.log.error("Job failed %s", job["job_id"])
+        elif outcome is True:
+            state = c.job_state = self.driver.job_end
+            self.log.info("Job complete %s", job["job_id"])
+        else:
+            state = self.driver.nullbyte
+
+        if return_info:
+            c.info = return_info
+
+        if command == b"QUERY":
+            c.data = json.dumps(job).encode()
+            if stdout:
+                c.info = stdout
+
+        with diskcache.Cache(
+            self.args.cache_path,
+            tag_index=True,
+            disk=diskcache.JSONDisk,
+        ) as cache:
+            if job["parent_id"]:
+                self.base_component.set_cache(
+                    cache=cache,
+                    key=job["parent_id"],
+                    value=state,
+                    tag="parents",
+                )
+
+            self.base_component.set_cache(
+                cache=cache,
+                key=job["job_sha256"],
+                value=state,
+                tag="jobs",
+            )
 
     def worker_run(self):
         """Run all work related threads.
@@ -441,5 +551,21 @@ class Client(interface.Interface):
         threads = [
             (self.thread(target=self.run_heartbeat), True),
             (self.thread(target=self.run_job), True),
+            (
+                self.thread(
+                    target=self.job_q_processor, args=(self.q_general,)
+                ),
+                False,
+            ),
+            (
+                self.thread(
+                    target=self.job_q_processor,
+                    args=(
+                        self.q_async,
+                        4,
+                    ),
+                ),
+                False,
+            ),
         ]
         self.run_threads(threads=threads)

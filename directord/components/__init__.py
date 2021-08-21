@@ -42,6 +42,7 @@ class ComponentBase:
         self.known_args = None
         self.unknown_args = None
         self.cacheable = True  # Enables|Disables component caching
+        self.asyncable = True  # Enables|Disables component async
 
     @staticmethod
     def run_command(
