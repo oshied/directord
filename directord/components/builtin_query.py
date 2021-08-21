@@ -56,12 +56,9 @@ class Component(components.ComponentBase):
         data["query"] = self.known_args.query
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run query command operation.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -69,11 +66,10 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         args = cache.get("args")
         if args:
             query = json.dumps(args.get(job["query"]))
         else:
             query = None
 
-        return query, None, True
+        return query, None, True, None

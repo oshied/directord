@@ -50,14 +50,11 @@ class Component(components.ComponentBase):
 
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run file command operation.
 
         Command operations are rendered with cached data from the args dict.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -65,18 +62,16 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         stdout_arg = job.get("stdout_arg")
         command = self.blueprinter(
             content=job["command"], values=cache.get("args")
         )
         if not command:
-            return None, None, False
+            return None, None, False, None
 
         stdout, stderr, outcome = self.run_command(
             command=command, env=cache.get("envs")
         )
-        conn.info = command.encode()
 
         if stdout_arg and stdout:
             clean_info = stdout.decode().strip()
@@ -88,4 +83,4 @@ class Component(components.ComponentBase):
                 tag="args",
             )
 
-        return stdout, stderr, outcome
+        return stdout, stderr, outcome, command.encode()

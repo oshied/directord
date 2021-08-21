@@ -218,10 +218,9 @@ class Component(components.ComponentBase):
         data["echo"] = self.known_args.echo
         return data
 
-    def client(self, conn, cache, job):
-        super().client(conn=conn)
+    def client(self, cache, job):
         print(job["echo"])
-        return job["echo"], None, True
+        return job["echo"], None, True, None
 ```
 
 To build a component, only three methods are required. `args`, `server`, `client`.

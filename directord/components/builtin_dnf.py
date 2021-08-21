@@ -70,14 +70,11 @@ class Component(components.ComponentBase):
 
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run file command operation.
 
         Command operations are rendered with cached data from the args dict.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -85,7 +82,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         state = job.get("state")
         clear = job.get("clear")
 
@@ -113,7 +109,7 @@ class Component(components.ComponentBase):
         packages = job.get("packages")
 
         if not packages:
-            return None, None, False
+            return None, None, False, None
 
         to_remove = []
         to_install = []
@@ -160,4 +156,4 @@ class Component(components.ComponentBase):
             job_stdout.append(stdout)
             job_stderr.append(stderr)
 
-        return b"".join(job_stdout), b"".join(job_stderr), outcome
+        return b"".join(job_stdout), b"".join(job_stderr), outcome, None

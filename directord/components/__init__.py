@@ -328,21 +328,18 @@ class ComponentBase:
             parser=self.parser, exec_string=exec_string, arg_vars=arg_vars
         )
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Client operation.
 
         Command operations are rendered with cached data from the args dict.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
         :type job: Dictionary
         """
 
-        conn.start_processing()
+        pass
 
     def close(self):
         """Close a component."""

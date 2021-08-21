@@ -109,7 +109,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         file_to = job["file_to"]
         user = job.get("user")
         group = job.get("group")
@@ -133,8 +132,8 @@ class Component(components.ComponentBase):
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
             ):
-                return utils.file_sha256(file_to), None, None
-            return info, None, True
+                return utils.file_sha256(file_to), None, None, None
+            return info, None, True, None
         else:
             self.log.debug(
                 "Requesting transfer of source file:%s", source_file
@@ -169,7 +168,7 @@ class Component(components.ComponentBase):
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
             self.log.critical(str(e))
-            return None, traceback.format_exc(), False
+            return None, traceback.format_exc(), False, None
 
         if blueprint and not self.file_blueprinter(
             cache=cache, file_to=file_to
@@ -205,4 +204,4 @@ class Component(components.ComponentBase):
         if mode:
             os.chmod(file_to, mode)
 
-        return utils.file_sha256(file_to), stderr, outcome
+        return utils.file_sha256(file_to), stderr, outcome, None

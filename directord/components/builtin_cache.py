@@ -67,14 +67,11 @@ class Component(components.ComponentBase):
         data[cache_type] = {key: value}
         return data
 
-    def client(self, command, conn, cache, job):
+    def client(self, command, cache, job):
         """Run cache command operation.
 
         :param command: Work directory path.
         :type command: String
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -82,7 +79,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         # Sets the cache type to "args" or "envs"
         cache_type = "{}s".format(command.decode().lower())
 
@@ -98,8 +94,10 @@ class Component(components.ComponentBase):
             value_update=True,
             tag=cache_type,
         )
-        conn.info = "type:{}, value:{}".format(
-            cache_type, job[cache_type]
-        ).encode()
 
-        return "{} added to cache".format(cache_type), None, True
+        return (
+            "{} added to cache".format(cache_type),
+            None,
+            True,
+            "type:{}, value:{}".format(cache_type, job[cache_type]).encode(),
+        )

@@ -55,12 +55,9 @@ class Component(components.ComponentBase):
         data["cacheevict"] = self.known_args.cacheevict
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run cache evict command operation.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -68,7 +65,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         tag = job["cacheevict"]
         if tag == "all":
             evicted = cache.clear()
@@ -76,4 +72,5 @@ class Component(components.ComponentBase):
         else:
             evicted = cache.evict(tag)
             info = "Evicted {} items, tagged {}".format(evicted, tag)
-        return info, None, True
+
+        return info, None, True, None

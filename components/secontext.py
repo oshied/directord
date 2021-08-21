@@ -127,12 +127,9 @@ class Component(components.ComponentBase):
 
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run cache echo command operation.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
@@ -140,19 +137,15 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         if not selinux.is_selinux_enabled():
-            return (
-                None,
-                "SELinux is not enabled.",
-                True,
-            )
+            return (None, "SELinux is not enabled.", True, None)
 
         if not AVAILABLE_SELINUX:
             return (
                 None,
                 "The required selinux library is not installed",
                 False,
+                None,
             )
 
         if not AVAILABLE_SEOBJECT:
@@ -160,6 +153,7 @@ class Component(components.ComponentBase):
                 None,
                 "The required seobject library is not installed",
                 False,
+                None,
             )
 
         target = job["target"]
@@ -194,4 +188,4 @@ class Component(components.ComponentBase):
 
             secontext.add(target, setype, ftype, selevel, seuser)
 
-        return job["target"], None, True
+        return job["target"], None, True, None

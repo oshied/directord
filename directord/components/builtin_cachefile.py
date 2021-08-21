@@ -54,26 +54,22 @@ class Component(components.ComponentBase):
         data["cachefile"] = self.known_args.cachefile
         return data
 
-    def client(self, conn, cache, job):
+    def client(self, cache, job):
         """Run cache file operation.
 
         :param cache: Caching object used to template items within a command.
         :type cache: Object
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param job: Information containing the original job specification.
         :type job: Dictionary
         :returns: tuple
         """
 
-        super().client(conn=conn, cache=cache, job=job)
         try:
             with open(job["cachefile"]) as f:
                 cachefile_args = yaml.safe_load(f)
         except Exception as e:
             self.log.critical(str(e))
-            return None, traceback.format_exc(), False
+            return None, traceback.format_exc(), False, None
         else:
             self.set_cache(
                 cache=cache,
@@ -82,4 +78,4 @@ class Component(components.ComponentBase):
                 value_update=True,
                 tag="args",
             )
-            return "Cache file loaded", None, True
+            return "Cache file loaded", None, True, None
