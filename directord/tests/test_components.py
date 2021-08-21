@@ -20,11 +20,12 @@ from unittest.mock import patch
 
 from directord import client
 from directord import components
+from directord import drivers
 from directord import tests
 
+from directord.components import builtin_copy
 from directord.components import builtin_dnf
 from directord.components import builtin_run
-from directord.components import builtin_transfer
 from directord.components import builtin_workdir
 
 
@@ -36,9 +37,11 @@ class TestComponents(unittest.TestCase):
         self.components = components.ComponentBase(desc="test")
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
         self._dnf = builtin_dnf.Component()
-        self._transfer = builtin_transfer.Component()
+        self._transfer = builtin_copy.Component()
         self._run = builtin_run.Component()
         self._workdir = builtin_workdir.Component()
+        for item in [self._dnf, self._transfer, self._run, self._workdir]:
+            item.driver = drivers.BaseDriver(args=self.args)
 
     def tearDown(self):
         pass
@@ -88,11 +91,9 @@ class TestComponents(unittest.TestCase):
             job = dict(
                 file_to="/test/file",
                 file_sha256sum="YYYYYYYYY",
+                job_id="XXXXXX",
             )
             stdout, stderr, outcome, return_info = self._transfer.client(
-                job_id="XXX",
-                source_file="/orig/file",
-                conn=MagicMock(),
                 cache=tests.FakeCache(),
                 job=job,
             )
@@ -117,12 +118,10 @@ class TestComponents(unittest.TestCase):
             job = dict(
                 file_to="/test/file",
                 file_sha256sum="YYYYYYYYY",
+                job_id="XXXXXX",
                 blueprint=True,
             )
             stdout, stderr, outcome, return_info = self._transfer.client(
-                job_id="XXX",
-                source_file="/orig/file",
-                conn=MagicMock(),
                 cache=tests.FakeCache(),
                 job=job,
             )
@@ -143,11 +142,8 @@ class TestComponents(unittest.TestCase):
         mock_isfile.return_value = False
         mock_file_sha256.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
-            job = dict(file_to="/test/file", file_sha256="YYYYYYYYY")
+            job = dict(file_to="/test/file", file_sha256="YYYYYYYYY", job_id="XXXXXX",)
             stdout, stderr, outcome, return_info = self._transfer.client(
-                job_id="XXX",
-                source_file="/orig/file",
-                conn=MagicMock(),
                 cache=tests.FakeCache(),
                 job=job,
             )
@@ -169,11 +165,9 @@ class TestComponents(unittest.TestCase):
                 file_to="/test/file",
                 file_sha256="YYYYYYYYY",
                 blueprint=True,
+                job_id="XXXXXX",
             )
             stdout, stderr, outcome, return_info = self._transfer.client(
-                job_id="XXX",
-                source_file="/orig/file",
-                conn=MagicMock(),
                 cache=tests.FakeCache(),
                 job=job,
             )
@@ -211,11 +205,9 @@ class TestComponents(unittest.TestCase):
                 file_sha256="YYYYYYYYY",
                 user="nobody",
                 group="nobody",
+                job_id="XXXXXX",
             )
             stdout, stderr, outcome, return_info = self._transfer.client(
-                job_id="XXX",
-                source_file="/orig/file",
-                conn=MagicMock(),
                 cache=tests.FakeCache(),
                 job=job,
             )
@@ -244,11 +236,9 @@ class TestComponents(unittest.TestCase):
                 file_sha256="YYYYYYYYY",
                 user=9999,
                 group=9999,
+                job_id="XXXXXX",
             )
             stdout, stderr, outcome, return_info = self._transfer.client(
-                job_id="XXX",
-                source_file="/orig/file",
-                conn=MagicMock(),
                 cache=tests.FakeCache(),
                 job=job,
             )
@@ -276,11 +266,9 @@ class TestComponents(unittest.TestCase):
                 file_to="/test/file",
                 file_sha256="YYYYYYYYY",
                 mode="0o777",
+                job_id="XXXXXX",
             )
             stdout, stderr, outcome, return_info = self._transfer.client(
-                job_id="XXX",
-                source_file="/orig/file",
-                conn=MagicMock(),
                 cache=tests.FakeCache(),
                 job=job,
             )
@@ -294,14 +282,11 @@ class TestComponents(unittest.TestCase):
     @patch("logging.Logger.info", autospec=True)
     def test__job_executor_cached(self, mock_log_info, mock_log_debug):
         mock_conn = MagicMock()
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=mock_conn,
-            cache=fake_cache,
             info=None,
             job={},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=True,
             command=b"RUN",
         )
@@ -397,17 +382,14 @@ class TestComponents(unittest.TestCase):
     def test__job_executor_run(self, mock_log_debug, mock_run_command):
         mock_run_command.return_value = None, None, True
         mock_conn = MagicMock()
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=mock_conn,
-            cache=fake_cache,
             info=None,
             job={
                 "command": "command 1 test",
                 "stdout_arg": False,
             },
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"RUN",
         )
@@ -428,14 +410,11 @@ class TestComponents(unittest.TestCase):
         mock_isfile.return_value = True
         mock_file_sha256.return_value = "YYYYYY"
         mock_conn = MagicMock()
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=mock_conn,
-            cache=fake_cache,
             info="/source/file1",
             job={"file_to": "/target/file1", "file_sha256sum": "YYYYYY"},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"COPY",
         )
@@ -462,14 +441,11 @@ class TestComponents(unittest.TestCase):
         mock_isfile.return_value = True
         mock_file_sha256.return_value = "YYYYYY"
         mock_conn = MagicMock()
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=mock_conn,
-            cache=fake_cache,
             info="/source/file1",
             job={"file_to": "/target/file1", "file_sha256sum": "YYYYYY"},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"ADD",
         )
@@ -488,14 +464,11 @@ class TestComponents(unittest.TestCase):
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_workdir(self, mock_log_debug, mock_makedirs):
         mock_conn = MagicMock()
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=mock_conn,
-            cache=fake_cache,
             info=None,
             job={"workdir": "/target"},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"WORKDIR",
         )
@@ -507,14 +480,11 @@ class TestComponents(unittest.TestCase):
 
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_arg(self, mock_log_debug):
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=MagicMock(),
-            cache=fake_cache,
             info=None,
             job={"args": {"key-arg": "value-arg"}},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"ARG",
         )
@@ -526,14 +496,11 @@ class TestComponents(unittest.TestCase):
 
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_env(self, mock_log_debug):
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=MagicMock(),
-            cache=fake_cache,
             info=None,
             job={"envs": {"key-env": "value-env"}},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"ENV",
         )
@@ -552,11 +519,9 @@ class TestComponents(unittest.TestCase):
         ):
             stdout, stderr, outcome, return_info = self.client._job_executor(
                 conn=MagicMock(),
-                cache=fake_cache,
                 info=None,
                 job={"cachefile": "/target/file1"},
                 job_id="XXXXXX",
-                job_sha256="YYYYYY",
                 cached=False,
                 command=b"CACHEFILE",
             )
@@ -588,14 +553,11 @@ class TestComponents(unittest.TestCase):
 
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_cachefile_fail(self, mock_log_debug):
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=MagicMock(),
-            cache=fake_cache,
             info=None,
             job={"cachefile": "/target/file1"},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"CACHEFILE",
         )
@@ -607,18 +569,14 @@ class TestComponents(unittest.TestCase):
 
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_cacheevict_all(self, mock_log_debug):
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=MagicMock(),
-            cache=fake_cache,
             info=None,
             job={"cacheevict": "all"},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"CACHEEVICT",
         )
-
         self.assertEqual(stdout, "All cache has been cleared")
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, True)
@@ -627,14 +585,11 @@ class TestComponents(unittest.TestCase):
 
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_cacheevict_evict(self, mock_log_debug):
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=MagicMock(),
-            cache=fake_cache,
             info=None,
             job={"cacheevict": "args"},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"CACHEEVICT",
         )
@@ -647,14 +602,11 @@ class TestComponents(unittest.TestCase):
 
     @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_cacheevict_query(self, mock_log_debug):
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=MagicMock(),
-            cache=fake_cache,
             info=None,
             job={"query": "test"},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"QUERY",
         )
@@ -668,14 +620,11 @@ class TestComponents(unittest.TestCase):
     @patch("logging.Logger.debug", autospec=True)
     @patch("logging.Logger.warning", autospec=True)
     def test__job_executor_unknown(self, mock_log_debug, mock_log_warning):
-        fake_cache = tests.FakeCache()
         stdout, stderr, outcome, return_info = self.client._job_executor(
             conn=MagicMock(),
-            cache=fake_cache,
             info=None,
             job={},
             job_id="XXXXXX",
-            job_sha256="YYYYYY",
             cached=False,
             command=b"UNKNOWN",
         )
@@ -685,7 +634,6 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(outcome, False)
 
         mock_log_debug.assert_called()
-        mock_log_warning.assert_called()
 
     @patch("logging.Logger.info", autospec=True)
     def test_file_blueprinter(self, mock_log_info):

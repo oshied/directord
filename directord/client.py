@@ -572,7 +572,7 @@ class Client(interface.Interface):
 
                             continue
 
-                        _job_exec = self._job_executor(
+                        self._job_executor(
                             conn=c,
                             info=info,
                             job=job,
@@ -585,13 +585,7 @@ class Client(interface.Interface):
                             command=command,
                         )
 
-                        if _job_exec is None:
-                            c.job_state = self.driver.job_processing
-                        else:
-                            self._set_job_status(
-                                *_job_exec,
-                                c,
-                            )
+                        c.job_state = self.driver.job_processing
 
             if sentinel:
                 break

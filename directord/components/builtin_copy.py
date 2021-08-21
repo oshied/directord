@@ -39,7 +39,10 @@ class Transfer:
     def __exit__(self, *args, **kwargs):
         """Close the bind transfer object."""
 
-        self.bind_transfer.close()
+        try:
+            self.bind_transfer.close()
+        except AttributeError:
+            pass
 
 
 class Component(components.ComponentBase):
