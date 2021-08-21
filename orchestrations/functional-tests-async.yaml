@@ -13,13 +13,13 @@
 - async: true
   jobs:
   # Test run
-  - RUN: echo hello world
+  - RUN: echo hello world 1
+
+  # Test --run-once with RUN
+  - RUN: --run-once echo hello world 2
 
   # Test --skip-cache with RUN
   - RUN: --skip-cache echo hello world
-
-  # Test --run-once with RUN
-  - RUN: --run-once echo hello world
 
   # Simulate long running tasks
   - RUN: sleep 10
@@ -30,17 +30,28 @@
   # Test creating a work directory
   - WORKDIR: /tmp/test
 
-  # Test creating a work directory with a ownership and mode
-  - WORKDIR: --chown=0:0 --chmod=0777 /tmp/test/mode
-  - RUN: stat /tmp/test/mode | grep Uid | grep 0777
-
   # Simulate long running tasks
   - RUN: sleep 10
+
+  # Test run
+  - RUN: echo hello world 3
+
+  # Test --run-once with RUN
+  - RUN: --run-once echo hello world 4
+
+  # Test --skip-cache with RUN
+  - RUN: --skip-cache echo hello world 3
 
 
 - jobs:
   # Test setting a cached object using the the stdout of a RUN
   - RUN: --stdout-arg test_stdout_arg echo hello world 2
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --chown=0:0 --chmod=0777 /tmp/test/mode
+
+  # Ensure test directory was created
+  - RUN: stat /tmp/test/mode | grep Uid | grep 0777
 
   # Simulate long running tasks
   - RUN: sleep 10

@@ -24,13 +24,21 @@ from directord import utils
 
 
 class Transfer:
+    """Transfer connection context manager."""
+
     def __init__(self, driver):
+        """Initialize the transfer context manager class."""
+
         self.bind_transfer = driver.transfer_connect()
 
     def __enter__(self):
+        """Return the bind_transfer object on enter."""
+
         return self.bind_transfer
 
     def __exit__(self, *args, **kwargs):
+        """Close the bind transfer object."""
+
         self.bind_transfer.close()
 
 
@@ -97,6 +105,15 @@ class Component(components.ComponentBase):
         return data
 
     def client(self, cache, job):
+        """Run file transfer operation.
+
+        :param cache: Caching object used to template items within a command.
+        :type cache: Object
+        :param job: Information containing the original job specification.
+        :type job: Dictionary
+        :returns: tuple
+        """
+
         with Transfer(driver=self.driver) as bind_transfer:
             return self._client(
                 cache, job, self.info, self.driver, bind_transfer
