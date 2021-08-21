@@ -39,6 +39,7 @@ class Component(components.ComponentBase):
         """Initialize the component cache class."""
 
         super().__init__(desc="Process transfer commands")
+        self.requires_lock = True
 
     def args(self):
         """Set default arguments for a component."""
@@ -95,9 +96,11 @@ class Component(components.ComponentBase):
 
         return data
 
-    def client(self, cache, job, source_file, driver):
-        with Transfer(driver=driver) as bind_transfer:
-            return self._client(cache, job, source_file, driver, bind_transfer)
+    def client(self, cache, job):
+        with Transfer(driver=self.driver) as bind_transfer:
+            return self._client(
+                cache, job, self.info, self.driver, bind_transfer
+            )
 
     def _client(self, cache, job, source_file, driver, bind_transfer):
         """Run file transfer operation.

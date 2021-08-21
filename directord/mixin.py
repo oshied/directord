@@ -98,21 +98,14 @@ class Mixin:
             exec_string=execute, data=data, arg_vars=arg_vars
         )
 
-        if verb in ["COPY", "ADD"]:
-            component_name = "transfer"
-        elif verb in ["ARG", "ENV"]:
-            component_kwargs["verb"] = verb
-            component_name = "cache"
-        else:
-            component_name = verb
-
         success, transfer, component = directord.component_import(
-            component=component_name.lower(),
+            component=verb.lower(),
             job_id=parent_id,
         )
         if not success:
             raise SystemExit(component)
 
+        setattr(component, "verb", verb)
         data.update(component.server(**component_kwargs))
 
         data["timeout"] = getattr(component.known_args, "timeout", 600)

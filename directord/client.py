@@ -151,29 +151,23 @@ class Client(interface.Interface):
     def _job_executor(
         self,
         conn,
-        cache,
         info,
         job,
         job_id,
-        job_sha256,
         cached,
         command,
     ):
-        """Execute a given job.
+        """Queue a given job.
 
         :param conn: Connection object used to store information used in a
                      return message.
         :type conn: Object
-        :param cache: Cached access object.
-        :type cache: Object
         :param info: Information that was sent over with the original message.
         :type info: Bytes
         :param job: Information containing the original job specification.
         :type job: Dictionary
         :param job_id: Job UUID
         :type job_id: String
-        :param job_sha256: Job fingerprint in SHA256 format.
-        :type job_sha256: String
         :param cached: Boolean option to determin if a command is to be
                        treated as cached.
         :type cached: Boolean
@@ -183,61 +177,52 @@ class Client(interface.Interface):
         """
 
         self.log.debug("Running component:%s", command.decode())
-
         component_kwargs = dict(cache=None, job=job)
-
-        if command in [b"ARG", b"ENV"]:
-            component_name = b"cache"
-            component_kwargs["command"] = command
-        elif command in [b"ADD", b"COPY"]:
-            component_name = b"transfer"
-            component_kwargs["source_file"] = info
-        else:
-            component_name = command
-
-        success, _, component = directord.component_import(
-            component=component_name.decode().lower(),
-            job_id=job_id,
-        )
-        if not success:
-            self.log.warning(component)
-            return None, None, success, None, job, command
-
-        if cached and component.cacheable:
-            self.log.info("Cache hit on %s, task skipped.", job_sha256)
-            conn.info = b"job skipped"
-            conn.job_state = self.driver.job_end
-            return None, None, success, None, job, command
-
         conn.start_processing()
-        if job.get("parent_async") and component.asyncable:
+        if job.get("parent_async"):
             self.log.debug("Running [ %s ] in parent async", job_id)
-            self.q_async.put((component_kwargs, component_name, command))
-            conn.info = b"job queued"
-        elif component.asyncable:
-            self.log.debug("Running [ %s ] in general queue", job_id)
-            self.q_general.put((component_kwargs, component_name, command))
+            self.q_async.put((component_kwargs, command, info, cached))
             conn.info = b"job queued"
         else:
-            # TODO REVISE THIS - ITS BROKEN
-            self.log.debug("Running [ %s ] blocking", job_id)
-            with self.timeout(time=job.get("timeout", 600), job_id=job_id):
-                component_kwargs["cache"] = cache
-                return component.client(**component_kwargs) + (job, command)
+            self.log.debug("Running [ %s ] in general queue", job_id)
+            self.q_general.put((component_kwargs, command, info, cached))
+            conn.info = b"job queued"
 
     def job_q_component_run(
-        self, component_kwargs, component_name, command, lock
+        self, component_kwargs, command, info, cached, lock
     ):
+        success, _, component = directord.component_import(
+            component=command.decode().lower(),
+            job_id=component_kwargs["job"]["job_id"],
+        )
+
+        if not success:
+            self.log.warning(component)
+            self.q_return.put(
+                (None, None, success, None, component_kwargs["job"], command)
+            )
+            return
+
+        if cached and component.cacheable:
+            self.log.info(
+                "Cache hit on [ %s ], task skipped.",
+                component_kwargs["job"]["job_id"],
+            )
+            self.q_return.put(
+                (None, None, "skipped", None, component_kwargs["job"], command)
+            )
+            return
+
+        # Set the comment command argument
+        setattr(component, "command", command)
+        setattr(component, "info", info)
+        setattr(component, "driver", self.driver)
+
         locked = False
-        if component_name == b"transfer":
-            component_kwargs["driver"] = self.driver
+        if component.requires_lock:
             lock.acquire()
             locked = True
 
-        _, _, component = directord.component_import(
-            component=component_name.decode().lower(),
-            job_id=component_kwargs["job"]["job_id"],
-        )
         with self.timeout(
             time=component_kwargs["job"].get("timeout", 600),
             job_id=component_kwargs["job"]["job_id"],
@@ -265,8 +250,9 @@ class Client(interface.Interface):
                 try:
                     (
                         component_kwargs,
-                        component_name,
                         command,
+                        info,
+                        cached,
                     ) = queue.get_nowait()
                 except Exception:
                     time.sleep(0.1)
@@ -275,8 +261,9 @@ class Client(interface.Interface):
                         target=self.job_q_component_run,
                         args=(
                             component_kwargs,
-                            component_name,
                             command,
+                            info,
+                            cached,
                             lock,
                         ),
                     )
@@ -308,7 +295,6 @@ class Client(interface.Interface):
                 command=command,
                 ctx=self,
             ) as c:
-                c.info = b"job finished"
                 self._set_job_status(
                     stdout,
                     stderr,
@@ -467,11 +453,9 @@ class Client(interface.Interface):
 
                         _job_exec = self._job_executor(
                             conn=c,
-                            cache=cache,
                             info=info,
                             job=job,
                             job_id=job_id,
-                            job_sha256=job_sha256,
                             cached=cache_hit,
                             command=command,
                         )
@@ -504,12 +488,16 @@ class Client(interface.Interface):
             c.stderr = stderr
             self.log.error(stderr)
 
+        c.info = b"job finished"
         if outcome is False:
             state = c.job_state = self.driver.job_failed
             self.log.error("Job failed %s", job["job_id"])
         elif outcome is True:
             state = c.job_state = self.driver.job_end
             self.log.info("Job complete %s", job["job_id"])
+        elif outcome == "skipped":
+            c.info = b"job skipped"
+            state = c.job_state = self.driver.job_end
         else:
             state = self.driver.nullbyte
 

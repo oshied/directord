@@ -26,6 +26,11 @@ from directord import utils
 class ComponentBase:
     """Component base class."""
 
+    command = None
+    info = None
+    driver = None
+    verb = None
+
     def __init__(self, desc=None):
         """Initialize the component base class.
 
@@ -42,7 +47,7 @@ class ComponentBase:
         self.known_args = None
         self.unknown_args = None
         self.cacheable = True  # Enables|Disables component caching
-        self.asyncable = True  # Enables|Disables component async
+        self.requires_lock = False  # Enables|Disables component locking
 
     @staticmethod
     def run_command(
