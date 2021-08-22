@@ -51,6 +51,19 @@ Directord has two modes of operation for data-storage and persistence.
   lower the memory utilization of Directord and can have a profound effect on
   deployment node requirements; this is especially true at hyper-scale.
 
+#### Profiling
+
+Every Directord task is profiled. The execution and the round trip time are
+stored and made available when inspecting jobs. This builtin profiling allows
+operators to better understand their deployment workloads.
+
+* ROUNDTRIP_TIME: Time taken from task transmit to return. The server will
+  timestamp every task when spawned, and will store the delta when the return data
+  is received by the server.
+
+* EXECUTION_TIME: Time taken to run a particular task. The client will timestamp
+  every task before execution and return the delta once the task exits.
+
 ### Comparative Analysis
 
 Because Directord is task driven and messaging backed it is fast, Directords time
@@ -83,7 +96,7 @@ returns an execution time of **19.41** seconds.
 The system also saw the following command characteristics. Each message had the
 following average profile.
 
-| EXECUTION_TIME       | TOTAL_ROUNDTRIP_TIME    |
+| EXECUTION_TIME       | ROUNDTRIP_TIME          |
 | -------------------- | ----------------------- |
 | 0.007496356964111328 | 0.01715874671936035     |
 
@@ -128,7 +141,7 @@ $ ansible-playbook -i tools/ansible-inventory.yaml tests/comparison-task-playboo
 
 This command runs 1000 shell tasks.
 
-| TOTAL_ROUNDTRIP_TIME    |
+| ROUNDTRIP_TIME          |
 | ----------------------- |
 | 1.793                   |
 
@@ -146,7 +159,7 @@ $ ansible-playbook -i tools/ansible-inventory.yaml tests/comparison-task-playboo
 
 This command runs 1000 shell tasks.
 
-| TOTAL_ROUNDTRIP_TIME    |
+| ROUNDTRIP_TIME          |
 | ----------------------- |
 | 0.941                   |
 

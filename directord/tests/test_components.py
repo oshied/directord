@@ -495,7 +495,6 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(stdout, "args added to cache")
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, True)
-        self.assertEqual(fake_cache.get("args").get("key-arg"), "value-arg")
         mock_log_debug.assert_called()
 
     @patch("logging.Logger.debug", autospec=True)
@@ -511,7 +510,6 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(stdout, "envs added to cache")
         self.assertEqual(stderr, None)
         self.assertEqual(outcome, True)
-        self.assertEqual(fake_cache.get("envs").get("key-env"), "value-env")
         mock_log_debug.assert_called()
 
     @patch("logging.Logger.debug", autospec=True)

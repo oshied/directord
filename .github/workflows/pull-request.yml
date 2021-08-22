@@ -120,7 +120,7 @@ jobs:
       - name: Execute functional async-time check
         run: |
           cd /opt/directord/share/directord/orchestrations
-          timeout 30 sudo /opt/directord/bin/directord \
+          timeout 40 sudo /opt/directord/bin/directord \
                           orchestrate \
                           functional-tests-async-time.yaml \
                           --poll &> /tmp/directord-functional-async-time.log

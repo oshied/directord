@@ -302,9 +302,14 @@ class Client(interface.Interface):
                             lock.acquire()
                             locked = True
 
+                        _starttime = time.time()
                         self.q_return.put(
                             component.client(**component_kwargs)
-                            + (component_kwargs["job"], command)
+                            + (
+                                component_kwargs["job"],
+                                command,
+                                time.time() - _starttime,
+                            )
                         )
                     finally:
                         if locked:
@@ -369,6 +374,10 @@ class Client(interface.Interface):
             conn.data = json.dumps(job).encode()
             if stdout:
                 conn.info = stdout
+        else:
+            conn.data = json.dumps(
+                {"execution_time": job["execution_time"]}
+            ).encode()
 
         with diskcache.Cache(
             self.args.cache_path,
@@ -404,6 +413,7 @@ class Client(interface.Interface):
                 return_info,
                 job,
                 command,
+                execution_time,
             ) = self.q_return.get_nowait()
         except Exception:
             pass
@@ -415,6 +425,7 @@ class Client(interface.Interface):
                 command=command,
                 ctx=self,
             ) as c:
+                job["execution_time"] = execution_time
                 self._set_job_status(
                     stdout,
                     stderr,
@@ -486,7 +497,9 @@ class Client(interface.Interface):
                         self.log.debug("Pruning parent lock [ %s ]", key)
                         self.l_manager.pop(key)
                 elif time.time() > value["used"] + 2400:
-                    self.log.warning("Stale parent lock found [ %s ], pruning", key)
+                    self.log.warning(
+                        "Stale parent lock found [ %s ], pruning", key
+                    )
                     self.l_manager.pop(key)
 
     def prune_cache(self, cache_check_time):
@@ -550,7 +563,9 @@ class Client(interface.Interface):
         while True:
             self.job_q_results()
             self.prune_locks()
-            cache_check_time = self.prune_cache(cache_check_time=cache_check_time)
+            cache_check_time = self.prune_cache(
+                cache_check_time=cache_check_time
+            )
 
             if time.time() > poller_time + 64:
                 if poller_interval != 2048:
