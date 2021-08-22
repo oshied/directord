@@ -45,6 +45,8 @@ class Client(interface.Interface):
         self.q_async = self.get_queue()
         self.q_general = self.get_queue()
         self.q_return = self.get_queue()
+        self.manager = self.get_manager()
+        self.l_manager = self.manager.dict()
         self.base_component = components.ComponentBase()
 
     def update_heartbeat(self):
@@ -277,11 +279,6 @@ class Client(interface.Interface):
             setattr(component, "info", info)
             setattr(component, "driver", self.driver)
 
-            locked = False
-            if component.requires_lock:
-                lock.acquire()
-                locked = True
-
             with self.timeout(
                 time=component_kwargs["job"].get("timeout", 600),
                 job_id=component_kwargs["job"]["job_id"],
@@ -293,6 +290,18 @@ class Client(interface.Interface):
                 ) as cache:
                     component_kwargs["cache"] = cache
                     try:
+                        locked = False
+                        parent_lock = self.l_manager.get(
+                            component_kwargs["job"].get("parent_sha1")
+                        )
+                        if parent_lock:
+                            parent_lock["locked"] = True
+                            parent_lock["lock"].acquire()
+
+                        if component.requires_lock:
+                            lock.acquire()
+                            locked = True
+
                         self.q_return.put(
                             component.client(**component_kwargs)
                             + (component_kwargs["job"], command)
@@ -300,6 +309,11 @@ class Client(interface.Interface):
                     finally:
                         if locked:
                             lock.release()
+
+                        if parent_lock:
+                            parent_lock["used"] = time.time()
+                            parent_lock["lock"].release()
+                            parent_lock["locked"] = False
 
     def _set_job_status(
         self, stdout, stderr, outcome, return_info, job, command, conn
@@ -454,6 +468,62 @@ class Client(interface.Interface):
         else:
             return True
 
+    def prune_locks(self):
+        """Prune inactive parent lock items.
+
+        When the async queue is empty and parent lock has not been used for
+        more than 60 seconds, and is not currently locked, this method will
+        prune the locked objects from the l_manager.
+
+        > If a parent lock is older that 2400 seconds, and the queue async
+          queue is empty, the parent lock will be considered stale and pruned.
+        """
+
+        if self.q_async.empty():
+            for key, value in self.l_manager.items():
+                if time.time() > value["used"] + 60:
+                    if not value["locked"]:
+                        self.log.debug("Pruning parent lock [ %s ]", key)
+                        self.l_manager.pop(key)
+                elif time.time() > value["used"] + 2400:
+                    self.log.warning("Stale parent lock found [ %s ], pruning", key)
+                    self.l_manager.pop(key)
+
+    def prune_cache(self, cache_check_time):
+        """Prune the local cache to ensure a tidy environment.
+
+        If there are any warnings when pruning, they will be logged.
+
+        :param cache_check_time: Timestamp from last prune.
+        :type cache_check_time: Float
+        :returns: Float
+        """
+
+        if time.time() > cache_check_time + 4096:
+            with diskcache.Cache(
+                self.args.cache_path, tag_index=True
+            ) as cache:
+                self.log.info(
+                    "Current estimated cache size: %s KiB",
+                    cache.volume() / 1024,
+                )
+
+                warnings = cache.check()
+                if warnings:
+                    self.log.warning(
+                        "Client cache noticed %s warnings.", len(warnings)
+                    )
+                    for item in warnings:
+                        self.log.warning(
+                            "Client Cache Warning: [ %s ].",
+                            str(item.message),
+                        )
+
+                cache.expire()
+                return time.time()
+
+        return cache_check_time
+
     def run_job(self, sentinel=False):
         """Job entry point.
 
@@ -479,6 +549,8 @@ class Client(interface.Interface):
         os.makedirs(self.args.cache_path, exist_ok=True)
         while True:
             self.job_q_results()
+            self.prune_locks()
+            cache_check_time = self.prune_cache(cache_check_time=cache_check_time)
 
             if time.time() > poller_time + 64:
                 if poller_interval != 2048:
@@ -488,29 +560,6 @@ class Client(interface.Interface):
                 if poller_interval != 1024:
                     self.log.info("Directord client ramping down.")
                 poller_interval = 1024
-
-            if time.time() > cache_check_time + 4096:
-                with diskcache.Cache(
-                    self.args.cache_path, tag_index=True
-                ) as cache:
-                    self.log.info(
-                        "Current estimated cache size: %s KiB",
-                        cache.volume() / 1024,
-                    )
-
-                    warnings = cache.check()
-                    if warnings:
-                        self.log.warning(
-                            "Client cache noticed %s warnings.", len(warnings)
-                        )
-                        for item in warnings:
-                            self.log.warning(
-                                "Client Cache Warning: [ %s ].",
-                                str(item.message),
-                            )
-
-                    cache.expire()
-                    cache_check_time = time.time()
 
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
@@ -547,6 +596,12 @@ class Client(interface.Interface):
 
                     job_parent_id = job.get("parent_id")
                     job_parent_sha1 = job.get("parent_sha1")
+                    if job_parent_sha1:
+                        self.l_manager[job_parent_sha1] = {
+                            "lock": self.manager.Lock(),
+                            "used": time.time(),
+                            "locked": False,
+                        }
 
                     self.log.info(
                         "Job received: parent job UUID [ %s ],"

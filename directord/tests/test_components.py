@@ -142,7 +142,11 @@ class TestComponents(unittest.TestCase):
         mock_isfile.return_value = False
         mock_file_sha256.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
-            job = dict(file_to="/test/file", file_sha256="YYYYYYYYY", job_id="XXXXXX",)
+            job = dict(
+                file_to="/test/file",
+                file_sha256="YYYYYYYYY",
+                job_id="XXXXXX",
+            )
             stdout, stderr, outcome, return_info = self._transfer.client(
                 cache=tests.FakeCache(),
                 job=job,

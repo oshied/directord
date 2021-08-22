@@ -147,6 +147,12 @@ class Processor:
         self.log = logger.getLogger(name="directord")
 
     @staticmethod
+    def get_manager():
+        """Returns a multiprocessing manager."""
+
+        return multiprocessing.Manager()
+
+    @staticmethod
     def get_lock():
         """Returns a multiprocessing lock."""
 

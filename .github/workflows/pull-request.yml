@@ -95,7 +95,7 @@ jobs:
           sudo /opt/directord/bin/directord-client-systemd
           sudo systemctl daemon-reload
           sudo systemctl restart directord-client
-      - name: Execute functional check
+      - name: Execute async-functional check
         run: |
           cd /opt/directord/share/directord/orchestrations
           if ! JOBS=$(sudo /opt/directord/bin/directord \
@@ -106,6 +106,24 @@ jobs:
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional-async.log
             exit 1
           fi
+      - name: Execute functional async-race-condition check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      orchestrate \
+                      functional-tests-async-race.yaml \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional-async-race.log
+            exit 1
+          fi
+      - name: Execute functional async-time check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          timeout 30 sudo /opt/directord/bin/directord \
+                          orchestrate \
+                          functional-tests-async-time.yaml \
+                          --poll &> /tmp/directord-functional-async-time.log
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2

@@ -1,0 +1,21 @@
+# The total sleep in this test is 45 seconds. To validate async is functional, job execution should be ~25 seconds.
+# The 25 second indicator is conservative, accounting for network overhead and processing.
+---
+
+- async: true
+  jobs:
+  - RUN: --skip-cache sleep 6
+  - RUN: --skip-cache sleep 6
+  - RUN: --skip-cache sleep 6
+
+- async: true
+  jobs:
+  - RUN: --skip-cache sleep 5
+  - RUN: --skip-cache sleep 5
+  - RUN: --skip-cache sleep 5
+
+- async: true
+  jobs:
+  - RUN: --skip-cache sleep 4
+  - RUN: --skip-cache sleep 4
+  - RUN: --skip-cache sleep 4
