@@ -115,28 +115,23 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
 
-    @patch("logging.Logger.info", autospec=True)
     @patch("os.makedirs", autospec=True)
     @patch("time.time", autospec=True)
-    def test_run_job_idle(self, mock_time, mock_makedirs, mock_log_info):
+    def test_run_job_idle(self, mock_time, mock_makedirs):
         mock_time.side_effect = [1, 1, 66, 1, 1, 1]
         with patch.object(self.mock_driver, "bind_check", return_value=False):
             self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
-        mock_log_info.assert_called()
 
-    @patch("logging.Logger.info", autospec=True)
     @patch("os.makedirs", autospec=True)
     @patch("time.time", autospec=True)
-    def test_run_job_ramp(self, mock_time, mock_makedirs, mock_log_info):
+    def test_run_job_ramp(self, mock_time, mock_makedirs):
         mock_time.side_effect = [1, 1, 1, 34, 1, 1]
         with patch.object(self.mock_driver, "bind_check", return_value=False):
             self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
-        mock_log_info.assert_called()
 
     @patch("diskcache.Cache", autospec=True)
-    @patch("logging.Logger.warning", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("os.makedirs", autospec=True)
     @patch("time.time", autospec=True)
@@ -145,7 +140,6 @@ class TestClient(tests.TestDriverBase):
         mock_time,
         mock_makedirs,
         mock_log_info,
-        mock_log_warning,
         mock_diskcache,
     ):
         mock_time.side_effect = [1, 1, 1, 1, 5000, 1]
@@ -154,9 +148,6 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
         mock_log_info.assert_called()
-        mock_log_warning.assert_called_with(
-            ANY, "Client Cache Warning: [ %s ].", "warning"
-        )
 
     @patch("directord.client.Client._job_executor", autospec=True)
     @patch("diskcache.Cache", autospec=True)
@@ -177,6 +168,8 @@ class TestClient(tests.TestDriverBase):
             "task_sha256sum": "YYY",
             "skip_cache": True,
             "command": "RUN",
+            "job_id": "XXX",
+            "job_sha256": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -197,11 +190,9 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.assert_called_with(
             ANY,
             conn=ANY,
-            cache=ANY,
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha256="YYY",
             cached=False,
             command=b"RUN",
         )
@@ -225,6 +216,8 @@ class TestClient(tests.TestDriverBase):
             "task_sha256sum": "YYY",
             "ignore_cache": True,
             "command": "RUN",
+            "job_id": "XXX",
+            "job_sha256": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -245,11 +238,9 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.assert_called_with(
             ANY,
             conn=ANY,
-            cache=ANY,
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha256="YYY",
             cached=False,
             command=b"RUN",
         )
@@ -310,6 +301,8 @@ class TestClient(tests.TestDriverBase):
             "task": "XXX",
             "task_sha256sum": "YYY",
             "command": "RUN",
+            "job_id": "XXX",
+            "job_sha256": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -331,11 +324,9 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.assert_called_with(
             ANY,
             conn=ANY,
-            cache=ANY,
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha256="YYY",
             cached=True,
             command=b"RUN",
         )
@@ -359,6 +350,8 @@ class TestClient(tests.TestDriverBase):
             "task_sha256sum": "YYY",
             "command": "RUN",
             "parent_id": "ZZZ",
+            "job_id": "XXX",
+            "job_sha256": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -380,20 +373,16 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.assert_called_with(
             ANY,
             conn=ANY,
-            cache=ANY,
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha256="YYY",
             cached=True,
             command=b"RUN",
         )
-        self.assertEqual(cache.get("ZZZ"), "\x04")
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_end.decode())
 
     @patch("directord.client.Client._job_executor", autospec=True)
     @patch("diskcache.Cache", autospec=True)
-    @patch("logging.Logger.error", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("os.makedirs", autospec=True)
     @patch("time.time", autospec=True)
@@ -402,7 +391,6 @@ class TestClient(tests.TestDriverBase):
         mock_time,
         mock_makedirs,
         mock_log_info,
-        mock_log_error,
         mock_diskcache,
         mock_job_executor,
     ):
@@ -411,6 +399,8 @@ class TestClient(tests.TestDriverBase):
             "task": "XXX",
             "task_sha256sum": "YYY",
             "command": "RUN",
+            "job_id": "XXX",
+            "job_sha256": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -424,23 +414,20 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
+        cache.set(key="YYY", value=self.mock_driver.job_failed.decode())
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
         mock_log_info.assert_called()
-        mock_log_error.assert_called()
         mock_job_executor.assert_called_with(
             ANY,
             conn=ANY,
-            cache=ANY,
             info=b"",
             job=job_def,
             job_id="XXX",
-            job_sha256="YYY",
             cached=False,
             command=b"RUN",
         )
-
         self.assertEqual(
             cache.get("YYY"), self.mock_driver.job_failed.decode()
         )

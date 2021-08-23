@@ -215,7 +215,6 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
-                "_executiontime": ANY,
             },
         )
 
@@ -624,6 +623,8 @@ class TestServer(tests.TestDriverBase):
             job_output="info",
             job_stdout=None,
             job_stderr=None,
+            execution_time=0,
+            recv_time=1,
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
@@ -666,6 +667,8 @@ class TestServer(tests.TestDriverBase):
             job_output='{"key": "value"}',
             job_stdout=None,
             job_stderr=None,
+            execution_time=0,
+            recv_time=1,
         )
 
     @patch("os.chown", autospec=True)
