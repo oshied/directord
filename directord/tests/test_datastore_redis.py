@@ -24,22 +24,26 @@ class TestDatastoreInternal(unittest.TestCase):
     def setUp(self):
         self.log_patched = patch("directord.logger.getLogger")
         self.log = self.log_patched.start()
-        self.redis_patched = patch.object(redis.Redis, "from_url", autospec=True)
+        self.redis_patched = patch.object(
+            redis.Redis, "from_url", autospec=True
+        )
         self.redis_patched.start()
-        self.datastore = datastore_redis.BaseDocument(url="redis://test.localdomain")
+        self.datastore = datastore_redis.BaseDocument(
+            url="redis://test.localdomain"
+        )
 
     def tearDown(self):
         self.log_patched.stop()
         self.redis_patched.stop()
 
     def test___getitem__string(self):
-        self.datastore.__getitem__(key='test')
+        self.datastore.__getitem__(key="test")
 
     def test___setitem__(self):
-        self.datastore.__setitem__(key='key', value="value")
+        self.datastore.__setitem__(key="key", value="value")
 
     def test___delitem__(self):
-        self.datastore.__delitem__(key='key')
+        self.datastore.__delitem__(key="key")
 
     def test_items(self):
         self.datastore.items()
@@ -51,13 +55,13 @@ class TestDatastoreInternal(unittest.TestCase):
         self.datastore.empty()
 
     def test_pop(self):
-        self.datastore.pop(key='key')
+        self.datastore.pop(key="key")
 
     def test_prune(self):
         self.datastore.prune()
 
     def test_get(self):
-        self.datastore.get(key='key')
+        self.datastore.get(key="key")
 
     def test_set(self):
-        self.datastore.set(key='key', value="value")
+        self.datastore.set(key="key", value="value")

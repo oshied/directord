@@ -354,7 +354,6 @@ class Client(interface.Interface):
             conn.stderr = stderr
             self.log.error(stderr)
 
-        conn.info = b"task finished"
         if outcome is False:
             state = conn.job_state = self.driver.job_failed
             self.log.error("Job failed %s", job["job_id"])
@@ -365,8 +364,9 @@ class Client(interface.Interface):
             conn.info = b"task skipped"
             state = conn.job_state = self.driver.job_end
         else:
-            state = self.driver.nullbyte
+            state = conn.job_state = self.driver.nullbyte
 
+        conn.info = b"task finished"
         if return_info:
             conn.info = return_info
 
@@ -637,25 +637,31 @@ class Client(interface.Interface):
                         if job_parent_id and not self._parent_check(
                             conn=c, cache=cache, job=job
                         ):
+                            self.q_return.put(
+                                (
+                                    None,
+                                    None,
+                                    False,
+                                    "Job omitted, parent failure",
+                                    job,
+                                    command,
+                                )
+                            )
                             if sentinel:
                                 break
-
-                            continue
-
-                        self._job_executor(
-                            conn=c,
-                            info=info,
-                            job=job,
-                            job_id=job_id,
-                            cached=(
-                                cache.get(job_sha256)
-                                == self.driver.job_end.decode()
-                                and not job_skip_cache
-                            ),
-                            command=command,
-                        )
-
-                        c.job_state = self.driver.job_processing
+                        else:
+                            self._job_executor(
+                                conn=c,
+                                info=info,
+                                job=job,
+                                job_id=job_id,
+                                cached=(
+                                    cache.get(job_sha256)
+                                    == self.driver.job_end.decode()
+                                    and not job_skip_cache
+                                ),
+                                command=command,
+                            )
 
             if sentinel:
                 break

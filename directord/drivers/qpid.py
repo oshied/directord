@@ -12,12 +12,13 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from directord import utils
 from directord import drivers
 
 
 class Driver(drivers.BaseDriver):
-    def __init__(self, args, encrypted_traffic_data=None, connection_string=None):
+    def __init__(
+        self, args, encrypted_traffic_data=None, connection_string=None
+    ):
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=encrypted_traffic_data,

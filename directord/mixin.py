@@ -21,6 +21,8 @@ import sys
 from distutils import util as dist_utils
 
 import jinja2
+from jinja2 import StrictUndefined
+
 import yaml
 
 import directord
@@ -42,7 +44,11 @@ class Mixin:
         """
 
         self.args = args
-        self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
+        self.blueprint = jinja2.Environment(
+            loader=jinja2.BaseLoader(),
+            keep_trailing_newline=True,
+            undefined=StrictUndefined,
+        )
         self.log = logger.getLogger(
             name="directord", debug_logging=getattr(args, "debug", False)
         )

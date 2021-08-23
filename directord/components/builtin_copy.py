@@ -165,10 +165,11 @@ class Component(components.ComponentBase):
                 msg_id=job["job_id"].encode(),
                 control=driver.transfer_end,
             )
-            if blueprint and not self.file_blueprinter(
+            success, error = self.file_blueprinter(
                 cache=cache, file_to=file_to
-            ):
-                return utils.file_sha256(file_to), None, None, None
+            )
+            if blueprint and not success:
+                return utils.file_sha256(file_to), error, False, None
 
             return info, None, True, None
         else:
@@ -205,10 +206,9 @@ class Component(components.ComponentBase):
             self.log.critical(str(e))
             return None, traceback.format_exc(), False, None
 
-        if blueprint and not self.file_blueprinter(
-            cache=cache, file_to=file_to
-        ):
-            return utils.file_sha256(file_to), None, None
+        success, error = self.file_blueprinter(cache=cache, file_to=file_to)
+        if blueprint and not success:
+            return utils.file_sha256(file_to), error, False, None
 
         stderr = None
         outcome = True

@@ -206,6 +206,7 @@ class Server(interface.Interface):
         if job_stderr:
             job_metadata["STDERR"][identity] = job_stderr
 
+        self.log.debug("current job [ %s ] state [ %s ]", job_id, job_status)
         job_metadata["PROCESSING"] = job_status.decode()
 
         _createtime = job_metadata.get("_createtime")
@@ -520,6 +521,7 @@ class Server(interface.Interface):
                             targets = self.workers.keys()
                             task = data_item["task"] = utils.get_uuid()
                             data_item["skip_cache"] = True
+                            data_item["extend_args"] = True
                             data_item["verb"] = "ARG"
                             data_item["args"] = {
                                 "query": {

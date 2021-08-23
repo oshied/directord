@@ -22,8 +22,7 @@ from directord.drivers import qpid as qpid_driver
 class TestDriverZMQ(unittest.TestCase):
     def setUp(self):
         self.driver = qpid_driver.Driver(
-            args=tests.FakeArgs,
-            connection_string="tcp://localhost"
+            args=tests.FakeArgs, connection_string="tcp://localhost"
         )
         self.socket = mock.MagicMock()
 

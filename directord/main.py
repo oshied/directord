@@ -18,6 +18,8 @@ import os
 import sys
 
 import jinja2
+from jinja2 import StrictUndefined
+
 import tabulate
 import yaml
 
@@ -410,7 +412,11 @@ class SystemdInstall:
         blueprintLoader = jinja2.FileSystemLoader(
             searchpath=os.path.join(base, "templates")
         )
-        blueprintEnv = jinja2.Environment(loader=blueprintLoader)
+        blueprintEnv = jinja2.Environment(
+            loader=blueprintLoader,
+            keep_trailing_newline=True,
+            undefined=StrictUndefined,
+        )
         blueprint = blueprintEnv.get_template("{}.j2".format(service_file))
         blueprint_args = {
             "directord_binary": os.path.join(path, "directord"),
