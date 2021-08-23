@@ -1,0 +1,83 @@
+# This orchestration will run a functional test, exercising much of the functionality Directord offers.
+#
+---
+
+- async: true
+  jobs:
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode0
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode0 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode0
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode0
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode0 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode0
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode0
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode0 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode0
+
+
+- async: true
+  jobs:
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode1
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode1 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode1
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode1
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode1 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode1
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode1
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode1 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode1
+
+
+- async: true
+  jobs:
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode2
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode2 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode2
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode2
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode2 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode2
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --skip-cache --chown=0:0 --chmod=0777 /tmp/test/mode2
+
+  # Ensure test directory was created
+  - RUN: --skip-cache stat /tmp/test/mode2 | grep Uid | grep 0777
+
+  - RUN: --skip-cache rmdir /tmp/test/mode2

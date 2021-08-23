@@ -146,6 +146,24 @@ class Processor:
 
         self.log = logger.getLogger(name="directord")
 
+    @staticmethod
+    def get_manager():
+        """Returns a multiprocessing manager."""
+
+        return multiprocessing.Manager()
+
+    @staticmethod
+    def get_lock():
+        """Returns a multiprocessing lock."""
+
+        return multiprocessing.Lock()
+
+    @staticmethod
+    def get_queue():
+        """Returns a multiprocessing queue."""
+
+        return multiprocessing.Queue()
+
     def run_threads(self, threads):
         """Execute process objects from an array.
 

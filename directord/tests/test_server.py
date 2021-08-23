@@ -215,7 +215,6 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
-                "_starttime": ANY,
             },
         )
 
@@ -256,7 +255,7 @@ class TestServer(tests.TestDriverBase):
                 "STDOUT": {},
                 "SUCCESS": ["test-node"],
                 "TASK_SHA256": "YYY",
-                "TOTAL_ROUNDTRIP_TIME": ANY,
+                "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -300,7 +299,7 @@ class TestServer(tests.TestDriverBase):
                 "STDOUT": {},
                 "SUCCESS": ["test-node"],
                 "TASK_SHA256": "YYY",
-                "TOTAL_ROUNDTRIP_TIME": ANY,
+                "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -344,7 +343,7 @@ class TestServer(tests.TestDriverBase):
                 "STDOUT": {},
                 "FAILED": ["test-node"],
                 "TASK_SHA256": "YYY",
-                "TOTAL_ROUNDTRIP_TIME": ANY,
+                "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -624,6 +623,8 @@ class TestServer(tests.TestDriverBase):
             job_output="info",
             job_stdout=None,
             job_stderr=None,
+            execution_time=0,
+            recv_time=1,
         )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
@@ -666,6 +667,8 @@ class TestServer(tests.TestDriverBase):
             job_output='{"key": "value"}',
             job_stdout=None,
             job_stderr=None,
+            execution_time=0,
+            recv_time=1,
         )
 
     @patch("os.chown", autospec=True)

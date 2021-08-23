@@ -167,6 +167,8 @@ class Server(interface.Interface):
         job_output,
         job_stdout=None,
         job_stderr=None,
+        execution_time=0,
+        recv_time=0,
     ):
         """Set job status.
 
@@ -185,13 +187,11 @@ class Server(interface.Interface):
         :type job_stdout: String
         :param job_stderr: Job error information
         :type job_stderr: String
+        :param execution_time: Time the task took to execute
+        :type execution_time: Float
+        :param recv_time: Time a task return was received.
+        :type recv_tim: Float
         """
-
-        def return_exec_time(started):
-            if started:
-                return time.time() - started
-
-            return 0
 
         job_metadata = self.return_jobs.get(job_id)
         if not job_metadata:
@@ -208,15 +208,13 @@ class Server(interface.Interface):
 
         job_metadata["PROCESSING"] = job_status.decode()
 
-        _starttime = job_metadata.get("_starttime")
         _createtime = job_metadata.get("_createtime")
+        if not _createtime:
+            _createtime = job_metadata["_createtime"] = time.time()
+
         if job_status == self.driver.job_ack:
-            if not _createtime:
-                job_metadata["_createtime"] = time.time()
             self.log.debug("%s received job %s", identity, job_id)
         elif job_status == self.driver.job_processing:
-            if not _starttime:
-                job_metadata["_starttime"] = time.time()
             self.log.debug("%s is processing %s", identity, job_id)
         elif job_status in [self.driver.job_end, self.driver.nullbyte]:
             self.log.debug("%s finished processing %s", identity, job_id)
@@ -224,23 +222,15 @@ class Server(interface.Interface):
                 job_metadata["SUCCESS"].append(identity)
             else:
                 job_metadata["SUCCESS"] = [identity]
-            job_metadata["EXECUTION_TIME"] = return_exec_time(
-                started=_starttime
-            )
-            job_metadata["TOTAL_ROUNDTRIP_TIME"] = return_exec_time(
-                started=_createtime
-            )
+            job_metadata["EXECUTION_TIME"] = float(execution_time)
+            job_metadata["ROUNDTRIP_TIME"] = recv_time - _createtime
         elif job_status == self.driver.job_failed:
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
                 job_metadata["FAILED"] = [identity]
-            job_metadata["EXECUTION_TIME"] = return_exec_time(
-                started=_starttime
-            )
-            job_metadata["TOTAL_ROUNDTRIP_TIME"] = return_exec_time(
-                started=_createtime
-            )
+            job_metadata["EXECUTION_TIME"] = float(execution_time)
+            job_metadata["ROUNDTRIP_TIME"] = recv_time - _createtime
 
         self.return_jobs[job_id] = job_metadata
 
@@ -497,6 +487,12 @@ class Server(interface.Interface):
                     stderr = stderr.decode()
                 if stdout:
                     stdout = stdout.decode()
+
+                try:
+                    data_item = json.loads(data.decode())
+                except Exception:
+                    data_item = dict()
+
                 self._set_job_status(
                     job_status=control,
                     job_id=msg_id.decode(),
@@ -504,12 +500,11 @@ class Server(interface.Interface):
                     job_output=node_output,
                     job_stdout=stdout,
                     job_stderr=stderr,
+                    execution_time=data_item.get("execution_time", 0),
+                    recv_time=time.time(),
                 )
+
                 if command == b"QUERY":
-                    try:
-                        data_item = json.loads(data.decode())
-                    except Exception:
-                        data_item = dict()
                     # NOTE(cloudnull): When a command return is "QUERY" an ARG
                     #                  is resent to all known workers.
                     try:

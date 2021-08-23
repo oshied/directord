@@ -18,6 +18,8 @@ from directord import components
 
 
 class Component(components.ComponentBase):
+    command = "arg"
+
     def __init__(self):
         """Initialize the component cache class.
 
@@ -26,6 +28,7 @@ class Component(components.ComponentBase):
 
         super().__init__(desc="Process cache commands")
         self.cacheable = False
+        self.requires_lock = True
 
     def args(self, cache_type):
         """Set default arguments for a component."""
@@ -38,7 +41,7 @@ class Component(components.ComponentBase):
             help="Set a given argument. KEY VALUE",
         )
 
-    def server(self, exec_string, data, arg_vars, verb):
+    def server(self, exec_string, data, arg_vars):
         """Return data from formatted transfer action.
 
         :param exec_string: Inpute string from action
@@ -47,12 +50,10 @@ class Component(components.ComponentBase):
         :type data: Dictionary
         :param arg_vars: Pre-Formatted arguments
         :type arg_vars: Dictionary
-        :param verb: Interaction key word.
-        :type verb: String
         :returns: Dictionary
         """
 
-        cache_type = "{}s".format(verb.lower())
+        cache_type = "{}s".format(self.verb.lower())
         self.args(cache_type=cache_type)
         args, _ = self.exec_parser(
             parser=self.parser, exec_string=exec_string, arg_vars=arg_vars
@@ -67,20 +68,20 @@ class Component(components.ComponentBase):
         data[cache_type] = {key: value}
         return data
 
-    def client(self, command, cache, job):
+    def client(self, cache, job):
         """Run cache command operation.
 
-        :param command: Work directory path.
-        :type command: String
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
         :type job: Dictionary
+        :param command: Work directory path.
+        :type command: String
         :returns: tuple
         """
 
         # Sets the cache type to "args" or "envs"
-        cache_type = "{}s".format(command.decode().lower())
+        cache_type = "{}s".format(self.command.decode().lower())
 
         try:
             cache_value = ast.literal_eval(job[cache_type])

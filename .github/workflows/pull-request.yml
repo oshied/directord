@@ -71,6 +71,66 @@ jobs:
           name: functional-test-logs
           path: /tmp/directord-*.log
 
+  functional_async_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/dev-setup.sh
+      - name: Re-install self
+        run: sudo /opt/directord/bin/pip install --upgrade '.[all]'
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Execute async-functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      orchestrate \
+                      functional-tests-async.yaml \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional-async.log
+            exit 1
+          fi
+      - name: Execute functional async-race-condition check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      orchestrate \
+                      functional-tests-async-race.yaml \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional-async-race.log
+            exit 1
+          fi
+      - name: Execute functional async-time check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          timeout 40 sudo /opt/directord/bin/directord \
+                          orchestrate \
+                          functional-tests-async-time.yaml \
+                          --poll &> /tmp/directord-functional-async-time.log
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-test-logs
+          path: /tmp/directord-*.log
+
   functional_pod_check:
     runs-on: ubuntu-latest
     steps:

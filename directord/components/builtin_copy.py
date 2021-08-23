@@ -23,11 +23,34 @@ from directord import components
 from directord import utils
 
 
+class Transfer:
+    """Transfer connection context manager."""
+
+    def __init__(self, driver):
+        """Initialize the transfer context manager class."""
+
+        self.bind_transfer = driver.transfer_connect()
+
+    def __enter__(self):
+        """Return the bind_transfer object on enter."""
+
+        return self.bind_transfer
+
+    def __exit__(self, *args, **kwargs):
+        """Close the bind transfer object."""
+
+        try:
+            self.bind_transfer.close()
+        except AttributeError:
+            pass
+
+
 class Component(components.ComponentBase):
     def __init__(self):
         """Initialize the component cache class."""
 
         super().__init__(desc="Process transfer commands")
+        self.requires_lock = True
 
     def args(self):
         """Set default arguments for a component."""
@@ -84,7 +107,22 @@ class Component(components.ComponentBase):
 
         return data
 
-    def client(self, job_id, source_file, conn, cache, job):
+    def client(self, cache, job):
+        """Run file transfer operation.
+
+        :param cache: Caching object used to template items within a command.
+        :type cache: Object
+        :param job: Information containing the original job specification.
+        :type job: Dictionary
+        :returns: tuple
+        """
+
+        with Transfer(driver=self.driver) as bind_transfer:
+            return self._client(
+                cache, job, self.info, self.driver, bind_transfer
+            )
+
+    def _client(self, cache, job, source_file, driver, bind_transfer):
         """Run file transfer operation.
 
         File transfer operations will look at the cache, then look for an
@@ -95,17 +133,15 @@ class Component(components.ComponentBase):
         If the user and group arguments are defined the file ownership
         will be set accordingly.
 
-        :param job_id: Job information marker.
-        :type job_id: String
-        :param source_file: Original file location on server.
-        :type source_file: String
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
         :param cache: Caching object used to template items within a command.
         :type cache: Object
         :param job: Information containing the original job specification.
         :type job: Dictionary
+        :param source_file: Original file location on server.
+        :type source_file: String
+        :param driver: Connection object used to store information used in a
+                     return message.
+        :type driver: Object
         :returns: tuple
         """
 
@@ -124,24 +160,25 @@ class Component(components.ComponentBase):
                 "File exists {} and SHA256 {} matches, nothing to"
                 " transfer".format(file_to, file_sha256)
             )
-            conn.ctx.driver.socket_send(
-                socket=conn.ctx.bind_transfer,
-                msg_id=job_id.encode(),
-                control=conn.ctx.driver.transfer_end,
+            driver.socket_send(
+                socket=bind_transfer,
+                msg_id=job["job_id"].encode(),
+                control=driver.transfer_end,
             )
             if blueprint and not self.file_blueprinter(
                 cache=cache, file_to=file_to
             ):
                 return utils.file_sha256(file_to), None, None, None
+
             return info, None, True, None
         else:
             self.log.debug(
                 "Requesting transfer of source file:%s", source_file
             )
-            conn.ctx.driver.socket_send(
-                socket=conn.ctx.bind_transfer,
-                msg_id=job_id.encode(),
-                control=conn.ctx.driver.job_ack,
+            driver.socket_send(
+                socket=bind_transfer,
+                msg_id=job["job_id"].encode(),
+                control=driver.job_ack,
                 command=b"transfer",
                 info=source_file,
             )
@@ -157,10 +194,8 @@ class Component(components.ComponentBase):
                             _,
                             _,
                             _,
-                        ) = conn.ctx.driver.socket_recv(
-                            socket=conn.ctx.bind_transfer
-                        )
-                        if control == conn.ctx.driver.transfer_end:
+                        ) = driver.socket_recv(socket=bind_transfer)
+                        if control == driver.transfer_end:
                             break
                     except Exception:
                         break

@@ -15,9 +15,11 @@ The values available within an orchestration file are `targets` and `jobs`.
 
 * `jobs` is an array of hashes.
 
-* `async` **Optional** is a boolean. This allow an orchestration to run
-  asynchronously. This will instruct all jobs to run in an independent queue
-  within the targets for a given orchestration.
+* `async` **Optional** is a boolean. Enabling this option allows all tasks
+  within a given orchestration to run asynchronously.
+
+> There's no ordering construct within an asynchronous orchestration, every
+  task within the jobs array will be executed as fast as possible.
 
 ##### Example Orchestrations
 

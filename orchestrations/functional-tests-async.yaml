@@ -1,0 +1,128 @@
+# This orchestration will run a functional test, exercising much of the functionality Directord offers.
+#
+---
+
+- async: true
+  jobs:
+  # Ensure custom components are working.
+  - ECHO: test
+    vars:
+      skip_cache: true
+
+
+- async: true
+  jobs:
+  # Test run
+  - RUN: echo hello world 1
+
+  # Test --run-once with RUN
+  - RUN: --run-once echo hello world 2
+
+  # Test --skip-cache with RUN
+  - RUN: --skip-cache echo hello world
+
+  # Simulate long running tasks
+  - RUN: sleep 10
+
+
+- async: true
+  jobs:
+  # Test creating a work directory
+  - WORKDIR: /tmp/test
+
+  # Simulate long running tasks
+  - RUN: sleep 10
+
+  # Test run
+  - RUN: echo hello world 3
+
+  # Test --run-once with RUN
+  - RUN: --run-once echo hello world 4
+
+  # Test --skip-cache with RUN
+  - RUN: --skip-cache echo hello world 3
+
+
+- jobs:
+  # Test setting a cached object using the the stdout of a RUN
+  - RUN: --stdout-arg test_stdout_arg echo hello world 2
+
+  # Test creating a work directory with a ownership and mode
+  - WORKDIR: --chown=0:0 --chmod=0777 /tmp/test/mode
+
+  # Ensure test directory was created
+  - RUN: stat /tmp/test/mode | grep Uid | grep 0777
+
+  # Simulate long running tasks
+  - RUN: sleep 10
+
+  # Test setting a cached object using the the stdout of a RUN using an arg_var.
+  - RUN: echo hello world 3
+    vars:
+      stdout_arg: test_stdout_arg2
+
+  # Test setting a cached object using the ARG verb
+  - ARG: test_runtime_arg argument
+
+  # Test setting a complex cached object using the ARG verb
+  - ARG: test_runtime_complex_arg_list ['test']
+  - ARG: test_runtime_complex_arg_int 1
+  - ARG: >
+      test_runtime_complex_arg_dict {"a": "b"}
+  - ARG: test_runtime_complex_arg_float 1.2
+
+  # Test setting a cached object using the ENV verb
+  - ENV: test_runtime_arg_as_env environment
+
+  # Test environment interactions
+  - RUN: echo "${test_runtime_arg_as_env}" | tee /tmp/test/test-sh-env
+  - RUN: grep environment /tmp/test/test-sh-env
+
+  # Test copying a file.
+  - COPY: files/test-cache.yaml /tmp/test/test-cache.yaml
+  - RUN: grep test_array_args /tmp/test/test-cache.yaml
+
+  # Test with --chown user to copying a file.
+  - COPY: --chown=0 files/test-cache.yaml /tmp/test/test-cache.yaml-0
+  - RUN: grep test_array_args /tmp/test/test-cache.yaml-0
+
+  # Test with --chown user:group to copying a file.
+  - COPY: --chown=0:0 files/test-cache.yaml /tmp/test/test-cache.yaml-0-0
+  - RUN: grep test_array_args /tmp/test/test-cache.yaml-0-0
+
+  # Test with --run-once and --chown user to copying a file.
+  - COPY: --run-once --chown=0 files/test-cache.yaml /tmp/test/test-cache.yaml-once-0
+  - RUN: --run-once grep test_array_args /tmp/test/test-cache.yaml-once-0
+
+  # Test with --run-once and --chown user:group to copying a file.
+  - COPY: --run-once --chown=0:0 files/test-cache.yaml /tmp/test/test-cache.yaml-once-0-0
+  - RUN: --run-once grep test_array_args /tmp/test/test-cache.yaml-once-0-0
+
+  # Test loading a cache file.
+  - CACHEFILE: /tmp/test/test-cache.yaml
+
+  # Test ADD with --blueprint and test for blueprinted environment argument.
+  - ADD: --blueprint files/test-blueprint.yaml.j2 /tmp/test/
+  - RUN: grep test_stdout_arg /tmp/test/test-blueprint.yaml.j2 | grep "hello world 2"
+  - RUN: grep test_stdout_arg2 /tmp/test/test-blueprint.yaml.j2 | grep "hello world 3"
+
+  # Test ADD with --chown user and --blueprint and test for blueprinted argument.
+  - ADD: --chown=0 --blueprint files/test-blueprint.yaml.j2 /tmp/test/test-blueprint.yaml-0
+  - RUN: grep test_runtime_arg /tmp/test/test-blueprint.yaml-0 | grep "argument"
+
+  # Test ADD with --run-once and --chown user and --blueprint and test for blueprinted integer.
+  - ADD: --run-once --chown=0 --blueprint files/test-blueprint.yaml.j2 /tmp/test/test-blueprint.yaml-once-0
+  - RUN: --run-once grep test_integer_args /tmp/test/test-blueprint.yaml-once-0 | grep "9000"
+
+  # Test ADD with --run-once and --chown user:group and --blueprint and test for blueprinted string.
+  - ADD: --run-once --chown=0:0 --blueprint files/test-blueprint.yaml.j2 /tmp/test/test-blueprint.yaml-once-0-0
+  - RUN: --run-once grep test_string_args /tmp/test/test-blueprint.yaml-once-0-0 | grep "test"
+
+  # Test COPY a file and setting the mode
+  - COPY: --chmod=0664 files/test-cache.yaml /tmp/test/test-cache.yaml-mode
+  - RUN: stat /tmp/test/test-cache.yaml-mode | grep Uid | grep 0664
+
+  # Test query function
+  - RUN: --stdout-arg query_test_arg hostname -f
+  - QUERY: query_test_arg
+  - RUN: echo "{{ query }}" | tee /tmp/test/test-query
