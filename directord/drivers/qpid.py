@@ -17,14 +17,11 @@ from directord import drivers
 
 
 class Driver(drivers.BaseDriver):
-    def __init__(self, args, encrypted_traffic_data, connection_string):
+    def __init__(self, args, encrypted_traffic_data=None, connection_string=None):
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=encrypted_traffic_data,
             connection_string=connection_string,
-        )
-        raise NotImplementedError(
-            "The QPID driver is not implemented at this time."
         )
 
     def socket_send(
@@ -92,27 +89,6 @@ class Driver(drivers.BaseDriver):
         :param stdout: Encoded output information from a command.
         :type stdout: Bytes
         """
-
-        if not msg_id:
-            msg_id = utils.get_uuid().encode()
-
-        if not control:
-            control = self.nullbyte
-
-        if not command:
-            command = self.nullbyte
-
-        if not data:
-            data = self.nullbyte
-
-        if not info:
-            info = self.nullbyte
-
-        if not stderr:
-            stderr = self.nullbyte
-
-        if not stdout:
-            stdout = self.nullbyte
 
         pass
 
