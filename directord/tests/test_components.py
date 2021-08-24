@@ -741,12 +741,12 @@ class TestComponents(unittest.TestCase):
             blueprinted_content, "No arguments were defined for blueprinting"
         )
 
-    @patch("logging.Logger.critical", autospec=True)
-    def test_blueprinter_failed(self, mock_log_critical):
+    @patch("logging.Logger.warning", autospec=True)
+    def test_blueprinter_failed(self, mock_log_warning):
         _, blueprinted_content = self.components.blueprinter(
             content=tests.TEST_BLUEPRINT_CONTENT.encode(), values={"test": 1}
         )
         self.assertEqual(
             blueprinted_content, "Can't compile non template nodes"
         )
-        mock_log_critical.assert_called()
+        mock_log_warning.assert_called()

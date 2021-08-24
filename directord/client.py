@@ -328,6 +328,9 @@ class Client(interface.Interface):
                             )
                         )
                     finally:
+                        if component.cooldown:
+                            time.sleep(component.cooldown)
+
                         if locked:
                             lock.release()
 
@@ -335,9 +338,6 @@ class Client(interface.Interface):
                             parent_lock["used"] = time.time()
                             parent_lock["lock"].release()
                             parent_lock["locked"] = False
-
-                        if component.cooldown:
-                            time.sleep(component.cooldown)
 
     def _set_job_status(
         self, stdout, stderr, outcome, return_info, job, command, conn

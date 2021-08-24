@@ -528,10 +528,13 @@ class Server(interface.Interface):
                                     node: {data_item.pop("query"): query_value}
                                 }
                             }
+                            data_item["parent_async"] = True
                             data_item.pop("parent_sha1", None)
                             data_item.pop("parent_id", None)
                             data_item.pop("task_sha256sum", None)
-                            data_item["parent_sha1"] = utils.object_sha1(obj=data_item)
+                            data_item["parent_sha1"] = utils.object_sha1(
+                                obj=data_item
+                            )
                             data_item["parent_id"] = utils.get_uuid()
                             data_item["task_sha256sum"] = utils.object_sha256(
                                 data_item
