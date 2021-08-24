@@ -642,7 +642,7 @@ class Client(interface.Interface):
                                     None,
                                     None,
                                     False,
-                                    "Job omitted, parent failure",
+                                    b"Job omitted, parent failure",
                                     job,
                                     command,
                                 )
