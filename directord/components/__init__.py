@@ -17,6 +17,8 @@ import os
 import subprocess
 
 import jinja2
+from jinja2 import StrictUndefined
+
 import yaml
 
 from directord import logger
@@ -43,7 +45,11 @@ class ComponentBase:
 
         self.desc = desc
         self.log = logger.getLogger(name="directord")
-        self.blueprint = jinja2.Environment(loader=jinja2.BaseLoader())
+        self.blueprint = jinja2.Environment(
+            loader=jinja2.BaseLoader(),
+            keep_trailing_newline=True,
+            undefined=StrictUndefined,
+        )
         self.known_args = None
         self.unknown_args = None
         self.cacheable = True  # Enables|Disables component caching
@@ -232,7 +238,13 @@ class ComponentBase:
 
     @staticmethod
     def set_cache(
-        cache, key, value, value_update=False, expire=28800, tag=None
+        cache,
+        key,
+        value,
+        value_update=False,
+        expire=28800,
+        tag=None,
+        extend=False,
     ):
         """Set a cached item.
 
@@ -249,18 +261,21 @@ class ComponentBase:
         :type expire: Integer
         :param tag: Sets the index for a given cached item.
         :type tag: String
+        :param extend: Enable|Disable Extend a map
+        :type extend: Boolean
         """
 
         if value_update:
             orig = cache.pop(key, default=dict())
-            value = utils.merge_dict(orig, value, extend=False)
+            value = utils.merge_dict(orig, value, extend=extend)
         else:
             try:
                 value = value.decode()
             except (ValueError, AttributeError):
                 pass
 
-        cache.set(key, value, tag=tag, expire=expire)
+        with cache.transact():
+            cache.set(key, value, tag=tag, expire=expire, retry=True)
 
     def file_blueprinter(self, cache, file_to):
         """Read a file and blueprint its contents.
@@ -278,16 +293,17 @@ class ComponentBase:
                     content=f.read(), values=cache.get("args")
                 )
                 if file_contents is None:
-                    return False
+                    return False, None
 
             with open(file_to, "w") as f:
                 f.write(file_contents)
         except Exception as e:
-            self.log.critical("File blueprint failure: %s", str(e))
-            return False
+            error = str(e)
+            self.log.critical("File blueprint failure: %s", error)
+            return False, error
         else:
             self.log.info("File %s has been blueprinted.", file_to)
-            return True
+            return True, None
 
     def blueprinter(self, content, values):
         """Return blue printed content.

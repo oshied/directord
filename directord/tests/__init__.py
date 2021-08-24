@@ -118,6 +118,13 @@ class MockSocket:
 
 
 class FakeCache:
+    class transact:
+        def __enter__(self):
+            pass
+
+        def __exit__(self, *args, **kwargs):
+            pass
+
     def __init__(self):
         self.cache = {"args": {"test": 1}}
 

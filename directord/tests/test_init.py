@@ -12,7 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import time
 import unittest
 
 from unittest.mock import ANY
@@ -20,7 +19,6 @@ from unittest.mock import patch
 
 import directord
 
-from directord import datastores
 from directord import logger
 from directord import tests
 
@@ -124,32 +122,6 @@ class TestProcessor(unittest.TestCase):
 
     def tearDown(self):
         self.log_patched.stop()
-
-    def test_wq_prune_0(self):
-        workers = datastores.BaseDocument()
-        workers["test"] = 1
-        workers.empty()
-        self.assertDictEqual(workers, dict())
-        self.log.debug.called_once()
-
-    def test_wq_prune_valid(self):
-        workers = datastores.BaseDocument()
-        workers["valid1"] = {"time": time.time() + 2}
-        workers["invalid1"] = {"time": time.time() - 2}
-        workers["invalid2"] = {"time": time.time() - 3}
-        workers.prune()
-        self.assertEqual(len(workers), 1)
-        self.assertIn("valid1", workers)
-        self.log.debug.called_once()
-
-    def test_wq_empty(self):
-        workers = datastores.BaseDocument()
-        workers["valid1"] = {"time": time.time() + 2}
-        workers["invalid1"] = {"time": time.time() - 2}
-        workers["invalid2"] = {"time": time.time() - 3}
-        self.assertEqual(len(workers), 3)
-        workers.empty()
-        self.assertEqual(len(workers), 0)
 
     def test_read_in_chunks(self):
         chunks = list()

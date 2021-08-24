@@ -494,6 +494,32 @@ class TestComponents(unittest.TestCase):
         )
 
     @patch("logging.Logger.debug", autospec=True)
+    def test__job_executor_arg_extend(self, mock_log_debug):
+        self.client._job_executor(
+            conn=MagicMock(),
+            info=None,
+            job={"extend_args": True, "args": {"key-arg": "value-arg"}},
+            job_id="XXXXXX",
+            cached=False,
+            command=b"ARG",
+        )
+        mock_log_debug.assert_called()
+        self.client.q_general.put.assert_called_with(
+            (
+                {
+                    "cache": None,
+                    "job": {
+                        "extend_args": True,
+                        "args": {"key-arg": "value-arg"},
+                    },
+                },
+                b"ARG",
+                None,
+                False,
+            )
+        )
+
+    @patch("logging.Logger.debug", autospec=True)
     def test__job_executor_arg(self, mock_log_debug):
         self.client._job_executor(
             conn=MagicMock(),
@@ -619,21 +645,19 @@ class TestComponents(unittest.TestCase):
             "builtins.open",
             unittest.mock.mock_open(read_data=tests.TEST_BLUEPRINT_CONTENT),
         ):
-            self.assertTrue(
-                self.components.file_blueprinter(
-                    cache=fake_cache, file_to="/test/file1"
-                )
+            success, _ = self.components.file_blueprinter(
+                cache=fake_cache, file_to="/test/file1"
             )
+            self.assertTrue(success)
         mock_log_info.assert_called()
 
     @patch("logging.Logger.critical", autospec=True)
     def test_file_blueprinter_failed(self, mock_log_critical):
         fake_cache = tests.FakeCache()
-        self.assertFalse(
-            self.components.file_blueprinter(
-                cache=fake_cache, file_to="/test/file1"
-            )
+        success, _ = self.components.file_blueprinter(
+            cache=fake_cache, file_to="/test/file1"
         )
+        self.assertFalse(success)
         mock_log_critical.assert_called()
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)

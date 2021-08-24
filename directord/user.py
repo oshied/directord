@@ -197,7 +197,7 @@ class Manage(User):
             ) as cache:
                 cache_dict = {}
                 for item in cache.iterkeys():
-                    cache_dict[item] = cache[item]
+                    cache_dict[item] = cache.get(item, None)
                 print(json.dumps(cache_dict, indent=4))
                 return
         else:

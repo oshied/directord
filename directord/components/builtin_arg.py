@@ -35,6 +35,14 @@ class Component(components.ComponentBase):
 
         super().args()
         self.parser.add_argument(
+            "--extend-args",
+            action="store_true",
+            help=(
+                "When setting an ARG, allow complex args to extend"
+                " existing ones."
+            ),
+        )
+        self.parser.add_argument(
             cache_type,
             nargs="+",
             action="append",
@@ -44,7 +52,7 @@ class Component(components.ComponentBase):
     def server(self, exec_string, data, arg_vars):
         """Return data from formatted transfer action.
 
-        :param exec_string: Inpute string from action
+        :param exec_string: Input string from action
         :type exec_string: String
         :param data: Formatted data hash
         :type data: Dictionary
@@ -62,8 +70,11 @@ class Component(components.ComponentBase):
         key, value = " ".join(cache_obj[0]).split(" ", 1)
         try:
             value = ast.literal_eval(value)
-        except ValueError:
+        except (ValueError, SyntaxError):
             pass
+
+        if args.extend_args:
+            data["extend_args"] = args.extend_args
 
         data[cache_type] = {key: value}
         return data
@@ -85,7 +96,7 @@ class Component(components.ComponentBase):
 
         try:
             cache_value = ast.literal_eval(job[cache_type])
-        except ValueError:
+        except (ValueError, SyntaxError):
             cache_value = job[cache_type]
 
         self.set_cache(
@@ -94,6 +105,7 @@ class Component(components.ComponentBase):
             value=cache_value,
             value_update=True,
             tag=cache_type,
+            extend=job.get("extend_args", False),
         )
 
         return (
