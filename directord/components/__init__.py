@@ -32,6 +32,7 @@ class ComponentBase:
     info = None
     driver = None
     verb = None
+    cooldown = None
 
     def __init__(self, desc=None):
         """Initialize the component base class.

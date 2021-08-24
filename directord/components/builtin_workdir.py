@@ -74,7 +74,9 @@ class Component(components.ComponentBase):
         """
 
         success, workdir = self.blueprinter(
-            content=job["workdir"], values=cache.get("args"), allow_empty_values=True
+            content=job["workdir"],
+            values=cache.get("args"),
+            allow_empty_values=True,
         )
         if not success:
             return None, workdir, False, None

@@ -73,4 +73,6 @@ class Component(components.ComponentBase):
         else:
             query = None
 
+        self.cooldown = 3
+
         return query, None, True, None

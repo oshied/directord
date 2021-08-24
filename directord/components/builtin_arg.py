@@ -100,7 +100,9 @@ class Component(components.ComponentBase):
             cache_value = job[cache_type]
 
         success, value = self.blueprinter(
-            content=cache_value, values=cache.get("args"), allow_empty_values=True
+            content=cache_value,
+            values=cache.get("args"),
+            allow_empty_values=True,
         )
         if success:
             cache_value = value

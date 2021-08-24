@@ -64,7 +64,9 @@ class Component(components.ComponentBase):
 
         stdout_arg = job.get("stdout_arg")
         success, command = self.blueprinter(
-            content=job["command"], values=cache.get("args"), allow_empty_values=True
+            content=job["command"],
+            values=cache.get("args"),
+            allow_empty_values=True,
         )
         if not success:
             return None, command, False, None
