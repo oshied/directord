@@ -107,7 +107,6 @@ class Component(components.ComponentBase):
             tag=cache_type,
             extend=job.get("extend_args", False),
         )
-
         return (
             "{} added to cache".format(cache_type),
             None,
