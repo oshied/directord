@@ -12,7 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from enum import auto
 import unittest
 from unittest.mock import patch
 

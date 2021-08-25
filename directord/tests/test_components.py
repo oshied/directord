@@ -53,8 +53,36 @@ class TestComponents(unittest.TestCase):
     def tearDown(self):
         self.mock_q_patched.stop()
 
-    def test_sanitize_args(self):
+    def test_options_converter(self):
+        self.components.args()
+        self.components.options_converter(
+            documentation=tests.MOCK_DOCUMENTATION
+        )
+        known_args, unknown_args = self.components.exec_parser(
+            self.components.parser, exec_array=["--snake-case", "test"]
+        )
+        self.assertEqual(
+            vars(known_args),
+            {
+                "skip_cache": False,
+                "run_once": False,
+                "timeout": 600,
+                "snake_case": "test",
+                "opt0": "*.json",
+                "opt1": None,
+                "opt2": False,
+            },
+        )
+        self.assertEqual(unknown_args, list())
 
+    def test_exec_parser(self):
+        self.components.args()
+        with self.assertRaises(SystemExit):
+            self.components.exec_parser(
+                self.components.parser, exec_array=["--exec-help"]
+            )
+
+    def test_sanitize_args(self):
         result = self.components.sanitized_args(execute=self.execute)
         expected = [
             "long",
@@ -369,6 +397,60 @@ class TestComponents(unittest.TestCase):
         )
         self.assertEqual(stderr, "stderr")
         self.assertEqual(outcome, False)
+
+    @patch("subprocess.Popen")
+    def test_run_command_success_env(self, popen):
+        popen.return_value = tests.FakePopen()
+        with patch("os.environ", {"testBaseEnv": "value"}):
+            stdout, _, outcome = components.ComponentBase().run_command(
+                command="test_command", env={"testEnv": "value"}
+            )
+        self.assertEqual(stdout, "stdout")
+        self.assertEqual(outcome, True)
+        popen.assert_called_with(
+            "test_command",
+            stdout=-1,
+            stderr=-1,
+            executable="/bin/sh",
+            env={"testBaseEnv": "value", "testEnv": "value"},
+            shell=True,
+        )
+
+    @patch("subprocess.Popen")
+    def test_run_command_return_codes_int(self, popen):
+        popen.return_value = tests.FakePopen()
+        with patch("os.environ", {"testBaseEnv": "value"}):
+            stdout, _, outcome = components.ComponentBase().run_command(
+                command="test_command", return_codes=99
+            )
+        self.assertEqual(stdout, "stdout")
+        self.assertEqual(outcome, False)
+        popen.assert_called_with(
+            "test_command",
+            stdout=-1,
+            stderr=-1,
+            executable="/bin/sh",
+            env={"testBaseEnv": "value"},
+            shell=True,
+        )
+
+    @patch("subprocess.Popen")
+    def test_run_command_return_codes_list(self, popen):
+        popen.return_value = tests.FakePopen()
+        with patch("os.environ", {"testBaseEnv": "value"}):
+            stdout, _, outcome = components.ComponentBase().run_command(
+                command="test_command", return_codes=[0, 99]
+            )
+        self.assertEqual(stdout, "stdout")
+        self.assertEqual(outcome, True)
+        popen.assert_called_with(
+            "test_command",
+            stdout=-1,
+            stderr=-1,
+            executable="/bin/sh",
+            env={"testBaseEnv": "value"},
+            shell=True,
+        )
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
     @patch("logging.Logger.debug", autospec=True)

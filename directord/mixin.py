@@ -101,7 +101,7 @@ class Mixin:
         data = dict(verb=verb)
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         component_kwargs = dict(
-            exec_string=execute, data=data, arg_vars=arg_vars
+            exec_array=execute, data=data, arg_vars=arg_vars
         )
 
         success, transfer, component = directord.component_import(

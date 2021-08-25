@@ -57,6 +57,41 @@ curve
 """
 
 
+MOCK_DOCUMENTATION = """
+---
+component: test
+author:
+  - user
+short_description: test
+notes: []
+description: test
+options:
+  snake_case:
+    description:
+      - test
+    required: True
+    type: str
+  opt0:
+    description:
+      - test
+    default: '*.json'
+    required: False
+    type: str
+  opt1:
+    description:
+      - test
+      - desc
+    default: {}
+    required: False
+    type: dict
+  opt2:
+    description: test
+    default: False
+    required: False
+    type: bool
+"""
+
+
 class FakePopen:
     """Fake Shell Commands."""
 

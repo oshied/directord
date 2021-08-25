@@ -20,6 +20,7 @@ from unittest.mock import patch
 from directord import interface
 from directord import tests
 
+
 class TestInterface(unittest.TestCase):
     def setUp(self):
         self.args = tests.FakeArgs()
@@ -40,7 +41,9 @@ class TestInterface(unittest.TestCase):
         self.assertEqual(iface.bind_address, "10.1.10.1")
 
     def test_interface_no_driver(self):
-        with patch("directord.plugin_import", autospec=True) as mock_plugin_import:
+        with patch(
+            "directord.plugin_import", autospec=True
+        ) as mock_plugin_import:
             mock_plugin_import.side_effect = ImportError("fail")
             with self.assertRaises(SystemExit):
                 interface.Interface(args=self.args)

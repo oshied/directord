@@ -168,7 +168,9 @@ class ComponentBase:
             if choices:
                 options["choices"] = choices
 
-            self.parser.add_argument("--{}".format(key), **options)
+            self.parser.add_argument(
+                "--{}".format(key.replace("_", "-")), **options
+            )
 
     @staticmethod
     def sanitized_args(execute):
@@ -184,20 +186,20 @@ class ComponentBase:
 
         return [i for g in execute for i in g.split()]
 
-    def exec_parser(self, parser, exec_string, arg_vars=None):
+    def exec_parser(self, parser, exec_array, arg_vars=None):
         """Run the parser and return parsed arguments.
 
         :param parser: Argument parser.
         :type parser: Object
-        :param exec_string: Inpute string from action
-        :type exec_string: String
+        :param exec_array: Inpute string from action
+        :type exec_array: List
         :param arg_vars: Pre-Formatted arguments
         :type arg_vars: Dictionary
         :returns: Tuple
         """
 
         self.known_args, self.unknown_args = parser.parse_known_args(
-            self.sanitized_args(execute=exec_string)
+            self.sanitized_args(execute=exec_array)
         )
         if hasattr(self.known_args, "exec_help") and self.known_args.exec_help:
             raise SystemExit(parser.print_help())
@@ -341,11 +343,11 @@ class ComponentBase:
 
         return self.parser.print_help()
 
-    def server(self, exec_string, data, arg_vars):
+    def server(self, exec_array, data, arg_vars):
         """Server operation.
 
-        :param exec_string: Inpute string from action
-        :type exec_string: String
+        :param exec_array: Inpute string from action
+        :type exec_array: List
         :param data: Formatted data hash
         :type data: Dictionary
         :returns: Dictionary
@@ -353,7 +355,7 @@ class ComponentBase:
 
         self.args()
         self.exec_parser(
-            parser=self.parser, exec_string=exec_string, arg_vars=arg_vars
+            parser=self.parser, exec_array=exec_array, arg_vars=arg_vars
         )
 
     def client(self, cache, job):

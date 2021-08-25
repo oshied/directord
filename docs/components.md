@@ -213,8 +213,8 @@ class Component(components.ComponentBase):
             help=("add echo statement for tests and example."),
         )
 
-    def server(self, exec_string, data, arg_vars):
-        super().server(exec_string=exec_string, data=data, arg_vars=arg_vars)
+    def server(self, exec_array, data, arg_vars):
+        super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         data["echo"] = self.known_args.echo
         return data
 

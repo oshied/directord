@@ -45,11 +45,11 @@ class Component(components.ComponentBase):
             help="A space delineated list of packages to manage.",
         )
 
-    def server(self, exec_string, data, arg_vars):
+    def server(self, exec_array, data, arg_vars):
         """Return data from formatted transfer action.
 
-        :param exec_string: Inpute string from action
-        :type exec_string: String
+        :param exec_array: Inpute string from action
+        :type exec_array: List
         :param data: Formatted data hash
         :type data: Dictionary
         :param arg_vars: Pre-Formatted arguments
@@ -57,7 +57,7 @@ class Component(components.ComponentBase):
         :returns: Dictionary
         """
 
-        super().server(exec_string=exec_string, data=data, arg_vars=arg_vars)
+        super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         if self.known_args.absent:
             data["state"] = "absent"
         elif self.known_args.latest:
