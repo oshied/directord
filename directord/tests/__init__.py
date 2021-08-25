@@ -57,6 +57,41 @@ curve
 """
 
 
+MOCK_DOCUMENTATION = """
+---
+component: test
+author:
+  - user
+short_description: test
+notes: []
+description: test
+options:
+  snake_case:
+    description:
+      - test
+    required: True
+    type: str
+  opt0:
+    description:
+      - test
+    default: '*.json'
+    required: False
+    type: str
+  opt1:
+    description:
+      - test
+      - desc
+    default: {}
+    required: False
+    type: dict
+  opt2:
+    description: test
+    default: False
+    required: False
+    type: bool
+"""
+
+
 class FakePopen:
     """Fake Shell Commands."""
 
@@ -89,6 +124,7 @@ class FakeArgs:
     job_port = 5555
     mode = "client"
     server_address = "localhost"
+    bind_address = "10.1.10.1"
     shared_key = None
     socket_path = "/var/run/directord.sock"
     socket_group = "root"
@@ -131,6 +167,9 @@ class FakeCache:
     def __init__(self):
         self.cache = {"args": {"test": 1}}
 
+    def iterkeys(self):
+        return list(self.cache.keys())
+
     def get(self, key):
         return self.cache.get(key)
 
@@ -166,6 +205,16 @@ class FakeCache:
         return self
 
     def __exit__(*args, **kwargs):
+        pass
+
+
+class FakeThread:
+    daemon = False
+
+    def start(self):
+        pass
+
+    def join(self):
         pass
 
 

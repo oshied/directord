@@ -54,3 +54,16 @@ class TestUI(unittest.TestCase):
 
         ui.UI(args=args, jobs=jobs, nodes=nodes).start_app()
         app.run.assert_called_with(port=8080, host="10.1.10.1")
+
+    @patch("flask.Flask", autospec=True)
+    def test_start_app_all_bind(self, mock_flask):
+        jobs = {}
+        nodes = {}
+        args = tests.FakeArgs()
+        setattr(args, "bind_address", "*")
+        setattr(args, "ui_port", 8080)
+        app = ui.APP = mock_flask.return_value = MagicMock()
+        app.run = MagicMock()
+
+        ui.UI(args=args, jobs=jobs, nodes=nodes).start_app()
+        app.run.assert_called_with(port=8080, host="0.0.0.0")

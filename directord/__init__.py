@@ -54,11 +54,15 @@ def send_data(socket_path, data):
             return b"".join(fragments)
     except PermissionError:
         log = logger.getLogger(name="directord")
-        log.error(
-            "Permission error writing to %s. Check write permissions.",
-            socket_path,
+        error_msg = (
+            "Permission error writing to {}. Check write permissions.".format(
+                socket_path
+            )
         )
-        raise
+        log.error(
+            error_msg,
+        )
+        raise PermissionError(error_msg)
 
 
 def plugin_import(plugin):

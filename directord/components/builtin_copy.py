@@ -71,11 +71,11 @@ class Component(components.ComponentBase):
             help="Set the file to transfer: 'FROM' 'TO'",
         )
 
-    def server(self, exec_string, data, arg_vars):
+    def server(self, exec_array, data, arg_vars):
         """Return data from formatted transfer action.
 
-        :param exec_string: Inpute string from action
-        :type exec_string: String
+        :param exec_array: Inpute string from action
+        :type exec_array: List
         :param data: Formatted data hash
         :type data: Dictionary
         :param arg_vars: Pre-Formatted arguments
@@ -83,7 +83,7 @@ class Component(components.ComponentBase):
         :returns: Dictionary
         """
 
-        super().server(exec_string=exec_string, data=data, arg_vars=arg_vars)
+        super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         if self.known_args.chown:
             chown = self.known_args.chown.split(":", 1)
             if len(chown) == 1:
@@ -126,7 +126,7 @@ class Component(components.ComponentBase):
         """Run file transfer operation.
 
         File transfer operations will look at the cache, then look for an
-        existing file, and finally compare the original SHA256 to what is on
+        existing file, and finally compare the original SHA3_224 to what is on
         disk. If everything checks out the client will request the file
         from the server.
 
@@ -148,7 +148,7 @@ class Component(components.ComponentBase):
         file_to = job["file_to"]
         user = job.get("user")
         group = job.get("group")
-        file_sha256 = job.get("file_sha256sum")
+        file_sha3_224 = job.get("file_sha3_224")
         blueprint = job.get("blueprint", False)
         success, file_to = self.blueprinter(
             content=file_to, values=cache.get("args"), allow_empty_values=True
@@ -159,11 +159,11 @@ class Component(components.ComponentBase):
         mode = job.get("mode")
         if (
             os.path.isfile(file_to)
-            and utils.file_sha256(file_to) == file_sha256
+            and utils.file_sha3_224(file_to) == file_sha3_224
         ):
             info = (
-                "File exists {} and SHA256 {} matches, nothing to"
-                " transfer".format(file_to, file_sha256)
+                "File exists {} and SHA3_224 {} matches, nothing to"
+                " transfer".format(file_to, file_sha3_224)
             )
             driver.socket_send(
                 socket=bind_transfer,
@@ -174,7 +174,7 @@ class Component(components.ComponentBase):
                 cache=cache, file_to=file_to
             )
             if blueprint and not success:
-                return utils.file_sha256(file_to), error, False, None
+                return utils.file_sha3_224(file_to), error, False, None
 
             return info, None, True, None
         else:
@@ -213,7 +213,7 @@ class Component(components.ComponentBase):
 
         success, error = self.file_blueprinter(cache=cache, file_to=file_to)
         if blueprint and not success:
-            return utils.file_sha256(file_to), error, False, None
+            return utils.file_sha3_224(file_to), error, False, None
 
         stderr = None
         outcome = True
@@ -244,4 +244,4 @@ class Component(components.ComponentBase):
         if mode:
             os.chmod(file_to, mode)
 
-        return utils.file_sha256(file_to), stderr, outcome, None
+        return utils.file_sha3_224(file_to), stderr, outcome, None

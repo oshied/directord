@@ -67,8 +67,8 @@ def merge_dict(base, new, extend=True):
             elif extend and isinstance(value, (tuple, set)):
                 if isinstance(base.get(key), tuple):
                     base[key] += tuple(value)
-                elif isinstance(base.get(key), list):
-                    base[key].extend(list(value))
+                elif isinstance(base.get(key), set):
+                    base[key].update(value)
             else:
                 base[key] = new[key]
     elif isinstance(new, list):
@@ -168,13 +168,20 @@ class SSHConnect:
         )
 
         self.known_hosts = self.session.knownhost_init()
+        self.username = username
+        self.key_file = key_file
 
-        if key_file:
-            self.session.userauth_publickey_fromfile(username, key_file)
-            self.log.debug("Key file [ %s ] added", key_file)
+    def set_auth(self):
+        """Set the ssh session auth."""
+
+        if self.key_file:
+            self.session.userauth_publickey_fromfile(
+                self.username, self.key_file
+            )
+            self.log.debug("Key file [ %s ] added", self.key_file)
         else:
             try:
-                self.session.agent_auth(username)
+                self.session.agent_auth(self.username)
                 self.log.debug("User agent based authentication enabled")
             except ssh2.exceptions.AgentConnectionError as e:
                 self.log.warning(
@@ -186,9 +193,9 @@ class SSHConnect:
                 default_keyfile = os.path.join(home, ".ssh/id_rsa")
                 if os.path.exists(default_keyfile):
                     self.session.userauth_publickey_fromfile(
-                        username, default_keyfile
+                        self.username, default_keyfile
                     )
-                    self.log.debug("Key file [ %s ] added", key_file)
+                    self.log.debug("Key file [ %s ] added", self.key_file)
 
         self.channel = None
 
@@ -206,6 +213,7 @@ class SSHConnect:
         :returns: Tuple
         """
 
+        self.set_auth()
         return self
 
     def __exit__(self, *args, **kwargs):
@@ -216,8 +224,8 @@ class SSHConnect:
             self.log.debug("SSH channel is closed.")
 
 
-def file_sha256(file_path, chunk_size=10240):
-    """Return the SHA256 sum of a given file.
+def file_sha3_224(file_path, chunk_size=10240):
+    """Return the SHA3_224 sum of a given file.
 
     Default chunk size: 10K.
 
@@ -228,7 +236,7 @@ def file_sha256(file_path, chunk_size=10240):
     :returns: String
     """
 
-    sha256 = hashlib.sha256()
+    sha3_224 = hashlib.sha3_224()
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             while True:
@@ -236,35 +244,22 @@ def file_sha256(file_path, chunk_size=10240):
                 if not data:
                     break
                 else:
-                    sha256.update(data)
+                    sha3_224.update(data)
 
-        return sha256.hexdigest()
-
-
-def object_sha256(obj):
-    """Return the SHA256 sum of a given object.
-
-    The object used for generating a SHA256 must be JSON compatible.
-
-    :param file_path: File path
-    :type file_path: String
-    :returns: String
-    """
-
-    return hashlib.sha256(json.dumps(obj).encode()).hexdigest()
+        return sha3_224.hexdigest()
 
 
-def object_sha1(obj):
-    """Return the SHA1 sum of a given object.
+def object_sha3_224(obj):
+    """Return the SHA3_224 sum of a given object.
 
-    The object used for generating a SHA1 must be JSON compatible.
+    The object used for generating a SHA3_224 must be JSON compatible.
 
     :param file_path: File path
     :type file_path: String
     :returns: String
     """
 
-    return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
+    return hashlib.sha3_224(json.dumps(obj).encode()).hexdigest()
 
 
 def get_uuid():

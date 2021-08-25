@@ -24,12 +24,12 @@ from directord import utils
 
 TEST_FINGER_PRINTS = [
     b"\n****************************************************************************************************\n"  # noqa
-    b"0     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"1     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"2     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"3     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command1                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"4     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command2                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
-    b"5     35392f49981a44207d4d5ca67aba4b99b415316a     RUN           command3                                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+    b"0     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command1                                65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464",  # noqa
+    b"1     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command2                                3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b",  # noqa
+    b"2     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command3                                0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
+    b"3     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command1                                65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464",  # noqa
+    b"4     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command2                                3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b",  # noqa
+    b"5     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command3                                0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
 ]
 
 
@@ -51,14 +51,6 @@ class TestMixin(tests.TestConnectionBase):
         self.args = tests.FakeArgs()
         self.mixin = mixin.Mixin(args=self.args)
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
-        self.dummy_sha256 = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        self.patched_object_sha256 = patch.object(
-            utils,
-            "object_sha256",
-            autospec=True,
-            return_value=self.dummy_sha256,
-        )
-        self.patched_object_sha256.start()
         self.orchestration = {
             "targets": [
                 "test1",
@@ -82,7 +74,6 @@ class TestMixin(tests.TestConnectionBase):
 
     def tearDown(self):
         super().tearDown()
-        self.patched_object_sha256.stop()
         self.stat_patched.stop()
 
     def test_format_action_unknown(self):
@@ -103,7 +94,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -114,7 +105,6 @@ class TestMixin(tests.TestConnectionBase):
         result = self.mixin.format_action(
             verb="RUN", execute=self.execute, targets=["test_target"]
         )
-        sha256sum = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
         self.assertEqual(
             result,
             json.dumps(
@@ -123,7 +113,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": sha256sum,
+                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test_target"],
@@ -143,7 +133,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                 }
@@ -152,7 +142,7 @@ class TestMixin(tests.TestConnectionBase):
 
     def test_format_action_run_restrict(self):
         result = self.mixin.format_action(
-            verb="RUN", execute=self.execute, restrict="RestrictedSHA256"
+            verb="RUN", execute=self.execute, restrict="Restrictedsha3_224"
         )
         self.assertEqual(
             result,
@@ -162,10 +152,10 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
-                    "restrict": "RestrictedSHA256",
+                    "restrict": "Restrictedsha3_224",
                 }
             ),
         )
@@ -182,7 +172,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "ParentID",
@@ -192,7 +182,7 @@ class TestMixin(tests.TestConnectionBase):
 
     @patch("glob.glob")
     @patch("os.path.isfile")
-    def test_format_action_add_copy(self, mock_isfile, mock_glob):
+    def test_format_action_copy(self, mock_isfile, mock_glob):
         mock_isfile.return_value = True
         mock_glob.return_value = ["/from/one", "/from/two"]
         expected_result = {
@@ -202,7 +192,7 @@ class TestMixin(tests.TestConnectionBase):
             "blueprint": False,
             "timeout": 600,
             "run_once": False,
-            "task_sha256sum": self.dummy_sha256,
+            "task_sha3_224": "de85bef754e1c7652d64cfd19f0a731e70d9bdc42a6698fabfd0f3ac",  # noqa
             "return_raw": False,
             "skip_cache": False,
         }
@@ -210,10 +200,26 @@ class TestMixin(tests.TestConnectionBase):
             verb="COPY", execute=["/from/*", "/to/path/"]
         )
         self.assertEqual(result, json.dumps(expected_result))
+
+    @patch("glob.glob")
+    @patch("os.path.isfile")
+    def test_format_action_add(self, mock_isfile, mock_glob):
+        mock_isfile.return_value = True
+        mock_glob.return_value = ["/from/one", "/from/two"]
+        expected_result = {
+            "verb": "ADD",
+            "to": "/to/path/",
+            "from": ["/from/one", "/from/two"],
+            "blueprint": False,
+            "timeout": 600,
+            "run_once": False,
+            "task_sha3_224": "9420176ba6b63667ffdd0c2e51d896e74a9c8fe100a168bd6086db38",  # noqa
+            "return_raw": False,
+            "skip_cache": False,
+        }
         result = self.mixin.format_action(
             verb="ADD", execute=["/from/*", "/to/path/"]
         )
-        expected_result["verb"] = "ADD"
         self.assertEqual(result, json.dumps(expected_result))
 
     def test_format_action_args(self):
@@ -222,7 +228,7 @@ class TestMixin(tests.TestConnectionBase):
             "args": {"key": "value"},
             "timeout": 600,
             "run_once": False,
-            "task_sha256sum": self.dummy_sha256,
+            "task_sha3_224": "a5d63364114e96a96e5be4261f31a9bc0a45ecd2d5edba11336dd896",  # noqa
             "return_raw": False,
             "skip_cache": False,
         }
@@ -235,7 +241,7 @@ class TestMixin(tests.TestConnectionBase):
             "envs": {"key": "value"},
             "timeout": 600,
             "run_once": False,
-            "task_sha256sum": self.dummy_sha256,
+            "task_sha3_224": "adb3790c327b3b2fd3c438c900ab8a2d6260e1d812eb22cdd056dfc9",  # noqa
             "return_raw": False,
             "skip_cache": False,
         }
@@ -254,7 +260,7 @@ class TestMixin(tests.TestConnectionBase):
                     "workdir": "/test/path",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "b899de26c8055243a43cc0c28d5a689a8ce6510bfcb420397e673a5f",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -273,7 +279,7 @@ class TestMixin(tests.TestConnectionBase):
                     "cachefile": "/test/path",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "dfce171945da1e2079b3ac4a7066eba6efd4880cadd10a649f95a1b4",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -290,7 +296,7 @@ class TestMixin(tests.TestConnectionBase):
                     "cacheevict": "test",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "06460bd89ead48bd50398d0f9f1cd058c169492f88cf915db94eca7f",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -307,7 +313,7 @@ class TestMixin(tests.TestConnectionBase):
                     "query": "test",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": self.dummy_sha256,
+                    "task_sha3_224": "6a3389639ebec5f7bcae998f73545fb9efb9cc975a38606168b6ceb9",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -335,12 +341,12 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
+                    "parent_sha3_224": "5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08",  # noqa
                 }
             ),
         )
@@ -373,7 +379,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": [
@@ -382,7 +388,7 @@ class TestMixin(tests.TestConnectionBase):
                         "test-override3",
                     ],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
+                    "parent_sha3_224": "5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08",  # noqa
                 }
             ),
         )
@@ -408,12 +414,12 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
+                    "parent_sha3_224": "5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08",  # noqa
                     "restrict": ["a", "b", "c"],
                 }
             ),
@@ -442,12 +448,12 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                     "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
+                    "parent_sha3_224": "5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08",  # noqa
                 }
             ),
         )
@@ -475,12 +481,12 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
                     "return_raw": True,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
+                    "parent_sha3_224": "5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08",  # noqa
                 }
             ),
         )
@@ -495,6 +501,7 @@ class TestMixin(tests.TestConnectionBase):
         finally:
             self.args = tests.FakeArgs()
 
+        print(return_data)
         self.assertEqual(return_data, TEST_FINGER_PRINTS)
         self.assertEqual(len(return_data), 6)
 
@@ -542,12 +549,12 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],
                     "parent_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                    "parent_sha1": "35392f49981a44207d4d5ca67aba4b99b415316a",
+                    "parent_sha3_224": "5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08",  # noqa
                 }
             ),
         )
@@ -572,7 +579,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command 1",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha256sum": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",  # noqa
+                    "task_sha3_224": "7c246b21b5cee84063951ffb6fba0ee0baff787416e13c948c1b12a6",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],

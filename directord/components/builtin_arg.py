@@ -49,11 +49,11 @@ class Component(components.ComponentBase):
             help="Set a given argument. KEY VALUE",
         )
 
-    def server(self, exec_string, data, arg_vars):
+    def server(self, exec_array, data, arg_vars):
         """Return data from formatted transfer action.
 
-        :param exec_string: Input string from action
-        :type exec_string: String
+        :param exec_array: Input string from action
+        :type exec_array: List
         :param data: Formatted data hash
         :type data: Dictionary
         :param arg_vars: Pre-Formatted arguments
@@ -64,7 +64,7 @@ class Component(components.ComponentBase):
         cache_type = "{}s".format(self.verb.lower())
         self.args(cache_type=cache_type)
         args, _ = self.exec_parser(
-            parser=self.parser, exec_string=exec_string, arg_vars=arg_vars
+            parser=self.parser, exec_array=exec_array, arg_vars=arg_vars
         )
         cache_obj = getattr(args, cache_type)
         key, value = " ".join(cache_obj[0]).split(" ", 1)

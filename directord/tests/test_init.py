@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import time
 import unittest
 
 from unittest.mock import ANY
@@ -21,6 +22,23 @@ import directord
 
 from directord import logger
 from directord import tests
+
+
+COMPONENT_FAILURE_INFO = """Failure - Unknown Component
+ERROR:No module named 'directord.components.builtin_notacomponent'
+[Errno 2] No such file or directory: '/test/path/share/directord/components/notacomponent.py'
+[Errno 2] No such file or directory: '/etc/directord/components/notacomponent.py'
+COMMAND:notacomponent
+ID:None
+PATH:['/test/path/share/directord/components', '/etc/directord/components']"""  # noqa
+COMPONENT_VENV_FAILURE_INFO = """Failure - Unknown Component
+ERROR:No module named 'directord.components.builtin_notacomponent'
+[Errno 2] No such file or directory: '/test/venv-path/share/directord/components/notacomponent.py'
+[Errno 2] No such file or directory: '/test/path/share/directord/components/notacomponent.py'
+[Errno 2] No such file or directory: '/etc/directord/components/notacomponent.py'
+COMMAND:notacomponent
+ID:None
+PATH:['/test/venv-path/share/directord/components', '/test/path/share/directord/components', '/etc/directord/components']"""  # noqa
 
 
 class TestLogger(unittest.TestCase):
@@ -123,6 +141,29 @@ class TestProcessor(unittest.TestCase):
     def tearDown(self):
         self.log_patched.stop()
 
+    def test_get_manager(self):
+        with patch("multiprocessing.Manager") as mock_manager:
+            self.processor.get_manager()
+            mock_manager.assert_called()
+
+    def test_get_lock(self):
+        with patch("multiprocessing.Lock") as mock_lock:
+            self.processor.get_lock()
+            mock_lock.assert_called()
+
+    def test_get_queue(self):
+        with patch("multiprocessing.Queue") as mock_queue:
+            self.processor.get_queue()
+            mock_queue.assert_called()
+
+    def test_run_threads(self):
+        thread1 = tests.FakeThread()
+        thread2 = tests.FakeThread()
+        self.processor.run_threads(threads=[(thread1, False), (thread2, True)])
+        self.assertEqual(len(self.processor.processes), 2)
+        self.assertFalse(thread1.daemon)
+        self.assertTrue(thread2.daemon)
+
     def test_read_in_chunks(self):
         chunks = list()
         with unittest.mock.patch(
@@ -147,8 +188,22 @@ class TestProcessor(unittest.TestCase):
                     self.log.debug.called_once()
         self.assertListEqual(chunks, ["d", "a", "t", "a"])
 
-    def test_run_threads(self):
-        pass
+    def test_timeout_error_reraise(self):
+        with self.assertRaises(TimeoutError):
+            with self.processor.timeout(1, "test-job_id", reraise=True):
+                time.sleep(5)
+
+    def test_timeout_error(self):
+        with self.processor.timeout(1, "test-job_id"):
+            time.sleep(5)
+
+    def test_timeout(self):
+        with self.processor.timeout(5, "test-job_id"):
+            time.sleep(1)
+
+    def test_raise_timeout(self):
+        with self.assertRaises(TimeoutError):
+            self.processor.raise_timeout()
 
 
 class TestUnixSocket(unittest.TestCase):
@@ -167,13 +222,18 @@ class TestUnixSocket(unittest.TestCase):
             directord.socket.AF_UNIX, directord.socket.SOCK_STREAM
         )
 
+    @patch("logging.Logger.error", autospec=True)
+    def test_unix_socket_error(self, mock_log_error):
+        with patch.object(directord, "UNIXSocketConnect") as conn:
+            conn.side_effect = PermissionError()
+            with self.assertRaises(PermissionError):
+                directord.send_data("/test.sock", "test")
+        mock_log_error.assert_called()
+
 
 class TestDirectordConnect(unittest.TestCase):
     def setUp(self):
         self.dc = directord.DirectordConnect()
-
-    def tearDown(self):
-        pass
 
     def test_from_json(self):
         return_data = self.dc._from_json(b'{"test": "value"}')
@@ -218,3 +278,92 @@ class TestDirectordConnect(unittest.TestCase):
     def test_purge_jobs(self, mock_run):
         mock_run.return_value = b'{"success": true}'
         self.assertTrue(self.dc.purge_jobs())
+
+    @patch("directord.user.Manage.run", autospec=True)
+    def test_list_jobs(self, mock_run):
+        mock_run.return_value = b"{}"
+        self.dc.list_jobs()
+
+
+class TestDirectordInit(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_plugin_import(self):
+        with patch("importlib.import_module", autospec=True) as mock_module:
+            directord.plugin_import("notaplugin")
+        mock_module.assert_called_once_with("notaplugin", package="directord")
+
+    def test_plugin_import_error(self):
+        with self.assertRaises(ModuleNotFoundError):
+            directord.plugin_import("notaplugin")
+
+    def test_component_import(self):
+        with patch.object(
+            directord, "plugin_import", autospec=True
+        ) as mock_plugin_import:
+            directord.component_import("notaplugin")
+        mock_plugin_import.assert_called_once_with(
+            plugin=".components.builtin_notaplugin"
+        )
+
+    def test_component_import_error(self):
+        self.maxDiff = 1000
+        with patch.object(
+            directord, "plugin_import", autospec=True
+        ) as mock_plugin_import:
+            mock_plugin_import.side_effect = ImportError(
+                "No module named 'directord.components.builtin_notacomponent'"
+            )
+            with patch("sys.base_prefix", "/test/path"):
+                with patch("sys.prefix", "/test/path"):
+                    status, transfer, info = directord.component_import(
+                        "notacomponent"
+                    )
+        self.assertEqual(status, False)
+        self.assertEqual(
+            transfer, "/etc/directord/components/notacomponent.py"
+        )
+        self.assertEqual(info, COMPONENT_FAILURE_INFO)
+
+    def test_component_import_venv_error(self):
+        with patch.object(
+            directord, "plugin_import", autospec=True
+        ) as mock_plugin_import:
+            mock_plugin_import.side_effect = ImportError(
+                "No module named 'directord.components.builtin_notacomponent'"
+            )
+            with patch("sys.base_prefix", "/test/path"):
+                with patch("sys.prefix", "/test/venv-path"):
+                    status, transfer, info = directord.component_import(
+                        "notacomponent"
+                    )
+        self.assertEqual(status, False)
+        self.assertEqual(
+            transfer, "/etc/directord/components/notacomponent.py"
+        )
+        self.assertEqual(info, COMPONENT_VENV_FAILURE_INFO)
+
+    def test_component_import_search(self):
+        with patch.object(
+            directord, "plugin_import", autospec=True
+        ) as mock_plugin_import:
+            mock_plugin_import.side_effect = ImportError(
+                "No module named 'directord.components.builtin_notacomponent'"
+            )
+            with patch("sys.base_prefix", "/test/path"):
+                with patch("sys.prefix", "/test/path"):
+                    with patch(
+                        "importlib.util.spec_from_file_location", autospec=True
+                    ) as mock_spec_from_file:
+                        with patch(
+                            "importlib.util.module_from_spec", autospec=True
+                        ):
+                            directord.component_import("notacomponent")
+                    mock_spec_from_file.assert_called_once_with(
+                        "directord_user_component_notacomponent",
+                        "/test/path/share/directord/components/notacomponent.py",  # noqa
+                    )

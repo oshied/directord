@@ -62,7 +62,7 @@ class Mixin:
         ignore_cache=False,
         restrict=None,
         parent_id=None,
-        parent_sha1=None,
+        parent_sha3_224=None,
         return_raw=False,
         parent_async=False,
     ):
@@ -85,11 +85,11 @@ class Mixin:
                              ignore client caching.
         :type ignore_cache: Boolean
         :param restrict: Restrict job execution based on a provided task
-                         SHA256.
+                         SHA3_224.
         :type restrict: List
         :param parent_id: Set the parent UUID for execution jobs.
         :type parent_id: String
-        :param parent_sha1: Set the parent SHA1 for execution jobs.
+        :param parent_sha3_224: Set the parent sha3_224 for execution jobs.
         :type parent_id: String
         :param return_raw: Enable a raw return from the server.
         :type return_raw: Boolean
@@ -101,7 +101,7 @@ class Mixin:
         data = dict(verb=verb)
         self.log.debug("Executing - VERB:%s, EXEC:%s", verb, execute)
         component_kwargs = dict(
-            exec_string=execute, data=data, arg_vars=arg_vars
+            exec_array=execute, data=data, arg_vars=arg_vars
         )
 
         success, transfer, component = directord.component_import(
@@ -116,7 +116,7 @@ class Mixin:
 
         data["timeout"] = getattr(component.known_args, "timeout", 600)
         data["run_once"] = getattr(component.known_args, "run_once", False)
-        data["task_sha256sum"] = utils.object_sha256(obj=data)
+        data["task_sha3_224"] = utils.object_sha3_224(obj=data)
         data["return_raw"] = return_raw
         data["skip_cache"] = ignore_cache or getattr(
             component.known_args, "skip_cache", False
@@ -131,8 +131,8 @@ class Mixin:
         if parent_id:
             data["parent_id"] = parent_id
 
-        if parent_sha1:
-            data["parent_sha1"] = parent_sha1
+        if parent_sha3_224:
+            data["parent_sha3_224"] = parent_sha3_224
 
         if restrict:
             data["restrict"] = restrict
@@ -176,8 +176,8 @@ class Mixin:
                                 This target list provides an override for
                                 targets found within a given orchestation.
         :type defined_targets: List
-        :param restrict: Restrict a given orchestration job to a set of SHA256
-                         job fingerprints.
+        :param restrict: Restrict a given orchestration job to a set of
+                         SHA3_224 job fingerprints.
         :type restrict: Array
         :param ignore_cache: Instruct the orchestartion job to ignore cached
                              executions.
@@ -189,7 +189,7 @@ class Mixin:
 
         job_to_run = list()
         for orchestrate in orchestrations:
-            parent_sha1 = utils.object_sha1(obj=orchestrate)
+            parent_sha3_224 = utils.object_sha3_224(obj=orchestrate)
             parent_id = utils.get_uuid()
             targets = defined_targets or orchestrate.get("targets", list())
             try:
@@ -211,7 +211,7 @@ class Mixin:
                         restrict=restrict,
                         ignore_cache=ignore_cache,
                         parent_id=parent_id,
-                        parent_sha1=parent_sha1,
+                        parent_sha3_224=parent_sha3_224,
                         return_raw=return_raw,
                         parent_async=parent_async,
                     )
@@ -231,10 +231,10 @@ class Mixin:
                     " {execute:<39} {fingerprint:>13}".format(
                         count=count
                         or "\n{a}\n{b:<5}".format(a="*" * 100, b=0),
-                        parent=job["parent_sha1"],
+                        parent=job["parent_sha3_224"],
                         verb=item["verb"],
                         execute=exec_str,
-                        fingerprint=item["task_sha256sum"],
+                        fingerprint=item["task_sha3_224"],
                     ).encode()
                 )
                 count += 1

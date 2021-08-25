@@ -308,7 +308,7 @@ class Client(interface.Interface):
                     try:
                         locked = False
                         parent_lock = self.l_manager.get(
-                            component_kwargs["job"].get("parent_sha1")
+                            component_kwargs["job"].get("parent_sha3_224")
                         )
                         if parent_lock:
                             parent_lock["locked"] = True
@@ -415,7 +415,7 @@ class Client(interface.Interface):
 
             self.base_component.set_cache(
                 cache=cache,
-                key=job["job_sha256"],
+                key=job["job_sha3_224"],
                 value=state,
                 tag="jobs",
             )
@@ -609,8 +609,8 @@ class Client(interface.Interface):
                     ) = self.driver.socket_recv(socket=self.bind_job)
                     job = json.loads(data.decode())
                     job["job_id"] = job_id = job.get("task", utils.get_uuid())
-                    job["job_sha256"] = job_sha256 = job.get(
-                        "task_sha256sum", utils.object_sha256(job)
+                    job["job_sha3_224"] = job_sha3_224 = job.get(
+                        "task_sha3_224", utils.object_sha3_224(job)
                     )
                     self.driver.socket_send(
                         socket=self.bind_job,
@@ -623,9 +623,9 @@ class Client(interface.Interface):
                     )
 
                     job_parent_id = job.get("parent_id")
-                    job_parent_sha1 = job.get("parent_sha1")
-                    if job_parent_sha1:
-                        self.l_manager[job_parent_sha1] = {
+                    job_parent_sha3_224 = job.get("parent_sha3_224")
+                    if job_parent_sha3_224:
+                        self.l_manager[job_parent_sha3_224] = {
                             "lock": self.manager.Lock(),
                             "used": time.time(),
                             "locked": False,
@@ -633,12 +633,12 @@ class Client(interface.Interface):
 
                     self.log.info(
                         "Job received: parent job UUID [ %s ],"
-                        " parent job SHA1 [ %s ], task UUID [ %s ],"
-                        " task SHA256 [ %s ]",
+                        " parent job sha3_224 [ %s ], task UUID [ %s ],"
+                        " task SHA3_224 [ %s ]",
                         job_parent_id,
-                        job_parent_sha1,
+                        job_parent_sha3_224,
                         job_id,
-                        job_sha256,
+                        job_sha3_224,
                     )
 
                     with utils.ClientStatus(
@@ -671,7 +671,7 @@ class Client(interface.Interface):
                                 job=job,
                                 job_id=job_id,
                                 cached=(
-                                    cache.get(job_sha256)
+                                    cache.get(job_sha3_224)
                                     == self.driver.job_end.decode()
                                     and not job_skip_cache
                                 ),
