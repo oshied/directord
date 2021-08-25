@@ -89,6 +89,7 @@ class FakeArgs:
     job_port = 5555
     mode = "client"
     server_address = "localhost"
+    bind_address = "10.1.10.1"
     shared_key = None
     socket_path = "/var/run/directord.sock"
     socket_group = "root"
