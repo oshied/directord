@@ -12,10 +12,8 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from directord import utils
 import json
 import unittest
-from unittest import mock
 
 from unittest.mock import call
 from unittest.mock import patch
@@ -142,7 +140,7 @@ class TestManager(tests.TestDriverBase):
         self.assertEqual(info, "Job Success: test-id")
 
     @patch("directord.send_data", autospec=True)
-    def test_poll_job_success(self, mock_send_data):
+    def test_poll_job_degraded(self, mock_send_data):
         mock_send_data.return_value = json.dumps(
             {
                 "test-id": {
