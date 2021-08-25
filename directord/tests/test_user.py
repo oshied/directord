@@ -12,8 +12,10 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+from directord import utils
 import json
 import unittest
+from unittest import mock
 
 from unittest.mock import call
 from unittest.mock import patch
@@ -140,6 +142,22 @@ class TestManager(tests.TestDriverBase):
         self.assertEqual(info, "Job Success: test-id")
 
     @patch("directord.send_data", autospec=True)
+    def test_poll_job_success(self, mock_send_data):
+        mock_send_data.return_value = json.dumps(
+            {
+                "test-id": {
+                    "SUCCESS": ["hostname-node1"],
+                    "FAILED": ["hostname-node0"],
+                    "NODES": ["hostname-node0", "hostname-node1"],
+                    "PROCESSING": b"\004".decode(),
+                }
+            }
+        )
+        status, info = self.manage.poll_job("test-id")
+        self.assertEqual(status, None)
+        self.assertEqual(info, "Job Degrated: test-id")
+
+    @patch("directord.send_data", autospec=True)
     def test_poll_job_failed(self, mock_send_data):
         mock_send_data.return_value = json.dumps(
             {
@@ -153,6 +171,22 @@ class TestManager(tests.TestDriverBase):
         status, info = self.manage.poll_job("test-id")
         self.assertEqual(status, False)
         self.assertEqual(info, "Job Failed: test-id")
+
+    @patch("directord.send_data", autospec=True)
+    def test_poll_job_skipped(self, mock_send_data):
+        with patch.object(self.args, "timeout", 1):
+            mock_send_data.return_value = json.dumps(
+                {
+                    "test-id": {
+                        "SUCCESS": [],
+                        "NODES": ["hostname-node1", "hostname-node2"],
+                        "PROCESSING": b"\004".decode(),
+                    }
+                }
+            )
+            status, info = self.manage.poll_job("test-id")
+        self.assertEqual(status, True)
+        self.assertEqual(info, "Job Skipped: test-id")
 
     def test_run_override_unknown(self):
         self.assertRaises(SystemExit, self.manage.run, override="UNKNOWN")
@@ -218,3 +252,21 @@ class TestManager(tests.TestDriverBase):
                 ),
             ]
         )
+
+    @patch("builtins.print")
+    @patch("diskcache.Cache", autospec=True)
+    def test_run_override_dump_cache(self, mock_diskcache, mock_print):
+        cache = mock_diskcache.return_value = tests.FakeCache()
+        cache.set(key="test", value="value")
+        self.manage.run(override="dump-cache")
+        mock_print.assert_called_with(
+            '{\n    "args": {\n        "test": 1\n    },\n    "test": "value"\n}'  # noqa
+        )
+
+    @patch("builtins.print")
+    @patch("diskcache.Cache", autospec=True)
+    def test_run_override_dump_cache_empty(self, mock_diskcache, mock_print):
+        cache = mock_diskcache.return_value = tests.FakeCache()
+        cache.clear()
+        self.manage.run(override="dump-cache")
+        mock_print.assert_called_with("{}")

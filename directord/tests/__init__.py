@@ -131,6 +131,9 @@ class FakeCache:
     def __init__(self):
         self.cache = {"args": {"test": 1}}
 
+    def iterkeys(self):
+        return list(self.cache.keys())
+
     def get(self, key):
         return self.cache.get(key)
 
