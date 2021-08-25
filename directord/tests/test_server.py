@@ -424,7 +424,7 @@ class TestServer(tests.TestDriverBase):
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job_restricted_null(self, mock_log_debug, mock_queue):
-        mock_queue.get.side_effect = [
+        mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
                 "restrict": "12345",
@@ -441,7 +441,7 @@ class TestServer(tests.TestDriverBase):
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.critical", autospec=True)
     def test_run_job_run_node_fail(self, mock_log_critical, mock_queue):
-        mock_queue.get.side_effect = [
+        mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
                 "task_sha3_224": "YYY",
@@ -458,7 +458,7 @@ class TestServer(tests.TestDriverBase):
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job_run(self, mock_log_debug, mock_queue):
         self.server.bind_job = MagicMock()
-        mock_queue.get.side_effect = [
+        mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
                 "task_sha3_224": "YYY",

@@ -305,7 +305,7 @@ class Server(interface.Interface):
         """
 
         try:
-            job_item = self.job_queue.get(block=False, timeout=1)
+            job_item = self.job_queue.get_nowait()
         except Exception:
             self.log.debug(
                 "Directord server found nothing to do, cooling down"
