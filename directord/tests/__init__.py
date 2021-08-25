@@ -172,6 +172,16 @@ class FakeCache:
         pass
 
 
+class FakeThread:
+    daemon = False
+
+    def start(self):
+        pass
+
+    def join(self):
+        pass
+
+
 class TestConnectionBase(unittest.TestCase):
     def setUp(self):
         self.patched_socket = patch("socket.socket.connect", autospec=True)
