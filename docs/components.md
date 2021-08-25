@@ -279,11 +279,11 @@ STDOUT                df.next-c0.localdomain = true
 STDERR                df.next-c0.localdomain =
 NODES                 df.next-c0.localdomain
 VERB                  ECHO
-TASK_SHA256             86823a46fb4af75c9f93c8bedb301dfa8968321a
+TASK_SHA3_224         86823a46fb4af75c9f93c8bedb301dfa8968321a
 JOB_DEFINITION        verb = ECHO
                       echo = true
                       timeout = 600
-                      task_sha256sum = 86823a46fb4af75c9f93c8bedb301dfa8968321a
+                      task_sha3_224 = 86823a46fb4af75c9f93c8bedb301dfa8968321a
                       task = 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
                       parent_id = 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
 PARENT_JOB_ID         09a0d4aa-ff84-40e4-a7e2-88be8dff841a

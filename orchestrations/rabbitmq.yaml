@@ -25,7 +25,7 @@
   - RUN: --stdout-arg rabbitmq_host ip -o r g 1 | awk '{print $7}'
   - QUERY: rabbitmq_host
   - RUN: >-
-      --run-once --stdout-arg rabbitmq_cookie uuidgen | sha256sum | awk '{print $1}'
+      --run-once --stdout-arg rabbitmq_cookie uuidgen | sha3_224sum | awk '{print $1}'
   - RUN: --stdout-arg directord_hostname hostname -f
   - QUERY: directord_hostname
   - RUN: --skip-cache dnf -y install rabbitmq-server erlang
@@ -55,7 +55,7 @@
       --stdout-arg rabbitmq_ssl_self_signed_subject
       echo "/C=US/ST=Texas/L=San Antonio/O=IT/CN={{ directord_hostname }}"
   - RUN: >-
-      openssl req -new -nodes -sha256 -x509 -subj
+      openssl req -new -nodes -sha3_224 -x509 -subj
       "{{ rabbitmq_ssl_self_signed_subject }}"
       -days 3650
       -keyout {{ rabbitmq_ssl_key }}

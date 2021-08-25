@@ -165,11 +165,11 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
-            "task_sha256sum": "YYY",
+            "task_sha3_224": "YYY",
             "skip_cache": True,
             "command": "RUN",
             "job_id": "XXX",
-            "job_sha256": "YYY",
+            "job_sha3_224": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -213,11 +213,11 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
-            "task_sha256sum": "YYY",
+            "task_sha3_224": "YYY",
             "ignore_cache": True,
             "command": "RUN",
             "job_id": "XXX",
-            "job_sha256": "YYY",
+            "job_sha3_224": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -261,7 +261,7 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
-            "task_sha256sum": "YYY",
+            "task_sha3_224": "YYY",
             "parent_id": "ZZZ",
             "command": "RUN",
         }
@@ -299,10 +299,10 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
-            "task_sha256sum": "YYY",
+            "task_sha3_224": "YYY",
             "command": "RUN",
             "job_id": "XXX",
-            "job_sha256": "YYY",
+            "job_sha3_224": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -347,11 +347,11 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", True, None]
         job_def = {
             "task": "XXX",
-            "task_sha256sum": "YYY",
+            "task_sha3_224": "YYY",
             "command": "RUN",
             "parent_id": "ZZZ",
             "job_id": "XXX",
-            "job_sha256": "YYY",
+            "job_sha3_224": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -397,10 +397,10 @@ class TestClient(tests.TestDriverBase):
         mock_job_executor.return_value = [b"", b"", False, None]
         job_def = {
             "task": "XXX",
-            "task_sha256sum": "YYY",
+            "task_sha3_224": "YYY",
             "command": "RUN",
             "job_id": "XXX",
-            "job_sha256": "YYY",
+            "job_sha3_224": "YYY",
         }
         self.mock_driver.socket_recv.side_effect = [
             (

@@ -224,8 +224,8 @@ class SSHConnect:
             self.log.debug("SSH channel is closed.")
 
 
-def file_sha256(file_path, chunk_size=10240):
-    """Return the SHA256 sum of a given file.
+def file_sha3_224(file_path, chunk_size=10240):
+    """Return the SHA3_224 sum of a given file.
 
     Default chunk size: 10K.
 
@@ -236,7 +236,7 @@ def file_sha256(file_path, chunk_size=10240):
     :returns: String
     """
 
-    sha256 = hashlib.sha256()
+    sha3_224 = hashlib.sha3_224()
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             while True:
@@ -244,35 +244,22 @@ def file_sha256(file_path, chunk_size=10240):
                 if not data:
                     break
                 else:
-                    sha256.update(data)
+                    sha3_224.update(data)
 
-        return sha256.hexdigest()
-
-
-def object_sha256(obj):
-    """Return the SHA256 sum of a given object.
-
-    The object used for generating a SHA256 must be JSON compatible.
-
-    :param file_path: File path
-    :type file_path: String
-    :returns: String
-    """
-
-    return hashlib.sha256(json.dumps(obj).encode()).hexdigest()
+        return sha3_224.hexdigest()
 
 
-def object_sha1(obj):
-    """Return the SHA1 sum of a given object.
+def object_sha3_224(obj):
+    """Return the SHA3_224 sum of a given object.
 
-    The object used for generating a SHA1 must be JSON compatible.
+    The object used for generating a SHA3_224 must be JSON compatible.
 
     :param file_path: File path
     :type file_path: String
     :returns: String
     """
 
-    return hashlib.sha1(json.dumps(obj).encode()).hexdigest()
+    return hashlib.sha3_224(json.dumps(obj).encode()).hexdigest()
 
 
 def get_uuid():

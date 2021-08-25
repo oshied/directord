@@ -158,7 +158,7 @@ class TestUtils(tests.TestConnectionBase):
         mock_log_debug.assert_called()
         mock_log_warning.assert_called()
 
-    def test_file_sha256(self):
+    def test_file_sha3_224(self):
         with patch("os.path.exists") as mock_path:
             mock_path.return_value = True
             with unittest.mock.patch(
@@ -166,13 +166,13 @@ class TestUtils(tests.TestConnectionBase):
             ) as mock_file:
                 with patch("os.path.exists") as mock_path:
                     mock_path.retun_value = True
-                    sha256 = utils.file_sha256(file_path=mock_file)
+                    sha3_224 = utils.file_sha3_224(file_path=mock_file)
                     self.assertEqual(
-                        sha256,
-                        "3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7",  # noqa
+                        sha3_224,
+                        "4516c726a95c8d5dadcf1d252fac1f2c2e0c435a2cd76db0be854bf7",  # noqa
                     )
 
-    def test_file_sha256_set_chunk(self):
+    def test_file_sha3_224_set_chunk(self):
         with patch("os.path.exists") as mock_path:
             mock_path.return_value = True
             with unittest.mock.patch(
@@ -180,26 +180,19 @@ class TestUtils(tests.TestConnectionBase):
             ) as mock_file:
                 with patch("os.path.exists") as mock_path:
                     mock_path.retun_value = True
-                    sha256 = utils.file_sha256(
+                    sha3_224 = utils.file_sha3_224(
                         file_path=mock_file, chunk_size=1
                     )
                     self.assertEqual(
-                        sha256,
-                        "3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7",  # noqa
+                        sha3_224,
+                        "4516c726a95c8d5dadcf1d252fac1f2c2e0c435a2cd76db0be854bf7",  # noqa
                     )
 
-    def test_object_sha256(self):
-        sha256 = utils.object_sha256(obj={"test": "value"})
+    def test_object_sha3_224(self):
+        sha3_224 = utils.object_sha3_224(obj={"test": "value"})
         self.assertEqual(
-            sha256,
-            "71e1ec59dd990e14f06592c6146a79cbce0e1997810dd011923cc72a2ef1d1ae",  # noqa
-        )
-
-    def test_object_sha1(self):
-        sha256 = utils.object_sha1(obj={"test": "value"})
-        self.assertEqual(
-            sha256,
-            "4e0b1f3b9b1e08306ab4e388a65847c73a902097",  # noqa
+            sha3_224,
+            "4bc695abcb557b8e893a69389488afa07fcf9b42028de30db92c887b",  # noqa
         )
 
     def test_get_uuid(self):

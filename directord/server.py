@@ -284,7 +284,7 @@ class Server(interface.Interface):
                 "NODES": [i.decode() for i in targets],
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
-                "TASK_SHA256": job_item["task_sha256sum"],
+                "TASK_SHA3_224": job_item["task_sha3_224"],
                 "JOB_DEFINITION": job_item,
                 "PARENT_JOB_ID": job_item.get("parent_id"),
                 "_createtime": time.time(),
@@ -313,11 +313,11 @@ class Server(interface.Interface):
             )
             return 512, time.time()
         else:
-            restrict_sha256 = job_item.get("restrict")
-            if restrict_sha256:
-                if job_item["task_sha256sum"] not in restrict_sha256:
+            restrict_sha3_224 = job_item.get("restrict")
+            if restrict_sha3_224:
+                if job_item["task_sha3_224"] not in restrict_sha3_224:
                     self.log.debug(
-                        "Job restriction %s is unknown.", restrict_sha256
+                        "Job restriction %s is unknown.", restrict_sha3_224
                     )
                     return 512, time.time()
 
@@ -354,7 +354,7 @@ class Server(interface.Interface):
             for identity in targets:
                 if job_item["verb"] in ["ADD", "COPY"]:
                     for file_path in job_item["from"]:
-                        job_item["file_sha256sum"] = utils.file_sha256(
+                        job_item["file_sha3_224"] = utils.file_sha3_224(
                             file_path=file_path
                         )
                         if job_item["to"].endswith(os.sep):
@@ -529,14 +529,14 @@ class Server(interface.Interface):
                                 }
                             }
                             data_item["parent_async"] = True
-                            data_item.pop("parent_sha1", None)
+                            data_item.pop("parent_sha3_224", None)
                             data_item.pop("parent_id", None)
-                            data_item.pop("task_sha256sum", None)
-                            data_item["parent_sha1"] = utils.object_sha1(
-                                obj=data_item
-                            )
+                            data_item.pop("task_sha3_224", None)
+                            data_item[
+                                "parent_sha3_224"
+                            ] = utils.object_sha3_224(obj=data_item)
                             data_item["parent_id"] = utils.get_uuid()
-                            data_item["task_sha256sum"] = utils.object_sha256(
+                            data_item["task_sha3_224"] = utils.object_sha3_224(
                                 data_item
                             )
                             self.create_return_jobs(
@@ -572,7 +572,7 @@ class Server(interface.Interface):
         message of 10M before requiring the client to reconnect.
 
         All received data is expected to be JSON serialized data. Before
-        being added to the queue, a task ID and SHA256 SUM is added to the
+        being added to the queue, a task ID and SHA3_224 SUM is added to the
         content. This is done for tracking and caching purposes. The task
         ID can be defined in the data. If a task ID is not defined one will
         be generated.
