@@ -728,23 +728,25 @@ class TestComponents(unittest.TestCase):
         mock_chown.assert_called()
 
     def test_blueprinter(self):
-        blueprinted_content = self.components.blueprinter(
+        _, blueprinted_content = self.components.blueprinter(
             content=tests.TEST_BLUEPRINT_CONTENT, values={"test": 1}
         )
         self.assertEqual(blueprinted_content, "This is a blueprint string 1")
 
     def test_blueprinter_no_values(self):
-        blueprinted_content = self.components.blueprinter(
+        _, blueprinted_content = self.components.blueprinter(
             content=tests.TEST_BLUEPRINT_CONTENT, values=None
         )
         self.assertEqual(
-            blueprinted_content, "This is a blueprint string {{ test }}"
+            blueprinted_content, "No arguments were defined for blueprinting"
         )
 
-    @patch("logging.Logger.critical", autospec=True)
-    def test_blueprinter_failed(self, mock_log_critical):
-        blueprinted_content = self.components.blueprinter(
+    @patch("logging.Logger.warning", autospec=True)
+    def test_blueprinter_failed(self, mock_log_warning):
+        _, blueprinted_content = self.components.blueprinter(
             content=tests.TEST_BLUEPRINT_CONTENT.encode(), values={"test": 1}
         )
-        self.assertEqual(blueprinted_content, None)
-        mock_log_critical.assert_called()
+        self.assertEqual(
+            blueprinted_content, "Can't compile non template nodes"
+        )
+        mock_log_warning.assert_called()

@@ -179,7 +179,6 @@ class Client(interface.Interface):
 
         self.log.debug("Running component:%s", command.decode())
         component_kwargs = dict(cache=None, job=job)
-        conn.start_processing()
         if job.get("parent_async"):
             self.log.debug("Running [ %s ] in async queue", job_id)
             self.q_async.put((component_kwargs, command, info, cached))
@@ -263,15 +262,31 @@ class Client(interface.Interface):
         if not success:
             self.log.warning(component)
             self.q_return.put(
-                (None, None, success, None, component_kwargs["job"], command)
+                (
+                    None,
+                    None,
+                    success,
+                    None,
+                    component_kwargs["job"],
+                    command,
+                    0,
+                )
             )
-        elif cached and component.cacheable:
+        elif cached and component.cacheable is True:
             self.log.info(
                 "Cache hit on [ %s ], task skipped.",
                 component_kwargs["job"]["job_id"],
             )
             self.q_return.put(
-                (None, None, "skipped", None, component_kwargs["job"], command)
+                (
+                    None,
+                    None,
+                    "skipped",
+                    None,
+                    component_kwargs["job"],
+                    command,
+                    0,
+                )
             )
         else:
             # Set the comment command argument
@@ -289,6 +304,7 @@ class Client(interface.Interface):
                     disk=diskcache.JSONDisk,
                 ) as cache:
                     component_kwargs["cache"] = cache
+
                     try:
                         locked = False
                         parent_lock = self.l_manager.get(
@@ -312,6 +328,9 @@ class Client(interface.Interface):
                             )
                         )
                     finally:
+                        if component.cooldown:
+                            time.sleep(component.cooldown)
+
                         if locked:
                             lock.release()
 
@@ -340,6 +359,7 @@ class Client(interface.Interface):
         :param conn: Job bind connection object.
         :type conn: Object
         """
+
         if stdout:
             stdout = stdout.strip()
             if not isinstance(stdout, bytes):
@@ -356,11 +376,12 @@ class Client(interface.Interface):
 
         if outcome is False:
             state = conn.job_state = self.driver.job_failed
-            self.log.error("Job failed %s", job["job_id"])
+            self.log.error("Job failed [ %s ]", job["job_id"])
         elif outcome is True:
             state = conn.job_state = self.driver.job_end
-            self.log.info("Job complete %s", job["job_id"])
+            self.log.info("Job complete [ %s ]", job["job_id"])
         elif outcome == "skipped":
+            self.log.info("Job skipped [ %s ]", job["job_id"])
             conn.info = b"task skipped"
             state = conn.job_state = self.driver.job_end
         else:
@@ -467,14 +488,6 @@ class Client(interface.Interface):
             self.log.error(status)
             conn.info = status.encode()
             conn.job_state = self.driver.job_failed
-
-            self.base_component.set_cache(
-                cache=cache,
-                key=job["job_sha256"],
-                value=self.driver.job_failed,
-                tag="jobs",
-            )
-
             return False
         else:
             return True
@@ -645,11 +658,13 @@ class Client(interface.Interface):
                                     b"Job omitted, parent failure",
                                     job,
                                     command,
+                                    0,
                                 )
                             )
                             if sentinel:
                                 break
                         else:
+                            c.job_state = self.driver.job_processing
                             self._job_executor(
                                 conn=c,
                                 info=info,

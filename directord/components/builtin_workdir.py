@@ -73,15 +73,20 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        workdir = self.blueprinter(
-            content=job["workdir"], values=cache.get("args")
+        success, workdir = self.blueprinter(
+            content=job["workdir"],
+            values=cache.get("args"),
+            allow_empty_values=True,
         )
+        if not success:
+            return None, workdir, False, None
+
         user = job.get("user")
         group = job.get("group")
         mode = job.get("mode")
 
         if not workdir:
-            return None, None, False
+            return None, None, False, None
 
         try:
             os.makedirs(workdir, exist_ok=True)

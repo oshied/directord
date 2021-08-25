@@ -96,13 +96,6 @@ class ClientStatus:
         self.stderr = ctx.driver.nullbyte
         self.stdout = ctx.driver.nullbyte
 
-    def start_processing(self):
-        self.ctx.driver.socket_send(
-            socket=self.socket,
-            msg_id=self.job_id,
-            control=self.ctx.driver.job_processing,
-        )
-
     def __enter__(self):
         """Upon enter, return the context manager object for future updates.
 
@@ -113,6 +106,21 @@ class ClientStatus:
 
     def __exit__(self, *args, **kwargs):
         """Upon exit, send a final status message."""
+
+        try:
+            self.stderr = self.stderr.encode()
+        except AttributeError:
+            pass
+
+        try:
+            self.stdout = self.stdout.encode()
+        except AttributeError:
+            pass
+
+        try:
+            self.info = self.info.encode()
+        except AttributeError:
+            pass
 
         self.ctx.driver.socket_send(
             socket=self.socket,

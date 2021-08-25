@@ -32,6 +32,7 @@ class ComponentBase:
     info = None
     driver = None
     verb = None
+    cooldown = None
 
     def __init__(self, desc=None):
         """Initialize the component base class.
@@ -274,7 +275,7 @@ class ComponentBase:
             except (ValueError, AttributeError):
                 pass
 
-        with cache.transact():
+        with cache.transact(retry=True):
             cache.set(key, value, tag=tag, expire=expire, retry=True)
 
     def file_blueprinter(self, cache, file_to):
@@ -289,14 +290,15 @@ class ComponentBase:
 
         try:
             with open(file_to) as f:
-                file_contents = self.blueprinter(
+                success, contents = self.blueprinter(
                     content=f.read(), values=cache.get("args")
                 )
-                if file_contents is None:
-                    return False, None
+
+            if not success:
+                return False, contents
 
             with open(file_to, "w") as f:
-                f.write(file_contents)
+                f.write(contents)
         except Exception as e:
             error = str(e)
             self.log.critical("File blueprint failure: %s", error)
@@ -305,7 +307,7 @@ class ComponentBase:
             self.log.info("File %s has been blueprinted.", file_to)
             return True, None
 
-    def blueprinter(self, content, values):
+    def blueprinter(self, content, values, allow_empty_values=False):
         """Return blue printed content.
 
         :param content: A string item that will be interpreted and blueprinted.
@@ -313,22 +315,26 @@ class ComponentBase:
         :param values: Dictionary items that will be used to render a
                        blueprinted item.
         :type values: Dictionary
-        :returns: String | None
+        :param allow_empty_values: Enable|Disable null values
+        :type allow_empty_values: Boolean
+        :returns: Tuple
         """
 
-        if values:
-            try:
-                _contents = self.blueprint.from_string(content)
-                rendered_content = _contents.render(**values)
-            except Exception as e:
-                self.log.critical(
-                    "blueprint failure: %s values: %s", str(e), values
-                )
-                return
+        if not values:
+            if allow_empty_values:
+                values = dict()
             else:
-                return rendered_content
+                return False, "No arguments were defined for blueprinting"
 
-        return content
+        try:
+            _contents = self.blueprint.from_string(content)
+            rendered_content = _contents.render(**values)
+        except Exception as e:
+            error = str(e)
+            self.log.warning("blueprint failure: %s values: %s", error, values)
+            return False, error
+        else:
+            return True, rendered_content
 
     def parser_error(self):
         """Return parser help information."""

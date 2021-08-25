@@ -99,6 +99,14 @@ class Component(components.ComponentBase):
         except (ValueError, SyntaxError):
             cache_value = job[cache_type]
 
+        success, value = self.blueprinter(
+            content=cache_value,
+            values=cache.get("args"),
+            allow_empty_values=True,
+        )
+        if success:
+            cache_value = value
+
         self.set_cache(
             cache=cache,
             key=cache_type,
@@ -107,7 +115,6 @@ class Component(components.ComponentBase):
             tag=cache_type,
             extend=job.get("extend_args", False),
         )
-
         return (
             "{} added to cache".format(cache_type),
             None,

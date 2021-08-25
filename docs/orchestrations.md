@@ -18,8 +18,9 @@ The values available within an orchestration file are `targets` and `jobs`.
 * `async` **Optional** is a boolean. Enabling this option allows all tasks
   within a given orchestration to run asynchronously.
 
-> There's no ordering construct within an asynchronous orchestration, every
-  task within the jobs array will be executed as fast as possible.
+> Asynchronous orchestrations allow operators to run many orchestrations at
+  the same time while following the defined task ordering.
+
 
 ##### Example Orchestrations
 

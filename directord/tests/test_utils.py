@@ -98,19 +98,6 @@ class TestUtils(tests.TestConnectionBase):
             stdout=unittest.mock.ANY,
         )
 
-    def test_ctx_mgr_clientstatus_start_processing(self):
-        ctx = unittest.mock.MagicMock()
-        socket = unittest.mock.MagicMock()
-        with utils.ClientStatus(
-            socket=socket, job_id=b"test-id-start", command=b"test", ctx=ctx
-        ) as c:
-            c.start_processing()
-            ctx.driver.socket_send.assert_called_with(
-                socket=socket,
-                msg_id=b"test-id-start",
-                control=unittest.mock.ANY,
-            )
-
     def test_sshconnect(
         self,
     ):

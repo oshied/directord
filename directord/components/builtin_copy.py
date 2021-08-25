@@ -150,7 +150,12 @@ class Component(components.ComponentBase):
         group = job.get("group")
         file_sha256 = job.get("file_sha256sum")
         blueprint = job.get("blueprint", False)
-        file_to = self.blueprinter(content=file_to, values=cache.get("args"))
+        success, file_to = self.blueprinter(
+            content=file_to, values=cache.get("args"), allow_empty_values=True
+        )
+        if not success:
+            return None, file_to, False, None
+
         mode = job.get("mode")
         if (
             os.path.isfile(file_to)
