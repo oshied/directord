@@ -67,8 +67,8 @@ def merge_dict(base, new, extend=True):
             elif extend and isinstance(value, (tuple, set)):
                 if isinstance(base.get(key), tuple):
                     base[key] += tuple(value)
-                elif isinstance(base.get(key), list):
-                    base[key].extend(list(value))
+                elif isinstance(base.get(key), set):
+                    base[key].update(value)
             else:
                 base[key] = new[key]
     elif isinstance(new, list):
@@ -168,13 +168,20 @@ class SSHConnect:
         )
 
         self.known_hosts = self.session.knownhost_init()
+        self.username = username
+        self.key_file = key_file
 
-        if key_file:
-            self.session.userauth_publickey_fromfile(username, key_file)
-            self.log.debug("Key file [ %s ] added", key_file)
+    def set_auth(self):
+        """Set the ssh session auth."""
+
+        if self.key_file:
+            self.session.userauth_publickey_fromfile(
+                self.username, self.key_file
+            )
+            self.log.debug("Key file [ %s ] added", self.key_file)
         else:
             try:
-                self.session.agent_auth(username)
+                self.session.agent_auth(self.username)
                 self.log.debug("User agent based authentication enabled")
             except ssh2.exceptions.AgentConnectionError as e:
                 self.log.warning(
@@ -186,9 +193,9 @@ class SSHConnect:
                 default_keyfile = os.path.join(home, ".ssh/id_rsa")
                 if os.path.exists(default_keyfile):
                     self.session.userauth_publickey_fromfile(
-                        username, default_keyfile
+                        self.username, default_keyfile
                     )
-                    self.log.debug("Key file [ %s ] added", key_file)
+                    self.log.debug("Key file [ %s ] added", self.key_file)
 
         self.channel = None
 
@@ -206,6 +213,7 @@ class SSHConnect:
         :returns: Tuple
         """
 
+        self.set_auth()
         return self
 
     def __exit__(self, *args, **kwargs):
