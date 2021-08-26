@@ -260,7 +260,7 @@ class Client(interface.Interface):
         )
 
         if not success:
-            self.log.warning(component)
+            self.log.warning("Component lookup failure [ %s ]", component)
             self.q_return.put(
                 (
                     None,
@@ -291,10 +291,19 @@ class Client(interface.Interface):
                 )
             )
         else:
+            self.log.debug(
+                "Starting component execution for job [ %s ].",
+                component_kwargs["job"]["job_id"],
+            )
             # Set the comment command argument
             setattr(component, "command", command)
             setattr(component, "info", info)
             setattr(component, "driver", self.driver)
+
+            locked = False
+            parent_lock = self.l_manager.get(
+                component_kwargs["job"].get("parent_sha3_224")
+            )
 
             with self.timeout(
                 time=component_kwargs["job"].get("timeout", 600),
@@ -307,14 +316,9 @@ class Client(interface.Interface):
                 ) as cache:
                     component_kwargs["cache"] = cache
 
-                    locked = False
-                    parent_lock = self.l_manager.get(
-                        component_kwargs["job"].get("parent_sha3_224")
-                    )
-
                     if parent_lock:
-                        parent_lock["locked"] = True
                         parent_lock["lock"].acquire()
+                        parent_lock["locked"] = True
 
                     if component.requires_lock:
                         lock.acquire()
@@ -331,12 +335,16 @@ class Client(interface.Interface):
                         )
                     )
 
+            if locked:
+                lock.release()
+
             if component.block_on_task:
+                block_on_task = True
                 with self.timeout(
                     time=240,
                     job_id=component.block_on_task["task"],
                 ):
-                    while True:
+                    while block_on_task:
                         with diskcache.Cache(
                             self.args.cache_path,
                             tag_index=True,
@@ -349,17 +357,28 @@ class Client(interface.Interface):
                                 self.driver.job_failed.decode(),
                                 self.driver.nullbyte.decode(),
                             ]:
-                                break
+                                block_on_task = False
                             else:
+                                self.log.debug(
+                                    "waiting for callback job to complete. %s",
+                                    component.block_on_task,
+                                )
                                 time.sleep(1)
-
-            if locked:
-                lock.release()
+                    else:
+                        self.log.debug(
+                            "Task [ %s ] callback complete",
+                            component.block_on_task["task"],
+                        )
 
             if parent_lock:
                 parent_lock["used"] = time.time()
                 parent_lock["lock"].release()
                 parent_lock["locked"] = False
+
+            self.log.debug(
+                "Component execution complete for job [ %s ].",
+                component_kwargs["job"]["job_id"],
+            )
 
     def _set_job_status(
         self, stdout, stderr, outcome, return_info, job, block_on_task, conn

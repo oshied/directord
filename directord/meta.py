@@ -12,8 +12,8 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 __author__ = "Kevin Carter"
 __email__ = "kevin@cloudnull.com"
-__driver_options__ = ["zmq", "qpid"]
+__driver_options__ = ["zmq"]
 __driver_default__ = "zmq"
