@@ -270,6 +270,7 @@ class Client(interface.Interface):
                     component_kwargs["job"],
                     command,
                     0,
+                    None,
                 )
             )
         elif cached and component.cacheable is True:
@@ -286,6 +287,7 @@ class Client(interface.Interface):
                     component_kwargs["job"],
                     command,
                     0,
+                    None,
                 )
             )
         else:
@@ -305,42 +307,62 @@ class Client(interface.Interface):
                 ) as cache:
                     component_kwargs["cache"] = cache
 
-                    try:
-                        locked = False
-                        parent_lock = self.l_manager.get(
-                            component_kwargs["job"].get("parent_sha3_224")
+                    locked = False
+                    parent_lock = self.l_manager.get(
+                        component_kwargs["job"].get("parent_sha3_224")
+                    )
+
+                    if parent_lock:
+                        parent_lock["locked"] = True
+                        parent_lock["lock"].acquire()
+
+                    if component.requires_lock:
+                        lock.acquire()
+                        locked = True
+
+                    _starttime = time.time()
+                    self.q_return.put(
+                        component.client(**component_kwargs)
+                        + (
+                            component_kwargs["job"],
+                            command,
+                            time.time() - _starttime,
+                            component.block_on_task,
                         )
-                        if parent_lock:
-                            parent_lock["locked"] = True
-                            parent_lock["lock"].acquire()
+                    )
 
-                        if component.requires_lock:
-                            lock.acquire()
-                            locked = True
+            if component.block_on_task:
+                with self.timeout(
+                    time=240,
+                    job_id=component.block_on_task["task"],
+                ):
+                    while True:
+                        with diskcache.Cache(
+                            self.args.cache_path,
+                            tag_index=True,
+                            disk=diskcache.JSONDisk,
+                        ) as cache:
+                            if cache.get(
+                                component.block_on_task["task_sha3_224"]
+                            ) in [
+                                self.driver.job_end.decode(),
+                                self.driver.job_failed.decode(),
+                                self.driver.nullbyte.decode(),
+                            ]:
+                                break
+                            else:
+                                time.sleep(1)
 
-                        _starttime = time.time()
-                        self.q_return.put(
-                            component.client(**component_kwargs)
-                            + (
-                                component_kwargs["job"],
-                                command,
-                                time.time() - _starttime,
-                            )
-                        )
-                    finally:
-                        if component.cooldown:
-                            time.sleep(component.cooldown)
+            if locked:
+                lock.release()
 
-                        if locked:
-                            lock.release()
-
-                        if parent_lock:
-                            parent_lock["used"] = time.time()
-                            parent_lock["lock"].release()
-                            parent_lock["locked"] = False
+            if parent_lock:
+                parent_lock["used"] = time.time()
+                parent_lock["lock"].release()
+                parent_lock["locked"] = False
 
     def _set_job_status(
-        self, stdout, stderr, outcome, return_info, job, command, conn
+        self, stdout, stderr, outcome, return_info, job, block_on_task, conn
     ):
         """Set job status.
 
@@ -354,8 +376,10 @@ class Client(interface.Interface):
         :type return_info: Bytes
         :param job: Job definition
         :type job: Dictionary
-        :param command: Byte encoded command used to run a given job.
-        :type command: Bytes
+        :param block_on_task: Job to post back to the server to create
+                              a new task which the client will wait
+                              for.
+        :type block_on_task: Dictionary
         :param conn: Job bind connection object.
         :type conn: Object
         """
@@ -391,10 +415,9 @@ class Client(interface.Interface):
         if return_info:
             conn.info = return_info
 
-        if command == b"QUERY":
+        if block_on_task:
+            job["new_task"] = block_on_task
             conn.data = json.dumps(job).encode()
-            if stdout:
-                conn.info = stdout
         else:
             conn.data = json.dumps(
                 {"execution_time": job["execution_time"]}
@@ -435,6 +458,7 @@ class Client(interface.Interface):
                 job,
                 command,
                 execution_time,
+                block_on_task,
             ) = self.q_return.get_nowait()
         except Exception:
             pass
@@ -453,7 +477,7 @@ class Client(interface.Interface):
                     outcome,
                     return_info,
                     job,
-                    command,
+                    block_on_task,
                     c,
                 )
 
@@ -659,6 +683,7 @@ class Client(interface.Interface):
                                     job,
                                     command,
                                     0,
+                                    None,
                                 )
                             )
                             if sentinel:
