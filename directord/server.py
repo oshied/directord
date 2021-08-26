@@ -505,59 +505,30 @@ class Server(interface.Interface):
                     recv_time=time.time(),
                 )
 
-                if command == b"QUERY":
-                    # NOTE(cloudnull): When a command return is "QUERY" an ARG
-                    #                  is resent to all known workers.
-                    try:
-                        query_value = json.loads(node_output)
-                    except Exception as e:
-                        self.log.error(
-                            "Query value failed to load, VALUE:%s, ERROR:%s",
-                            node_output,
-                            str(e),
+                new_task = data_item.get("new_task")
+                if new_task:
+                    targets = self.workers.keys()
+                    self.create_return_jobs(
+                        task=new_task["task"],
+                        job_item=new_task,
+                        targets=targets,
+                    )
+                    self.log.debug(
+                        "Runing query against with DATA: %s",
+                        new_task,
+                    )
+                    for target in targets:
+                        self.log.debug(
+                            "Runing query ARG update against" " TARGET: %s",
+                            target.decode(),
                         )
-                    else:
-                        if query_value and data_item:
-                            targets = self.workers.keys()
-                            task = data_item["task"] = utils.get_uuid()
-                            data_item["skip_cache"] = True
-                            data_item["extend_args"] = True
-                            data_item["verb"] = "ARG"
-                            data_item["args"] = {
-                                "query": {
-                                    node: {data_item.pop("query"): query_value}
-                                }
-                            }
-                            data_item["parent_async"] = True
-                            data_item.pop("parent_sha3_224", None)
-                            data_item.pop("parent_id", None)
-                            data_item.pop("task_sha3_224", None)
-                            data_item[
-                                "parent_sha3_224"
-                            ] = utils.object_sha3_224(obj=data_item)
-                            data_item["parent_id"] = utils.get_uuid()
-                            data_item["task_sha3_224"] = utils.object_sha3_224(
-                                data_item
-                            )
-                            self.create_return_jobs(
-                                task=task, job_item=data_item, targets=targets
-                            )
-                            self.log.debug(
-                                "Runing query against with DATA: %s",
-                                data_item,
-                            )
-                            for target in targets:
-                                self.log.debug(
-                                    "Runing query ARG update against"
-                                    " TARGET: %s",
-                                    target.decode(),
-                                )
-                                self.driver.socket_send(
-                                    socket=self.bind_job,
-                                    identity=target,
-                                    command=data_item["verb"].encode(),
-                                    data=json.dumps(data_item).encode(),
-                                )
+                        self.driver.socket_send(
+                            socket=self.bind_job,
+                            identity=target,
+                            command=new_task["verb"].encode(),
+                            data=json.dumps(new_task).encode(),
+                        )
+
             elif self.workers:
                 poller_interval, poller_time = self.run_job()
 

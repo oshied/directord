@@ -15,6 +15,7 @@
 import json
 
 from directord import components
+from directord import utils
 
 
 class Component(components.ComponentBase):
@@ -69,10 +70,30 @@ class Component(components.ComponentBase):
 
         args = cache.get("args")
         if args:
-            query = json.dumps(args.get(job["query"]))
+            query = args.get(job["query"])
         else:
             query = None
 
-        self.cooldown = 8
+        if query:
+            query_job = job.copy()
+            query_job["task"] = utils.get_uuid()
+            query_job["skip_cache"] = True
+            query_job["extend_args"] = True
+            query_job["verb"] = "ARG"
+            query_job["args"] = {
+                "query": {
+                    self.driver.identity: {query_job.pop("query"): query}
+                }
+            }
+            query_job["parent_async"] = True
+            query_job.pop("parent_sha3_224", None)
+            query_job.pop("parent_id", None)
+            query_job.pop("task_sha3_224", None)
+            query_job["parent_sha3_224"] = utils.object_sha3_224(obj=query_job)
+            query_job["parent_id"] = utils.get_uuid()
+            query_job["task_sha3_224"] = utils.object_sha3_224(query_job)
 
-        return query, None, True, None
+            self.block_on_task = query_job
+            self.log.debug("query job call back [ %s ]", query_job)
+
+        return json.dumps(query), None, True, None
