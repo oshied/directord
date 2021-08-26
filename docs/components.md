@@ -121,6 +121,9 @@ Note that the key `query` stores all of the queried values for a given item
 from across the cluster. This provides the ability to store multiple items
 and intelligently parse/blueprint data based on node memberships.
 
+> The `QUERY` will spawn a new async `ARG` task which will store the returned
+  values across the orchestration targets.
+
 ### Contributed Components
 
 The following section covers all of the contributed components Directord ships with.
