@@ -560,6 +560,7 @@ def main():
                     restrict_headings = [
                         "PARENT_JOB_ID",
                         "EXECUTION_TIME",
+                        "PROCESSING",
                         "SUCCESS",
                         "FAILED",
                     ]

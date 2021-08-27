@@ -327,6 +327,12 @@ class Mixin:
             if key.startswith("_"):
                 continue
 
+            if key == "PROCESSING":
+                if value == b"\026":
+                    value = "True"
+                else:
+                    value = "False"
+
             if isinstance(value, list):
                 value = "\n".join(value)
             elif isinstance(value, dict):
@@ -380,6 +386,13 @@ class Mixin:
                         report_item = value[item.upper()]
                     except KeyError:
                         report_item = value[item.lower()]
+
+                    if item == "PROCESSING":
+                        if report_item == b"\026":
+                            report_item = "True"
+                        else:
+                            report_item = "False"
+
                     if not report_item:
                         arranged_data.append(0)
                     else:
