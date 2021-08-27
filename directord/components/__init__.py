@@ -63,6 +63,7 @@ class ComponentBase:
         env=None,
         execute="/bin/sh",
         return_codes=None,
+        no_block=False,
     ):
         """Run a shell command.
 
@@ -88,6 +89,7 @@ class ComponentBase:
         :param env: Dictionary
         :param execute: String
         :param return_codes: Integer|List
+        :param no_block: Boolean
         :returns: Truple
         """
 
@@ -113,7 +115,10 @@ class ComponentBase:
             executable=execute,
             env=env,
             shell=shell,
+            start_new_session=no_block,
         )
+        if no_block:
+            return None, None, True
 
         output, error = process.communicate()
         if process.returncode not in return_codes:

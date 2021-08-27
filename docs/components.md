@@ -184,6 +184,19 @@ Syntax: `PACKAGE [PACKAGE ...]`
 > NOTE: Installation assumes metadata cache is available.  Use --clear-metadata
   to ensure it's available at least once during an orchestration.
 
+##### `REBOOT`
+
+Syntax: `INTEGER`
+
+Reboot takes an integer value which is interpreted as seconds before executing
+a reboot.
+
+> The default reboot wait time is 10 seconds.
+
+> Reboot operations are performed with `systemctl` on the client side. If the remote
+  system does not support this method, additional operations can be performed using
+  the `RUN` component in non-blocking mode.
+
 ### User defined Components
 
 User defined components are expected to be in the

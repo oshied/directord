@@ -414,6 +414,7 @@ class TestComponents(unittest.TestCase):
             executable="/bin/sh",
             env={"testBaseEnv": "value", "testEnv": "value"},
             shell=True,
+            start_new_session=False,
         )
 
     @patch("subprocess.Popen")
@@ -432,6 +433,7 @@ class TestComponents(unittest.TestCase):
             executable="/bin/sh",
             env={"testBaseEnv": "value"},
             shell=True,
+            start_new_session=False,
         )
 
     @patch("subprocess.Popen")
@@ -450,6 +452,7 @@ class TestComponents(unittest.TestCase):
             executable="/bin/sh",
             env={"testBaseEnv": "value"},
             shell=True,
+            start_new_session=False,
         )
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
