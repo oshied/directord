@@ -218,27 +218,34 @@ class Mixin:
                 )
 
         return_data = list()
-        count = 0
-        for job in job_to_run:
-            formatted_job = self.format_action(**job)
-            if getattr(self.args, "finger_print", False):
+        if getattr(self.args, "finger_print", False):
+            count = 0
+            for job in job_to_run:
+                tabulated_data = list()
+                formatted_job = self.format_action(**job)
                 item = json.loads(formatted_job)
                 exec_str = " ".join(job["execute"])
                 if len(exec_str) >= 30:
                     exec_str = "{execute}...".format(execute=exec_str[:27])
-                return_data.append(
-                    "{count:<5} {parent:<44} {verb:<13}"
-                    " {execute:<39} {fingerprint:>13}".format(
-                        count=count
-                        or "\n{a}\n{b:<5}".format(a="*" * 100, b=0),
-                        parent=job["parent_sha3_224"],
-                        verb=item["verb"],
-                        execute=exec_str,
-                        fingerprint=item["task_sha3_224"],
-                    ).encode()
+                tabulated_data.extend(
+                    [
+                        count,
+                        job["parent_sha3_224"],
+                        item["verb"],
+                        exec_str,
+                        item["task_sha3_224"],
+                    ]
                 )
+                return_data.append(tabulated_data)
                 count += 1
-            else:
+            utils.print_tabulated_data(
+                data=return_data,
+                headers=["count", "parent_sha", "verb", "exec", "job_sha"],
+            )
+            return []
+        else:
+            for job in job_to_run:
+                formatted_job = self.format_action(**job)
                 return_data.append(
                     directord.send_data(
                         socket_path=self.args.socket_path, data=formatted_job

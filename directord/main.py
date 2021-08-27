@@ -20,7 +20,6 @@ import sys
 import jinja2
 from jinja2 import StrictUndefined
 
-import tabulate
 import yaml
 
 import directord
@@ -574,10 +573,8 @@ def main():
                     data=data, restrict_headings=restrict_headings
                 )
                 tabulated_data, headings, computed_values = _tabulated_data
-            print(
-                tabulate.tabulate(
-                    [i for i in tabulated_data if i], headers=headings
-                )
+            utils.print_tabulated_data(
+                data=[i for i in tabulated_data if i], headers=headings
             )
             print("\nTotal Items: {}".format(len(tabulated_data)))
             for k, v in computed_values.items():

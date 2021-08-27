@@ -18,6 +18,7 @@ import os
 import socket
 import uuid
 
+import tabulate
 import yaml
 
 import ssh2
@@ -269,3 +270,12 @@ def get_uuid():
     """
 
     return str(uuid.uuid4())
+
+
+def print_tabulated_data(data, headers):
+    print(
+        tabulate.tabulate(
+            data,
+            headers=headers,
+        )
+    )

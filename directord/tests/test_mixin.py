@@ -22,15 +22,14 @@ from directord import tests
 from directord import utils
 
 
-TEST_FINGER_PRINTS = [
-    b"\n****************************************************************************************************\n"  # noqa
-    b"0     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command1                                65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464",  # noqa
-    b"1     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command2                                3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b",  # noqa
-    b"2     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command3                                0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
-    b"3     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command1                                65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464",  # noqa
-    b"4     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command2                                3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b",  # noqa
-    b"5     5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08 RUN           command3                                0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
-]
+TEST_FINGER_PRINTS = """  count  parent_sha                                                verb    exec      job_sha
+-------  --------------------------------------------------------  ------  --------  --------------------------------------------------------
+      0  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464
+      1  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b
+      2  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323
+      3  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464
+      4  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b
+      5  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323"""  # noqa
 
 
 TEST_ORCHESTRATION_READ = """---
@@ -491,19 +490,18 @@ class TestMixin(tests.TestConnectionBase):
             ),
         )
 
-    def test_exec_orchestrations_finger_print(self):
+    @patch("builtins.print")
+    def test_exec_orchestrations_finger_print(self, mock_print):
         try:
             setattr(self.args, "finger_print", True)
             setattr(self.args, "target", ["test1", "test2", "test3"])
-            return_data = self.mixin.exec_orchestrations(
+            self.mixin.exec_orchestrations(
                 orchestrations=self.target_orchestrations, return_raw=True
             )
         finally:
             self.args = tests.FakeArgs()
 
-        print(return_data)
-        self.assertEqual(return_data, TEST_FINGER_PRINTS)
-        self.assertEqual(len(return_data), 6)
+        mock_print.assert_called_with(TEST_FINGER_PRINTS)
 
     @patch("os.path.exists", autospec=True)
     def test_run_orchestration_not_found(self, mock_path_exists):
