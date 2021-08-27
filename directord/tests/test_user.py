@@ -152,7 +152,7 @@ class TestManager(tests.TestDriverBase):
             }
         )
         status, info = self.manage.poll_job("test-id")
-        self.assertEqual(status, None)
+        self.assertEqual(status, False)
         self.assertEqual(info, "Job Degrated: test-id")
 
     @patch("directord.send_data", autospec=True)
