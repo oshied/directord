@@ -12,10 +12,8 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import datetime
 import json
 import os
-import struct
 import time
 
 import diskcache
@@ -41,33 +39,38 @@ class Client(interface.Interface):
         super(Client, self).__init__(args=args)
 
         self.heartbeat_failure_interval = 2
-        self.bind_heatbeat = None
         self.q_async = self.get_queue()
         self.q_general = self.get_queue()
         self.q_return = self.get_queue()
         self.manager = self.get_manager()
         self.l_manager = self.manager.dict()
         self.base_component = components.ComponentBase()
+        self.heartbeat_misses = 0
 
     def update_heartbeat(self):
         with open("/proc/uptime", "r") as f:
             uptime = float(f.readline().split()[0])
 
-        self.driver.socket_send(
-            socket=self.bind_heatbeat,
-            control=self.driver.heartbeat_notice,
-            data=json.dumps(
-                {
-                    "version": directord.__version__,
-                    "uptime": str(datetime.timedelta(seconds=uptime)),
-                }
-            ).encode(),
-        )
+        self.driver.heartbeat_send(uptime=uptime)
         self.log.debug(
             "Sent heartbeat to server.",
         )
 
-    def run_heartbeat(self, sentinel=False, heartbeat_misses=0):
+    def handle_heartbeat(self, heartbeat_at, reset):
+        self.log.debug("Heartbeat received from server.")
+        if reset:
+            self.log.warning(
+                "Received heartbeat reset command. Connection"
+                " resetting."
+            )
+            self.heartbeat_at = self.driver.heartbeat_reset()
+        else:
+            self.heartbeat_at = heartbeat_at
+            self.heartbeat_misses = 0
+
+        self.heartbeat_failure_interval = 2
+
+    def run_heartbeat(self, sentinel=False):
         """Execute the heartbeat loop.
 
         If the heartbeat loop detects a problem, the connection will be
@@ -83,45 +86,20 @@ class Client(interface.Interface):
         :param heartbeat_misses: Sets the current misses.
         :type heartbeat_misses: Integer
         """
-
-        self.bind_heatbeat = self.driver.heartbeat_connect()
+        self.driver.heartbeat_init()
         self.update_heartbeat()
-        heartbeat_at = self.driver.get_heartbeat(
+        self.heartbeat_at = self.driver.get_heartbeat(
             interval=self.heartbeat_interval
         )
         while True:
-            self.log.debug("Heartbeat misses [ %s ]", heartbeat_misses)
-            if self.bind_heatbeat and self.driver.bind_check(
-                interval=self.heartbeat_interval, bind=self.bind_heatbeat
-            ):
-                (
-                    _,
-                    _,
-                    command,
-                    _,
-                    info,
-                    _,
-                    _,
-                ) = self.driver.socket_recv(socket=self.bind_heatbeat)
-                self.log.debug("Heartbeat received from server.")
-                if command == b"reset":
-                    self.log.warning(
-                        "Received heartbeat reset command. Connection"
-                        " resetting."
-                    )
-                    (
-                        heartbeat_at,
-                        self.bind_heatbeat,
-                    ) = self.driver.heartbeat_reset(
-                        bind_heatbeat=self.bind_heatbeat
-                    )
-                else:
-                    heartbeat_at = struct.unpack("<f", info)[0]
-                    heartbeat_misses = 0
-
-                self.heartbeat_failure_interval = 2
+            self.log.debug("Heartbeat misses [ %s ]", self.heartbeat_misses)
+            if self.driver.heartbeat_check(self.heartbeat_interval):
+                heartbeat_at, reset = self.driver.heartbeat_client_receive()
+                self.handle_heartbeat(heartbeat_at, reset)
             else:
-                if time.time() > heartbeat_at and heartbeat_misses > 5:
+                if (time.time() > self.heartbeat_at
+                        and self.heartbeat_misses > 5):
+
                     self.log.error("Heartbeat failure, can't reach server")
                     self.log.warning(
                         "Reconnecting in [ %s ]...",
@@ -133,18 +111,13 @@ class Client(interface.Interface):
                         self.heartbeat_failure_interval *= 2
 
                     self.log.debug("Running reconnection.")
-                    (
-                        heartbeat_at,
-                        self.bind_heatbeat,
-                    ) = self.driver.heartbeat_reset(
-                        bind_heatbeat=self.bind_heatbeat
-                    )
-                    heartbeat_at = self.driver.get_expiry(
+                    self.heartbeat_at = self.driver.heartbeat_reset()
+                    self.heartbeat_at = self.driver.get_expiry(
                         heartbeat_interval=self.heartbeat_interval,
                         interval=self.heartbeat_liveness,
                     )
                 else:
-                    heartbeat_misses += 1
+                    self.heartbeat_misses += 1
                     self.update_heartbeat()
 
             if sentinel:
@@ -530,8 +503,7 @@ class Client(interface.Interface):
         else:
             self.log.debug("Found task results for [ %s ].", job["job_id"])
             with utils.ClientStatus(
-                socket=self.bind_job,
-                job_id=job["job_id"].encode(),
+                job_id=job["job_id"],
                 command=command,
                 ctx=self,
             ) as c:
@@ -655,7 +627,7 @@ class Client(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_job = self.driver.job_connect()
+        self.driver.job_init()
         poller_time = time.time()
         poller_interval = 128
         cache_check_time = time.time()
@@ -678,36 +650,21 @@ class Client(interface.Interface):
                     self.log.info("Directord client ramping down.")
                 poller_interval = 1024
 
-            if self.driver.bind_check(
-                bind=self.bind_job, constant=poller_interval
-            ):
+            if self.driver.job_check(constant=poller_interval):
                 with diskcache.Cache(
                     self.args.cache_path,
                     tag_index=True,
                     disk=diskcache.JSONDisk,
                 ) as cache:
                     poller_interval, poller_time = 64, time.time()
-                    (
-                        _,
-                        _,
-                        command,
-                        data,
-                        info,
-                        _,
-                        _,
-                    ) = self.driver.socket_recv(socket=self.bind_job)
-                    job = json.loads(data.decode())
+                    command, job, info = self.driver.job_client_receive()
                     job["job_id"] = job_id = job.get(
                         "job_id", utils.get_uuid()
                     )
                     job["job_sha3_224"] = job_sha3_224 = job.get(
                         "job_sha3_224", utils.object_sha3_224(job)
                     )
-                    self.driver.socket_send(
-                        socket=self.bind_job,
-                        msg_id=job_id.encode(),
-                        control=self.driver.job_ack,
-                    )
+                    self.driver.job_client_ack(job_id)
 
                     job_skip_cache = job.get(
                         "skip_cache", job.get("ignore_cache", False)
@@ -733,8 +690,7 @@ class Client(interface.Interface):
                     )
 
                     with utils.ClientStatus(
-                        socket=self.bind_job,
-                        job_id=job_id.encode(),
+                        job_id=job_id,
                         command=command,
                         ctx=self,
                     ) as c:
@@ -799,5 +755,6 @@ class Client(interface.Interface):
                 ),
                 False,
             ),
+            (self.thread(target=self.driver.run), True),
         ]
         self.run_threads(threads=threads)

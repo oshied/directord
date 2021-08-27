@@ -17,7 +17,6 @@ import json
 import multiprocessing
 import os
 import socket
-import struct
 import time
 import urllib.parse as urlparse
 
@@ -40,7 +39,7 @@ class Server(interface.Interface):
         """
 
         super(Server, self).__init__(args=args)
-        self.bind_heatbeat = None
+        self.bind_heartbeat = None
         datastore = getattr(self.args, "datastore", None)
         if not datastore:
             self.log.info("Connecting to internal datastore")
@@ -66,6 +65,33 @@ class Server(interface.Interface):
                     url=url._replace(path="").geturl(), database=(db + 2)
                 )
 
+    def handle_heartbeat(self, identity, control, uptime, version):
+        if control in [
+            self.driver.heartbeat_ready.decode(),
+            self.driver.heartbeat_notice.decode(),
+        ]:
+            self.log.info(
+                "Received Heartbeat from [ %s ], client online",
+                identity,
+            )
+            expire = self.driver.get_expiry(
+                heartbeat_interval=self.heartbeat_interval,
+                interval=self.heartbeat_liveness,
+            )
+            worker_metadata = {"time": expire,
+                               "uptime": uptime,
+                               "version": version}
+
+            self.workers[identity] = worker_metadata
+            self.heartbeat_at = self.driver.get_heartbeat(
+                interval=self.heartbeat_interval
+            )
+            self.driver.heartbeat_send(
+                identity=identity, expire=expire)
+            self.log.debug(
+                "Sent Heartbeat to [ %s ]", identity
+            )
+
     def run_heartbeat(self, sentinel=False):
         """Execute the heartbeat loop.
 
@@ -77,59 +103,20 @@ class Server(interface.Interface):
         :param sentinel: Breaks the loop
         :type sentinel: Boolean
         """
-
-        self.bind_heatbeat = self.driver.heartbeat_bind()
+        self.driver.heartbeat_init()
         heartbeat_at = self.driver.get_heartbeat(
             interval=self.heartbeat_interval
         )
         while True:
             idle_time = heartbeat_at + (self.heartbeat_interval * 3)
-            if self.bind_heatbeat and self.driver.bind_check(
-                bind=self.bind_heatbeat
-            ):
+            if self.driver.heartbeat_check(self.heartbeat_interval):
                 (
                     identity,
-                    _,
                     control,
-                    _,
-                    data,
-                    _,
-                    _,
-                    _,
-                ) = self.driver.socket_recv(socket=self.bind_heatbeat)
-                if control in [
-                    self.driver.heartbeat_ready,
-                    self.driver.heartbeat_notice,
-                ]:
-                    self.log.debug(
-                        "Received Heartbeat from [ %s ], client online",
-                        identity.decode(),
-                    )
-                    expire = self.driver.get_expiry(
-                        heartbeat_interval=self.heartbeat_interval,
-                        interval=self.heartbeat_liveness,
-                    )
-                    worker_metadata = {"time": expire}
-                    try:
-                        loaded_data = json.loads(data.decode())
-                    except Exception:
-                        pass
-                    else:
-                        worker_metadata.update(loaded_data)
-
-                    self.workers[identity] = worker_metadata
-                    heartbeat_at = self.driver.get_heartbeat(
-                        interval=self.heartbeat_interval
-                    )
-                    self.driver.socket_send(
-                        socket=self.bind_heatbeat,
-                        identity=identity,
-                        control=self.driver.heartbeat_notice,
-                        info=struct.pack("<f", expire),
-                    )
-                    self.log.debug(
-                        "Sent Heartbeat to [ %s ]", identity.decode()
-                    )
+                    uptime,
+                    version
+                ) = self.driver.heartbeat_server_receive()
+                self.handle_heartbeat(identity, control, uptime, version)
 
             # Send heartbeats to idle workers if it's time
             elif time.time() > idle_time:
@@ -137,18 +124,13 @@ class Server(interface.Interface):
                     self.log.warning(
                         "Sending idle worker [ %s ] a heartbeat", worker
                     )
-                    self.driver.socket_send(
-                        socket=self.bind_heatbeat,
+                    self.driver.heartbeat_send(
                         identity=worker,
-                        control=self.driver.heartbeat_notice,
-                        command=b"reset",
-                        info=struct.pack(
-                            "<f",
-                            self.driver.get_expiry(
-                                heartbeat_interval=self.heartbeat_interval,
-                                interval=self.heartbeat_liveness,
-                            ),
+                        expire=self.driver.get_expiry(
+                            heartbeat_interval=self.heartbeat_interval,
+                            interval=self.heartbeat_liveness,
                         ),
+                        reset=True
                     )
                     if time.time() > idle_time + 3:
                         self.log.warning("Removing dead worker %s", worker)
@@ -281,7 +263,7 @@ class Server(interface.Interface):
                 "INFO": dict(),
                 "STDOUT": dict(),
                 "STDERR": dict(),
-                "NODES": [i.decode() for i in targets],
+                "NODES": targets,
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
                 "JOB_SHA3_224": job_item["job_sha3_224"],
@@ -328,7 +310,8 @@ class Server(interface.Interface):
             if job_targets and not run_query:
                 targets = list()
                 for job_target in job_targets:
-                    job_target = job_target.encode()
+                    self.log.debug("Looking for target {} in {}".format(
+                        job_target, self.workers))
                     if job_target in self.workers:
                         targets.append(job_target)
                     else:
@@ -374,25 +357,18 @@ class Server(interface.Interface):
                             file_path,
                             identity.decode(),
                         )
-                        self.driver.socket_send(
-                            socket=self.bind_job,
+                        self.driver.job_send(
                             identity=identity,
-                            command=job_item["verb"].encode(),
-                            data=json.dumps(job_item).encode(),
-                            info=file_path.encode(),
+                            job_data=job_item,
+                            info=file_path
                         )
                 else:
                     self.log.debug(
                         "Sending job message for job:%s to identity:%s",
                         job_item["verb"].encode(),
-                        identity.decode(),
+                        identity,
                     )
-                    self.driver.socket_send(
-                        socket=self.bind_job,
-                        identity=identity,
-                        command=job_item["verb"].encode(),
-                        data=json.dumps(job_item).encode(),
-                    )
+                    self.driver.job_send(identity, job_item)
 
                 self.log.debug("Sent job %s to %s", job_id, identity)
             else:
@@ -415,7 +391,7 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_job = self.driver.job_bind()
+        self.driver.job_init()
         self.bind_transfer = self.driver.transfer_bind()
         poller_time = time.time()
         poller_interval = 128
@@ -468,9 +444,7 @@ class Server(interface.Interface):
                         identity=identity.decode(),
                         job_output=info.decode(),
                     )
-            elif self.driver.bind_check(
-                bind=self.bind_job, constant=poller_interval
-            ):
+            elif self.driver.job_check(constant=poller_interval):
                 poller_interval, poller_time = 64, time.time()
                 (
                     identity,
@@ -481,22 +455,22 @@ class Server(interface.Interface):
                     info,
                     stderr,
                     stdout,
-                ) = self.driver.socket_recv(socket=self.bind_job)
-                node = identity.decode()
-                node_output = info.decode()
+                ) = self.driver.job_server_receive()
+                node = identity
+                node_output = info
                 if stderr:
-                    stderr = stderr.decode()
+                    stderr = stderr
                 if stdout:
-                    stdout = stdout.decode()
+                    stdout = stdout
 
                 try:
-                    data_item = json.loads(data.decode())
+                    data_item = json.loads(data)
                 except Exception:
                     data_item = dict()
 
                 self._set_job_status(
                     job_status=control,
-                    job_id=msg_id.decode(),
+                    job_id=msg_id,
                     identity=node,
                     job_output=node_output,
                     job_stdout=stdout,
@@ -522,11 +496,9 @@ class Server(interface.Interface):
                             "Runing query ARG update against" " TARGET: %s",
                             target.decode(),
                         )
-                        self.driver.socket_send(
-                            socket=self.bind_job,
+                        self.driver.job_send(
                             identity=target,
-                            command=new_task["verb"].encode(),
-                            data=json.dumps(new_task).encode(),
+                            job_data=new_task,
                         )
 
             elif self.workers:
@@ -578,6 +550,8 @@ class Server(interface.Interface):
                 data = conn.recv(409600)
                 data_decoded = data.decode()
                 json_data = json.loads(data_decoded)
+                self.log.debug("Read data from socket: {}".format(
+                    json_data))
                 if "manage" in json_data:
                     manage = json_data["manage"]
                     if manage == "list-nodes":
@@ -654,6 +628,7 @@ class Server(interface.Interface):
             (self.thread(target=self.run_socket_server), True),
             (self.thread(target=self.run_heartbeat), True),
             (self.thread(target=self.run_interactions), True),
+            (self.thread(target=self.driver.run), True),
         ]
 
         if self.args.run_ui:

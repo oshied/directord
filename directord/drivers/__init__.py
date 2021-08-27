@@ -30,9 +30,8 @@ class BaseDriver:
     transfer_start = b"\002"  # Signals start file transfer
     transfer_end = b"\003"  # Signals start file transfer
 
-    def __init__(
-        self, args, encrypted_traffic_data=None, connection_string=None
-    ):
+    def __init__(self, interface, args, encrypted_traffic_data=None,
+                 connection_string=None):
         """Initialize the Driver.
 
         :param args: Arguments parsed by argparse.
@@ -45,6 +44,7 @@ class BaseDriver:
         self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
         self.args = args
+        self.interface = interface
 
     def socket_send(
         self,
@@ -120,6 +120,13 @@ class BaseDriver:
 
         pass
 
+    def run(self):
+        """Driver code to run in it's own thread. Will not need to be
+        implemented for all driver types.
+        """
+
+        pass
+
     def job_connect(self):
         """Connect to a job socket and return the socket.
 
@@ -166,6 +173,56 @@ class BaseDriver:
             self.get_heartbeat(interval=self.args.heartbeat_interval),
             self.heartbeat_connect(),
         )
+
+    def heartbeat_init(self):
+        """Initialize the heartbeat socket
+        :returns: Object
+        """
+
+        pass
+
+    def heartbeat_check(self, heartbeat_interval):
+        """Check if the driver is ready to respond to a heartbeat request
+        or send a new heartbeat.
+
+        :param heartbeat_interval: heartbeat interval in seconds
+        :type heartbeat_interval: Integer
+        :returns: Boolean
+        """
+
+        pass
+
+    def heartbeat(self, identity=None, uptime=None, expire=None, reset=False):
+        """Send a heartbeat.
+
+        :param identity: Identity of worker
+        :type identity: String
+        :param uptime: Time in seconds of uptime
+        :type uptime: Float
+        :param expire: Heartbeat expire time
+        :type expire: Float
+        :param reset: Whether to send the reset control
+        :type reset: Boolean
+        :returns: None
+        """
+
+        pass
+
+    def heartbeat_client_receive(self):
+        """Receive a heartbeat request from the server to the client.
+
+        :returns: Tuple of command and heartbeat info
+        """
+
+        pass
+
+    def heartbeat_server_receive(self):
+        """Receive a heartbeat request from the client to the server.
+
+        :returns: Tuple of identity, control, and heartbeat data
+        """
+
+        pass
 
     def job_bind(self):
         """Bind an address to a job socket and return the socket.
@@ -226,3 +283,37 @@ class BaseDriver:
         """
 
         return time.time() + (heartbeat_interval * interval)
+
+    def job_check(self, constant):
+        """Check if the driver is ready to respond to a job request
+
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Boolean
+        """
+
+        pass
+
+    def job_client_receive(self):
+        """Receive a job request from the server to the client.
+
+        :returns: Tuple of command and heartbeat info
+        """
+
+        pass
+
+    def job_server_receive(self):
+        """Receive a job request on the server"""
+
+        pass
+
+    def job_client_ack(self, job_id):
+        """Ack a job request. Client->Server"""
+
+        pass
+
+    def job_client_status_send(self, job_id, control, command,
+                               data, info, stderr, stdout):
+        """Send the job client status. Client->Server"""
+
+        pass

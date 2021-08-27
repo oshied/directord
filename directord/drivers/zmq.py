@@ -12,23 +12,25 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import json
 import logging
 import os
+import struct
 
 import tenacity
 import zmq
 import zmq.auth as zmq_auth
 from zmq.auth.thread import ThreadAuthenticator
 
+import directord
 from directord import drivers
 from directord import logger
 from directord import utils
 
 
 class Driver(drivers.BaseDriver):
-    def __init__(
-        self, args, encrypted_traffic_data=None, connection_string=None
-    ):
+    def __init__(self, interface, args, encrypted_traffic_data=None,
+                 connection_string=None):
         """Initialize the Driver.
 
         :param args: Arguments parsed by argparse.
@@ -57,6 +59,7 @@ class Driver(drivers.BaseDriver):
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
         super(Driver, self).__init__(
+            interface=interface,
             args=args,
             encrypted_traffic_data=encrypted_traffic_data,
             connection_string=connection_string,
@@ -132,12 +135,12 @@ class Driver(drivers.BaseDriver):
                     bind.curve_secretkey = server_secret
                     bind.curve_publickey = server_public
                     bind.curve_server = True  # Enable curve authentication
-        bind.bind(
-            "{connection}:{port}".format(
-                connection=connection,
-                port=port,
-            )
+        socket_bind = "{connection}:{port}".format(
+            connection=connection,
+            port=port,
         )
+        self.log.debug("Binding socket {}".format(socket_bind))
+        bind.bind(socket_bind)
 
         if socket_type not in [zmq.PUB]:
             self.poller.register(bind, poller_type)
@@ -380,6 +383,20 @@ class Driver(drivers.BaseDriver):
 
         return socket.recv_multipart()
 
+    def job_init(self):
+        """Initialize the heartbeat socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+        if self.args.mode == 'server':
+            self.bind_job = self.job_bind()
+        else:
+            self.bind_job = self.job_connect()
+        return self.bind_job
+
     def job_connect(self):
         """Connect to a job socket and return the socket.
 
@@ -392,6 +409,131 @@ class Driver(drivers.BaseDriver):
             connection=self.connection_string,
             port=self.args.job_port,
             send_ready=False,
+        )
+
+    def job_check(self, constant):
+        """Check if the driver is ready to respond to a job request
+
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Boolean
+        """
+        if (self.bind_job
+                and self.bind_check(bind=self.bind_job, constant=constant)):
+            return True
+        else:
+            return False
+
+    def job_client_receive(self):
+        """Receive a job request from the server to the client.
+
+        :returns: Tuple of command and heartbeat info
+        """
+        (
+            ID,
+            control,
+            command,
+            data,
+            info,
+            stdour,
+            stderr,
+        ) = self.socket_recv(socket=self.bind_job)
+        job_data = data.decode()
+
+        try:
+            job_data = json.loads(job_data)
+        except TypeError:
+            job_data = {}
+
+        return command, job_data, info
+
+    def job_server_receive(self):
+        """Receive a job request on the server"""
+
+        (
+            identity,
+            msg_id,
+            control,
+            command,
+            data,
+            info,
+            stderr,
+            stdout,
+        ) = self.socket_recv(socket=self.bind_job)
+
+        return (
+            identity.decode(),
+            msg_id.decode(),
+            control,
+            command,
+            data.decode(),
+            info.decode(),
+            stderr.decode(),
+            stdout.decode(),
+        )
+
+    def job_client_ack(self, job_id):
+        """Ack a job request. Client->Server"""
+
+        self.socket_send(
+            socket=self.bind_job,
+            msg_id=job_id.encode(),
+            control=self.job_ack,
+        )
+
+    def job_client_status_send(self, job_id, control, command,
+                               data, info, stderr, stdout):
+        """Send the job client status. Client->Server"""
+
+        if control is None:
+            control = self.nullbyte
+        if info is None:
+            info = self.nullbyte
+        if stdout is None:
+            stdout = self.nullbyte
+        if stderr is None:
+            stderr = self.nullbyte
+
+        try:
+            stderr = stderr.encode()
+        except AttributeError:
+            pass
+
+        try:
+            stdout = stdout.encode()
+        except AttributeError:
+            pass
+
+        try:
+            info = info.encode()
+        except AttributeError:
+            pass
+
+        self.socket_send(
+            socket=self.bind_job,
+            msg_id=job_id.encode(),
+            control=control,
+            command=command,
+            data=data,
+            info=info,
+            stderr=stderr,
+            stdout=stdout
+        )
+
+    def job_send(self, identity, job_data, info=None):
+        """Send the job to the client. Server->Client"""
+
+        if info is None:
+            info = self.nullbyte
+        else:
+            info = info.encode()
+
+        self.socket_send(
+            socket=self.bind_job,
+            identity=identity.encode(),
+            command=job_data["verb"].encode(),
+            data=json.dumps(job_data).encode(),
+            info=info,
         )
 
     def transfer_connect(self):
@@ -426,33 +568,149 @@ class Driver(drivers.BaseDriver):
 
         :returns: Object
         """
-
-        return self._socket_bind(
+        # Socket bind initialization
+        self.bind_heartbeat = self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.heartbeat_port,
         )
+        return self.bind_heartbeat
 
-    def heartbeat_reset(self, bind_heatbeat=None):
+    def heartbeat_init(self):
+        """Initialize the heartbeat socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+        if self.args.mode == 'server':
+            self.bind_heartbeat = self.heartbeat_bind()
+        else:
+            self.bind_heartbeat = self.heartbeat_connect()
+        return self.bind_heartbeat
+
+    def heartbeat_reset(self):
         """Reset the connection on the heartbeat socket.
 
         Returns a new ttl after reconnect.
 
-        :param bind_heatbeat: heart beat bind object.
-        :type bind_heatbeat: Object
-        :returns: Tuple
+        :returns: Float
         """
 
-        if bind_heatbeat:
-            self.poller.unregister(bind_heatbeat)
+        if self.bind_heartbeat:
+            self.poller.unregister(self.bind_heartbeat)
             self.log.debug("Unregistered heartbeat.")
-            bind_heatbeat.close()
+            self.bind_heartbeat.close()
             self.log.debug("Heartbeat connection closed.")
 
-        return (
-            self.get_heartbeat(interval=self.args.heartbeat_interval),
-            self.heartbeat_connect(),
+        self.bind_heartbeat = self.heartbeat_connect()
+        return self.get_heartbeat(interval=self.args.heartbeat_interval)
+
+    def heartbeat_check(self, heartbeat_interval):
+        """Check if the driver is ready to respond to a heartbeat request
+        or send a new heartbeat.
+
+        :param heartbeat_interval: heartbeat interval in seconds
+        :type heartbeat_interval: Integer
+        :returns: Boolean
+        """
+        if self.bind_heartbeat and self.bind_check(
+            interval=heartbeat_interval, bind=self.bind_heartbeat
+        ):
+            return True
+        else:
+            return False
+
+    def heartbeat_send(self, identity=None, uptime=None,
+                       expire=None, reset=False):
+        """Send a heartbeat.
+
+        :param identity: Identity of worker
+        :type identity: String
+        :param uptime: Time in seconds of uptime
+        :type uptime: Float
+        :param expire: Heartbeat expire time
+        :type expire: Float
+        :param reset: Whether to send the reset control
+        :type reset: Boolean
+        :returns: None
+        """
+        if uptime:
+            data = json.dumps(
+                {
+                    "version": directord.__version__,
+                    "uptime": str(uptime),
+                }
+            ).encode()
+        else:
+            data = None
+
+        if expire:
+            info = struct.pack("<f", expire)
+        else:
+            info = None
+
+        if reset:
+            command = b"reset"
+        else:
+            command = None
+
+        if identity:
+            identity = identity.encode()
+
+        self.socket_send(
+            socket=self.bind_heartbeat,
+            identity=identity,
+            control=self.heartbeat_notice,
+            command=command,
+            data=data,
+            info=info,
         )
+
+    def heartbeat_client_receive(self):
+        """Receive a heartbeat request from the server to the client.
+
+        :returns: Tuple of command and heartbeat info
+        """
+        (
+            ID,
+            control,
+            command,
+            data,
+            info,
+            stdour,
+            stderr,
+        ) = self.socket_recv(socket=self.bind_heartbeat)
+        heartbeat_at = struct.unpack("<f", info)[0]
+        if command == b"reset":
+            reset = True
+        else:
+            reset = False
+        return heartbeat_at, reset
+
+    def heartbeat_server_receive(self):
+        """Receive a heartbeat request from the client to the server.
+
+        :returns: Tuple of identity, control, and heartbeat data
+        """
+        (
+            identity,
+            ID,
+            control,
+            command,
+            data,
+            info,
+            stdour,
+            stderr,
+        ) = self.socket_recv(socket=self.bind_heartbeat)
+        try:
+            loaded_data = json.loads(data.decode())
+        except Exception:
+            loaded_data = {}
+        return (identity.decode(), control.decode(),
+                loaded_data.get("uptime", None),
+                loaded_data.get("version", None))
 
     def job_bind(self):
         """Bind an address to a job socket and return the socket.

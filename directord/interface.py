@@ -79,6 +79,7 @@ class Interface(directord.Processor):
             )
         else:
             self.driver = _driver.Driver(
+                interface=self,
                 args=self.args,
                 encrypted_traffic_data={
                     "enabled": self.keys_exist,
