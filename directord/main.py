@@ -272,6 +272,12 @@ def _args(exec_args=None):
     parser_manage = subparsers.add_parser(
         "manage", help="Server management mode help"
     )
+    filter_group = parser_manage.add_mutually_exclusive_group(required=False)
+    filter_group.add_argument(
+        "--filter",
+        choices=["success", "failed", "processing"],
+        help="List filtered jobs.",
+    )
     manage_group = parser_manage.add_mutually_exclusive_group(required=True)
     manage_group.add_argument(
         "--list-jobs", action="store_true", help="List all known jobs."
@@ -569,10 +575,13 @@ def main():
                         "VERSION",
                         "UPTIME",
                     ]
-                _tabulated_data = _mixin.return_tabulated_data(
+                (
+                    tabulated_data,
+                    headings,
+                    computed_values,
+                ) = _mixin.return_tabulated_data(
                     data=data, restrict_headings=restrict_headings
                 )
-                tabulated_data, headings, computed_values = _tabulated_data
             utils.print_tabulated_data(
                 data=[i for i in tabulated_data if i], headers=headings
             )

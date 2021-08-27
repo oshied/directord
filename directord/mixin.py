@@ -351,8 +351,7 @@ class Mixin:
         else:
             return tabulated_data
 
-    @staticmethod
-    def return_tabulated_data(data, restrict_headings):
+    def return_tabulated_data(self, data, restrict_headings):
         """Return tabulated data displaying a limited set of information.
 
         :param data: Information to generally parse and return
@@ -381,8 +380,10 @@ class Mixin:
         seen_computed_key = list()
         found_headings = ["ID"]
         original_data = list(dict(data).items())
+        result_filter = getattr(self.args, "filter", None)
         for key, value in original_data:
             arranged_data = [key]
+            include = result_filter is None
             for item in restrict_headings:
                 if item not in found_headings:
                     found_headings.append(item)
@@ -394,11 +395,26 @@ class Mixin:
                     except KeyError:
                         report_item = value[item.lower()]
 
-                    if item == "PROCESSING":
-                        if report_item == b"\026":
+                    if item.upper() == "PROCESSING":
+                        if report_item.encode() == b"\026":
                             report_item = "True"
+                            if result_filter == "processing":
+                                include = True
                         else:
                             report_item = "False"
+                    elif (
+                        isinstance(report_item, list) and len(report_item) > 0
+                    ):
+                        if (
+                            result_filter == "success"
+                            and item.upper() == "SUCCESS"
+                        ):
+                            include = True
+                        if (
+                            result_filter == "failed"
+                            and item.upper() == "FAILED"
+                        ):
+                            include = True
 
                     if not report_item:
                         arranged_data.append(0)
@@ -413,8 +429,9 @@ class Mixin:
                             item=key, value_heading=item, value=report_item
                         )
 
-            seen_computed_key.append(key)
-            tabulated_data.append(arranged_data)
+            if include:
+                seen_computed_key.append(key)
+                tabulated_data.append(arranged_data)
 
         return tabulated_data, found_headings, computed_values
 
