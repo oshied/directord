@@ -191,7 +191,7 @@ class ComponentBase:
 
         :param parser: Argument parser.
         :type parser: Object
-        :param exec_array: Inpute string from action
+        :param exec_array: Input array from action
         :type exec_array: List
         :param arg_vars: Pre-Formatted arguments
         :type arg_vars: Dictionary
@@ -346,7 +346,7 @@ class ComponentBase:
     def server(self, exec_array, data, arg_vars):
         """Server operation.
 
-        :param exec_array: Inpute string from action
+        :param exec_array: Input array from action
         :type exec_array: List
         :param data: Formatted data hash
         :type data: Dictionary
