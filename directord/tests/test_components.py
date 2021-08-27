@@ -414,6 +414,7 @@ class TestComponents(unittest.TestCase):
             executable="/bin/sh",
             env={"testBaseEnv": "value", "testEnv": "value"},
             shell=True,
+            start_new_session=False,
         )
 
     @patch("subprocess.Popen")
@@ -432,6 +433,7 @@ class TestComponents(unittest.TestCase):
             executable="/bin/sh",
             env={"testBaseEnv": "value"},
             shell=True,
+            start_new_session=False,
         )
 
     @patch("subprocess.Popen")
@@ -450,6 +452,7 @@ class TestComponents(unittest.TestCase):
             executable="/bin/sh",
             env={"testBaseEnv": "value"},
             shell=True,
+            start_new_session=False,
         )
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
@@ -749,7 +752,9 @@ class TestComponents(unittest.TestCase):
             cache=tests.FakeCache(),
             job={"command": "command {{ test }} test"},
         )
-        mock_run_command.assert_called_with(command="command 1 test", env=None)
+        mock_run_command.assert_called_with(
+            command="command 1 test", env=None, no_block=None
+        )
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__run_command_stdout_args(self, mock_run_command):
@@ -762,7 +767,9 @@ class TestComponents(unittest.TestCase):
                 "stdout_arg": "VALUE1",
             },
         )
-        mock_run_command.assert_called_with(command="command 1 test", env=None)
+        mock_run_command.assert_called_with(
+            command="command 1 test", env=None, no_block=None
+        )
         self.assertDictEqual(
             fake_cache.get("args"), {"VALUE1": "testing", "test": 1}
         )

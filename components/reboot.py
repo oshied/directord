@@ -17,26 +17,23 @@ from directord import components
 
 class Component(components.ComponentBase):
     def __init__(self):
-        """Initialize the component cache class."""
-
-        super().__init__(desc="Process run commands")
+        super().__init__(desc="Process restart command")
 
     def args(self):
         """Set default arguments for a component."""
 
         super().args()
         self.parser.add_argument(
-            "--stdout-arg",
-            help="Stores the stdout of a given command as a cached argument.",
+            "time",
+            help="Reboot after %(default)s seconds.",
+            default=10,
+            type=int,
         )
-        self.parser.add_argument(
-            "--no-block",
-            action="store_true",
-            help="Run a command in 'fire and forget' mode.",
-        )
+        self.cacheable = False
+        self.requires_lock = True
 
     def server(self, exec_array, data, arg_vars):
-        """Return data from formatted transfer action.
+        """Return data from formatted cacheevict action.
 
         :param exec_array: Input array from action
         :type exec_array: List
@@ -48,17 +45,11 @@ class Component(components.ComponentBase):
         """
 
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
-        if self.known_args.stdout_arg:
-            data["stdout_arg"] = self.known_args.stdout_arg
-        data["no_block"] = self.known_args.no_block
-        data["command"] = " ".join(self.unknown_args)
-
+        data["time"] = self.known_args.time
         return data
 
     def client(self, cache, job):
-        """Run file command operation.
-
-        Command operations are rendered with cached data from the args dict.
+        """Run cache restart command operation.
 
         :param cache: Caching object used to template items within a command.
         :type cache: Object
@@ -67,31 +58,12 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        stdout_arg = job.get("stdout_arg")
-        success, command = self.blueprinter(
-            content=job["command"],
-            values=cache.get("args"),
-            allow_empty_values=True,
-        )
-        if not success:
-            return None, command, False, None
-        elif not command:
-            return None, None, False, None
-
+        commands = [
+            "sleep {}".format(job["time"]),
+            "systemctl --message='Directord reboot instruction' reboot",
+        ]
+        shell_commands = ";".join(commands)
         stdout, stderr, outcome = self.run_command(
-            command=command,
-            env=cache.get("envs"),
-            no_block=job.get("no_block"),
+            shell_commands, no_block=True
         )
-
-        if stdout_arg and stdout:
-            clean_info = stdout.decode().strip()
-            self.set_cache(
-                cache=cache,
-                key="args",
-                value={stdout_arg: clean_info},
-                value_update=True,
-                tag="args",
-            )
-
-        return stdout, stderr, outcome, command.encode()
+        return stdout, stderr, outcome, shell_commands.encode()

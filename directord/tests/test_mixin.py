@@ -24,12 +24,12 @@ from directord import utils
 
 TEST_FINGER_PRINTS = """  count  parent_sha                                                verb    exec      job_sha
 -------  --------------------------------------------------------  ------  --------  --------------------------------------------------------
-      0  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464
-      1  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b
-      2  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323
-      3  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  65d8794ece04b55084c8310bb965a15bebc6687a6ec3b37a21b9b464
-      4  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  3e672ec6aa2bc4135648e39a95c7758c6dd62f9deffee49b60fb370b
-      5  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323"""  # noqa
+      0  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
+      1  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
+      2  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd
+      3  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
+      4  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
+      5  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd"""  # noqa
 
 
 TEST_ORCHESTRATION_READ = """---
@@ -85,15 +85,17 @@ class TestMixin(tests.TestConnectionBase):
 
     def test_format_action_run(self):
         result = self.mixin.format_action(verb="RUN", execute=self.execute)
+        print(result)
         self.assertEqual(
             result,
             json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
+                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -109,10 +111,11 @@ class TestMixin(tests.TestConnectionBase):
             json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
+                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test_target"],
@@ -129,10 +132,11 @@ class TestMixin(tests.TestConnectionBase):
             json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
+                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                 }
@@ -148,10 +152,11 @@ class TestMixin(tests.TestConnectionBase):
             json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
+                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "restrict": "Restrictedsha3_224",
@@ -168,10 +173,11 @@ class TestMixin(tests.TestConnectionBase):
             json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "35692aa9aff33fd437c02509af939946127a4936654e24d9579a17b0",  # noqa
+                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "ParentID",
@@ -337,10 +343,11 @@ class TestMixin(tests.TestConnectionBase):
             data=json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
+                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -375,10 +382,11 @@ class TestMixin(tests.TestConnectionBase):
             data=json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
+                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": [
@@ -410,10 +418,11 @@ class TestMixin(tests.TestConnectionBase):
             data=json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
+                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -444,10 +453,11 @@ class TestMixin(tests.TestConnectionBase):
             data=json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
+                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                     "targets": ["test1", "test2", "test3"],
@@ -477,10 +487,11 @@ class TestMixin(tests.TestConnectionBase):
             data=json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
+                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": True,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -544,10 +555,11 @@ class TestMixin(tests.TestConnectionBase):
             data=json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "0ec4954b73737c692b189bfa1037cfaf7f552a372b16c9fff4cd5323",  # noqa
+                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],
@@ -574,10 +586,11 @@ class TestMixin(tests.TestConnectionBase):
             data=json.dumps(
                 {
                     "verb": "RUN",
+                    "no_block": False,
                     "command": "command 1",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "7c246b21b5cee84063951ffb6fba0ee0baff787416e13c948c1b12a6",  # noqa
+                    "task_sha3_224": "36796bb09a3838fa2c8bcb802eb9494546289a6fd6ed988579524ee1",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],

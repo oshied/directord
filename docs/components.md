@@ -20,6 +20,8 @@ Extra arguments available to the `RUN` component.
 * `--stdout-arg` **STRING** Sets the stdout of a given command to defined cached
   argument.
 
+* `--no-block` When enabled commands are run in a "fire and forget" mode.
+
 ##### `ARG`
 
 Syntax: `KEY VALUE`
@@ -183,6 +185,19 @@ Syntax: `PACKAGE [PACKAGE ...]`
 
 > NOTE: Installation assumes metadata cache is available.  Use --clear-metadata
   to ensure it's available at least once during an orchestration.
+
+##### `REBOOT`
+
+Syntax: `INTEGER`
+
+Reboot takes an integer value which is interpreted as seconds before executing
+a reboot.
+
+> The default reboot wait time is 10 seconds.
+
+> Reboot operations are performed with `systemctl` on the client side. If the remote
+  system does not support this method, additional operations can be performed using
+  the `RUN` component in non-blocking mode.
 
 ### User defined Components
 
