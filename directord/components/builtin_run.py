@@ -29,6 +29,11 @@ class Component(components.ComponentBase):
             "--stdout-arg",
             help="Stores the stdout of a given command as a cached argument.",
         )
+        self.parser.add_argument(
+            "--no-block",
+            action="store_true",
+            help="Run a command in 'fire and forget' mode.",
+        )
 
     def server(self, exec_array, data, arg_vars):
         """Return data from formatted transfer action.
@@ -45,7 +50,7 @@ class Component(components.ComponentBase):
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         if self.known_args.stdout_arg:
             data["stdout_arg"] = self.known_args.stdout_arg
-
+        data["no_block"] = self.known_args.no_block
         data["command"] = " ".join(self.unknown_args)
 
         return data
@@ -74,7 +79,9 @@ class Component(components.ComponentBase):
             return None, None, False, None
 
         stdout, stderr, outcome = self.run_command(
-            command=command, env=cache.get("envs")
+            command=command,
+            env=cache.get("envs"),
+            no_block=job.get("no_block"),
         )
 
         if stdout_arg and stdout:
