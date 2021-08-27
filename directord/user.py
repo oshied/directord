@@ -143,7 +143,7 @@ class Manage(User):
                 if len(data_return.get("SUCCESS", list())) == nodes:
                     return True, "Job Success: {}".format(job_id)
                 elif len(data_return.get("FAILED", list())) > 0:
-                    return None, "Job Degrated: {}".format(job_id)
+                    return False, "Job Degrated: {}".format(job_id)
 
                 return True, "Job Skipped: {}".format(job_id)
             else:

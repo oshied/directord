@@ -31,7 +31,7 @@ class Component(components.ComponentBase):
     def server(self, exec_array, data, arg_vars):
         """Return data from formatted cacheevict action.
 
-        :param exec_array: Inpute string from action
+        :param exec_array: Input array from action
         :type exec_array: List
         :param data: Formatted data hash
         :type data: Dictionary

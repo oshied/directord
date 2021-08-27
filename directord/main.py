@@ -20,7 +20,6 @@ import sys
 import jinja2
 from jinja2 import StrictUndefined
 
-import tabulate
 import yaml
 
 import directord
@@ -272,6 +271,12 @@ def _args(exec_args=None):
     )
     parser_manage = subparsers.add_parser(
         "manage", help="Server management mode help"
+    )
+    filter_group = parser_manage.add_mutually_exclusive_group(required=False)
+    filter_group.add_argument(
+        "--filter",
+        choices=["success", "failed", "processing"],
+        help="List filtered jobs.",
     )
     manage_group = parser_manage.add_mutually_exclusive_group(required=True)
     manage_group.add_argument(
@@ -560,6 +565,7 @@ def main():
                     restrict_headings = [
                         "PARENT_JOB_ID",
                         "EXECUTION_TIME",
+                        "PROCESSING",
                         "SUCCESS",
                         "FAILED",
                     ]
@@ -569,14 +575,15 @@ def main():
                         "VERSION",
                         "UPTIME",
                     ]
-                _tabulated_data = _mixin.return_tabulated_data(
+                (
+                    tabulated_data,
+                    headings,
+                    computed_values,
+                ) = _mixin.return_tabulated_data(
                     data=data, restrict_headings=restrict_headings
                 )
-                tabulated_data, headings, computed_values = _tabulated_data
-            print(
-                tabulate.tabulate(
-                    [i for i in tabulated_data if i], headers=headings
-                )
+            utils.print_tabulated_data(
+                data=[i for i in tabulated_data if i], headers=headings
             )
             print("\nTotal Items: {}".format(len(tabulated_data)))
             for k, v in computed_values.items():

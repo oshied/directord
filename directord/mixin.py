@@ -218,27 +218,34 @@ class Mixin:
                 )
 
         return_data = list()
-        count = 0
-        for job in job_to_run:
-            formatted_job = self.format_action(**job)
-            if getattr(self.args, "finger_print", False):
+        if getattr(self.args, "finger_print", False):
+            count = 0
+            for job in job_to_run:
+                tabulated_data = list()
+                formatted_job = self.format_action(**job)
                 item = json.loads(formatted_job)
                 exec_str = " ".join(job["execute"])
                 if len(exec_str) >= 30:
                     exec_str = "{execute}...".format(execute=exec_str[:27])
-                return_data.append(
-                    "{count:<5} {parent:<44} {verb:<13}"
-                    " {execute:<39} {fingerprint:>13}".format(
-                        count=count
-                        or "\n{a}\n{b:<5}".format(a="*" * 100, b=0),
-                        parent=job["parent_sha3_224"],
-                        verb=item["verb"],
-                        execute=exec_str,
-                        fingerprint=item["task_sha3_224"],
-                    ).encode()
+                tabulated_data.extend(
+                    [
+                        count,
+                        job["parent_sha3_224"],
+                        item["verb"],
+                        exec_str,
+                        item["task_sha3_224"],
+                    ]
                 )
+                return_data.append(tabulated_data)
                 count += 1
-            else:
+            utils.print_tabulated_data(
+                data=return_data,
+                headers=["count", "parent_sha", "verb", "exec", "job_sha"],
+            )
+            return []
+        else:
+            for job in job_to_run:
+                formatted_job = self.format_action(**job)
                 return_data.append(
                     directord.send_data(
                         socket_path=self.args.socket_path, data=formatted_job
@@ -327,6 +334,12 @@ class Mixin:
             if key.startswith("_"):
                 continue
 
+            if key == "PROCESSING":
+                if value == b"\026":
+                    value = "True"
+                else:
+                    value = "False"
+
             if isinstance(value, list):
                 value = "\n".join(value)
             elif isinstance(value, dict):
@@ -338,8 +351,7 @@ class Mixin:
         else:
             return tabulated_data
 
-    @staticmethod
-    def return_tabulated_data(data, restrict_headings):
+    def return_tabulated_data(self, data, restrict_headings):
         """Return tabulated data displaying a limited set of information.
 
         :param data: Information to generally parse and return
@@ -368,8 +380,10 @@ class Mixin:
         seen_computed_key = list()
         found_headings = ["ID"]
         original_data = list(dict(data).items())
+        result_filter = getattr(self.args, "filter", None)
         for key, value in original_data:
             arranged_data = [key]
+            include = result_filter is None
             for item in restrict_headings:
                 if item not in found_headings:
                     found_headings.append(item)
@@ -380,6 +394,28 @@ class Mixin:
                         report_item = value[item.upper()]
                     except KeyError:
                         report_item = value[item.lower()]
+
+                    if item.upper() == "PROCESSING":
+                        if report_item.encode() == b"\026":
+                            report_item = "True"
+                            if result_filter == "processing":
+                                include = True
+                        else:
+                            report_item = "False"
+                    elif (
+                        isinstance(report_item, list) and len(report_item) > 0
+                    ):
+                        if (
+                            result_filter == "success"
+                            and item.upper() == "SUCCESS"
+                        ):
+                            include = True
+                        if (
+                            result_filter == "failed"
+                            and item.upper() == "FAILED"
+                        ):
+                            include = True
+
                     if not report_item:
                         arranged_data.append(0)
                     else:
@@ -393,8 +429,9 @@ class Mixin:
                             item=key, value_heading=item, value=report_item
                         )
 
-            seen_computed_key.append(key)
-            tabulated_data.append(arranged_data)
+            if include:
+                seen_computed_key.append(key)
+                tabulated_data.append(arranged_data)
 
         return tabulated_data, found_headings, computed_values
 
