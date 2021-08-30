@@ -85,7 +85,7 @@ class Component(components.ComponentBase):
                     self.driver.identity: {query_job.pop("query"): query}
                 }
             }
-            query_job["parent_async"] = True
+            query_job["parent_async_bypass"] = True
             query_job.pop("parent_sha3_224", None)
             query_job.pop("parent_id", None)
             query_job.pop("task_sha3_224", None)

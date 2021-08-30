@@ -183,10 +183,60 @@ class Client(interface.Interface):
             self.log.debug("Running [ %s ] in async queue", job_id)
             self.q_async.put((component_kwargs, command, info, cached))
             conn.info = b"task queued"
+        elif job.get("parent_async_bypass"):
+            self.log.debug("Running [ %s ] in bypass queue", job_id)
+            self._thread_spawn(
+                component_kwargs=component_kwargs,
+                command=command,
+                info=info,
+                cached=cached,
+            )
+            conn.info = b"bypass task executing"
         else:
             self.log.debug("Running [ %s ] in general queue", job_id)
             self.q_general.put((component_kwargs, command, info, cached))
             conn.info = b"task queued"
+
+    def _thread_spawn(
+        self, component_kwargs, command, info, cached, lock=None
+    ):
+        """Return a thread object.
+
+        Executes a component job and returns the thread object.
+
+        :param component_kwargs: Named arguments used with the componenet
+                                 client.
+        :type component_kwargs: Dictionary
+        :param command: Byte encoded command used to run a given job.
+        :type command: Bytes
+        :param info: Information that was sent over with the original message.
+        :type info: Bytes
+        :param cached: Boolean option to determin if a command is to be
+                       treated as cached.
+        :type cached: Boolean
+        :param lock: Locking object, used if a component requires it.
+        :type lock: Object
+        :param daemon: Enable|Disable deamonic threads.
+        :type daemon: Boolean
+        :returns: Object
+        """
+
+        if not lock:
+            lock = self.get_lock()
+
+        thread = self.thread(
+            target=self.job_q_component_run,
+            args=(
+                component_kwargs,
+                command,
+                info,
+                cached,
+                lock,
+            ),
+        )
+        thread.daemon = True
+        thread.start()
+        return thread
 
     def job_q_processor(self, queue, processes=1):
         """Process a given work queue.
@@ -214,19 +264,15 @@ class Client(interface.Interface):
                 except Exception:
                     time.sleep(0.1)
                 else:
-                    t = self.thread(
-                        target=self.job_q_component_run,
-                        args=(
-                            component_kwargs,
-                            command,
-                            info,
-                            cached,
-                            lock,
-                        ),
+                    threads.append(
+                        self._thread_spawn(
+                            component_kwargs=component_kwargs,
+                            command=command,
+                            info=info,
+                            cached=cached,
+                            lock=lock,
+                        )
                     )
-                    t.daemon = True
-                    t.start()
-                    threads.append(t)
             else:
                 self.log.debug("Worker threads: %s", len(threads))
                 for t in threads:
@@ -734,7 +780,7 @@ class Client(interface.Interface):
 
         threads = [
             (self.thread(target=self.run_heartbeat), True),
-            (self.thread(target=self.run_job), True),
+            (self.thread(target=self.run_job), False),
             (
                 self.thread(
                     target=self.job_q_processor, args=(self.q_general,)
