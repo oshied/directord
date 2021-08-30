@@ -62,6 +62,8 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
       - name: Upload build Log artifacts on failure
@@ -104,6 +106,8 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional-async.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
       - name: Execute functional async-race-condition check
@@ -115,15 +119,21 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional-async-race.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
       - name: Execute functional async-time check
         run: |
           cd /opt/directord/share/directord/orchestrations
-          timeout 40 sudo /opt/directord/bin/directord \
+          if ! timeout 40 sudo /opt/directord/bin/directord \
                           orchestrate \
                           functional-tests-async-time.yaml \
-                          --poll &> /tmp/directord-functional-async-time.log
+                          --poll &> /tmp/directord-functional-async-time.log; then
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+            exit 1
+          fi
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
@@ -164,6 +174,8 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-podman.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
       - name: Execute pod play check
@@ -175,6 +187,8 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-create.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
           sleep 10
@@ -191,6 +205,8 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-command.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
           if ! JOBS=$(sudo /opt/directord/bin/directord \
@@ -200,6 +216,8 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-kill.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
           if ! JOBS=$(sudo /opt/directord/bin/directord \
@@ -209,12 +227,16 @@ jobs:
                       --poll \
                       --check); then
             echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-rm.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
           sleep 10
           if sudo podman pod exists directord-test-pod; then
             echo -e "FAILURE - [ directord-test-pod ] was still active on the system"
             sudo /opt/directord/bin/directord manage --list-jobs | awk '/([aA-zZ]|[0-9])-/ {print $1}' | xargs -n 1 -i sudo /opt/directord/bin/directord manage --job-info {} &> /tmp/directord-failure.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
             exit 1
           fi
       - name: Upload build Log artifacts on failure
