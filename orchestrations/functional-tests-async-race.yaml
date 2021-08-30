@@ -28,6 +28,10 @@
 
   - RUN: --skip-cache rmdir /tmp/test/mode0
 
+  # Ensure query works in async
+  - RUN: --stdout-arg query_test_arg0 hostname -f
+  - QUERY: query_test_arg0
+  - RUN: echo "{{ query }}" | tee /tmp/test/test-query0
 
 - async: true
   jobs:
@@ -55,6 +59,10 @@
 
   - RUN: --skip-cache rmdir /tmp/test/mode1
 
+  # Ensure query works in async
+  - RUN: --stdout-arg query_test_arg1 hostname -f
+  - QUERY: query_test_arg1
+  - RUN: echo "{{ query }}" | tee /tmp/test/test-query1
 
 - async: true
   jobs:
@@ -81,3 +89,8 @@
   - RUN: --skip-cache stat /tmp/test/mode2 | grep Uid | grep 0777
 
   - RUN: --skip-cache rmdir /tmp/test/mode2
+
+  # Ensure query works in async
+  - RUN: --stdout-arg query_test_arg2 hostname -f
+  - QUERY: query_test_arg2
+  - RUN: echo "{{ query }}" | tee /tmp/test/test-query2
