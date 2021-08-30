@@ -179,11 +179,7 @@ class Client(interface.Interface):
 
         self.log.debug("Running component:%s", command.decode())
         component_kwargs = dict(cache=None, job=job)
-        if job.get("parent_async"):
-            self.log.debug("Running [ %s ] in async queue", job_id)
-            self.q_async.put((component_kwargs, command, info, cached))
-            conn.info = b"task queued"
-        elif job.get("parent_async_bypass"):
+        if job.get("parent_async_bypass") is True:
             self.log.debug("Running [ %s ] in bypass queue", job_id)
             self._thread_spawn(
                 component_kwargs=component_kwargs,
@@ -192,10 +188,14 @@ class Client(interface.Interface):
                 cached=cached,
             )
             conn.info = b"bypass task executing"
+        elif job.get("parent_async") is True:
+            self.log.debug("Running [ %s ] in async queue", job_id)
+            self.q_async.put((component_kwargs, command, info, cached))
+            conn.info = b"async task queued"
         else:
             self.log.debug("Running [ %s ] in general queue", job_id)
             self.q_general.put((component_kwargs, command, info, cached))
-            conn.info = b"task queued"
+            conn.info = b"general task queued"
 
     def _thread_spawn(
         self, component_kwargs, command, info, cached, lock=None
