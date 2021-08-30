@@ -298,7 +298,13 @@ jobs:
                                        bootstrap \
                                        --catalog tools/directord-inventory-catalog.yaml \
                                        --catalog tools/directord-dev-bootstrap-catalog.yaml \
-                                       --key-file ~/.ssh/id_rsa
+                                       --key-file ~/.ssh/id_rsa &> /tmp/directord-bootstrap-failure.log
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-test-logs
+          path: /tmp/directord-*.log
 
   py_coverage:
     runs-on: ubuntu-latest

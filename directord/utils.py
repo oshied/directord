@@ -21,8 +21,9 @@ import uuid
 import tabulate
 import yaml
 
-import ssh2
-from ssh2.session import Session
+from ssh import options
+from ssh.session import Session
+from ssh import key as ssh_key
 
 from directord import logger
 
@@ -136,7 +137,7 @@ class ClientStatus:
 
 
 class SSHConnect:
-    """Context manager to remotely connect to servers using libssh2.
+    """Context manager to remotely connect to servers using libssh.
 
     The connection manager requires an SSH key to be defined, and exist,
     however, upon enter the system will use the SSH agent is defined.
@@ -163,28 +164,42 @@ class SSHConnect:
         self.sock.connect((host, port))
 
         self.session = Session()
-        self.session.handshake(self.sock)
+        self.session.options_set(options.HOST, host)
+        self.session.options_set(options.USER, username)
+        self.session.options_set_port(port)
+        self.session.set_socket(self.sock)
+        self.session.connect()
+
         self.log.debug(
             "Handshake with [ %s ] on port [ %s ] complete.", host, port
         )
 
-        self.known_hosts = self.session.knownhost_init()
+        self.channel = None
+        self.host = host
         self.username = username
         self.key_file = key_file
+
+    def _userauth_publickey_fromfile(self, key_file):
+        """Import a private key file.
+
+        :param key_file: Fully qualified path to an ssh key file.
+        :type key_file: String
+        """
+
+        key = ssh_key.import_privkey_file(key_file)
+        self.session.userauth_publickey(key)
 
     def set_auth(self):
         """Set the ssh session auth."""
 
         if self.key_file:
-            self.session.userauth_publickey_fromfile(
-                self.username, self.key_file
-            )
+            self._userauth_publickey_fromfile(key_file=self.key_file)
             self.log.debug("Key file [ %s ] added", self.key_file)
         else:
             try:
-                self.session.agent_auth(self.username)
+                self.session.userauth_agent(self.username)
                 self.log.debug("User agent based authentication enabled")
-            except ssh2.exceptions.AgentConnectionError as e:
+            except Exception as e:
                 self.log.warning(
                     "SSH Agent connection has failed: %s."
                     " Attempting to connect with the user's implicit ssh key.",
@@ -193,20 +208,10 @@ class SSHConnect:
                 home = os.path.abspath(os.path.expanduser("~"))
                 default_keyfile = os.path.join(home, ".ssh/id_rsa")
                 if os.path.exists(default_keyfile):
-                    self.session.userauth_publickey_fromfile(
-                        self.username, default_keyfile
+                    self._userauth_publickey_fromfile(key_file=default_keyfile)
+                    self.log.debug(
+                        "Implicit key file [ %s ] added", self.key_file
                     )
-                    self.log.debug("Key file [ %s ] added", self.key_file)
-
-        self.channel = None
-
-    def open_channel(self):
-        """Open a channel."""
-
-        self.channel = self.session.open_session()
-        if self.channel == 0:
-            raise SystemExit("SSH Connection has failed.")
-        self.log.debug("SSH channel is open.")
 
     def __enter__(self):
         """Connect to the remote node and return the ssh and session objects.

@@ -24,7 +24,7 @@ BuildRequires:  python3-tenacity
 # Source Build Requirements
 # TODO(cloudnull): This needs to be packaged officially
 BuildRequires:  python3-diskcache
-BuildRequires:  python3-ssh2-python
+BuildRequires:  python3-ssh-python
 
 %description
  DirectordA deployment framework built to manage the data center life cycle.>
@@ -48,7 +48,7 @@ Requires:       python3-tenacity
 Requires:       python3-diskcache
 
 # Recommends
-Recommends:       python3-ssh2-python
+Recommends:       python3-ssh-python
 Recommends:       python3-zmq
 Recommends:       python3-redis
 Recommends:       python3-flask

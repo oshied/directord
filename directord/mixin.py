@@ -23,6 +23,8 @@ from distutils import util as dist_utils
 import jinja2
 from jinja2 import StrictUndefined
 
+from ssh import scp as scp_ext
+
 import yaml
 
 import directord
@@ -577,12 +579,17 @@ class Mixin:
         """
 
         fileinfo = os.stat(localfile)
-        chan = ssh.session.scp_send64(
-            remotefile,
-            fileinfo.st_mode & 0o777,
-            fileinfo.st_size,
-            fileinfo.st_mtime,
-            fileinfo.st_atime,
+        chan = ssh.session.scp_new(scp_ext.SSH_SCP_WRITE, remotefile)
+        if isinstance(chan, int):
+            self.log.critical(
+                "Failed to connect for file transfer. SSH Error Code [ %s ]",
+                chan,
+            )
+            raise SystemExit(chan)
+
+        ssh.channel = chan
+        chan.push_file64(
+            remotefile, fileinfo.st_size, fileinfo.st_mode & 0o777
         )
         self.log.debug(
             "channel: %s, local file: %s, remote file: %s",
@@ -594,8 +601,7 @@ class Mixin:
             for data in local_fh:
                 chan.write(data)
 
-    @staticmethod
-    def bootstrap_file_get(ssh, localfile, remotefile):
+    def bootstrap_file_get(self, ssh, localfile, remotefile):
         """Run a remote get command.
 
         :param ssh: SSH connection object.
@@ -606,13 +612,20 @@ class Mixin:
         :type remotefile: String
         """
 
-        chan, _ = ssh.session.scp_recv2(remotefile)
-        with open(localfile, "wb") as f:
-            while True:
-                size, data = chan.read()
-                f.write(data)
-                if size > 0:
-                    break
+        chan = ssh.session.sftp_new()
+        if isinstance(chan, int):
+            self.log.critical(
+                "Failed to connect for file transfer. SSH Error Code [ %s ]",
+                chan,
+            )
+            raise SystemExit(chan)
+
+        self.channel = chan
+        chan.init()
+        with chan.open(remotefile, os.O_RDONLY, 0) as remote_fh:
+            with open(localfile, "wb") as f:
+                for _, data in remote_fh:
+                    f.write(data)
 
     def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.
@@ -628,17 +641,26 @@ class Mixin:
         :type catalog: Dictionary
         """
 
-        ssh.open_channel()
-        t_command = self.blueprint.from_string(command)
-        ssh.channel.execute(t_command.render(**catalog))
-        ssh.channel.wait_eof()
-        ssh.channel.close()
-        ssh.channel.wait_closed()
+        chan = ssh.session.channel_new()
+        if isinstance(chan, int):
+            self.log.critical(
+                "Failed to connect for remote execution."
+                " SSH Error Code [ %s ]",
+                chan,
+            )
+            raise SystemExit(chan)
 
-        if ssh.channel.get_exit_status() != 0:
-            size, data = ssh.channel.read()
+        ssh.channel = chan
+        chan.open_session()
+        t_command = self.blueprint.from_string(command)
+        command = t_command.render(**catalog)
+        chan.request_exec(command)
+
+        if chan.get_exit_status() != 0:
+            self.log.warning("FAILURE: [ %s ]", command)
+            size, data = chan.read()
             while size > 0:
-                size, _data = ssh.channel.read()
+                size, _data = chan.read()
                 data += _data
             print(
                 "{line} Start Error Information {line}".format(line=("=" * 10))
@@ -652,6 +674,8 @@ class Mixin:
                 "{line} End Error Information {line}".format(line=("=" * 10))
             )
             raise SystemExit("Bootstrap command failed: {}".format(command))
+        else:
+            self.log.info("HOST: [ %s ] SUCCESS: [ %s ]", ssh.host, command)
 
     def bootstrap_q_processor(self, queue, catalog):
         """Run a queing execution thread.

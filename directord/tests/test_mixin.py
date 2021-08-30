@@ -16,6 +16,7 @@ import json
 import unittest
 
 from unittest.mock import patch
+from unittest.mock import MagicMock
 
 from directord import mixin
 from directord import tests
@@ -68,12 +69,21 @@ class TestMixin(tests.TestConnectionBase):
         self.mock_ssh = utils.SSHConnect(
             host="test", username="tester", port=22
         ).__enter__()
-        self.stat_patched = unittest.mock.patch("directord.os.stat")
-        self.stat = self.stat_patched.start()
+
+        self.mock_chan_patched = patch.object(
+            self.mock_ssh, "session", autospec=True
+        )
+        self.mock_chan = self.mock_chan_patched.start()
+        self.mock_chan.sftp_new = MagicMock(return_value=self.fakechannel)
+        self.mock_chan.scp_new = MagicMock(return_value=self.fakechannel)
+        self.mock_chan.channel_new = MagicMock(return_value=self.fakechannel)
+        self.mock_stat_patched = patch("directord.os.stat")
+        self.mock_stat = self.mock_stat_patched.start()
 
     def tearDown(self):
         super().tearDown()
-        self.stat_patched.stop()
+        self.mock_chan_patched.stop()
+        self.mock_stat_patched.stop()
 
     def test_format_action_unknown(self):
         self.assertRaises(
@@ -822,11 +832,16 @@ class TestMixin(tests.TestConnectionBase):
             "key_file": None,
             "jobs": [{"RUN": "command 1", "ADD": "from to", "GET": "from to"}],
         }
-        self.mixin.bootstrap_run(job_def=job_def, catalog={})
+        with patch("directord.utils.SSHConnect") as mock_ssh:
+            mock_ssh.return_value = self.mock_ssh
+            with patch.object(self.fakechannel, "read") as mock_read:
+                mock_read.side_effect = [(5, b"start\n"), (0, b"end\n")]
+                self.mixin.bootstrap_run(job_def=job_def, catalog={})
+
         mock_log_info.assert_called()
 
     def test_bootstrap_file_send(self):
-        self.stat.return_value = tests.FakeStat(uid=99, gid=99)
+        self.mock_stat.return_value = tests.FakeStat(uid=99, gid=99)
         m = unittest.mock.mock_open(read_data=b"testing")
         with patch("builtins.open", m):
             self.mixin.bootstrap_file_send(
@@ -834,7 +849,7 @@ class TestMixin(tests.TestConnectionBase):
             )
 
     def test_bootstrap_file_get(self):
-        self.stat.return_value = tests.FakeStat(uid=99, gid=99)
+        self.mock_stat.return_value = tests.FakeStat(uid=99, gid=99)
         m = unittest.mock.mock_open(read_data=b"testing")
         with patch("builtins.open", m):
             self.mixin.bootstrap_file_send(
@@ -845,17 +860,20 @@ class TestMixin(tests.TestConnectionBase):
         self.mixin.bootstrap_exec(
             ssh=self.mock_ssh, command="command1", catalog={}
         )
-        self.mock_ssh.channel.execute.assert_called_with("command1")
+        self.mock_ssh.channel.request_exec.assert_called_with("command1")
 
     def test_bootstrap_exec_failure(self):
-        self.fakechannel.get_exit_status.return_value = 1
-        self.assertRaises(
-            SystemExit,
-            self.mixin.bootstrap_exec,
-            self.mock_ssh,
-            "command1",
-            {},
-        )
+        with patch.object(self.fakechannel, "get_exit_status") as mock_status:
+            mock_status.return_value = 1
+            with patch.object(self.fakechannel, "read") as mock_read:
+                mock_read.side_effect = [(5, b"start\n"), (0, b"end\n")]
+                self.assertRaises(
+                    SystemExit,
+                    self.mixin.bootstrap_exec,
+                    self.mock_ssh,
+                    "command1",
+                    {},
+                )
 
     def test_bootstrap_exec_jinja(self):
         self.mixin.bootstrap_exec(
@@ -863,7 +881,7 @@ class TestMixin(tests.TestConnectionBase):
             command="command {{ test }} test",
             catalog={"test": 1},
         )
-        self.mock_ssh.channel.execute.assert_called_with("command 1 test")
+        self.mock_ssh.channel.request_exec.assert_called_with("command 1 test")
 
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.info", autospec=True)
@@ -879,7 +897,11 @@ class TestMixin(tests.TestConnectionBase):
                 ],
             }
         ]
-        self.mixin.bootstrap_q_processor(queue=mock_queue, catalog={})
+        with patch("directord.utils.SSHConnect") as mock_ssh:
+            mock_ssh.return_value = self.mock_ssh
+            with patch.object(self.fakechannel, "read") as mock_read:
+                mock_read.side_effect = [(5, b"start\n"), (0, b"end\n")]
+                self.mixin.bootstrap_q_processor(queue=mock_queue, catalog={})
         mock_log_info.assert_called()
 
     @patch("multiprocessing.Process", autospec=True)
