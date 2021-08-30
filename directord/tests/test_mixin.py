@@ -95,7 +95,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -115,7 +115,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test_target"],
@@ -136,7 +136,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                 }
@@ -156,7 +156,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "restrict": "Restrictedsha3_224",
@@ -177,7 +177,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "ParentID",
@@ -197,7 +197,7 @@ class TestMixin(tests.TestConnectionBase):
             "blueprint": False,
             "timeout": 600,
             "run_once": False,
-            "task_sha3_224": "de85bef754e1c7652d64cfd19f0a731e70d9bdc42a6698fabfd0f3ac",  # noqa
+            "job_sha3_224": "de85bef754e1c7652d64cfd19f0a731e70d9bdc42a6698fabfd0f3ac",  # noqa
             "return_raw": False,
             "skip_cache": False,
         }
@@ -218,7 +218,7 @@ class TestMixin(tests.TestConnectionBase):
             "blueprint": False,
             "timeout": 600,
             "run_once": False,
-            "task_sha3_224": "9420176ba6b63667ffdd0c2e51d896e74a9c8fe100a168bd6086db38",  # noqa
+            "job_sha3_224": "9420176ba6b63667ffdd0c2e51d896e74a9c8fe100a168bd6086db38",  # noqa
             "return_raw": False,
             "skip_cache": False,
         }
@@ -233,7 +233,7 @@ class TestMixin(tests.TestConnectionBase):
             "args": {"key": "value"},
             "timeout": 600,
             "run_once": False,
-            "task_sha3_224": "a5d63364114e96a96e5be4261f31a9bc0a45ecd2d5edba11336dd896",  # noqa
+            "job_sha3_224": "a5d63364114e96a96e5be4261f31a9bc0a45ecd2d5edba11336dd896",  # noqa
             "return_raw": False,
             "skip_cache": False,
         }
@@ -246,7 +246,7 @@ class TestMixin(tests.TestConnectionBase):
             "envs": {"key": "value"},
             "timeout": 600,
             "run_once": False,
-            "task_sha3_224": "adb3790c327b3b2fd3c438c900ab8a2d6260e1d812eb22cdd056dfc9",  # noqa
+            "job_sha3_224": "adb3790c327b3b2fd3c438c900ab8a2d6260e1d812eb22cdd056dfc9",  # noqa
             "return_raw": False,
             "skip_cache": False,
         }
@@ -265,7 +265,7 @@ class TestMixin(tests.TestConnectionBase):
                     "workdir": "/test/path",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "b899de26c8055243a43cc0c28d5a689a8ce6510bfcb420397e673a5f",  # noqa
+                    "job_sha3_224": "b899de26c8055243a43cc0c28d5a689a8ce6510bfcb420397e673a5f",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -284,7 +284,7 @@ class TestMixin(tests.TestConnectionBase):
                     "cachefile": "/test/path",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "dfce171945da1e2079b3ac4a7066eba6efd4880cadd10a649f95a1b4",  # noqa
+                    "job_sha3_224": "dfce171945da1e2079b3ac4a7066eba6efd4880cadd10a649f95a1b4",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -301,7 +301,7 @@ class TestMixin(tests.TestConnectionBase):
                     "cacheevict": "test",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "06460bd89ead48bd50398d0f9f1cd058c169492f88cf915db94eca7f",  # noqa
+                    "job_sha3_224": "06460bd89ead48bd50398d0f9f1cd058c169492f88cf915db94eca7f",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -318,7 +318,7 @@ class TestMixin(tests.TestConnectionBase):
                     "query": "test",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "6a3389639ebec5f7bcae998f73545fb9efb9cc975a38606168b6ceb9",  # noqa
+                    "job_sha3_224": "6a3389639ebec5f7bcae998f73545fb9efb9cc975a38606168b6ceb9",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -347,7 +347,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -386,7 +386,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": [
@@ -422,7 +422,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -457,7 +457,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                     "targets": ["test1", "test2", "test3"],
@@ -491,7 +491,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": True,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -559,7 +559,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],
@@ -590,7 +590,7 @@ class TestMixin(tests.TestConnectionBase):
                     "command": "command 1",
                     "timeout": 600,
                     "run_once": False,
-                    "task_sha3_224": "36796bb09a3838fa2c8bcb802eb9494546289a6fd6ed988579524ee1",  # noqa
+                    "job_sha3_224": "36796bb09a3838fa2c8bcb802eb9494546289a6fd6ed988579524ee1",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],

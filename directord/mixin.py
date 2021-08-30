@@ -116,7 +116,7 @@ class Mixin:
 
         data["timeout"] = getattr(component.known_args, "timeout", 600)
         data["run_once"] = getattr(component.known_args, "run_once", False)
-        data["task_sha3_224"] = utils.object_sha3_224(obj=data)
+        data["job_sha3_224"] = utils.object_sha3_224(obj=data)
         data["return_raw"] = return_raw
         data["skip_cache"] = ignore_cache or getattr(
             component.known_args, "skip_cache", False
@@ -233,7 +233,7 @@ class Mixin:
                         job["parent_sha3_224"],
                         item["verb"],
                         exec_str,
-                        item["task_sha3_224"],
+                        item["job_sha3_224"],
                     ]
                 )
                 return_data.append(tabulated_data)

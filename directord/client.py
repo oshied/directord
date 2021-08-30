@@ -388,7 +388,7 @@ class Client(interface.Interface):
                 block_on_task = True
                 with self.timeout(
                     time=240,
-                    job_id=component.block_on_task["task"],
+                    job_id=component.block_on_task["job_id"],
                 ):
                     while block_on_task:
                         with diskcache.Cache(
@@ -397,7 +397,7 @@ class Client(interface.Interface):
                             disk=diskcache.JSONDisk,
                         ) as cache:
                             if cache.get(
-                                component.block_on_task["task_sha3_224"]
+                                component.block_on_task["job_sha3_224"]
                             ) in [
                                 self.driver.job_end.decode(),
                                 self.driver.job_failed.decode(),
@@ -413,7 +413,7 @@ class Client(interface.Interface):
                     else:
                         self.log.debug(
                             "Task [ %s ] callback complete",
-                            component.block_on_task["task"],
+                            component.block_on_task["job_id"],
                         )
 
             if parent_lock:
@@ -697,9 +697,11 @@ class Client(interface.Interface):
                         _,
                     ) = self.driver.socket_recv(socket=self.bind_job)
                     job = json.loads(data.decode())
-                    job["job_id"] = job_id = job.get("task", utils.get_uuid())
+                    job["job_id"] = job_id = job.get(
+                        "job_id", utils.get_uuid()
+                    )
                     job["job_sha3_224"] = job_sha3_224 = job.get(
-                        "task_sha3_224", utils.object_sha3_224(job)
+                        "job_sha3_224", utils.object_sha3_224(job)
                     )
                     self.driver.socket_send(
                         socket=self.bind_job,
