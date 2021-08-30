@@ -297,12 +297,12 @@ STDOUT                df.next-c0.localdomain = true
 STDERR                df.next-c0.localdomain =
 NODES                 df.next-c0.localdomain
 VERB                  ECHO
-TASK_SHA3_224         86823a46fb4af75c9f93c8bedb301dfa8968321a
+JOB_SHA3_224          86823a46fb4af75c9f93c8bedb301dfa8968321a
 JOB_DEFINITION        verb = ECHO
                       echo = true
                       timeout = 600
-                      task_sha3_224 = 86823a46fb4af75c9f93c8bedb301dfa8968321a
-                      task = 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
+                      job_sha3_224 = 86823a46fb4af75c9f93c8bedb301dfa8968321a
+                      job_id = 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
                       parent_id = 09a0d4aa-ff84-40e4-a7e2-88be8dff841a
 PARENT_JOB_ID         09a0d4aa-ff84-40e4-a7e2-88be8dff841a
 PROCESSING
@@ -333,3 +333,19 @@ conversion method `options_converter`, which will allow developers to create
 new Directord components with ease. An example of a converted module can be
 seen in the `container_config_data` component and found
 [here](https://github.com/cloudnull/directord/blob/main/components/container_config_data.py).
+
+#### Job specification
+
+| Key                   | Value                                 |
+| --------------------- | --------------------------------------|
+| `${COMPONENT_OPTS}`   | **Component specific options**        |
+| `verb`                | **Component verb**                    |
+| `timeout`             | **Time value in seconds**             |
+| `skip_cache`          | **Boolean, skips local cache checks** |
+| `targets`             | **Array of targets**                  |
+| `job_id`              | **UUID**                              |
+| `job_sha3_224`        | **Job SHA in SHA3 224**               |
+| `extend_args`         | **Boolean**                           |
+| `parent_async_bypass` | **Boolean**                           |
+| `parent_sha3_224`     | **Parent SHA in SHA3 224**            |
+| `parent_id`           | **UUID**                              |

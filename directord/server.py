@@ -284,7 +284,7 @@ class Server(interface.Interface):
                 "NODES": [i.decode() for i in targets],
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": job_item["task_sha3_224"],
+                "JOB_SHA3_224": job_item["job_sha3_224"],
                 "JOB_DEFINITION": job_item,
                 "PARENT_JOB_ID": job_item.get("parent_id"),
                 "_createtime": time.time(),
@@ -315,7 +315,7 @@ class Server(interface.Interface):
         else:
             restrict_sha3_224 = job_item.get("restrict")
             if restrict_sha3_224:
-                if job_item["task_sha3_224"] not in restrict_sha3_224:
+                if job_item["job_sha3_224"] not in restrict_sha3_224:
                     self.log.debug(
                         "Job restriction %s is unknown.", restrict_sha3_224
                     )
@@ -346,9 +346,9 @@ class Server(interface.Interface):
             if run_query:
                 job_item["targets"] = [i.decode() for i in targets]
 
-            task = job_item.get("task", utils.get_uuid())
+            job_id = job_item.get("job_id", utils.get_uuid())
             job_info = self.create_return_jobs(
-                task=task, job_item=job_item, targets=targets
+                task=job_id, job_item=job_item, targets=targets
             )
             self.log.debug("Sending job:%s", job_item)
             for identity in targets:
@@ -394,9 +394,9 @@ class Server(interface.Interface):
                         data=json.dumps(job_item).encode(),
                     )
 
-                self.log.debug("Sent job %s to %s", task, identity)
+                self.log.debug("Sent job %s to %s", job_id, identity)
             else:
-                self.return_jobs[task] = job_info
+                self.return_jobs[job_id] = job_info
 
         return 128, time.time()
 
@@ -509,7 +509,7 @@ class Server(interface.Interface):
                 if new_task:
                     targets = self.workers.keys()
                     self.create_return_jobs(
-                        task=new_task["task"],
+                        task=new_task["job_id"],
                         job_item=new_task,
                         targets=targets,
                     )
@@ -611,19 +611,21 @@ class Server(interface.Interface):
                             str(e),
                         )
                 else:
-                    json_data["task"] = json_data.get("task", utils.get_uuid())
+                    json_data["job_id"] = json_data.get(
+                        "job_id", utils.get_uuid()
+                    )
 
                     if "parent_id" not in json_data:
-                        json_data["parent_id"] = json_data["task"]
+                        json_data["parent_id"] = json_data["job_id"]
 
                     # Returns the message in reverse to show a return. This
                     # will be a standard client return in JSON format under
                     # normal circomstances.
                     if json_data.get("return_raw", False):
-                        msg = json_data["task"].encode()
+                        msg = json_data["job_id"].encode()
                     else:
                         msg = "Job received. Task ID: {}".format(
-                            json_data["task"]
+                            json_data["job_id"]
                         ).encode()
 
                     try:

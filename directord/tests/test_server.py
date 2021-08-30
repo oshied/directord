@@ -62,7 +62,7 @@ class TestServer(tests.TestDriverBase):
                 "NODES": ["test-node"],
                 "VERB": "RUN",
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
@@ -86,7 +86,7 @@ class TestServer(tests.TestDriverBase):
                 "PROCESSING": "\x06",
                 "STDERR": {},
                 "STDOUT": {},
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -103,7 +103,7 @@ class TestServer(tests.TestDriverBase):
                 "NODES": ["test-node"],
                 "VERB": "RUN",
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
@@ -128,7 +128,7 @@ class TestServer(tests.TestDriverBase):
                 "PROCESSING": "\x06",
                 "STDERR": {},
                 "STDOUT": {"test-node": "stdout"},
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -145,7 +145,7 @@ class TestServer(tests.TestDriverBase):
                 "NODES": ["test-node"],
                 "VERB": "RUN",
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
@@ -170,7 +170,7 @@ class TestServer(tests.TestDriverBase):
                 "PROCESSING": "\x06",
                 "STDERR": {"test-node": "stderr"},
                 "STDOUT": {},
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -187,7 +187,7 @@ class TestServer(tests.TestDriverBase):
                 "NODES": ["test-node"],
                 "VERB": "RUN",
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
@@ -211,7 +211,7 @@ class TestServer(tests.TestDriverBase):
                 "PROCESSING": "\x16",
                 "STDERR": {},
                 "STDOUT": {},
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -228,7 +228,7 @@ class TestServer(tests.TestDriverBase):
                 "NODES": ["test-node"],
                 "VERB": "RUN",
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
@@ -254,7 +254,7 @@ class TestServer(tests.TestDriverBase):
                 "STDERR": {},
                 "STDOUT": {},
                 "SUCCESS": ["test-node"],
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
@@ -272,7 +272,7 @@ class TestServer(tests.TestDriverBase):
                 "NODES": ["test-node"],
                 "VERB": "RUN",
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
@@ -298,7 +298,7 @@ class TestServer(tests.TestDriverBase):
                 "STDERR": {},
                 "STDOUT": {},
                 "SUCCESS": ["test-node"],
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
@@ -316,7 +316,7 @@ class TestServer(tests.TestDriverBase):
                 "NODES": ["test-node"],
                 "VERB": "RUN",
                 "TRANSFERS": list(),
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
@@ -342,7 +342,7 @@ class TestServer(tests.TestDriverBase):
                 "STDERR": {},
                 "STDOUT": {},
                 "FAILED": ["test-node"],
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
@@ -369,7 +369,7 @@ class TestServer(tests.TestDriverBase):
             task="XXX",
             job_item={
                 "verb": "TEST",
-                "task_sha3_224": "YYY",
+                "job_sha3_224": "YYY",
                 "parent_id": "ZZZ",
             },
             targets=[b"test-node1", b"test-node2"],
@@ -381,14 +381,14 @@ class TestServer(tests.TestDriverBase):
                 "INFO": {},
                 "JOB_DEFINITION": {
                     "parent_id": "ZZZ",
-                    "task_sha3_224": "YYY",
+                    "job_sha3_224": "YYY",
                     "verb": "TEST",
                 },
                 "NODES": ["test-node1", "test-node2"],
                 "PARENT_JOB_ID": "ZZZ",
                 "STDERR": {},
                 "STDOUT": {},
-                "TASK_SHA3_224": "YYY",
+                "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "TEST",
                 "_createtime": ANY,
@@ -402,7 +402,7 @@ class TestServer(tests.TestDriverBase):
             task="XXX",
             job_item={
                 "verb": "TEST",
-                "task_sha3_224": "YYY",
+                "job_sha3_224": "YYY",
                 "parent_id": "ZZZ",
             },
             targets=[b"test-node1", b"test-node2"],
@@ -428,9 +428,9 @@ class TestServer(tests.TestDriverBase):
             {
                 "verb": "RUN",
                 "restrict": "12345",
-                "task_sha3_224": "YYY",
+                "job_sha3_224": "YYY",
                 "targets": ["test-node1", "test-node2"],
-                "task": "XXX",
+                "job_id": "XXX",
             }
         ]
         self.server.job_queue = mock_queue
@@ -444,9 +444,9 @@ class TestServer(tests.TestDriverBase):
         mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
-                "task_sha3_224": "YYY",
+                "job_sha3_224": "YYY",
                 "targets": ["test-node1", "test-node2"],
-                "task": "XXX",
+                "job_id": "XXX",
             }
         ]
         self.server.job_queue = mock_queue
@@ -461,9 +461,9 @@ class TestServer(tests.TestDriverBase):
         mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
-                "task_sha3_224": "YYY",
+                "job_sha3_224": "YYY",
                 "targets": ["test-node1", "test-node2"],
-                "task": "XXX",
+                "job_id": "XXX",
             }
         ]
         self.server.job_queue = mock_queue
@@ -645,9 +645,9 @@ class TestServer(tests.TestDriverBase):
                     {
                         "verb": "RUN",
                         "restrict": "12345",
-                        "task_sha3_224": "YYY",
+                        "job_sha3_224": "YYY",
                         "targets": ["test-node1", "test-node2"],
-                        "task": "XXX",
+                        "job_id": "XXX",
                         "query": "key",
                     }
                 ).encode(),
@@ -793,9 +793,9 @@ class TestServer(tests.TestDriverBase):
             {
                 "verb": "RUN",
                 "restrict": "12345",
-                "task_sha3_224": "YYY",
+                "job_sha3_224": "YYY",
                 "targets": ["test-node1", "test-node2"],
-                "task": "XXX",
+                "job_id": "XXX",
                 "query": "key",
             }
         ).encode()
@@ -821,9 +821,9 @@ class TestServer(tests.TestDriverBase):
             {
                 "verb": "RUN",
                 "restrict": "12345",
-                "task_sha3_224": "YYY",
+                "job_sha3_224": "YYY",
                 "targets": ["test-node1", "test-node2"],
-                "task": "XXX",
+                "job_id": "XXX",
                 "return_raw": True,
             }
         ).encode()
