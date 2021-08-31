@@ -2,7 +2,7 @@
 set -evo
 
 VENV_PATH="${1:-/opt/directord}"
-CLONE_PATH="${3:-/opt/directord-src}"
+CLONE_PATH="${3:-}"
 SETUP="${4:-true}"
 
 . /etc/os-release
@@ -55,13 +55,13 @@ fi
 rm -rf ${VENV_PATH}
 ${PYTHON_BIN} -m venv ${VENV_PATH}
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep pyyaml
-
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
 
-if [ ! -d "${CLONE_PATH}" ]; then
-  git clone https://github.com/cloudnull/directord ${CLONE_PATH}
+if [ -z "${CLONE_PATH}" ] || [ ! -d "${CLONE_PATH}" ] ; then
+  ${VENV_PATH}/bin/pip install --upgrade --pre directord[all]
+else
+  ${VENV_PATH}/bin/pip install ${CLONE_PATH}[all]
 fi
-${VENV_PATH}/bin/pip install ${CLONE_PATH}[all]
 
 if [ "${SETUP}" = true ]; then
   echo -e "\nDirectord is setup and installed within [ ${VENV_PATH} ]"
