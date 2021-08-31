@@ -126,7 +126,7 @@ class Mixin:
                 "jobs": [
                     {"WORKDIR": "/etc/directord/components"},
                     {
-                        "ADD": "{} {}".format(
+                        "ADD": "--skip-cache {} {}".format(
                             transfer, "/etc/directord/components/"
                         )
                     },

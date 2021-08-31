@@ -71,6 +71,48 @@ jobs:
           name: functional-test-logs
           path: /tmp/directord-*.log
 
+  functional_query_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/dev-setup.sh /opt/directord python3 $(pwd)
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Execute functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          if ! JOBS=$(sudo /opt/directord/bin/directord \
+                      orchestrate \
+                      functional-tests-query.yaml \
+                      --poll \
+                      --check); then
+            echo ${JOBS} | xargs -n 1 sudo /opt/directord/bin/directord manage --job-info &> /tmp/directord-functional-query.log
+            journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+            journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+            exit 1
+          fi
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-test-logs
+          path: /tmp/directord-*.log
+
   functional_async_check:
     runs-on: ubuntu-latest
     steps:

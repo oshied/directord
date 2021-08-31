@@ -1,0 +1,31 @@
+# This orchestration will run a functional query test.
+#
+---
+- jobs:
+  - RUN: >-
+      --run-once
+      --stdout-arg base64_system_release
+      base64 -w 0 /etc/os-release
+  - QUERY: base64_system_release
+
+- jobs:
+  - RUN: >-
+      --run-once
+      --stdout-arg base64_resolv_conf
+      base64 -w 0 /etc/resolv.conf
+  - QUERY: base64_resolv_conf
+
+- jobs:
+  - RUN: >-
+      --run-once
+      --stdout-arg base64_hosts
+      base64 -w 0 /etc/hosts
+  - QUERY: base64_hosts
+
+- jobs:
+  - RUN: >-
+      echo "{{ query.values() | map(attribute='base64_hosts') | select('defined') | list | first }}" | base64 -d > /tmp/base64-hosts
+  - RUN: >-
+      echo "{{ query.values() | map(attribute='base64_resolv_conf') | select('defined') | list | first }}" | base64 -d > /tmp/base64-resolv.conf
+  - RUN: >-
+      echo "{{ query.values() | map(attribute='base64_system_release') | select('defined') | list | first }}" | base64 -d > /tmp/base64-system-release
