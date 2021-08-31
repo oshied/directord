@@ -52,7 +52,6 @@ else
 fi
 
 # Create development workspace
-rm -rf ${VENV_PATH}
 ${PYTHON_BIN} -m venv ${VENV_PATH}
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep pyyaml
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
@@ -60,7 +59,7 @@ ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
 if [ -z "${CLONE_PATH}" ] || [ ! -d "${CLONE_PATH}" ] ; then
   ${VENV_PATH}/bin/pip install --upgrade --pre directord[all]
 else
-  ${VENV_PATH}/bin/pip install ${CLONE_PATH}[all]
+  ${VENV_PATH}/bin/pip install --upgrade ${CLONE_PATH}[all]
 fi
 
 if [ "${SETUP}" = true ]; then
