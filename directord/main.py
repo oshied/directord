@@ -24,6 +24,7 @@ import yaml
 
 import directord
 
+from directord import bootstrap
 from directord import client
 from directord import meta
 from directord import mixin
@@ -592,7 +593,8 @@ def main():
                 else:
                     print("Total {}: {}".format(k, v))
     elif args.mode == "bootstrap":
-        _mixin.bootstrap_cluster()
+        _bootstrap = bootstrap.Bootstrap(args=args)
+        _bootstrap.bootstrap_cluster()
     else:
         parser.print_help(sys.stderr)
         raise SystemExit("Mode is set to an unsupported value.")
