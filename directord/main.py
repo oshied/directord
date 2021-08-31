@@ -360,11 +360,12 @@ def _args(exec_args=None):
     # Check for configuration file and load it if found.
     if args.config_file:
         config_data = yaml.safe_load(args.config_file)
-        for key, value in config_data.items():
-            if isinstance(value, list) and key in args.__dict__:
-                args.__dict__[key].extend(value)
-            else:
-                args.__dict__[key] = value
+        if config_data:
+            for key, value in config_data.items():
+                if isinstance(value, list) and key in args.__dict__:
+                    args.__dict__[key].extend(value)
+                else:
+                    args.__dict__[key] = value
 
     return args, parser
 
