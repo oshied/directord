@@ -195,10 +195,16 @@ class Bootstrap(directord.Processor):
         )
         fileinfo = os.stat(localfile)
         try:
+            try:
+                chan.unlink(remotefile)
+            except Exception as e:
+                self.log.debug("file unlink error %s", str(e))
+
+            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
             with open(localfile, "rb") as local_f:
-                for data in self._read_chunks(fh=local_f):
+                for data in local_f:
                     with chan.open(
-                        remotefile, os.O_CREAT | os.O_WRONLY, fileinfo.st_mode
+                        remotefile, flags, fileinfo.st_mode
                     ) as remote_f:
                         remote_f.write(data)
         except Exception as e:
