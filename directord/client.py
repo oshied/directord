@@ -15,6 +15,7 @@
 import json
 import os
 import time
+import uuid
 
 import diskcache
 
@@ -51,12 +52,12 @@ class Client(interface.Interface):
         with open("/proc/uptime", "r") as f:
             uptime = float(f.readline().split()[0])
 
-        self.driver.heartbeat_send(uptime=uptime)
+        self.driver.heartbeat_send(uptime=uptime, source_uuid=self.uuid)
         self.log.debug(
             "Sent heartbeat to server.",
         )
 
-    def handle_heartbeat(self, heartbeat_at, reset):
+    def handle_heartbeat(self, heartbeat_at, reset, source_uuid):
         self.log.debug("Heartbeat received from server.")
         if reset:
             self.log.warning(
@@ -150,7 +151,7 @@ class Client(interface.Interface):
         :type command: Bytes
         """
 
-        self.log.debug("Running component:%s", command.decode())
+        self.log.debug("Running component:%s", command)
         component_kwargs = dict(cache=None, job=job)
         if job.get("parent_async_bypass") is True:
             self.log.debug("Running [ %s ] in bypass queue", job_id)
@@ -274,7 +275,7 @@ class Client(interface.Interface):
         """
 
         success, _, component = directord.component_import(
-            component=command.decode().lower(),
+            component=command.lower(),
             job_id=component_kwargs["job"]["job_id"],
         )
 
@@ -461,11 +462,7 @@ class Client(interface.Interface):
                 {"execution_time": job["execution_time"]}
             ).encode()
 
-        with diskcache.Cache(
-            self.args.cache_path,
-            tag_index=True,
-            disk=diskcache.JSONDisk,
-        ) as cache:
+        with utils.get_diskcache(self.args.cache_path) as cache:
             if job["parent_id"]:
                 self.base_component.set_cache(
                     cache=cache,
@@ -611,6 +608,76 @@ class Client(interface.Interface):
 
         return cache_check_time
 
+    def handle_job(self, cache, command, job, info, sentinel=False):
+        poller_interval, poller_time = 64, time.time()
+        job["job_id"] = job_id = job.get(
+            "job_id", utils.get_uuid()
+        )
+        job["job_sha3_224"] = job_sha3_224 = job.get(
+            "job_sha3_224", utils.object_sha3_224(job)
+        )
+        self.driver.job_client_ack(job_id)
+
+        job_skip_cache = job.get(
+            "skip_cache", job.get("ignore_cache", False)
+        )
+
+        job_parent_id = job.get("parent_id")
+        job_parent_sha3_224 = job.get("parent_sha3_224")
+        if job_parent_sha3_224:
+            self.l_manager[job_parent_sha3_224] = {
+                "lock": self.manager.Lock(),
+                "used": time.time(),
+                "locked": False,
+            }
+
+        self.log.info(
+            "Job received: parent job UUID [ %s ],"
+            " parent job sha3_224 [ %s ], task UUID [ %s ],"
+            " task SHA3_224 [ %s ]",
+            job_parent_id,
+            job_parent_sha3_224,
+            job_id,
+            job_sha3_224,
+        )
+
+        with utils.ClientStatus(
+            job_id=job_id,
+            command=command,
+            ctx=self,
+        ) as c:
+            if job_parent_id and not self._parent_check(
+                conn=c, cache=cache, job=job
+            ):
+                self.q_return.put(
+                    (
+                        None,
+                        None,
+                        False,
+                        b"Job omitted, parent failure",
+                        job,
+                        command,
+                        0,
+                        None,
+                    )
+                )
+                if sentinel:
+                    return
+            else:
+                c.job_state = self.driver.job_processing
+                self._job_executor(
+                    conn=c,
+                    info=info,
+                    job=job,
+                    job_id=job_id,
+                    cached=(
+                        cache.get(job_sha3_224)
+                        == self.driver.job_end.decode()
+                        and not job_skip_cache
+                    ),
+                    command=command,
+                )
+
     def run_job(self, sentinel=False):
         """Job entry point.
 
@@ -651,80 +718,11 @@ class Client(interface.Interface):
                 poller_interval = 1024
 
             if self.driver.job_check(constant=poller_interval):
-                with diskcache.Cache(
-                    self.args.cache_path,
-                    tag_index=True,
-                    disk=diskcache.JSONDisk,
-                ) as cache:
-                    poller_interval, poller_time = 64, time.time()
+                with utils.get_diskcache(self.args.cache_path) as cache:
                     command, job, info = self.driver.job_client_receive()
-                    job["job_id"] = job_id = job.get(
-                        "job_id", utils.get_uuid()
+                    self.handle_job(
+                        cache, command, job, info, sentinel,
                     )
-                    job["job_sha3_224"] = job_sha3_224 = job.get(
-                        "job_sha3_224", utils.object_sha3_224(job)
-                    )
-                    self.driver.job_client_ack(job_id)
-
-                    job_skip_cache = job.get(
-                        "skip_cache", job.get("ignore_cache", False)
-                    )
-
-                    job_parent_id = job.get("parent_id")
-                    job_parent_sha3_224 = job.get("parent_sha3_224")
-                    if job_parent_sha3_224:
-                        self.l_manager[job_parent_sha3_224] = {
-                            "lock": self.manager.Lock(),
-                            "used": time.time(),
-                            "locked": False,
-                        }
-
-                    self.log.info(
-                        "Job received: parent job UUID [ %s ],"
-                        " parent job sha3_224 [ %s ], task UUID [ %s ],"
-                        " task SHA3_224 [ %s ]",
-                        job_parent_id,
-                        job_parent_sha3_224,
-                        job_id,
-                        job_sha3_224,
-                    )
-
-                    with utils.ClientStatus(
-                        job_id=job_id,
-                        command=command,
-                        ctx=self,
-                    ) as c:
-                        if job_parent_id and not self._parent_check(
-                            conn=c, cache=cache, job=job
-                        ):
-                            self.q_return.put(
-                                (
-                                    None,
-                                    None,
-                                    False,
-                                    b"Job omitted, parent failure",
-                                    job,
-                                    command,
-                                    0,
-                                    None,
-                                )
-                            )
-                            if sentinel:
-                                break
-                        else:
-                            c.job_state = self.driver.job_processing
-                            self._job_executor(
-                                conn=c,
-                                info=info,
-                                job=job,
-                                job_id=job_id,
-                                cached=(
-                                    cache.get(job_sha3_224)
-                                    == self.driver.job_end.decode()
-                                    and not job_skip_cache
-                                ),
-                                command=command,
-                            )
 
             if sentinel:
                 break

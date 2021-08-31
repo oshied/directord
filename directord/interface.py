@@ -14,6 +14,8 @@
 
 import logging
 import os
+import uuid
+
 import directord
 
 
@@ -48,6 +50,8 @@ class Interface(directord.Processor):
             self.bind_address = self.args.bind_address
         else:
             self.bind_address = "*"
+
+        self.uuid = str(uuid.uuid4())
 
         self.proto = "tcp"
         self.connection_string = "{proto}://{addr}".format(

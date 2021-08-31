@@ -27,6 +27,7 @@ REQUIREMENTS = {
     "dev": ["podman-py"],
     "test": ["flake8", "coverage"],
     "redis": ["redis"],
+    "oslo_messaging": ["oslo_messaging[amqp1]"],
 }
 REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 

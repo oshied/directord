@@ -19,6 +19,7 @@ import os
 import socket
 import time
 import urllib.parse as urlparse
+import uuid
 
 import directord
 
@@ -65,7 +66,7 @@ class Server(interface.Interface):
                     url=url._replace(path="").geturl(), database=(db + 2)
                 )
 
-    def handle_heartbeat(self, identity, control, uptime, version):
+    def handle_heartbeat(self, identity, control, uptime, version, source_uuid):
         if control in [
             self.driver.heartbeat_ready.decode(),
             self.driver.heartbeat_notice.decode(),
@@ -78,16 +79,20 @@ class Server(interface.Interface):
                 heartbeat_interval=self.heartbeat_interval,
                 interval=self.heartbeat_liveness,
             )
-            worker_metadata = {"time": expire,
-                               "uptime": uptime,
-                               "version": version}
 
+            worker_metadata = self.workers.get(identity, {})
+            worker_metadata.setdefault("time", expire)
+            worker_metadata.setdefault("uptime", uptime)
+            worker_metadata.setdefault("version", version)
+            worker_metadata.setdefault("uuid", source_uuid)
             self.workers[identity] = worker_metadata
+
             self.heartbeat_at = self.driver.get_heartbeat(
                 interval=self.heartbeat_interval
             )
             self.driver.heartbeat_send(
-                identity=identity, expire=expire)
+                identity=identity, expire=expire,
+                source_uuid=self.uuid)
             self.log.debug(
                 "Sent Heartbeat to [ %s ]", identity
             )
@@ -189,7 +194,7 @@ class Server(interface.Interface):
             job_metadata["STDERR"][identity] = job_stderr
 
         self.log.debug("current job [ %s ] state [ %s ]", job_id, job_status)
-        job_metadata["PROCESSING"] = job_status.decode()
+        job_metadata["PROCESSING"] = job_status
 
         _createtime = job_metadata.get("_createtime")
         if not _createtime:
@@ -288,6 +293,7 @@ class Server(interface.Interface):
 
         try:
             job_item = self.job_queue.get_nowait()
+            self.log.debug("Pulled job {} off queue".format(job_item))
         except Exception:
             self.log.debug(
                 "Directord server found nothing to do, cooling down"
@@ -359,7 +365,7 @@ class Server(interface.Interface):
                         )
                         self.driver.job_send(
                             identity=identity,
-                            job_data=job_item,
+                            data=job_item,
                             info=file_path
                         )
                 else:
@@ -368,13 +374,60 @@ class Server(interface.Interface):
                         job_item["verb"].encode(),
                         identity,
                     )
-                    self.driver.job_send(identity, job_item)
+                    self.driver.job_send(identity=identity, data=job_item)
 
                 self.log.debug("Sent job %s to %s", job_id, identity)
             else:
                 self.return_jobs[job_id] = job_info
 
         return 128, time.time()
+
+    def handle_job(self, identity, msg_id, control, command, data, info,
+                   stderr, stdout):
+        node = identity
+        node_output = info
+        if stderr:
+            stderr = stderr
+        if stdout:
+            stdout = stdout
+
+        try:
+            data_item = json.loads(data)
+        except Exception:
+            data_item = dict()
+
+        self._set_job_status(
+            job_status=control,
+            job_id=msg_id,
+            identity=node,
+            job_output=node_output,
+            job_stdout=stdout,
+            job_stderr=stderr,
+            execution_time=data_item.get("execution_time", 0),
+            recv_time=time.time(),
+        )
+
+        new_task = data_item.get("new_task")
+        if new_task:
+            targets = self.workers.keys()
+            self.create_return_jobs(
+                task=new_task["job_id"],
+                job_item=new_task,
+                targets=targets,
+            )
+            self.log.debug(
+                "Runing query against with DATA: %s",
+                new_task,
+            )
+            for target in targets:
+                self.log.debug(
+                    "Runing query ARG update against" " TARGET: %s",
+                    target.decode(),
+                )
+                self.driver.job_send(
+                    identity=target,
+                    data=new_task,
+                )
 
     def run_interactions(self, sentinel=False):
         """Execute the interactions loop.
@@ -456,50 +509,16 @@ class Server(interface.Interface):
                     stderr,
                     stdout,
                 ) = self.driver.job_server_receive()
-                node = identity
-                node_output = info
-                if stderr:
-                    stderr = stderr
-                if stdout:
-                    stdout = stdout
-
-                try:
-                    data_item = json.loads(data)
-                except Exception:
-                    data_item = dict()
-
-                self._set_job_status(
-                    job_status=control,
-                    job_id=msg_id,
-                    identity=node,
-                    job_output=node_output,
-                    job_stdout=stdout,
-                    job_stderr=stderr,
-                    execution_time=data_item.get("execution_time", 0),
-                    recv_time=time.time(),
+                self.handle_job(
+                    identity,
+                    msg_id,
+                    control,
+                    command,
+                    data,
+                    info,
+                    stderr,
+                    stdout,
                 )
-
-                new_task = data_item.get("new_task")
-                if new_task:
-                    targets = self.workers.keys()
-                    self.create_return_jobs(
-                        task=new_task["job_id"],
-                        job_item=new_task,
-                        targets=targets,
-                    )
-                    self.log.debug(
-                        "Runing query against with DATA: %s",
-                        new_task,
-                    )
-                    for target in targets:
-                        self.log.debug(
-                            "Runing query ARG update against" " TARGET: %s",
-                            target.decode(),
-                        )
-                        self.driver.job_send(
-                            identity=target,
-                            job_data=new_task,
-                        )
 
             elif self.workers:
                 poller_interval, poller_time = self.run_job()

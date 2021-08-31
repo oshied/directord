@@ -18,6 +18,7 @@ import os
 import socket
 import uuid
 
+import diskcache
 import tabulate
 import yaml
 
@@ -279,4 +280,12 @@ def print_tabulated_data(data, headers):
             data,
             headers=headers,
         )
+    )
+
+
+def get_diskcache(cache_path):
+    return diskcache.Cache(
+        cache_path,
+        tag_index=True,
+        disk=diskcache.JSONDisk
     )

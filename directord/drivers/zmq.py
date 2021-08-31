@@ -435,7 +435,7 @@ class Driver(drivers.BaseDriver):
             command,
             data,
             info,
-            stdour,
+            stdout,
             stderr,
         ) = self.socket_recv(socket=self.bind_job)
         job_data = data.decode()
@@ -520,7 +520,7 @@ class Driver(drivers.BaseDriver):
             stdout=stdout
         )
 
-    def job_send(self, identity, job_data, info=None):
+    def job_send(self, identity, data, info=None):
         """Send the job to the client. Server->Client"""
 
         if info is None:
@@ -531,8 +531,8 @@ class Driver(drivers.BaseDriver):
         self.socket_send(
             socket=self.bind_job,
             identity=identity.encode(),
-            command=job_data["verb"].encode(),
-            data=json.dumps(job_data).encode(),
+            command=data["verb"].encode(),
+            data=json.dumps(data).encode(),
             info=info,
         )
 
@@ -623,7 +623,7 @@ class Driver(drivers.BaseDriver):
             return False
 
     def heartbeat_send(self, identity=None, uptime=None,
-                       expire=None, reset=False):
+                       expire=None, client_uuid=None, reset=False):
         """Send a heartbeat.
 
         :param identity: Identity of worker
@@ -641,6 +641,7 @@ class Driver(drivers.BaseDriver):
                 {
                     "version": directord.__version__,
                     "uptime": str(uptime),
+                    "client_uuid": client_uuid,
                 }
             ).encode()
         else:

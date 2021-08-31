@@ -317,3 +317,14 @@ class BaseDriver:
         """Send the job client status. Client->Server"""
 
         pass
+
+    def job_init(self):
+        """Initialize the heartbeat socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        pass
