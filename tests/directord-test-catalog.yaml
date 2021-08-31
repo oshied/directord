@@ -1,0 +1,15 @@
+---
+
+directord_server:
+  jobs:
+  - RUN: echo test-server | sudo tee /tmp/test-file.server
+  - GET: /tmp/test-file.server /tmp/test-file.server.get
+  - ADD: /tmp/test-file.server.get /tmp/test-file.server.add
+  - RUN: grep test-server /tmp/test-file.server.add
+
+directord_clients:
+  jobs:
+  - RUN: echo test-clients | sudo tee /tmp/test-file.clients
+  - GET: /tmp/test-file.clients /tmp/test-file.clients.get
+  - ADD: /tmp/test-file.clients.get /tmp/test-file.clients.add
+  - RUN: grep test-clients /tmp/test-file.clients.add

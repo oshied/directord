@@ -174,7 +174,7 @@ class SSHConnect:
             "Handshake with [ %s ] on port [ %s ] complete.", host, port
         )
 
-        self.channel = None
+        self.channels = dict()
         self.host = host
         self.username = username
         self.key_file = key_file
@@ -212,6 +212,15 @@ class SSHConnect:
                     self.log.debug(
                         "Implicit key file [ %s ] added", self.key_file
                     )
+                else:
+                    self.log.critical(
+                        "No implicit key found [ %s ]. Setup user-agent"
+                        " authentication or use the --key-file"
+                        " argument to explicitly set the required"
+                        " ssh key.",
+                        default_keyfile,
+                    )
+                    raise SystemExit("Authentication failure")
 
     def __enter__(self):
         """Connect to the remote node and return the ssh and session objects.
@@ -225,9 +234,13 @@ class SSHConnect:
     def __exit__(self, *args, **kwargs):
         """Upon exit, close the ssh connection."""
 
-        if self.channel:
-            self.channel.close()
-            self.log.debug("SSH channel is closed.")
+        for key, value in self.channels.items():
+            if hasattr(value, "close"):
+                value.close()
+                self.log.debug("%s channel is closed.", key)
+
+        self.session.disconnect()
+        self.log.debug("SSH session is closed.")
 
 
 def file_sha3_224(file_path, chunk_size=10240):

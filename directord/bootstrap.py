@@ -19,14 +19,30 @@ import sys
 import jinja2
 from jinja2 import StrictUndefined
 
-from ssh import scp as scp_ext
-
 import yaml
 
 import directord
 
 from directord import logger
 from directord import utils
+
+
+class PrintError:
+    def __init__(self) -> None:
+        self.line_break = "="
+        self.line_multiplier = 20
+        self.start = "Start Error Information"
+        self.start_length = len(self.start)
+
+    def __enter__(self):
+        line = self.line_break * self.line_multiplier
+        print("{line} {start} {line}".format(line=line, start=self.start))
+
+    def __exit__(self, *args, **kwargs):
+        end = "End Error Information"
+        line_delta = self.start_length - len(end)
+        line = self.line_break * (self.line_multiplier + line_delta // 2)
+        print("{line} {end} {line}".format(line=line, end=end))
 
 
 class Bootstrap(directord.Processor):
@@ -136,6 +152,16 @@ class Bootstrap(directord.Processor):
 
         return return_jobs
 
+    @staticmethod
+    def _read_chunks(fh, chunk_size=1024):
+        """Read file in 1024 chunks."""
+
+        while True:
+            data = fh.read(chunk_size)
+            if not data:
+                break
+            yield data
+
     def bootstrap_file_send(self, ssh, localfile, remotefile):
         """Run a remote put command.
 
@@ -147,28 +173,38 @@ class Bootstrap(directord.Processor):
         :type remotefile: String
         """
 
-        fileinfo = os.stat(localfile)
-        chan = ssh.session.scp_new(scp_ext.SSH_SCP_WRITE, remotefile)
+        if "sftp" in ssh.channels:
+            chan = ssh.channels["sftp"]
+        else:
+            chan = ssh.channels["sftp"] = ssh.session.sftp_new()
         if isinstance(chan, int):
-            self.log.critical(
-                "Failed to connect for file transfer. SSH Error Code [ %s ]",
-                chan,
-            )
-            raise SystemExit(chan)
+            with PrintError():
+                self.log.critical(
+                    "Failed to connect for file transfer ADD. Error Code"
+                    " [ %s ]",
+                    chan,
+                )
+                raise SystemExit(chan)
 
-        ssh.channel = chan
-        chan.push_file64(
-            remotefile, fileinfo.st_size, fileinfo.st_mode & 0o777
-        )
+        chan.init()
         self.log.debug(
             "channel: %s, local file: %s, remote file: %s",
             chan,
             localfile,
             remotefile,
         )
-        with open(localfile, "rb") as local_fh:
-            for data in local_fh:
-                chan.write(data)
+        fileinfo = os.stat(localfile)
+        try:
+            with open(localfile, "rb") as local_f:
+                for data in self._read_chunks(fh=local_f):
+                    with chan.open(
+                        remotefile, os.O_CREAT | os.O_WRONLY, fileinfo.st_mode
+                    ) as remote_f:
+                        remote_f.write(data)
+        except Exception as e:
+            with PrintError():
+                self.log.critical(str(e))
+                raise SystemExit("File [ {} ] ADD failed.".format(remotefile))
 
     def bootstrap_file_get(self, ssh, localfile, remotefile):
         """Run a remote get command.
@@ -181,20 +217,35 @@ class Bootstrap(directord.Processor):
         :type remotefile: String
         """
 
-        chan = ssh.session.sftp_new()
+        if "sftp" in ssh.channels:
+            chan = ssh.channels["sftp"]
+        else:
+            chan = ssh.channels["sftp"] = ssh.session.sftp_new()
         if isinstance(chan, int):
-            self.log.critical(
-                "Failed to connect for file transfer. SSH Error Code [ %s ]",
-                chan,
-            )
-            raise SystemExit(chan)
+            with PrintError():
+                self.log.critical(
+                    "Failed to connect for file transfer GET. Error Code"
+                    " [ %s ]",
+                    chan,
+                )
+                raise SystemExit(chan)
 
-        self.channel = chan
         chan.init()
-        with chan.open(remotefile, os.O_RDONLY, 0) as remote_fh:
-            with open(localfile, "wb") as f:
-                for _, data in remote_fh:
-                    f.write(data)
+        self.log.debug(
+            "channel: %s, local file: %s, remote file: %s",
+            chan,
+            localfile,
+            remotefile,
+        )
+        try:
+            with chan.open(remotefile, os.O_RDONLY, 0) as remote_f:
+                with open(localfile, "wb") as f:
+                    for _, data in remote_f:
+                        f.write(data)
+        except Exception as e:
+            with PrintError():
+                self.log.critical(str(e))
+                raise SystemExit("File [ {} ] GET failed.".format(remotefile))
 
     def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.
@@ -219,32 +270,41 @@ class Bootstrap(directord.Processor):
             )
             raise SystemExit(chan)
 
-        ssh.channel = chan
-        chan.open_session()
-        t_command = self.blueprint.from_string(command)
-        command = t_command.render(**catalog)
-        chan.request_exec(command)
-
-        if chan.get_exit_status() != 0:
-            self.log.warning("FAILURE: [ %s ]", command)
+        try:
+            chan.open_session()
+            if chan.request_pty() == 0:
+                self.log.debug("using PTY")
+            t_command = self.blueprint.from_string(command)
+            command = t_command.render(**catalog)
+            self.log.debug(
+                "channel: %s, command: %s",
+                chan,
+                command,
+            )
+            chan.request_exec(command)
             size, data = chan.read()
             while size > 0:
                 size, _data = chan.read()
                 data += _data
-            print(
-                "{line} Start Error Information {line}".format(line=("=" * 10))
-            )
             try:
                 data = data.decode()
             except AttributeError:
                 pass
-            print(data)
-            print(
-                "{line} End Error Information {line}".format(line=("=" * 10))
-            )
-            raise SystemExit("Bootstrap command failed: {}".format(command))
-        else:
-            self.log.info("HOST: [ %s ] SUCCESS: [ %s ]", ssh.host, command)
+
+            if chan.get_exit_status() != 0:
+                self.log.warning("FAILURE: [ %s ]", command)
+                with PrintError():
+                    self.log.critical(data)
+                    raise SystemExit(
+                        "Bootstrap command failed: {}".format(command)
+                    )
+            else:
+                self.log.info(
+                    "HOST: [ %s ] SUCCESS: [ %s ]", ssh.host, command
+                )
+        finally:
+            if hasattr(chan, "close"):
+                chan.close()
 
     def bootstrap_run(self, job_def, catalog):
         """Run a given set of jobs using a defined job definition.
@@ -266,31 +326,34 @@ class Bootstrap(directord.Processor):
         """
 
         self.log.info("Running bootstrap for %s", job_def["host"])
-        for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
-            key, value = next(iter(job.items()))
-            self.log.debug("Executing: %s %s", key, value)
-            with utils.SSHConnect(
-                host=job_def["host"],
-                username=job_def["username"],
-                port=job_def["port"],
-                key_file=job_def.get("key_file"),
-                debug=getattr(self.args, "debug", False),
-            ) as ssh:
-                if key == "RUN":
-                    self.bootstrap_exec(
-                        ssh=ssh, command=value, catalog=catalog
-                    )
-                elif key == "ADD":
-                    localfile, remotefile = value.split(" ", 1)
-                    localfile = self.bootstrap_localfile_padding(localfile)
-                    self.bootstrap_file_send(
-                        ssh=ssh, localfile=localfile, remotefile=remotefile
-                    )
-                elif key == "GET":
-                    remotefile, localfile = value.split(" ", 1)
-                    self.bootstrap_file_get(
-                        ssh=ssh, localfile=localfile, remotefile=remotefile
-                    )
+        with utils.SSHConnect(
+            host=job_def["host"],
+            username=job_def["username"],
+            port=job_def["port"],
+            key_file=job_def.get("key_file"),
+            debug=getattr(self.args, "debug", False),
+        ) as ssh:
+            for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
+                key, value = next(iter(job.items()))
+                self.log.debug("Executing: %s %s", key, value)
+                with self.timeout(
+                    time=600, job_id=job_def["host"], reraise=True
+                ):
+                    if key == "RUN":
+                        self.bootstrap_exec(
+                            ssh=ssh, command=value, catalog=catalog
+                        )
+                    elif key == "ADD":
+                        localfile, remotefile = value.split(" ", 1)
+                        localfile = self.bootstrap_localfile_padding(localfile)
+                        self.bootstrap_file_send(
+                            ssh=ssh, localfile=localfile, remotefile=remotefile
+                        )
+                    elif key == "GET":
+                        remotefile, localfile = value.split(" ", 1)
+                        self.bootstrap_file_get(
+                            ssh=ssh, localfile=localfile, remotefile=remotefile
+                        )
 
     def bootstrap_q_processor(self, queue, catalog):
         """Run a queing execution thread.

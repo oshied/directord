@@ -245,10 +245,13 @@ class Testbootstrap(tests.TestConnectionBase):
             )
 
     def test_bootstrap_exec(self):
-        self.bootstrap.bootstrap_exec(
-            ssh=self.mock_ssh, command="command1", catalog={}
-        )
-        self.mock_ssh.channel.request_exec.assert_called_with("command1")
+        with patch.object(self.fakechannel, "read") as mock_read:
+            mock_read.side_effect = [(5, b"start\n"), (0, b"end\n")]
+            self.bootstrap.bootstrap_exec(
+                ssh=self.mock_ssh, command="command1", catalog={}
+            )
+        for _, value in self.mock_ssh.channels.items():
+            value.request_exec.assert_called_with("command1")
 
     def test_bootstrap_exec_failure(self):
         with patch.object(self.fakechannel, "get_exit_status") as mock_status:
@@ -264,12 +267,15 @@ class Testbootstrap(tests.TestConnectionBase):
                 )
 
     def test_bootstrap_exec_jinja(self):
-        self.bootstrap.bootstrap_exec(
-            ssh=self.mock_ssh,
-            command="command {{ test }} test",
-            catalog={"test": 1},
-        )
-        self.mock_ssh.channel.request_exec.assert_called_with("command 1 test")
+        with patch.object(self.fakechannel, "read") as mock_read:
+            mock_read.side_effect = [(5, b"start\n"), (0, b"end\n")]
+            self.bootstrap.bootstrap_exec(
+                ssh=self.mock_ssh,
+                command="command {{ test }} test",
+                catalog={"test": 1},
+            )
+        for _, value in self.mock_ssh.channels.items():
+            value.request_exec.assert_called_with("command 1 test")
 
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.info", autospec=True)
