@@ -20,7 +20,7 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   COMMAND="dnf -y install"
   eval "${COMMAND} ${PACKAGES}"
 elif [[ ${ID} == "fedora" ]]; then
-  PACKAGES="git wget python3 python3-ssh2-python python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-diskcache"
+  PACKAGES="git wget python3 python3-ssh-python python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-diskcache"
   COMMAND="dnf -y install"
   eval "${COMMAND} ${PACKAGES}"
 elif [[ ${ID} == "ubuntu" ]]; then

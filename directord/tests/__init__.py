@@ -223,9 +223,10 @@ class TestConnectionBase(unittest.TestCase):
         self.patched_socket = patch("socket.socket.connect", autospec=True)
         self.patched_socket.start()
         fakesession = MagicMock()
-        self.fakechannel = fakesession.open_session.return_value = MagicMock()
-        self.fakechannel.read.return_value = (0, "test-exec-output")
-        self.fakechannel.get_exit_status.return_value = 0
+        fakesession.disconnect = MagicMock()
+        self.fakechannel = MagicMock()
+        self.fakechannel.read = MagicMock(return_value=[(0, b"end\n")])
+        self.fakechannel.get_exit_status = MagicMock(return_value=0)
         self.patched_session = patch(
             "directord.utils.Session", autospec=True, return_value=fakesession
         )

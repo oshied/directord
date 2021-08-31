@@ -125,12 +125,14 @@ class TestUtils(tests.TestConnectionBase):
             stdout=unittest.mock.ANY,
         )
 
+    @patch("ssh.key.import_privkey_file", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
-    def test_sshconnect_keyfile(self, mock_log_debug):
+    def test_sshconnect_keyfile(self, mock_log_debug, mock_import_key):
         with utils.SSHConnect(
             host="test", username="testuser", port=22, key_file="/test/key"
         ):
             mock_log_debug.assert_called()
+            mock_import_key.assert_called()
 
     @patch("logging.Logger.debug", autospec=True)
     def test_sshconnect_agent_default(self, mock_log_debug):
@@ -139,24 +141,24 @@ class TestUtils(tests.TestConnectionBase):
             with utils.SSHConnect(host="test", username="testuser", port=22):
                 mock_log_debug.assert_called()
 
+    @patch("ssh.key.import_privkey_file", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     @patch("logging.Logger.warning", autospec=True)
     def test_sshconnect_agent_failure_default_key(
-        self, mock_log_debug, mock_log_warning
+        self, mock_log_debug, mock_log_warning, mock_import_key
     ):
         ssh = utils.SSHConnect(host="test", username="testuser", port=22)
         with patch.object(
-            ssh.session, "agent_auth", autospec=True
+            ssh.session, "userauth_agent", autospec=True
         ) as mock_agent_auth:
-            mock_agent_auth.side_effect = (
-                utils.ssh2.exceptions.AgentConnectionError("failed")
-            )
+            mock_agent_auth.side_effect = Exception("failed")
             with patch("os.path.exists") as mock_path:
                 mock_path.return_value = True
                 ssh.set_auth()
 
         mock_log_debug.assert_called()
         mock_log_warning.assert_called()
+        mock_import_key.assert_called()
 
     def test_file_sha3_224(self):
         with patch("os.path.exists") as mock_path:

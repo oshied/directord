@@ -877,7 +877,9 @@ class TestMain(unittest.TestCase):
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]
-        with patch("directord.mixin.Mixin.bootstrap_cluster", autospec=True):
+        with patch(
+            "directord.bootstrap.Bootstrap.bootstrap_cluster", autospec=True
+        ):
             main.main()
 
     @patch("directord.main._args", autospec=True)

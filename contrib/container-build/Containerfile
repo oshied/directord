@@ -24,15 +24,15 @@ RUN dnf -y update && \
     chown -R builder /home/builder/build && \
     echo '%builder ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# TODO(cloudnull): remove all this when diskcache and ssh2-python are packaged
+# TODO(cloudnull): remove all this when diskcache and ssh-python are packaged
 RUN dnf -y install rpmdevtools python3-pytoml python3-pyxdg python38-requests cmake openssl openssl-devel python3-devel && \
     dnf -y groupinstall 'Development Tools' && \
     python3 -m venv /home/builder/pyp2rpm --system-site-packages && \
     /home/builder/pyp2rpm/bin/pip install pyp2rpm && \
     /home/builder/pyp2rpm/bin/pyp2rpm --srpm diskcache -d /home/builder/rpm -b 3 && \
     rpmbuild --rebuild "$(ls -1 /home/builder/rpm/python*-diskcache*.src.rpm)"  --nodeps --nocheck && \
-    /home/builder/pyp2rpm/bin/pyp2rpm --srpm ssh2-python -d /home/builder/rpm -b 3 && \
-    rpmbuild --rebuild "$(ls -1 /home/builder/rpm/python*-ssh2-python*.src.rpm)"  --nodeps --nocheck && \
+    /home/builder/pyp2rpm/bin/pyp2rpm --srpm ssh-python -d /home/builder/rpm -b 3 && \
+    rpmbuild --rebuild "$(ls -1 /home/builder/rpm/python*-ssh-python*.src.rpm)"  --nodeps --nocheck && \
     find ~/rpmbuild/RPMS -name '*.rpm' -exec cp "{}" /home/builder/build/ \; && \
     dnf -y install $(find /home/builder/build/ -name '*rpm' ! -name '*src*' -type f)
 

@@ -274,6 +274,11 @@ jobs:
             UseDNS no
             X11Forwarding no
             PrintMotd no
+            AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+            AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+            AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+            AcceptEnv XMODIFIERS
+            Subsystem sftp $(sudo find / -name sftp-server | tail -n 1)
           EOF
           sudo mv sshd_config /etc/ssh/sshd_config
           sudo systemctl restart ssh
@@ -297,8 +302,14 @@ jobs:
           /opt/directord/bin/directord --debug \
                                        bootstrap \
                                        --catalog tools/directord-inventory-catalog.yaml \
-                                       --catalog tools/directord-dev-bootstrap-catalog.yaml \
-                                       --key-file ~/.ssh/id_rsa
+                                       --catalog tests/directord-test-catalog.yaml \
+                                       --key-file ~/.ssh/id_rsa &> /tmp/directord-bootstrap-failure.log
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-test-logs
+          path: /tmp/directord-*.log
 
   py_coverage:
     runs-on: ubuntu-latest
