@@ -15,3 +15,28 @@ jobs:
           registry: docker.pkg.github.com
           repository: cloudnull/directord/directord
           tag_with_ref: true
+
+  pypi_push_and_publish_pre:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Build the python package
+      run: |
+        sed -i "/__version__/ s/\"\$/.a$(date +%Y%m%d%H%M%S)\"/" directord/meta.py
+        python3 -m pip install --upgrade pip
+        python3 -m pip install --upgrade twine build wheel setuptools
+        python3 -m build --no-isolation
+    - name: Publish a Python distribution to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        skip_existing: true
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Upload RPM artifact
+        path: |
+          dist/directord*
