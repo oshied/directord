@@ -566,6 +566,7 @@ def main():
                 if args.list_jobs:
                     restrict_headings = [
                         "PARENT_JOB_ID",
+                        "VERB",
                         "EXECUTION_TIME",
                         "PROCESSING",
                         "SUCCESS",
