@@ -317,7 +317,8 @@ class TestClient(tests.TestDriverBase):
         cache = mock_diskcache.return_value = tests.FakeCache()
         cache.set(key="YYY", value=self.mock_driver.job_end.decode())
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.client.run_job(sentinel=True)
+        with patch.object(self.client, "cache", cache):
+            self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
         mock_log_info.assert_called()
         mock_job_executor.assert_called_with(
@@ -366,7 +367,8 @@ class TestClient(tests.TestDriverBase):
         cache = mock_diskcache.return_value = tests.FakeCache()
         cache.set(key="YYY", value=self.mock_driver.job_end.decode())
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.client.run_job(sentinel=True)
+        with patch.object(self.client, "cache", cache):
+            self.client.run_job(sentinel=True)
         mock_makedirs.assert_called_with("/var/cache/directord", exist_ok=True)
         mock_log_info.assert_called()
         mock_job_executor.assert_called_with(
@@ -431,7 +433,9 @@ class TestClient(tests.TestDriverBase):
             cache.get("YYY"), self.mock_driver.job_failed.decode()
         )
 
+    @patch("diskcache.Cache", autospec=True)
     @patch("directord.client.Client.run_threads", autospec=True)
-    def test_worker_run(self, mock_run_threads):
+    def test_worker_run(self, mock_run_threads, mock_diskcache):
         self.client.worker_run()
         mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
+        mock_diskcache.assert_called()

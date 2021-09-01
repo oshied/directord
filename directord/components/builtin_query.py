@@ -104,6 +104,7 @@ class Component(components.ComponentBase):
                 parent_async_bypass=True,
                 query_timeout=600,
             )
+            block_task["targets"] = block_task["identity"]
             block_task = self.hash_job(new_job=block_task)
             self.block_on_task = query_job
             self.log.debug("query job call back [ %s ]", query_job)
