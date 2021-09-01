@@ -66,7 +66,7 @@ class Component(components.ComponentBase):
         """
 
         tag = job["cacheevict"]
-        if tag == "all":
+        if tag.lower() == "all":
             evicted = cache.clear()
             info = "All cache has been cleared"
         else:
