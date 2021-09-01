@@ -505,21 +505,26 @@ class Server(interface.Interface):
                     recv_time=time.time(),
                 )
 
-                new_task = data_item.get("new_task")
-                if new_task:
-                    targets = self.workers.keys()
+                for new_task in data_item.get("new_tasks", list()):
+                    self.log.debug("New task found: %s", new_task)
+                    if "targets" in new_task:
+                        targets = [i.encode() for i in new_task["targets"]]
+                    else:
+                        targets = self.workers.keys()
+
+                    if "job_id" not in new_task:
+                        new_task["job_id"] = utils.get_uuid()
+
                     self.create_return_jobs(
                         task=new_task["job_id"],
                         job_item=new_task,
                         targets=targets,
                     )
-                    self.log.debug(
-                        "Runing query with data: %s",
-                        new_task,
-                    )
+
                     for target in targets:
                         self.log.debug(
-                            "Runing query ARG update against" " TARGET: %s",
+                            "Runing job %s against TARGET: %s",
+                            new_task["job_id"],
                             target.decode(),
                         )
                         self.driver.socket_send(
