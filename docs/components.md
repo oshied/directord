@@ -115,9 +115,30 @@ items on demand.
 
 Syntax: `STRING`
 
-> Scan the environment for a given cached argument and store the resultant on
-  the target. The resultant is set in dictionary format:
-  `"query": {query_identity: {query_arg: query_value}}`
+Scan the environment for a given cached argument and store the resultant on
+the target. The resultant is set in dictionary format:
+
+``` json
+{
+  "query": {
+    "query_identity_0": {
+      "query_arg3": "query_value"
+    },
+    "query_identity_1": {
+      "query_arg0": "query_value",
+      "query_arg1": "query_value"
+    },
+    "query_identity_2": {
+      "query_arg1": "query_value",
+      "query_arg2": "query_value",
+      "query_arg3": "query_value"
+    }
+  }
+}
+```
+
+> The query cache is accumulative, and will always store items under the host
+  in which the value originated.
 
 Note that the key `query` stores all of the queried values for a given item
 from across the cluster. This provides the ability to store multiple items
@@ -198,6 +219,19 @@ a reboot.
 > Reboot operations are performed with `systemctl` on the client side. If the remote
   system does not support this method, additional operations can be performed using
   the `RUN` component in non-blocking mode.
+
+##### `QUERY_WAIT`
+
+Syntax: `STRING`
+
+Block client task execution until a specific item is present in the remote query cache.
+
+* `--query-timeout` **INTEGER** Wait time for an item to be present in the query cache.
+
+> The lookup will search for a **KEY** within the query cache using the input string by
+  flattening the identity cache blobs.
+
+> While blocking, the loop will wait 1 second between check intervals.
 
 ### User defined Components
 

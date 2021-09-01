@@ -58,6 +58,14 @@ class Component(components.ComponentBase):
         data["query"] = self.known_args.query
         return data
 
+    @staticmethod
+    def hash_job(new_job):
+        new_job["parent_sha3_224"] = utils.object_sha3_224(obj=new_job)
+        new_job["job_sha3_224"] = utils.object_sha3_224(obj=new_job)
+        new_job["parent_id"] = utils.get_uuid()
+        new_job["job_id"] = utils.get_uuid()
+        return new_job
+
     def client(self, cache, job):
         """Run query command operation.
 
@@ -76,23 +84,27 @@ class Component(components.ComponentBase):
 
         if query:
             query_job = job.copy()
+            query_item = query_job.pop("query")
             query_job["skip_cache"] = True
             query_job["extend_args"] = True
             query_job["verb"] = "ARG"
             query_job["args"] = {
-                "query": {
-                    self.driver.identity: {query_job.pop("query"): query}
-                }
+                "query": {self.driver.identity: {query_item: query}}
             }
             query_job["parent_async_bypass"] = True
             query_job.pop("parent_sha3_224", None)
             query_job.pop("parent_id", None)
             query_job.pop("job_sha3_224", None)
-            query_job["parent_sha3_224"] = utils.object_sha3_224(obj=query_job)
-            query_job["job_sha3_224"] = utils.object_sha3_224(query_job)
-            query_job["parent_id"] = utils.get_uuid()
-            query_job["job_id"] = utils.get_uuid()
-
+            query_job = self.hash_job(new_job=query_job)
+            block_task = query_job["new_task"] = dict(
+                skip_cache=True,
+                verb="QUERY_WAIT",
+                item=query_item,
+                identity=job.get("targets", list()),
+                parent_async_bypass=True,
+                query_timeout=600,
+            )
+            block_task = self.hash_job(new_job=block_task)
             self.block_on_task = query_job
             self.log.debug("query job call back [ %s ]", query_job)
 

@@ -514,7 +514,7 @@ class Server(interface.Interface):
                         targets=targets,
                     )
                     self.log.debug(
-                        "Runing query against with DATA: %s",
+                        "Runing query with data: %s",
                         new_task,
                     )
                     for target in targets:

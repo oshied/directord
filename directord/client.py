@@ -384,11 +384,15 @@ class Client(interface.Interface):
             if locked:
                 lock.release()
 
-            if component.block_on_task:
+            block_on_task_data = (
+                component.block_on_task
+                or component_kwargs.get("new_task", dict())
+            )
+            if block_on_task_data:
                 block_on_task = True
                 with self.timeout(
                     time=240,
-                    job_id=component.block_on_task["job_id"],
+                    job_id=block_on_task_data["job_id"],
                 ):
                     while block_on_task:
                         with diskcache.Cache(
@@ -397,7 +401,7 @@ class Client(interface.Interface):
                             disk=diskcache.JSONDisk,
                         ) as cache:
                             if cache.get(
-                                component.block_on_task["job_sha3_224"]
+                                block_on_task_data["job_sha3_224"]
                             ) in [
                                 self.driver.job_end.decode(),
                                 self.driver.job_failed.decode(),
@@ -407,13 +411,13 @@ class Client(interface.Interface):
                             else:
                                 self.log.debug(
                                     "waiting for callback job to complete. %s",
-                                    component.block_on_task,
+                                    block_on_task_data,
                                 )
                                 time.sleep(1)
                     else:
                         self.log.debug(
                             "Task [ %s ] callback complete",
-                            component.block_on_task["job_id"],
+                            block_on_task_data["job_id"],
                         )
 
             if parent_lock:
@@ -482,6 +486,8 @@ class Client(interface.Interface):
 
         if block_on_task:
             job["new_task"] = block_on_task
+
+        if "new_task" in job:
             conn.data = json.dumps(job).encode()
         else:
             conn.data = json.dumps(
