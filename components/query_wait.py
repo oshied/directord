@@ -20,6 +20,7 @@ from directord import components
 class Component(components.ComponentBase):
     def __init__(self):
         super().__init__(desc="Process query_wait commands")
+        self.cacheable = False
 
     def args(self):
         """Set default arguments for a component."""

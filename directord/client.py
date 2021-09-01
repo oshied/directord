@@ -372,22 +372,19 @@ class Client(interface.Interface):
                         component_kwargs["job"],
                         command,
                         time.time() - _starttime,
-                        component.block_on_task,
+                        component.block_on_tasks,
                     )
                 )
 
             if locked:
                 lock.release()
 
-            block_on_task_data = (
-                component.block_on_task
-                or component_kwargs.get("new_task", dict())
-            )
-            if block_on_task_data:
+            if component.block_on_tasks:
+                block_on_task_data = component.block_on_tasks[-1]
                 block_on_task = True
                 with self.timeout(
-                    time=240,
-                    job_id=block_on_task_data["job_id"],
+                    time=block_on_task_data.get("timeout", 600),
+                    job_id=block_on_task_data["job_sha3_224"],
                 ):
                     while block_on_task:
                         if self.cache.get(
@@ -406,8 +403,8 @@ class Client(interface.Interface):
                             time.sleep(1)
 
                 self.log.debug(
-                    "Task [ %s ] callback complete",
-                    block_on_task_data["job_id"],
+                    "Task sha [ %s ] callback complete",
+                    block_on_task_data["job_sha3_224"],
                 )
 
             if parent_lock:
@@ -421,7 +418,7 @@ class Client(interface.Interface):
             )
 
     def _set_job_status(
-        self, stdout, stderr, outcome, return_info, job, block_on_task, conn
+        self, stdout, stderr, outcome, return_info, job, block_on_tasks, conn
     ):
         """Set job status.
 
@@ -435,10 +432,10 @@ class Client(interface.Interface):
         :type return_info: Bytes
         :param job: Job definition
         :type job: Dictionary
-        :param block_on_task: Job to post back to the server to create
-                              a new task which the client will wait
-                              for.
-        :type block_on_task: Dictionary
+        :param block_on_tasks: Job to post back to the server to create
+                               a new task which the client will wait
+                               for.
+        :type block_on_tasks: List
         :param conn: Job bind connection object.
         :type conn: Object
         """
@@ -474,10 +471,10 @@ class Client(interface.Interface):
         if return_info:
             conn.info = return_info
 
-        if block_on_task:
-            job["new_task"] = block_on_task
+        if block_on_tasks:
+            job["new_tasks"] = block_on_tasks
 
-        if "new_task" in job:
+        if "new_tasks" in job:
             conn.data = json.dumps(job).encode()
         else:
             conn.data = json.dumps(
@@ -514,7 +511,7 @@ class Client(interface.Interface):
                 job,
                 command,
                 execution_time,
-                block_on_task,
+                block_on_tasks,
             ) = self.q_return.get_nowait()
         except Exception:
             pass
@@ -533,7 +530,7 @@ class Client(interface.Interface):
                     outcome,
                     return_info,
                     job,
-                    block_on_task,
+                    block_on_tasks,
                     c,
                 )
 
@@ -707,9 +704,9 @@ class Client(interface.Interface):
                     }
 
                 self.log.info(
-                    "Job received: parent job UUID [ %s ],"
-                    " parent job sha3_224 [ %s ], task UUID [ %s ],"
-                    " task SHA3_224 [ %s ]",
+                    "Item received: parent job UUID [ %s ],"
+                    " parent job sha3_224 [ %s ], job UUID [ %s ],"
+                    " job sha3_224 [ %s ]",
                     job_parent_id,
                     job_parent_sha3_224,
                     job_id,

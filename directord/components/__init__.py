@@ -32,7 +32,7 @@ class ComponentBase:
     info = None
     driver = None
     verb = None
-    block_on_task = None
+    block_on_tasks = None
 
     def __init__(self, desc=None):
         """Initialize the component base class.
