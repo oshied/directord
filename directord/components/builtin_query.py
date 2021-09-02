@@ -74,39 +74,45 @@ class Component(components.ComponentBase):
         else:
             query = None
 
+        self.block_on_tasks = list()
+        arg_job = job.copy()
+        query_item = arg_job.pop("query")
+        arg_job.pop("parent_sha3_224", None)
+        arg_job.pop("parent_id", None)
+        arg_job.pop("job_sha3_224", None)
+        arg_job.pop("job_id", None)
+        arg_job["skip_cache"] = True
+        arg_job["extend_args"] = True
+        arg_job["verb"] = "ARG"
         if query:
-            query_job = job.copy()
-            targets = query_job.pop("targets", list())
-            query_item = query_job.pop("query")
-            query_job.pop("parent_sha3_224", None)
-            query_job.pop("parent_id", None)
-            query_job.pop("job_sha3_224", None)
-            query_job.pop("job_id", None)
-            query_job["skip_cache"] = True
-            query_job["extend_args"] = True
-            query_job["verb"] = "ARG"
-            query_job["args"] = {
+            arg_job["args"] = {
                 "query": {self.driver.identity: {query_item: query}}
             }
-            query_job["parent_async_bypass"] = True
-            query_job["job_sha3_224"] = utils.object_sha3_224(obj=query_job)
+        else:
+            arg_job["args"] = query
 
-            block_task = dict(
-                skip_cache=True,
-                verb="QUERY_WAIT",
-                item=query_item,
-                identity=targets,
-                targets=targets,
-                parent_async_bypass=True,
-                query_timeout=600,
-            )
-            block_task["job_sha3_224"] = utils.object_sha3_224(obj=query_job)
-            query_job["parent_sha3_224"] = block_task[
-                "parent_sha3_224"
-            ] = utils.object_sha3_224(obj=query_job)
-            query_job["parent_id"] = block_task["parent_id"] = utils.get_uuid()
+        arg_job["parent_async_bypass"] = True
+        arg_job["job_id"] = utils.get_uuid()
+        arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
+        arg_job["parent_id"] = utils.get_uuid()
+        arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
+        self.block_on_tasks.append(arg_job)
+        wait_job = dict(
+            skip_cache=True,
+            verb="JOB_WAIT",
+            sha=arg_job["job_sha3_224"],
+            parent_async_bypass=True,
+            job_timeout=600,
+        )
+        wait_job["job_id"] = utils.get_uuid()
+        wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)
+        wait_job["parent_id"] = arg_job["parent_id"]
+        wait_job["parent_sha3_224"] = arg_job["parent_sha3_224"]
+        self.block_on_tasks.append(wait_job)
 
-            self.block_on_tasks = [query_job, block_task]
-            self.log.debug("query job call back [ %s ]", self.block_on_tasks)
+        self.log.info(
+            "Number of query job call backs [ %s ]", len(self.block_on_tasks)
+        )
+        self.log.debug("Query job call backs: %s ", self.block_on_tasks)
 
         return json.dumps(query), None, True, None

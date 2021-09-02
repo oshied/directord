@@ -107,17 +107,29 @@ class Component(components.ComponentBase):
         if success:
             cache_value = value
 
-        self.set_cache(
-            cache=cache,
-            key=cache_type,
-            value=cache_value,
-            value_update=True,
-            tag=cache_type,
-            extend=job.get("extend_args", False),
-        )
-        return (
-            "{} added to cache".format(cache_type),
-            None,
-            True,
-            "type:{}, value:{}".format(cache_type, job[cache_type]).encode(),
-        )
+        if cache_value:
+            self.set_cache(
+                cache=cache,
+                key=cache_type,
+                value=cache_value,
+                value_update=True,
+                tag=cache_type,
+                extend=job.get("extend_args", False),
+            )
+            return (
+                "{} added to cache".format(cache_type),
+                None,
+                True,
+                "type:{}, value:{}".format(
+                    cache_type, job[cache_type]
+                ).encode(),
+            )
+        else:
+            return (
+                "Nothing added to cache. {} had no value".format(cache_type),
+                None,
+                True,
+                "type:{}, value:{}".format(
+                    cache_type, job[cache_type]
+                ).encode(),
+            )
