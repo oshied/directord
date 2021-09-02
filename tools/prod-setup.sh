@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
+#   Copyright Peznauts <kevin@cloudnull.com>. All Rights Reserved.
+#
+#   Licensed under the Apache License, Version 2.0 (the "License"); you may
+#   not use this file except in compliance with the License. You may obtain
+#   a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#   License for the specific language governing permissions and limitations
+#   under the License.
+set -eo
+
 if [[ $UID != 0 ]]; then
     echo "Please run this script with sudo:"
     echo "sudo $0 $*"
     exit 1
 fi
-
-set -eo
 
 function get_latest_release() {                                                                                                                                                                                                                                130 ↵
   curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
@@ -14,6 +27,7 @@ function get_latest_release() {                                                 
 }
 
 . /etc/os-release
+
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
   PACKAGES="git wget python3 python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium"
@@ -49,6 +63,9 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; 
   echo "Directord can be installed as a service using the following command(s):"
   echo "/usr/bin/directord-client-systemd"
   echo -e "/usr/bin/directord-server-systemd\n"
+  if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
+    directord manage --generate-keys
+  fi
 else
   python3 -m venv --system-site-packages /opt/directord
   /opt/directord/bin/pip install --upgrade pip setuptools wheel
@@ -59,4 +76,21 @@ else
   echo "Directord can be installed as a service using the following command(s):"
   echo "/opt/directord/bin/directord-client-systemd"
   echo -e "/opt/directord/bin/directord-server-systemd\n"
+  if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
+    /opt/directord/bin/directord manage --generate-keys
+  fi
 fi
+
+# Create basic development configuration
+mkdir -p /etc/directord /etc/directord/private_keys /etc/directord/public_keys
+python3 <<EOC
+import yaml
+try:
+    with open('/etc/directord/config.yaml') as f:
+        config = yaml.safe_load(f)
+except FileNotFoundError:
+    config = dict()
+config["curve_encryption"] = True
+with open('/etc/directord/config.yaml', 'w') as f:
+    f.write(yaml.safe_dump(config, default_flow_style=False))
+EOC

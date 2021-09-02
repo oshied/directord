@@ -4,20 +4,7 @@ directord_server:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
   - RUN: sudo bash dev-setup.sh
-  - RUN: >-
-      [[ ! -f /etc/directord/config.yaml ]] || echo "{}" | sudo tee /etc/directord/config.yaml
-  - RUN: sudo /opt/directord/bin/directord manage --generate-keys
   - RUN: sudo /opt/directord/bin/directord-server-systemd
-  - RUN: |-
-      sudo python3 <<EOC
-      import yaml
-      with open('/etc/directord/config.yaml') as f:
-          config = yaml.safe_load(f)
-      config["curve_encryption"] = True
-      config["debug"] = True
-      with open('/etc/directord/config.yaml', 'w') as f:
-          f.write(yaml.safe_dump(config, default_flow_style=False))
-      EOC
   - RUN: sudo systemctl daemon-reload
   - RUN: sudo systemctl enable directord-server.service
   - RUN: sudo systemctl restart directord-server.service
@@ -29,9 +16,6 @@ directord_clients:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
   - RUN: sudo bash dev-setup.sh
-  - RUN: >-
-      [[ ! -f /etc/directord/config.yaml ]] || echo "{}" | sudo tee /etc/directord/config.yaml
-  - RUN: sudo mkdir -p /etc/directord/private_keys /etc/directord/public_keys
   - ADD: /tmp/client.key_secret /tmp/client.key_secret-stash
   - RUN: sudo mv /tmp/client.key_secret-stash /etc/directord/private_keys/client.key_secret
   - ADD: /tmp/client.key /tmp/client.key-stash
@@ -42,10 +26,11 @@ directord_clients:
   - RUN: |-
       sudo python3 <<EOC
       import yaml
-      with open('/etc/directord/config.yaml') as f:
-          config = yaml.safe_load(f)
-      config["curve_encryption"] = True
-      config["debug"] = True
+      try:
+          with open('/etc/directord/config.yaml') as f:
+              config = yaml.safe_load(f)
+      except FileNotFoundError:
+          config = dict()
       config['server_address'] = "{{ directord_server['targets'][0]['host'] }}"
       with open('/etc/directord/config.yaml', 'w') as f:
           f.write(yaml.safe_dump(config, default_flow_style=False))
