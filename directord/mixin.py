@@ -176,14 +176,19 @@ class Mixin:
             parent_sha3_224 = utils.object_sha3_224(obj=orchestrate)
             parent_id = utils.get_uuid()
             targets = defined_targets or orchestrate.get("targets", list())
-            try:
-                parent_async = bool(
-                    dist_utils.strtobool(orchestrate.get("async", "False"))
-                )
-            except (ValueError, AttributeError):
-                parent_async = bool(orchestrate.get("async", False))
-            jobs = orchestrate["jobs"]
-            for job in jobs:
+
+            force_async = getattr(self.args, "force_async", False)
+            if force_async:
+                parent_async = force_async
+            else:
+                try:
+                    parent_async = bool(
+                        dist_utils.strtobool(orchestrate.get("async", "False"))
+                    )
+                except (ValueError, AttributeError):
+                    parent_async = bool(orchestrate.get("async", False))
+
+            for job in orchestrate["jobs"]:
                 arg_vars = job.pop("vars", None)
                 key, value = next(iter(job.items()))
                 job_to_run.append(

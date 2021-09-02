@@ -180,6 +180,14 @@ def _args(exec_args=None):
         ),
         action="store_true",
     )
+    parser_orchestrate.add_argument(
+        "--force-async",
+        help=(
+            "Instruct the orchestration engine to run all orchestrations"
+            " asynchronously."
+        ),
+        action="store_true",
+    )
     orchestrate_group = parser_orchestrate.add_mutually_exclusive_group(
         required=False
     )

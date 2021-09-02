@@ -129,13 +129,19 @@ class Manage(User):
         :returns: Tuple
         """
 
+        job_processing_interval = 0.25
+        processing_attempts = 0
         while True:
             data = dict(json.loads(self.run(override="list-jobs")))
             data_return = data.get(job_id, dict())
             job_state = data_return.get("PROCESSING", "unknown")
             job_state = job_state.encode()
             if job_state == self.driver.job_processing:
-                time.sleep(1)
+                time.sleep(job_processing_interval)
+                miss = 0
+                processing_attempts += 1
+                if processing_attempts > 20:
+                    job_processing_interval = 1
             elif job_state == self.driver.job_failed:
                 return False, "Job Failed: {}".format(job_id)
             elif job_state in [self.driver.job_end, self.driver.nullbyte]:

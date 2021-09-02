@@ -153,7 +153,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -169,7 +170,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -189,7 +191,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -207,7 +210,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -227,7 +231,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -247,7 +252,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -265,7 +271,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"stdout-data",
                 b"\x00",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -283,7 +290,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"stderr",
                 b"\x00",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
@@ -301,7 +309,8 @@ class TestDriverZMQ(unittest.TestCase):
                 b"\x00",
                 b"\x00",
                 b"stdout",
-            ]
+            ],
+            flags=0,
         )
 
     @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)

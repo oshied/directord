@@ -26,6 +26,25 @@ from directord import interface
 from directord import utils
 
 
+class Locker:
+    """Used to create a class based locking mechism."""
+
+    def __init__(self, lock, used=None):
+        self.locked = False
+        self.lock = lock
+        self.used = used
+
+    def get_lock(self):
+        self.lock.acquire()
+        self.locked = True
+        self.used = time.time()
+
+    def release_lock(self):
+        self.lock.release()
+        self.locked = False
+        self.used = time.time()
+
+
 class Client(interface.Interface):
     """Directord client class."""
 
@@ -45,8 +64,6 @@ class Client(interface.Interface):
         self.q_async = self.get_queue()
         self.q_general = self.get_queue()
         self.q_return = self.get_queue()
-        self.manager = self.get_manager()
-        self.l_manager = self.manager.dict()
         self.base_component = components.ComponentBase()
         self.cache = dict()
 
@@ -178,10 +195,13 @@ class Client(interface.Interface):
         :type command: Bytes
         """
 
-        self.log.debug("Running component:%s", command.decode())
         component_kwargs = dict(cache=None, job=job)
         if job.get("parent_async_bypass") is True:
-            self.log.debug("Running [ %s ] in bypass queue", job_id)
+            self.log.debug(
+                "Running component:%s, job_id:[ %s ] in bypass",
+                job_id,
+                command.decode(),
+            )
             self._thread_spawn(
                 component_kwargs=component_kwargs,
                 command=command,
@@ -190,16 +210,30 @@ class Client(interface.Interface):
             )
             conn.info = b"bypass task executing"
         elif job.get("parent_async") is True:
-            self.log.debug("Running [ %s ] in async queue", job_id)
+            self.log.debug(
+                "Running component:%s, job_id:[ %s ] in async queue",
+                job_id,
+                command.decode(),
+            )
             self.q_async.put((component_kwargs, command, info, cached))
             conn.info = b"async task queued"
         else:
-            self.log.debug("Running [ %s ] in general queue", job_id)
+            self.log.debug(
+                "Running component:%s, job_id:[ %s ] in general queue",
+                job_id,
+                command.decode(),
+            )
             self.q_general.put((component_kwargs, command, info, cached))
             conn.info = b"general task queued"
 
     def _thread_spawn(
-        self, component_kwargs, command, info, cached, lock=None
+        self,
+        component_kwargs,
+        command,
+        info,
+        cached,
+        lock=None,
+        parent_lock=None,
     ):
         """Return a thread object.
 
@@ -217,8 +251,8 @@ class Client(interface.Interface):
         :type cached: Boolean
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
-        :param daemon: Enable|Disable deamonic threads.
-        :type daemon: Boolean
+        :param parent_lock: Locking object, used if defined.
+        :type parent_lock: Object
         :returns: Object
         """
 
@@ -233,6 +267,7 @@ class Client(interface.Interface):
                 info,
                 cached,
                 lock,
+                parent_lock,
             ),
         )
         thread.daemon = True
@@ -252,6 +287,8 @@ class Client(interface.Interface):
         """
 
         lock = self.get_lock()
+        interval = 0.25
+        parent_locks_tracker = set()
         while True:
             threads = list()
             for _ in range(processes):
@@ -261,10 +298,38 @@ class Client(interface.Interface):
                         command,
                         info,
                         cached,
-                    ) = queue.get()
+                    ) = queue.get_nowait()
                 except Exception:
-                    time.sleep(0.1)
+                    interval = 1
                 else:
+                    interval = 0.25
+                    parent_lock = None
+                    parent_sha3_224 = component_kwargs["job"].get(
+                        "parent_sha3_224"
+                    )
+                    if parent_sha3_224:
+                        if not hasattr(self, parent_sha3_224):
+                            parent_lock = self.get_lock()
+                            setattr(self, parent_sha3_224, parent_lock)
+                            self.log.debug(
+                                "Set dynamic class lock: %s", parent_sha3_224
+                            )
+                        else:
+                            parent_lock = getattr(self, parent_sha3_224, None)
+                            self.log.debug(
+                                "Got dynamic class lock: %s", parent_sha3_224
+                            )
+
+                    if parent_lock:
+                        parent_lock.acquire()
+                        setattr(parent_lock, "used", time.time())
+                        parent_locks_tracker.add(parent_sha3_224)
+                        self.log.debug(
+                            "Parent lock acquired for [ %s ] on [ %s ]",
+                            parent_sha3_224,
+                            component_kwargs["job"]["job_id"],
+                        )
+
                     threads.append(
                         self._thread_spawn(
                             component_kwargs=component_kwargs,
@@ -272,15 +337,24 @@ class Client(interface.Interface):
                             info=info,
                             cached=cached,
                             lock=lock,
+                            parent_lock=parent_lock,
                         )
                     )
             else:
-                self.log.debug("Worker threads: %s", len(threads))
                 for t in threads:
                     t.join()
 
+            if not threads:
+                time.sleep(interval)
+            else:
+                self.log.debug("Worker threads: %s", len(threads))
+
+            self.prune_locks(
+                queue=queue, parent_locks_tracker=parent_locks_tracker
+            )
+
     def job_q_component_run(
-        self, component_kwargs, command, info, cached, lock
+        self, component_kwargs, command, info, cached, lock, parent_lock
     ):
         """Execute a component operation.
 
@@ -299,12 +373,16 @@ class Client(interface.Interface):
         :type cached: Boolean
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
+        :param parent_lock: Locking object, used if defined.
+        :type parent_lock: Object
         """
 
+        job_id = component_kwargs["job"]["job_id"]
         success, _, component = directord.component_import(
             component=command.decode().lower(),
-            job_id=component_kwargs["job"]["job_id"],
+            job_id=job_id,
         )
+        parent_sha3_224 = component_kwargs["job"].get("parent_sha3_224")
 
         if not success:
             self.log.warning("Component lookup failure [ %s ]", component)
@@ -323,7 +401,7 @@ class Client(interface.Interface):
         elif cached and component.cacheable is True:
             self.log.info(
                 "Cache hit on [ %s ], task skipped.",
-                component_kwargs["job"]["job_id"],
+                job_id,
             )
             self.q_return.put(
                 (
@@ -340,7 +418,7 @@ class Client(interface.Interface):
         else:
             self.log.debug(
                 "Starting component execution for job [ %s ].",
-                component_kwargs["job"]["job_id"],
+                job_id,
             )
             # Set the comment command argument
             setattr(component, "command", command)
@@ -348,17 +426,10 @@ class Client(interface.Interface):
             setattr(component, "driver", self.driver)
 
             locked = False
-            parent_lock = self.l_manager.get(
-                component_kwargs["job"].get("parent_sha3_224")
-            )
             with self.timeout(
                 time=component_kwargs["job"].get("timeout", 600),
-                job_id=component_kwargs["job"]["job_id"],
+                job_id=job_id,
             ):
-                if parent_lock:
-                    parent_lock["lock"].acquire()
-                    parent_lock["locked"] = True
-
                 if component.requires_lock:
                     lock.acquire()
                     locked = True
@@ -384,7 +455,7 @@ class Client(interface.Interface):
                 block_on_task = True
                 with self.timeout(
                     time=block_on_task_data.get("timeout", 600),
-                    job_id=block_on_task_data["job_sha3_224"],
+                    job_id=block_on_task_data["job_id"],
                 ):
                     while block_on_task:
                         if self.cache.get(
@@ -407,14 +478,17 @@ class Client(interface.Interface):
                     block_on_task_data["job_sha3_224"],
                 )
 
-            if parent_lock:
-                parent_lock["used"] = time.time()
-                parent_lock["lock"].release()
-                parent_lock["locked"] = False
-
             self.log.debug(
                 "Component execution complete for job [ %s ].",
                 component_kwargs["job"]["job_id"],
+            )
+
+        if parent_lock:
+            parent_lock.release()
+            self.log.debug(
+                "Parent lock released for [ %s ] on [ %s ]",
+                parent_sha3_224,
+                job_id,
             )
 
     def _set_job_status(
@@ -569,28 +643,52 @@ class Client(interface.Interface):
         else:
             return True
 
-    def prune_locks(self):
+    def prune_locks(self, queue, parent_locks_tracker):
         """Prune inactive parent lock items.
 
         When the async queue is empty and parent lock has not been used for
         more than 60 seconds, and is not currently locked, this method will
-        prune the locked objects from the l_manager.
+        prune the locked objects from the parent_locks_tracker.
 
         > If a parent lock is older that 2400 seconds, and the queue async
           queue is empty, the parent lock will be considered stale and pruned.
+
+        :param queue: Queue object
+        :type queue: Object
+        :param parent_locks_tracker: Set of lock object references
+        :type parent_locks_tracker: Set
         """
 
-        if self.q_async.empty():
-            for key, value in self.l_manager.items():
-                if time.time() > value["used"] + 60:
-                    if not value["locked"]:
-                        self.log.debug("Pruning parent lock [ %s ]", key)
-                        self.l_manager.pop(key)
-                elif time.time() > value["used"] + 2400:
-                    self.log.warning(
-                        "Stale parent lock found [ %s ], pruning", key
+        if not queue.empty():
+            self.log.debug(
+                "Queue not empty, nothing to prune while work is being"
+                " processes."
+            )
+        else:
+            for item in list(parent_locks_tracker):
+                locker = getattr(self, item, None)
+                if not locker:
+                    parent_locks_tracker.remove(item)
+                    self.log.debug(
+                        "Lock item:%s removed as it is no longer active.", item
                     )
-                    self.l_manager.pop(key)
+                else:
+                    locked = locker.acquire(block=False)
+                    if locked and time.time() > locker.used + 60:
+                        delattr(self, item)
+                        parent_locks_tracker.remove(item)
+                        self.log.debug("Pruned parent lock [ %s ]", item)
+                    elif time.time() > locker.used + 2400:
+                        delattr(self, item)
+                        parent_locks_tracker.remove(item)
+                        self.log.warning(
+                            "Stale parent lock found [ %s ], pruned", item
+                        )
+                    try:
+                        if locked:
+                            locker.release()
+                    except ValueError:
+                        pass
 
     def prune_cache(self, cache_check_time):
         """Prune the local cache to ensure a tidy environment.
@@ -645,14 +743,13 @@ class Client(interface.Interface):
 
         self.bind_job = self.driver.job_connect()
         poller_time = time.time()
-        poller_interval = 128
+        poller_interval = 8
         cache_check_time = time.time()
 
         # Ensure that the cache path exists before executing.
         os.makedirs(self.args.cache_path, exist_ok=True)
         while True:
             self.job_q_results()
-            self.prune_locks()
             cache_check_time = self.prune_cache(
                 cache_check_time=cache_check_time
             )
@@ -696,13 +793,6 @@ class Client(interface.Interface):
 
                 job_parent_id = job.get("parent_id")
                 job_parent_sha3_224 = job.get("parent_sha3_224")
-                if job_parent_sha3_224:
-                    self.l_manager[job_parent_sha3_224] = {
-                        "lock": self.manager.Lock(),
-                        "used": time.time(),
-                        "locked": False,
-                    }
-
                 self.log.info(
                     "Item received: parent job UUID [ %s ],"
                     " parent job sha3_224 [ %s ], job UUID [ %s ],"

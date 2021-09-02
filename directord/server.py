@@ -398,7 +398,7 @@ class Server(interface.Interface):
             else:
                 self.return_jobs[job_id] = job_info
 
-        return 128, time.time()
+        return 8, time.time()
 
     def run_interactions(self, sentinel=False):
         """Execute the interactions loop.
@@ -418,7 +418,7 @@ class Server(interface.Interface):
         self.bind_job = self.driver.job_bind()
         self.bind_transfer = self.driver.transfer_bind()
         poller_time = time.time()
-        poller_interval = 128
+        poller_interval = 8
 
         while True:
             current_time = time.time()
@@ -434,7 +434,7 @@ class Server(interface.Interface):
             if self.driver.bind_check(
                 bind=self.bind_transfer, constant=poller_interval
             ):
-                poller_interval, poller_time = 64, time.time()
+                poller_interval, poller_time = 8, time.time()
 
                 (
                     identity,
@@ -446,7 +446,18 @@ class Server(interface.Interface):
                     _,
                     _,
                 ) = self.driver.socket_recv(socket=self.bind_transfer)
-                if command == b"transfer":
+
+                if control == self.driver.transfer_end:
+                    self.log.debug(
+                        "Transfer complete for [ %s ]", info.decode()
+                    )
+                    self._set_job_status(
+                        job_status=control,
+                        job_id=msg_id.decode(),
+                        identity=identity.decode(),
+                        job_output=info.decode(),
+                    )
+                elif command == b"transfer":
                     transfer_obj = info.decode()
                     self.log.debug(
                         "Executing transfer for [ %s ]", transfer_obj
@@ -458,20 +469,10 @@ class Server(interface.Interface):
                             os.path.expanduser(transfer_obj)
                         ),
                     )
-                elif control == self.driver.transfer_end:
-                    self.log.debug(
-                        "Transfer complete for [ %s ]", info.decode()
-                    )
-                    self._set_job_status(
-                        job_status=control,
-                        job_id=msg_id.decode(),
-                        identity=identity.decode(),
-                        job_output=info.decode(),
-                    )
             elif self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
-                poller_interval, poller_time = 64, time.time()
+                poller_interval, poller_time = 8, time.time()
                 (
                     identity,
                     msg_id,
