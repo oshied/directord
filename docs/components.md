@@ -228,10 +228,24 @@ Block client task execution until a specific item is present in the remote query
 
 * `--query-timeout` **INTEGER** Wait time for an item to be present in the query cache.
 
+* `--identity` **STRING** sets a specific identity when searching for cache entries.
+  This can be used multiple times.
+
 > The lookup will search for a **KEY** within the query cache using the input string by
   flattening the identity cache blobs.
 
 > While blocking, the loop will wait 1 second between check intervals.
+
+##### `JOB_WAIT`
+
+Syntax: `STRING`
+
+Block client task execution until a specific job has entered a completed state.
+
+* `--job-timeout` **INTEGER** Wait time for an item to be present in the query cache.
+
+> `JOB_WAIT` requires the job SHA to block. This is most useful for component developers
+  using callback jobs.
 
 ### User defined Components
 
