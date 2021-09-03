@@ -337,7 +337,7 @@ class ComponentBase:
             rendered_content = _contents.render(**values)
         except Exception as e:
             error = str(e)
-            self.log.warning("blueprint failure: %s values: %s", error, values)
+            self.log.debug("blueprint error: %s, values: %s", error, values)
             return False, error
         else:
             return True, rendered_content
