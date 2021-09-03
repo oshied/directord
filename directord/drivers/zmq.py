@@ -256,6 +256,7 @@ class Driver(drivers.BaseDriver):
         info=None,
         stderr=None,
         stdout=None,
+        nonblocking=False,
     ):
         """Send a message over a ZM0 socket.
 
@@ -309,6 +310,8 @@ class Driver(drivers.BaseDriver):
         :type stderr: Bytes
         :param stdout: Encoded output information from a command.
         :type stdout: Bytes
+        :param nonblocking: Enable non-blocking send.
+        :type nonblocking: Boolean
         """
 
         if not msg_id:
@@ -337,10 +340,15 @@ class Driver(drivers.BaseDriver):
         if identity:
             message_parts.insert(0, identity)
 
-        return socket.send_multipart(message_parts)
+        if nonblocking:
+            flags = zmq.NOBLOCK
+        else:
+            flags = 0
+
+        return socket.send_multipart(message_parts, flags=flags)
 
     @staticmethod
-    def socket_recv(socket):
+    def socket_recv(socket, nonblocking=False):
         """Receive a message over a ZM0 socket.
 
         The message specification for server is as follows.
@@ -376,9 +384,16 @@ class Driver(drivers.BaseDriver):
 
         :param socket: ZeroMQ socket object.
         :type socket: Object
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
         """
 
-        return socket.recv_multipart()
+        if nonblocking:
+            flags = zmq.NOBLOCK
+        else:
+            flags = 0
+
+        return socket.recv_multipart(flags=flags)
 
     def job_connect(self):
         """Connect to a job socket and return the socket.

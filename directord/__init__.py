@@ -279,6 +279,7 @@ class DirectordConnect:
         debug=False,
         socket_path="/var/run/directord.sock",
         driver=meta.__driver_default__,
+        force_async=False,
     ):
         """Initialize the connection.
 
@@ -294,10 +295,17 @@ class DirectordConnect:
         :type debug: Boolean
         :param socket_path: Socket path used to connect to Directord.
         :type socket_path: String
+        :param force_async: Forces all orchestrations to run asynchronously.
+        :type: force_async: Boolean
         """
 
         args = SimpleNamespace(
-            **{"debug": debug, "socket_path": socket_path, "driver": driver}
+            **{
+                "debug": debug,
+                "socket_path": socket_path,
+                "driver": driver,
+                "force_async": force_async,
+            }
         )
         _mixin = plugin_import(plugin=".mixin")
         self.mixin = _mixin.Mixin(args=args)

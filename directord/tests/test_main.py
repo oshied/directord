@@ -51,6 +51,7 @@ class TestMain(unittest.TestCase):
                 "debug": False,
                 "driver": "zmq",
                 "finger_print": False,
+                "force_async": False,
                 "job_port": 5555,
                 "transfer_port": 5556,
                 "heartbeat_port": 5557,

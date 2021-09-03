@@ -132,6 +132,7 @@ class FakeArgs:
     transfer_port = 5556
     timeout = 600
     curve_encryption = None
+    force_async = False
 
 
 class MockSocket:
