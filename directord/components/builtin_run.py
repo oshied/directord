@@ -67,6 +67,7 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
+        self.log.debug("client(): job: %s, cache: %s", job, cache)
         stdout_arg = job.get("stdout_arg")
         success, command = self.blueprinter(
             content=job["command"],

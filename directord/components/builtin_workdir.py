@@ -73,6 +73,7 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
+        self.log.debug("client(): job: %s, cache: %s", job, cache)
         success, workdir = self.blueprinter(
             content=job["workdir"],
             values=cache.get("args"),

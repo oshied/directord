@@ -65,6 +65,7 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
+        self.log.debug("client(): job: %s, cache: %s", job, cache)
         tag = job["cacheevict"]
         if tag.lower() == "all":
             evicted = cache.clear()
