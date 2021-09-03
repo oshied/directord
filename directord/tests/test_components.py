@@ -770,9 +770,6 @@ class TestComponents(unittest.TestCase):
         mock_run_command.assert_called_with(
             command="command 1 test", env=None, no_block=None
         )
-        self.assertDictEqual(
-            fake_cache.get("args"), {"VALUE1": "testing", "test": 1}
-        )
 
     @patch("os.makedirs", autospec=True)
     def test__run_workdir(self, mock_makedirs):

@@ -202,14 +202,14 @@ jobs:
       - name: Execute functional podman install
         run: |
           cd /opt/directord/share/directord/orchestrations
-          sudo timeout 120 /opt/directord/bin/directord \
+          sudo timeout 240 /opt/directord/bin/directord \
                                               orchestrate \
                                               podman.yaml \
                                               --poll \
                                               --check
       - name: Execute pod play check
         run: |
-          sudo timeout 120 /opt/directord/bin/directord \
+          sudo timeout 240 /opt/directord/bin/directord \
                                               exec \
                                               --verb POD \
                                               '--play /opt/directord/share/directord/pods/pod-directord-test-pod.yaml' \
@@ -221,19 +221,19 @@ jobs:
             sudo podman pod list &> /tmp/directord-podman-list.log
             exit 1
           fi
-          sudo timeout 120 /opt/directord/bin/directord \
+          sudo timeout 240 /opt/directord/bin/directord \
                                               exec \
                                               --verb POD \
                                               '--exec-run directord-test-pod-directord-server-1 --env TEST0=hello,TEST1=world --command "/usr/bin/echo ${TEST0} ${TEST1}"' \
                                               --poll \
                                               --check
-          sudo timeout 120 /opt/directord/bin/directord \
+          sudo timeout 240 /opt/directord/bin/directord \
                                               exec \
                                               --verb POD \
                                               '--signal SIGKILL --kill directord-test-pod' \
                                               --poll \
                                               --check
-          sudo timeout 120 /opt/directord/bin/directord \
+          sudo timeout 240 /opt/directord/bin/directord \
                                               exec \
                                               --verb POD \
                                               '--force --rm directord-test-pod' \
