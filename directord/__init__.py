@@ -43,6 +43,8 @@ def send_data(socket_path, data):
 
     try:
         with UNIXSocketConnect(socket_path) as s:
+            if not s:
+                raise SystemExit("No connection available to server.")
             s.sendall(data.encode())
             fragments = []
             while True:
@@ -151,12 +153,6 @@ class Processor:
         self.log = logger.getLogger(name="directord")
 
     @staticmethod
-    def get_manager():
-        """Returns a multiprocessing manager."""
-
-        return multiprocessing.Manager()
-
-    @staticmethod
     def get_lock():
         """Returns a multiprocessing lock."""
 
@@ -262,8 +258,13 @@ class UNIXSocketConnect:
         :returns: Object
         """
 
-        self.sock.connect(self.socket_path)
-        return self.sock
+        try:
+            self.sock.connect(self.socket_path)
+        except ConnectionRefusedError as e:
+            print(str(e))
+            self.__exit__()
+        else:
+            return self.sock
 
     def __exit__(self, *args, **kwargs):
         """Upon exit, close the unix socket."""
@@ -360,6 +361,7 @@ class DirectordConnect:
         :type job_id: String
         :returns: Tuple
         """
+
         return self.manage.poll_job(job_id=job_id)
 
     def list_nodes(self):

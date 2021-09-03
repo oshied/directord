@@ -569,6 +569,7 @@ class Server(interface.Interface):
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(self.args.socket_path)
+        self.log.debug("Socket:%s bound", self.args.socket_path)
         os.chmod(self.args.socket_path, 509)
         uid = 0
         group = getattr(self.args, "socket_group", "root")
@@ -585,8 +586,9 @@ class Server(interface.Interface):
                 data_decoded = data.decode()
                 json_data = json.loads(data_decoded)
                 if "manage" in json_data:
-                    manage = json_data["manage"]
-                    if manage == "list-nodes":
+                    self.log.debug("Received manage command: %s", json_data)
+                    key, value = next(iter(json_data["manage"].items()))
+                    if key == "list_nodes":
                         data = list()
                         for key, value in self.workers.items():
                             expiry = value.pop("time") - time.time()
@@ -595,14 +597,19 @@ class Server(interface.Interface):
                                 data.append((key.decode(), value))
                             except AttributeError:
                                 data.append((str(key), value))
-                    elif manage == "list-jobs":
+                    elif key == "list_jobs":
                         data = [
                             (str(k), v) for k, v in self.return_jobs.items()
                         ]
-                    elif manage == "purge-nodes":
+                    elif key == "job_info":
+                        try:
+                            data = [(str(value), self.return_jobs[value])]
+                        except KeyError:
+                            data = []
+                    elif key == "purge_nodes":
                         self.workers.empty()
                         data = {"success": True}
-                    elif manage == "purge-jobs":
+                    elif key == "purge_jobs":
                         self.return_jobs.empty()
                         data = {"success": True}
                     else:

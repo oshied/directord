@@ -141,11 +141,6 @@ class TestProcessor(unittest.TestCase):
     def tearDown(self):
         self.log_patched.stop()
 
-    def test_get_manager(self):
-        with patch("multiprocessing.Manager") as mock_manager:
-            self.processor.get_manager()
-            mock_manager.assert_called()
-
     def test_get_lock(self):
         with patch("multiprocessing.Lock") as mock_lock:
             self.processor.get_lock()
