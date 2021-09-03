@@ -79,8 +79,10 @@ class Client(interface.Interface):
                 {
                     "version": directord.__version__,
                     "host_uptime": str(datetime.timedelta(seconds=uptime)),
-                    "agent_uptime": "{:.2f}".format(
-                        time.time() - self.start_time
+                    "agent_uptime": str(
+                        datetime.timedelta(
+                            seconds=(time.time() - self.start_time)
+                        )
                     ),
                 }
             ).encode(),

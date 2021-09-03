@@ -698,7 +698,9 @@ class TestServer(tests.TestDriverBase):
         mock_time.return_value = 1
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
-        conn.recv.return_value = json.dumps({"manage": "list-nodes"}).encode()
+        conn.recv.return_value = json.dumps(
+            {"manage": {"list_nodes": None}}
+        ).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
         self.server.workers = {
@@ -727,7 +729,9 @@ class TestServer(tests.TestDriverBase):
     ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
-        conn.recv.return_value = json.dumps({"manage": "list-jobs"}).encode()
+        conn.recv.return_value = json.dumps(
+            {"manage": {"list_jobs": None}}
+        ).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
         self.server.return_jobs = {"k": {"v": "test"}}
@@ -746,7 +750,9 @@ class TestServer(tests.TestDriverBase):
     ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
-        conn.recv.return_value = json.dumps({"manage": "purge-nodes"}).encode()
+        conn.recv.return_value = json.dumps(
+            {"manage": {"purge_nodes": None}}
+        ).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
         workers = self.server.workers = datastores.BaseDocument()
@@ -768,7 +774,9 @@ class TestServer(tests.TestDriverBase):
     ):
         socket = mock_socket.return_value = MagicMock()
         conn = MagicMock()
-        conn.recv.return_value = json.dumps({"manage": "purge-jobs"}).encode()
+        conn.recv.return_value = json.dumps(
+            {"manage": {"purge_jobs": None}}
+        ).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
         return_jobs = self.server.return_jobs = datastores.BaseDocument()

@@ -187,34 +187,34 @@ class TestManager(tests.TestDriverBase):
         self.assertEqual(info, "Job Skipped: test-id")
 
     def test_run_override_unknown(self):
-        self.assertRaises(SystemExit, self.manage.run, override="UNKNOWN")
+        self.assertRaises(SystemExit, self.manage.run, override=None)
 
     @patch("directord.send_data", autospec=True)
     def test_run_override_list_jobs(self, mock_send_data):
         self.manage.run(override="list-jobs")
         mock_send_data.assert_called_once_with(
-            unittest.mock.ANY, data='{"manage": "list-jobs"}'
+            unittest.mock.ANY, data='{"manage": {"list_jobs": null}}'
         )
 
     @patch("directord.send_data", autospec=True)
     def test_run_override_list_nodes(self, mock_send_data):
         self.manage.run(override="list-nodes")
         mock_send_data.assert_called_once_with(
-            unittest.mock.ANY, data='{"manage": "list-nodes"}'
+            unittest.mock.ANY, data='{"manage": {"list_nodes": null}}'
         )
 
     @patch("directord.send_data", autospec=True)
     def test_run_override_purge_jobs(self, mock_send_data):
         self.manage.run(override="purge-jobs")
         mock_send_data.assert_called_once_with(
-            unittest.mock.ANY, data='{"manage": "purge-jobs"}'
+            unittest.mock.ANY, data='{"manage": {"purge_jobs": null}}'
         )
 
     @patch("directord.send_data", autospec=True)
     def test_run_override_purge_nodes(self, mock_send_data):
         self.manage.run(override="purge-nodes")
         mock_send_data.assert_called_once_with(
-            unittest.mock.ANY, data='{"manage": "purge-nodes"}'
+            unittest.mock.ANY, data='{"manage": {"purge_nodes": null}}'
         )
 
     @patch("directord.user.Manage.generate_certificates", autospec=True)

@@ -132,32 +132,42 @@ class Manage(User):
         job_processing_interval = 0.25
         processing_attempts = 0
         while True:
-            data = dict(json.loads(self.run(override="list-jobs")))
-            data_return = data.get(job_id, dict())
-            job_state = data_return.get("PROCESSING", "unknown")
-            job_state = job_state.encode()
-            if job_state == self.driver.job_processing:
-                time.sleep(job_processing_interval)
-                miss = 0
-                processing_attempts += 1
-                if processing_attempts > 20:
-                    job_processing_interval = 1
-            elif job_state == self.driver.job_failed:
-                return False, "Job Failed: {}".format(job_id)
-            elif job_state in [self.driver.job_end, self.driver.nullbyte]:
-                nodes = len(data_return.get("NODES"))
-                if len(data_return.get("SUCCESS", list())) == nodes:
-                    return True, "Job Success: {}".format(job_id)
-                elif len(data_return.get("FAILED", list())) > 0:
-                    return False, "Job Degrated: {}".format(job_id)
-
-                return True, "Job Skipped: {}".format(job_id)
-            else:
+            try:
+                data = dict(json.loads(self.run(override=job_id)))
+            except json.JSONDecodeError:
                 miss += 1
                 if miss > getattr(self.args, "timeout", 600):
                     return None, "Job in an unknown state: {}".format(job_id)
                 else:
                     time.sleep(1)
+                continue
+            else:
+                data_return = data.get(job_id, dict())
+                job_state = data_return.get("PROCESSING", "unknown")
+                job_state = job_state.encode()
+                if job_state == self.driver.job_processing:
+                    time.sleep(job_processing_interval)
+                    processing_attempts += 1
+                    if processing_attempts > 20:
+                        job_processing_interval = 1
+                elif job_state == self.driver.job_failed:
+                    return False, "Job Failed: {}".format(job_id)
+                elif job_state in [self.driver.job_end, self.driver.nullbyte]:
+                    nodes = len(data_return.get("NODES"))
+                    if len(data_return.get("SUCCESS", list())) == nodes:
+                        return True, "Job Success: {}".format(job_id)
+                    elif len(data_return.get("FAILED", list())) > 0:
+                        return False, "Job Degrated: {}".format(job_id)
+
+                    return True, "Job Skipped: {}".format(job_id)
+                else:
+                    miss += 1
+                    if miss > getattr(self.args, "timeout", 600):
+                        return None, "Job in an unknown state: {}".format(
+                            job_id
+                        )
+                    else:
+                        time.sleep(1)
 
     def run(self, override=None):
         """Send the management command to the server.
@@ -170,24 +180,23 @@ class Manage(User):
         if (
             override == "list-jobs"
             or getattr(self.args, "list_jobs", False)
-            or getattr(self.args, "job_info", False)
             or getattr(self.args, "export_jobs", False)
         ):
-            manage = "list-jobs"
+            manage = {"list_jobs": None}
         elif (
             override == "list-nodes"
             or getattr(self.args, "list_nodes", False)
             or getattr(self.args, "export_nodes", False)
         ):
-            manage = "list-nodes"
+            manage = {"list_nodes": None}
         elif override == "purge-jobs" or getattr(
             self.args, "purge_jobs", False
         ):
-            manage = "purge-jobs"
+            manage = {"purge_jobs": None}
         elif override == "purge-nodes" or getattr(
             self.args, "purge_nodes", False
         ):
-            manage = "purge-nodes"
+            manage = {"purge_nodes": None}
         elif override == "generate-keys" or getattr(
             self.args, "generate_keys", False
         ):
@@ -195,7 +204,7 @@ class Manage(User):
         elif override == "dump-cache" or getattr(
             self.args, "dump_cache", False
         ):
-            manage = "dump-cache"
+            manage = {"dump_cache": None}
             with diskcache.Cache(
                 self.args.cache_path,
                 tag_index=True,
@@ -207,7 +216,11 @@ class Manage(User):
                 print(json.dumps(cache_dict, indent=4))
                 return
         else:
-            raise SystemExit("No known management function was defined.")
+            job_id = override or getattr(self.args, "job_info", None)
+            if job_id:
+                manage = {"job_info": job_id}
+            else:
+                raise SystemExit("No known management function was defined.")
 
         self.log.debug("Executing Management Command:%s", manage)
         return directord.send_data(
