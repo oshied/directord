@@ -65,6 +65,7 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
+        self.log.debug("client(): job: %s, cache: %s", job, cache)
         try:
             with open(job["cachefile"]) as f:
                 cachefile_args = yaml.safe_load(f)

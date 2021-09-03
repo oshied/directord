@@ -91,6 +91,7 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
+        self.log.debug("client(): job: %s, cache: %s", job, cache)
         # Sets the cache type to "args" or "envs"
         cache_type = "{}s".format(self.command.decode().lower())
 
