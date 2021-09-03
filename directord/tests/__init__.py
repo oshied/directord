@@ -171,7 +171,11 @@ class FakeCache:
     def iterkeys(self):
         return list(self.cache.keys())
 
-    def get(self, key):
+    def get(self, key, **kwargs):
+        if key not in self.cache:
+            if "default" in kwargs:
+                return kwargs["default"]
+
         return self.cache.get(key)
 
     def pop(self, key, **kwargs):

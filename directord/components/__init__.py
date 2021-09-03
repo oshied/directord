@@ -274,7 +274,7 @@ class ComponentBase:
         """
 
         if value_update:
-            orig = cache.pop(key, default=dict())
+            orig = cache.get(key, default=dict())
             value = utils.merge_dict(orig, value, extend=extend)
         else:
             try:
