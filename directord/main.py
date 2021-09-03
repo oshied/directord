@@ -547,11 +547,17 @@ def main():
                 "Keys generated. Synchronize the server and client public"
                 " keys to client nodes to enable Curve encryption."
             )
-
-        if not data:
             return
 
-        data = json.loads(data)
+        try:
+            data = json.loads(data)
+        except Exception as e:
+            print("No valid data found: {}".format(str(e)))
+            return
+        else:
+            if not data:
+                raise SystemExit("No data found")
+
         if args.export_jobs or args.export_nodes:
             export_file = utils.dump_yaml(
                 file_path=(args.export_jobs or args.export_nodes),
@@ -564,9 +570,13 @@ def main():
         if data and isinstance(data, list):
             if args.job_info:
                 headings = ["KEY", "VALUE"]
-
                 item = dict(data).get(args.job_info)
                 if not item:
+                    print(
+                        "Job information for ID:{} was not found".format(
+                            args.job_info
+                        )
+                    )
                     return
 
                 tabulated_data = _mixin.return_tabulated_info(data=item)
@@ -603,6 +613,8 @@ def main():
                     print("Total {}: {:.2f}".format(k, v))
                 else:
                     print("Total {}: {}".format(k, v))
+            else:
+                return
     elif args.mode == "bootstrap":
         _bootstrap = bootstrap.Bootstrap(args=args)
         _bootstrap.bootstrap_cluster()

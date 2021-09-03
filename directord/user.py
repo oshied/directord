@@ -152,14 +152,22 @@ class Manage(User):
                         job_processing_interval = 1
                 elif job_state == self.driver.job_failed:
                     return False, "Job Failed: {}".format(job_id)
-                elif job_state in [self.driver.job_end, self.driver.nullbyte]:
+                elif job_state in [
+                    self.driver.job_end,
+                    self.driver.nullbyte,
+                    self.driver.transfer_end,
+                ]:
                     nodes = len(data_return.get("NODES"))
-                    if len(data_return.get("SUCCESS", list())) == nodes:
-                        return True, "Job Success: {}".format(job_id)
-                    elif len(data_return.get("FAILED", list())) > 0:
+                    if len(data_return.get("FAILED", list())) > 0:
                         return False, "Job Degrated: {}".format(job_id)
-
-                    return True, "Job Skipped: {}".format(job_id)
+                    elif len(data_return.get("SUCCESS", list())) == nodes:
+                        return True, "Job Success: {}".format(job_id)
+                    else:
+                        miss += 1
+                        if miss > 15:
+                            return True, "Job Skipped: {}".format(job_id)
+                        else:
+                            time.sleep(1)
                 else:
                     miss += 1
                     if miss > getattr(self.args, "timeout", 600):
