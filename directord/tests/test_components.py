@@ -25,6 +25,7 @@ from directord import tests
 
 from directord.components import builtin_copy
 from directord.components import builtin_dnf
+from directord.components import builtin_service
 from directord.components import builtin_run
 from directord.components import builtin_workdir
 
@@ -44,10 +45,17 @@ class TestComponents(unittest.TestCase):
         self.components = components.ComponentBase(desc="test")
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
         self._dnf = builtin_dnf.Component()
+        self._service = builtin_service.Component()
         self._transfer = builtin_copy.Component()
         self._run = builtin_run.Component()
         self._workdir = builtin_workdir.Component()
-        for item in [self._dnf, self._transfer, self._run, self._workdir]:
+        for item in [
+            self._dnf,
+            self._service,
+            self._transfer,
+            self._run,
+            self._workdir,
+        ]:
             item.driver = drivers.BaseDriver(args=self.args)
 
     def tearDown(self):
@@ -379,6 +387,71 @@ class TestComponents(unittest.TestCase):
         calls = [call(command="dnf -q -y remove kernel gcc", env=None)]
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_success(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={"services": ["httpd.service"]},
+        )
+        calls = [call(command="systemctl start httpd.service", env=None)]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_fail(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", False]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={"services": ["httpd.service"]},
+        )
+        calls = [call(command="systemctl start httpd.service", env=None)]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertFalse(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_enable_success(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={"services": ["httpd.service"], "state": "enable"},
+        )
+        calls = [
+            call(command="systemctl enable httpd.service", env=None),
+            call(command="systemctl start httpd.service", env=None),
+        ]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_enable_fail(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", False]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={"services": ["httpd.service"], "state": "enable"},
+        )
+        calls = [call(command="systemctl enable httpd.service", env=None)]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertFalse(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_disable_success(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={
+                "services": ["httpd.service"],
+                "running": "stop",
+                "state": "disable",
+            },
+        )
+        calls = [
+            call(command="systemctl disable httpd.service", env=None),
+            call(command="systemctl stop httpd.service", env=None),
+        ]
+        self.assertTrue(outcome)
+        self.assertEqual(mock_run_command.call_args_list, calls)
 
     @patch("subprocess.Popen")
     def test_run_command_success(self, popen):

@@ -207,6 +207,19 @@ Syntax: `PACKAGE [PACKAGE ...]`
 > NOTE: Installation assumes metadata cache is available.  Use --clear-metadata
   to ensure it's available at least once during an orchestration.
 
+##### `SERVICE`
+
+Syntax: `SERVICE [SERVICE ...]`
+
+> Manage systemd service state
+
+* `--restarted` **BOOLEAN** Ensure service is restarted.
+* `--stopped` **BOOLEAN** Ensure service is stopped.
+* `--enable` **BOOLEAN** Ensure service is enabled.
+* `--disable` **BOOLEAN** Ensure service is disabled.
+
+> NOTE: If no options are provided, a service will be started only.
+
 ##### `REBOOT`
 
 Syntax: `INTEGER`
