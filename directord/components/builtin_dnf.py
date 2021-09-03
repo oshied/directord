@@ -20,6 +20,7 @@ class Component(components.ComponentBase):
         """Initialize the component cache class."""
 
         super().__init__(desc="Manage packages with dnf")
+        self.requires_lock = True
 
     def args(self):
         """Set default arguments for a component."""
