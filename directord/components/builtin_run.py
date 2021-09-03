@@ -13,6 +13,7 @@
 #   under the License.
 
 from directord import components
+from directord import utils
 
 
 class Component(components.ComponentBase):
@@ -87,12 +88,22 @@ class Component(components.ComponentBase):
 
         if stdout_arg and stdout:
             clean_info = stdout.decode().strip()
-            self.set_cache(
-                cache=cache,
-                key="args",
-                value={stdout_arg: clean_info},
-                value_update=True,
-                tag="args",
-            )
+            self.block_on_tasks = list()
+            arg_job = job.copy()
+            arg_job.pop("parent_sha3_224", None)
+            arg_job.pop("parent_id", None)
+            arg_job.pop("job_sha3_224", None)
+            arg_job.pop("job_id", None)
+            arg_job["skip_cache"] = True
+            arg_job["extend_args"] = True
+            arg_job["verb"] = "ARG"
+            arg_job["args"] = {stdout_arg: clean_info}
+            arg_job["parent_async_bypass"] = True
+            arg_job["job_id"] = utils.get_uuid()
+            arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
+            arg_job["parent_id"] = utils.get_uuid()
+            arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
+            self.block_on_tasks.append(arg_job)
+            self.log.debug("Job call backs: %s ", self.block_on_tasks)
 
         return stdout, stderr, outcome, command.encode()
