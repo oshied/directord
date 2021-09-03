@@ -66,6 +66,7 @@ class Client(interface.Interface):
         self.q_return = self.get_queue()
         self.base_component = components.ComponentBase()
         self.cache = dict()
+        self.start_time = time.time()
 
     def update_heartbeat(self):
         with open("/proc/uptime", "r") as f:
@@ -77,7 +78,10 @@ class Client(interface.Interface):
             data=json.dumps(
                 {
                     "version": directord.__version__,
-                    "uptime": str(datetime.timedelta(seconds=uptime)),
+                    "host_uptime": str(datetime.timedelta(seconds=uptime)),
+                    "agent_uptime": "{:.2f}".format(
+                        time.time() - self.start_time
+                    ),
                 }
             ).encode(),
         )

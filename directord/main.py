@@ -584,7 +584,8 @@ def main():
                     restrict_headings = [
                         "EXPIRY",
                         "VERSION",
-                        "UPTIME",
+                        "HOST_UPTIME",
+                        "AGENT_UPTIME",
                     ]
                 (
                     tabulated_data,
