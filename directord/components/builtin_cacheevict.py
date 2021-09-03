@@ -24,6 +24,7 @@ class Component(components.ComponentBase):
 
         super().__init__(desc="Process cacheevict commands")
         self.cacheable = False
+        self.requires_lock = True
 
     def args(self):
         """Set default arguments for a component."""
