@@ -99,6 +99,7 @@ class Component(components.ComponentBase):
             arg_job["verb"] = "ARG"
             arg_job["args"] = {stdout_arg: clean_info}
             arg_job["parent_async_bypass"] = True
+            arg_job["targets"] = [self.driver.identity]
             arg_job["job_id"] = utils.get_uuid()
             arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
             arg_job["parent_id"] = utils.get_uuid()
