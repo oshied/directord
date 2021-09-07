@@ -21,14 +21,14 @@ from directord import mixin
 from directord import tests
 
 
-TEST_FINGER_PRINTS = """  count  parent_sha                                                verb    exec      job_sha
+TEST_FINGER_PRINTS = """count    parent_sha                                                verb    exec      job_sha
 -------  --------------------------------------------------------  ------  --------  --------------------------------------------------------
-      0  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
-      1  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
-      2  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd
-      3  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
-      4  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
-      5  5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd"""  # noqa
+0        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
+1        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
+2        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd
+3        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
+4        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
+5        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd"""  # noqa
 
 
 TEST_ORCHESTRATION_READ = """---

@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import decimal
 import grp
 import json
 import multiprocessing
@@ -167,8 +168,8 @@ class Server(interface.Interface):
         job_output,
         job_stdout=None,
         job_stderr=None,
-        execution_time=0,
-        recv_time=0,
+        execution_time=None,
+        recv_time=None,
     ):
         """Set job status.
 
@@ -193,45 +194,66 @@ class Server(interface.Interface):
         :type recv_tim: Float
         """
 
+        def _set_time():
+            _createtime = job_metadata.get("_createtime")
+            if not _createtime:
+                _createtime = job_metadata["_createtime"] = time.time()
+
+            if isinstance(recv_time, (int, float)):
+                job_metadata["_roundtripltime"][identity] = (
+                    float(recv_time) - _createtime
+                )
+                job_metadata["ROUNDTRIP_TIME"] = "{:.8f}".format(
+                    decimal.Decimal(
+                        sum(job_metadata["_roundtripltime"].values())
+                        / len(job_metadata["_roundtripltime"].keys())
+                    )
+                )
+
+            if isinstance(execution_time, (int, float)):
+                job_metadata["_executiontime"][identity] = float(
+                    execution_time
+                )
+                job_metadata["EXECUTION_TIME"] = "{:.8f}".format(
+                    decimal.Decimal(
+                        sum(job_metadata["_executiontime"].values())
+                        / len(job_metadata["_executiontime"].keys())
+                    )
+                )
+
         job_metadata = self.return_jobs.get(job_id)
         if not job_metadata:
             return
 
-        if job_output:
+        if job_output and job_output is not self.driver.nullbyte.decode():
             job_metadata["INFO"][identity] = job_output
 
-        if job_stdout:
+        if job_stdout and job_stdout is not self.driver.nullbyte.decode():
             job_metadata["STDOUT"][identity] = job_stdout
 
-        if job_stderr:
+        if job_stderr and job_stderr is not self.driver.nullbyte.decode():
             job_metadata["STDERR"][identity] = job_stderr
 
         self.log.debug("current job [ %s ] state [ %s ]", job_id, job_status)
         job_metadata["PROCESSING"] = job_status.decode()
-
-        _createtime = job_metadata.get("_createtime")
-        if not _createtime:
-            _createtime = job_metadata["_createtime"] = time.time()
 
         if job_status == self.driver.job_ack:
             self.log.debug("%s received job %s", identity, job_id)
         elif job_status == self.driver.job_processing:
             self.log.debug("%s is processing %s", identity, job_id)
         elif job_status in [self.driver.job_end, self.driver.nullbyte]:
+            _set_time()
             self.log.debug("%s finished processing %s", identity, job_id)
             if "SUCCESS" in job_metadata:
                 job_metadata["SUCCESS"].append(identity)
             else:
                 job_metadata["SUCCESS"] = [identity]
-            job_metadata["EXECUTION_TIME"] = float(execution_time)
-            job_metadata["ROUNDTRIP_TIME"] = recv_time - _createtime
         elif job_status == self.driver.job_failed:
+            _set_time()
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
                 job_metadata["FAILED"] = [identity]
-            job_metadata["EXECUTION_TIME"] = float(execution_time)
-            job_metadata["ROUNDTRIP_TIME"] = recv_time - _createtime
 
         self.return_jobs[job_id] = job_metadata
 
@@ -288,6 +310,8 @@ class Server(interface.Interface):
                 "JOB_DEFINITION": job_item,
                 "PARENT_JOB_ID": job_item.get("parent_id"),
                 "_createtime": time.time(),
+                "_executiontime": dict(),
+                "_roundtripltime": dict(),
             },
         )
 
