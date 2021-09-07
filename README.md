@@ -46,102 +46,131 @@ This quick cast shows how easy it is to install, bootstrap, and deploy a scale t
 Let's create a virtual env on your local machine to bootstrap the installation,
 once installed you can move to the server node and call all your tasks from there
 
-    python3 -m venv --system-site-packages ~/directord
-    ~/directord/bin/pip install --upgrade pip setuptools wheel
-    ~/directord/bin/pip install directord
+``` shell
+$ python3 -m venv --system-site-packages ~/directord
+$ ~/directord/bin/pip install --upgrade pip setuptools wheel
+$ ~/directord/bin/pip install directord
+```
 
 We need to create a catalog for bootstrapping. Let's assume we are installing directord in two machines:
 
-test1 192.168.1.100 : dicectord server, a client
-test2 192.168.1.101 : Only a client
+* directord-1 192.168.1.100 : dicectord server, a client
 
-for that we create a file
+* directord-2 192.168.1.101 : Only a client
 
-    vi ~/directord-catalog.yaml
+For that we create a file
 
-with the contents:
+``` shell
+$ vi ~/directord-catalog.yaml
+```
 
-    directord_server:
-      targets:
-      - host: 192.168.1.100
-        port: 22
-        username: fedora
+with the contents
 
-    directord_clients:
-      args:
-        port: 22
-        username: fedora
-      targets:
-      - host: 192.168.1.100
-      - host: 192.168.1.101
+``` yaml
+directord_server:
+  targets:
+  - host: 192.168.1.100
+  port: 22
+  username: fedora
+
+directord_clients:
+  args:
+  port: 22
+  username: fedora
+  targets:
+  - host: 192.168.1.100
+  - host: 192.168.1.101
+```
 
 We can now call directord to bootstrap the installation. Bootstrapping uses ssh to connect to the machines but after that ssh is no longer used.
 and you only need the ssh keys to connect your local machine to the machines you are installing into the server and client do not need shared keys between themselves.
 
 To kickstart the bootstrapping you call  directord with the catalog file you created and a catalog with the jobs required to bootstrap them.
 
-    ~/directord/bin/directord bootstrap \
-    --catalog ~/directord-catalog.yaml  \
-    --catalog ~/directord/share/directord/tools/directord-prod-bootstrap-catalog.yaml
-
+``` shell
+$ ~/directord/bin/directord bootstrap \
+                            --catalog ~/directord-catalog.yaml  \
+                            --catalog ~/directord/share/directord/tools/directord-prod-bootstrap-catalog.yaml
+```
 Once that is ran you can now ssh to the server and issue all the commands from there
 
-    ssh fedora@192.168.1.100
+``` shell
+$ ssh fedora@192.168.1.100
+```
 
 First to make sure all the nodes are connected
 
-    sudo /opt/directord/bin/directord manage --list-nodes
+``` shell
+$ sudo /opt/directord/bin/directord manage --list-nodes
+```
 
-Should show you:
+Should show you
 
-    ID           EXPIRY  VERSION    UPTIME
-    ---------  --------  ---------  --------------
-    test1        170.43  0.6.0      1:37:35.330000
-    test2        127.36  0.6.0      1:35:25.830000
+``` shell
+ID             EXPIRY  VERSION    HOST_UPTIME     AGENT_UPTIME
+-----------  --------  ---------  --------------  --------------
+directord-1    132.2   0.9.0      1:38:53.240000  0:00:00.051849
+directord-2    131.69  0.9.0      1:39:25.780000  0:00:00.099533
+```
 
-Then we create our first orchestration job lets add a file called 
+Then we create our first orchestration job lets add a file called
 
-    vi helloworld.yaml
+``` shell
+$ vi helloworld.yaml
+```
 
-with the contents:
+With the contents
 
-    - jobs:
-      - RUN: echo hello world
+``` yaml
+- jobs:
+  - ECHO: hello world
+```
 
 Then we call the orchestration to use it
 
-    sudo /opt/directord/bin/directord orchestrate helloworld.yaml
+``` shell
+$ sudo /opt/directord/bin/directord orchestrate helloworld.yaml
+```
 
 Should return something like:
 
-    Job received. Task ID: 9bcf31cb-7faf-4367-bf37-57c11b3f81dc
+``` shell
+Job received. Task ID: 9bcf31cb-7faf-4367-bf37-57c11b3f81dc
+```
 
 We use that task ID to probe how the job went or we can list all the jobs with"
 
-    sudo /opt/directord/bin/directord manage --list-jobs
+``` shell
+$ sudo /opt/directord/bin/directord manage --list-jobs
+```
 
 That returns something like:
 
-    ID                                    PARENT_JOB_ID                           EXECUTION_TIME    SUCCESS    FAILED
-    ------------------------------------  ------------------------------------  ----------------  ---------  --------
-    9bcf31cb-7faf-4367-bf37-57c11b3f81dc  9bcf31cb-7faf-4367-bf37-57c11b3f81dc              0.02          2         0
+``` shell
+ID                                    PARENT_JOB_ID                           EXECUTION_TIME    SUCCESS    FAILED
+------------------------------------  ------------------------------------  ----------------  ---------  --------
+9bcf31cb-7faf-4367-bf37-57c11b3f81dc  9bcf31cb-7faf-4367-bf37-57c11b3f81dc              0.02          2         0
+```
 
-with the task id we can see how the job went:
+With the task id we can see how the job went:
 
-    sudo /opt/directord/bin/directord manage --job-info 9bcf31cb-7faf-4367-bf37-57c11b3f81dc
+``` shell
+$ sudo /opt/directord/bin/directord manage --job-info 9bcf31cb-7faf-4367-bf37-57c11b3f81dc
+```
 
 And voila here is our first orchestrated hello world:
 
-    KEY                   VALUE
-    --------------------  -------------------------------------------------------
-    ID                    9bcf31cb-7faf-4367-bf37-57c11b3f81dc
-    ACCEPTED              True
-    INFO                  test1 = echo hello world
-                          test2 = echo hello world
-    STDOUT                test1 = hello world
-                          test2 = hello world
-    ...
-
+``` shell
+KEY                   VALUE
+--------------------  -------------------------------------------------------
+ID                    9bcf31cb-7faf-4367-bf37-57c11b3f81dc
+ACCEPTED              True
+INFO                  test1 = hello world
+                      test2 = hello world
+STDOUT                test1 = hello world
+                      test2 = hello world
+...
+```
 
 ## License
 
