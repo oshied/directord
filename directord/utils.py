@@ -295,5 +295,6 @@ def print_tabulated_data(data, headers):
         tabulate.tabulate(
             data,
             headers=headers,
+            disable_numparse=True,
         )
     )

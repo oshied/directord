@@ -245,7 +245,6 @@ class TestServer(tests.TestDriverBase):
             self.server.return_jobs["XXX"],
             {
                 "ACCEPTED": True,
-                "EXECUTION_TIME": 0,
                 "INFO": {"test-node": "output"},
                 "JOB_DEFINITION": {},
                 "NODES": ["test-node"],
@@ -255,7 +254,6 @@ class TestServer(tests.TestDriverBase):
                 "STDOUT": {},
                 "SUCCESS": ["test-node"],
                 "JOB_SHA3_224": "YYY",
-                "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -289,7 +287,6 @@ class TestServer(tests.TestDriverBase):
             self.server.return_jobs["XXX"],
             {
                 "ACCEPTED": True,
-                "EXECUTION_TIME": 0,
                 "INFO": {"test-node": "output"},
                 "JOB_DEFINITION": {},
                 "NODES": ["test-node"],
@@ -299,7 +296,6 @@ class TestServer(tests.TestDriverBase):
                 "STDOUT": {},
                 "SUCCESS": ["test-node"],
                 "JOB_SHA3_224": "YYY",
-                "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -333,7 +329,6 @@ class TestServer(tests.TestDriverBase):
             self.server.return_jobs["XXX"],
             {
                 "ACCEPTED": True,
-                "EXECUTION_TIME": 0,
                 "INFO": {"test-node": "output"},
                 "JOB_DEFINITION": {},
                 "NODES": ["test-node"],
@@ -343,7 +338,6 @@ class TestServer(tests.TestDriverBase):
                 "STDOUT": {},
                 "FAILED": ["test-node"],
                 "JOB_SHA3_224": "YYY",
-                "ROUNDTRIP_TIME": ANY,
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
@@ -392,6 +386,8 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "TEST",
                 "_createtime": ANY,
+                "_executiontime": ANY,
+                "_roundtripltime": ANY,
             },
         )
 

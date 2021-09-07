@@ -24,7 +24,7 @@
 {%     set badge = "bg-danger" %}
 {%   endif %}
 {%   if "EXECUTION_TIME" in value %}
-{%     set badge_value = value["EXECUTION_TIME"] | round(2, 'floor') %}
+{%     set badge_value = (value["EXECUTION_TIME"].values() | sum) / (value["EXECUTION_TIME"].keys() | length) | round(2, 'floor') %}
 {%   else %}
 {%     set badge_value = value.get('SUCCESS', "Unknown") %}
 {%     if badge_value == "Unknown" %}
