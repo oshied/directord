@@ -466,7 +466,6 @@ class Client(interface.Interface):
                         ) in [
                             self.driver.job_end.decode(),
                             self.driver.job_failed.decode(),
-                            self.driver.nullbyte.decode(),
                         ]:
                             block_on_task = False
                         else:
@@ -474,7 +473,7 @@ class Client(interface.Interface):
                                 "waiting for callback job to complete. %s",
                                 block_on_task_data,
                             )
-                            time.sleep(1)
+                            time.sleep(0.5)
 
                 self.log.debug(
                     "Task sha [ %s ] callback complete",
