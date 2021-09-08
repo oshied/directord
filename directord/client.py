@@ -375,12 +375,13 @@ class Client(interface.Interface):
         :type parent_lock: Object
         """
 
-        job_id = component_kwargs["job"]["job_id"]
+        job = component_kwargs["job"]
+        job_id = job["job_id"]
         success, _, component = directord.component_import(
             component=command.decode().lower(),
             job_id=job_id,
         )
-        parent_sha3_224 = component_kwargs["job"].get("parent_sha3_224")
+        parent_sha3_224 = job.get("parent_sha3_224")
 
         if not success:
             self.log.warning("Component lookup failure [ %s ]", component)
@@ -390,7 +391,7 @@ class Client(interface.Interface):
                     None,
                     success,
                     None,
-                    component_kwargs["job"],
+                    job,
                     command,
                     0,
                     None,
@@ -407,7 +408,7 @@ class Client(interface.Interface):
                     None,
                     "skipped",
                     None,
-                    component_kwargs["job"],
+                    job,
                     command,
                     0,
                     None,
@@ -429,16 +430,20 @@ class Client(interface.Interface):
                 locked = True
 
             with self.timeout(
-                time=component_kwargs["job"].get("timeout", 600),
+                time=job.get("timeout", 600),
                 job_id=job_id,
             ):
                 _starttime = time.time()
+                component_return = component.client(cache=self.cache, job=job)
+                job[
+                    "component_exec_timestamp"
+                ] = datetime.datetime.fromtimestamp(time.time()).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
                 self.q_return.put(
-                    component.client(
-                        cache=self.cache, job=component_kwargs["job"]
-                    )
+                    component_return
                     + (
-                        component_kwargs["job"],
+                        job,
                         command,
                         time.time() - _starttime,
                         component.block_on_tasks,
@@ -478,7 +483,7 @@ class Client(interface.Interface):
 
             self.log.debug(
                 "Component execution complete for job [ %s ].",
-                component_kwargs["job"]["job_id"],
+                job["job_id"],
             )
 
         if parent_lock:
@@ -546,12 +551,22 @@ class Client(interface.Interface):
         if block_on_tasks:
             job["new_tasks"] = block_on_tasks
 
+        job["return_timestamp"] = datetime.datetime.fromtimestamp(
+            time.time()
+        ).strftime("%Y-%m-%d %H:%M:%S")
+
         if "new_tasks" in job:
             conn.data = json.dumps(job).encode()
         else:
-            conn.data = json.dumps(
-                {"execution_time": job["execution_time"]}
-            ).encode()
+            minimal_data = {
+                "execution_time": job["execution_time"],
+                "return_timestamp": job["return_timestamp"],
+            }
+            component_timestamp = job.get("component_exec_timestamp")
+            if component_timestamp:
+                minimal_data["component_exec_timestamp"] = component_timestamp
+
+            conn.data = json.dumps(minimal_data).encode()
 
         if job["parent_id"]:
             self.base_component.set_cache(
