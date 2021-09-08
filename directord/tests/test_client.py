@@ -194,6 +194,7 @@ class TestClient(tests.TestDriverBase):
             job_id="XXX",
             cached=False,
             command=b"RUN",
+            lock=ANY,
         )
 
     @patch("directord.client.Client._job_executor", autospec=True)
@@ -242,6 +243,7 @@ class TestClient(tests.TestDriverBase):
             job_id="XXX",
             cached=False,
             command=b"RUN",
+            lock=ANY,
         )
 
     @patch("directord.client.Client._job_executor", autospec=True)
@@ -329,6 +331,7 @@ class TestClient(tests.TestDriverBase):
             job_id="XXX",
             cached=True,
             command=b"RUN",
+            lock=ANY,
         )
 
     @patch("directord.client.Client._job_executor", autospec=True)
@@ -379,6 +382,7 @@ class TestClient(tests.TestDriverBase):
             job_id="XXX",
             cached=True,
             command=b"RUN",
+            lock=ANY,
         )
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_end.decode())
 
@@ -428,6 +432,7 @@ class TestClient(tests.TestDriverBase):
             job_id="XXX",
             cached=False,
             command=b"RUN",
+            lock=ANY,
         )
         self.assertEqual(
             cache.get("YYY"), self.mock_driver.job_failed.decode()

@@ -26,25 +26,6 @@ from directord import interface
 from directord import utils
 
 
-class Locker:
-    """Used to create a class based locking mechism."""
-
-    def __init__(self, lock, used=None):
-        self.locked = False
-        self.lock = lock
-        self.used = used
-
-    def get_lock(self):
-        self.lock.acquire()
-        self.locked = True
-        self.used = time.time()
-
-    def release_lock(self):
-        self.lock.release()
-        self.locked = False
-        self.used = time.time()
-
-
 class Client(interface.Interface):
     """Directord client class."""
 
@@ -182,6 +163,7 @@ class Client(interface.Interface):
         job_id,
         cached,
         command,
+        lock=None,
     ):
         """Queue a given job.
 
@@ -199,7 +181,12 @@ class Client(interface.Interface):
         :type cached: Boolean
         :param command: Byte encoded command used to run a given job.
         :type command: Bytes
+        :param parent_lock: Locking object, used if defined.
+        :type parent_lock: Object
         """
+
+        if not lock:
+            lock = self.get_lock()
 
         component_kwargs = dict(cache=None, job=job)
         if job.get("parent_async_bypass") is True:
@@ -213,6 +200,7 @@ class Client(interface.Interface):
                 command=command,
                 info=info,
                 cached=cached,
+                lock=lock,
             )
             conn.info = b"bypass task executing"
         elif job.get("parent_async") is True:
@@ -280,7 +268,7 @@ class Client(interface.Interface):
         thread.start()
         return thread
 
-    def job_q_processor(self, queue, processes=1):
+    def job_q_processor(self, queue, processes=1, lock=None):
         """Process a given work queue.
 
         The defined `queue` is processed. The `processes` arg allows this
@@ -290,9 +278,13 @@ class Client(interface.Interface):
         :type queue: Object
         :param processes: Number of possible processes to spawn
         :type processes: Integer
+        :param lock: Locking object, used if a component requires it.
+        :type lock: Object
         """
 
-        lock = self.get_lock()
+        if not lock:
+            lock = self.get_lock()
+
         interval = 0.25
         parent_locks_tracker = set()
         while True:
@@ -432,14 +424,14 @@ class Client(interface.Interface):
             setattr(component, "driver", self.driver)
 
             locked = False
+            if component.requires_lock:
+                lock.acquire()
+                locked = True
+
             with self.timeout(
                 time=component_kwargs["job"].get("timeout", 600),
                 job_id=job_id,
             ):
-                if component.requires_lock:
-                    lock.acquire()
-                    locked = True
-
                 _starttime = time.time()
                 self.q_return.put(
                     component.client(
@@ -731,7 +723,7 @@ class Client(interface.Interface):
 
         return cache_check_time
 
-    def run_job(self, sentinel=False):
+    def run_job(self, lock=None, sentinel=False):
         """Job entry point.
 
         This creates a cached access object, connects to the socket and begins
@@ -743,9 +735,14 @@ class Client(interface.Interface):
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 128.
 
+        :param lock: Locking object, used if a component requires it.
+        :type lock: Object
         :param sentinel: Breaks the loop
         :type sentinel: Boolean
         """
+
+        if not lock:
+            lock = self.get_lock()
 
         self.bind_job = self.driver.job_connect()
         poller_time = time.time()
@@ -850,6 +847,7 @@ class Client(interface.Interface):
                                 and not job_skip_cache
                             ),
                             command=command,
+                            lock=lock,
                         )
 
             if sentinel:
@@ -862,22 +860,21 @@ class Client(interface.Interface):
         run_threads method where their execution will be managed.
         """
 
+        lock = self.get_lock()
         threads = [
             (self.thread(target=self.run_heartbeat), True),
-            (self.thread(target=self.run_job), False),
+            (self.thread(target=self.run_job, kwargs=dict(lock=lock)), False),
             (
                 self.thread(
-                    target=self.job_q_processor, args=(self.q_general,)
+                    target=self.job_q_processor,
+                    kwargs=dict(queue=self.q_general, lock=lock),
                 ),
                 False,
             ),
             (
                 self.thread(
                     target=self.job_q_processor,
-                    args=(
-                        self.q_async,
-                        4,
-                    ),
+                    kwargs=dict(queue=self.q_async, processes=4, lock=lock),
                 ),
                 False,
             ),
