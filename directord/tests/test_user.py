@@ -115,7 +115,7 @@ class TestManager(tests.TestDriverBase):
                 {
                     "test-id": {
                         "SUCCESS": ["hostname-node1"],
-                        "NODES": ["hostname-node1", "hostname-node2"],
+                        "_nodes": ["hostname-node1", "hostname-node2"],
                         "PROCESSING": "UNDEFINED",
                     }
                 }
@@ -130,7 +130,7 @@ class TestManager(tests.TestDriverBase):
             {
                 "test-id": {
                     "SUCCESS": ["hostname-node"],
-                    "NODES": ["hostname-node"],
+                    "_nodes": ["hostname-node"],
                     "PROCESSING": b"\004".decode(),
                 }
             }
@@ -146,7 +146,7 @@ class TestManager(tests.TestDriverBase):
                 "test-id": {
                     "SUCCESS": ["hostname-node1"],
                     "FAILED": ["hostname-node0"],
-                    "NODES": ["hostname-node0", "hostname-node1"],
+                    "_nodes": ["hostname-node0", "hostname-node1"],
                     "PROCESSING": b"\004".decode(),
                 }
             }
@@ -161,7 +161,7 @@ class TestManager(tests.TestDriverBase):
             {
                 "test-id": {
                     "FAILED": ["hostname-node"],
-                    "NODES": ["hostname-node"],
+                    "_nodes": ["hostname-node"],
                     "PROCESSING": b"\025".decode(),
                 }
             }
@@ -177,7 +177,7 @@ class TestManager(tests.TestDriverBase):
                 {
                     "test-id": {
                         "SUCCESS": [],
-                        "NODES": ["hostname-node1", "hostname-node2"],
+                        "_nodes": ["hostname-node1", "hostname-node2"],
                         "PROCESSING": b"\004".decode(),
                     }
                 }

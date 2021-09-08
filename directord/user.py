@@ -157,7 +157,7 @@ class Manage(User):
                     self.driver.nullbyte,
                     self.driver.transfer_end,
                 ]:
-                    nodes = len(data_return.get("NODES"))
+                    nodes = len(data_return.get("_nodes"))
                     if len(data_return.get("FAILED", list())) > 0:
                         return False, "Job Degrated: {}".format(job_id)
                     elif len(data_return.get("SUCCESS", list())) == nodes:

@@ -170,6 +170,8 @@ class Server(interface.Interface):
         job_stdout=None,
         job_stderr=None,
         execution_time=None,
+        return_timestamp=None,
+        component_exec_timestamp=None,
         recv_time=None,
     ):
         """Set job status.
@@ -191,6 +193,10 @@ class Server(interface.Interface):
         :type job_stderr: String
         :param execution_time: Time the task took to execute
         :type execution_time: Float
+        :param return_timestamp: Timestamp from the job return.
+        :type return_timestamp: String
+        :param component_exec_timestamp: Timestamp from the component return.
+        :type component_exec_timestamp: String
         :param recv_time: Time a task return was received.
         :type recv_tim: Float
         """
@@ -256,6 +262,12 @@ class Server(interface.Interface):
             else:
                 job_metadata["FAILED"] = [identity]
 
+        if return_timestamp:
+            job_metadata["RETURN_TIMESTAMP"] = return_timestamp
+
+        if component_exec_timestamp:
+            job_metadata["COMPONENT_TIMESTAMP"] = component_exec_timestamp
+
         self.return_jobs[job_id] = job_metadata
 
     def _run_transfer(self, identity, verb, file_path):
@@ -304,7 +316,7 @@ class Server(interface.Interface):
                 "INFO": dict(),
                 "STDOUT": dict(),
                 "STDERR": dict(),
-                "NODES": [i.decode() for i in targets],
+                "_nodes": [i.decode() for i in targets],
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
                 "JOB_SHA3_224": job_item["job_sha3_224"],
@@ -529,6 +541,10 @@ class Server(interface.Interface):
                     job_stdout=stdout,
                     job_stderr=stderr,
                     execution_time=data_item.get("execution_time", 0),
+                    return_timestamp=data_item.get("return_timestamp", 0),
+                    component_exec_timestamp=data_item.get(
+                        "component_exec_timestamp", 0
+                    ),
                     recv_time=time.time(),
                 )
 
