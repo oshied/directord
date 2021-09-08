@@ -98,26 +98,32 @@ class Component(components.ComponentBase):
             update_info = "Directory {} OK".format(workdir)
             outcome = True
             stderr = None
+            info = ""
             if user:
                 try:
                     try:
                         uid = int(user)
                     except ValueError:
                         uid = pwd.getpwnam(user).pw_uid
+                        info += " uid {} found from name {}.".format(uid, user)
 
                     if group:
                         try:
                             gid = int(group)
                         except ValueError:
                             gid = grp.getgrnam(group).gr_gid
+                            info += " gid {} found from name {}.".format(
+                                gid, group
+                            )
                     else:
                         gid = -1
-                except KeyError:
+                except KeyError as e:
                     outcome = False
                     stderr = (
                         "Failed to set ownership properties."
                         " USER:{} GROUP:{}".format(user, group)
                     )
+                    info += " {}".format(str(e))
                 else:
                     os.chown(workdir, uid, gid)
                     outcome = True
@@ -125,4 +131,4 @@ class Component(components.ComponentBase):
             if mode:
                 os.chmod(workdir, mode)
 
-            return update_info, stderr, outcome, None
+            return update_info, stderr, outcome, info
