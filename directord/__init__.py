@@ -139,7 +139,6 @@ class Processor:
     This is a base class.
     """
 
-    job_queue = multiprocessing.Queue()
     thread = multiprocessing.Process
     processes = list()
 
