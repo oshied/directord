@@ -1,0 +1,11 @@
+---
+
+directord_server:
+  jobs:
+  - RUN: sudo /opt/directord/bin/pip install directord --pre --upgrade
+  - RUN: sudo systemctl restart directord-server.service
+
+directord_clients:
+  jobs:
+  - RUN: sudo /opt/directord/bin/pip install directord --pre --upgrade
+  - RUN: sudo systemctl restart directord-client.service
