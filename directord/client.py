@@ -760,19 +760,24 @@ class Client(interface.Interface):
                 cache_check_time=cache_check_time
             )
 
-            if time.time() > poller_time + 64:
-                if poller_interval != 2048:
-                    self.log.info("Directord client entering idle state.")
-                poller_interval = 2048
-            elif time.time() > poller_time + 32:
-                if poller_interval != 1024:
-                    self.log.info("Directord client ramping down.")
+            if (
+                self.q_async.empty()
+                and self.q_general.empty()
+                and self.q_return.empty()
+            ):
+                if time.time() > poller_time + 64:
+                    if poller_interval != 2048:
+                        self.log.info("Directord client entering idle state.")
+                    poller_interval = 2048
+                elif time.time() > poller_time + 32:
+                    if poller_interval != 1024:
+                        self.log.info("Directord client ramping down.")
                 poller_interval = 1024
 
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
-                poller_interval, poller_time = 64, time.time()
+                poller_interval, poller_time = 8, time.time()
                 (
                     _,
                     _,

@@ -41,6 +41,7 @@ class Server(interface.Interface):
         """
 
         super(Server, self).__init__(args=args)
+        self.job_queue = self.get_queue()
         self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
         if not datastore:
@@ -446,14 +447,15 @@ class Server(interface.Interface):
 
         while True:
             current_time = time.time()
-            if current_time > poller_time + 64:
-                if poller_interval != 2048:
-                    self.log.info("Directord server entering idle state.")
-                poller_interval = 2048
-            elif current_time > poller_time + 32:
-                if poller_interval != 1024:
-                    self.log.info("Directord server ramping down.")
-                poller_interval = 1024
+            if self.job_queue.empty():
+                if current_time > poller_time + 64:
+                    if poller_interval != 2048:
+                        self.log.info("Directord server entering idle state.")
+                    poller_interval = 2048
+                elif current_time > poller_time + 32:
+                    if poller_interval != 1024:
+                        self.log.info("Directord server ramping down.")
+                    poller_interval = 1024
 
             if self.driver.bind_check(
                 bind=self.bind_transfer, constant=poller_interval
