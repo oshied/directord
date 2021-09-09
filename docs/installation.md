@@ -180,3 +180,17 @@ provide a means to bootstrap clusters quickly in a production environment.
 The script `dev-setup.sh`, within the tools directory can be used to automate
 the setup of Directord from source, which was created to allow developers to get
 and running quickly with Directord on a development system.
+
+### Upgrading Directord
+
+Directord comes with many pre-built tools to get operators up and running with
+ease. One of the pre-built tools that Directord ships with is the ability to
+easily update an environment using the very same bootstrap command used for
+mass installation.
+
+``` shell
+$ directord bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/directord-dev-upgrade-catalog.yaml
+```
+
+With the bootstrap command operators can be sure Directord is updated to the
+latest release, en-mass, without much effort.

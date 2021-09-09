@@ -100,10 +100,10 @@ class Component(components.ComponentBase):
         self.block_on_tasks.append(arg_job)
         wait_job = dict(
             skip_cache=True,
-            verb="JOB_WAIT",
-            sha=arg_job["job_sha3_224"],
+            verb="QUERY_WAIT",
+            item=query_item,
+            query_timeout=600,
             parent_async_bypass=True,
-            job_timeout=600,
         )
         wait_job["job_id"] = utils.get_uuid()
         wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)

@@ -88,7 +88,7 @@ class Component(components.ComponentBase):
         missing_identity = set()
         while (time.time() - start_time) < job["query_timeout"]:
             args = cache.get("args")
-            if job["identity"]:
+            if "identity" in job and job["identity"]:
                 for identity in job["identity"]:
                     items = args.get("query", dict()).get(identity)
                     if isinstance(items, dict):
