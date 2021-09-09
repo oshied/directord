@@ -297,6 +297,11 @@ class Client(interface.Interface):
                         info,
                         cached,
                     ) = queue.get_nowait()
+                except ValueError as e:
+                    self.log.critical(
+                        "Queue object value error [ %s ]", str(e)
+                    )
+                    interval = 1
                 except Exception:
                     interval = 1
                 else:
@@ -350,6 +355,56 @@ class Client(interface.Interface):
             self.prune_locks(
                 queue=queue, parent_locks_tracker=parent_locks_tracker
             )
+
+    def purge_queue(self, job_id):
+        """Purge all jobs from the works queues.
+
+        :param job_id: Job UUID
+        :type job_id: String
+        :returns: String
+        """
+
+        total_count = 0
+        for q in [self.q_async, self.q_general]:
+            count = 0
+            while not q.empty():
+                try:
+                    (
+                        _kwargs,
+                        _command,
+                        _,
+                        _,
+                    ) = q.get_nowait()
+                    count += 1
+                    total_count += 1
+                except ValueError as e:
+                    self.log.critical(
+                        "Queue object value error [ %s ]", str(e)
+                    )
+                    break
+                except Exception:
+                    break
+                else:
+                    self.q_return.put(
+                        (
+                            None,
+                            None,
+                            False,
+                            "Omitted due to sentinel from {}".format(job_id),
+                            _kwargs["job"],
+                            _command,
+                            0,
+                            None,
+                        )
+                    )
+            else:
+                self.log.info("Purged %s items from the queue", count)
+        else:
+            clear_info = "Cleared {} items from the work queues.".format(
+                total_count
+            )
+            self.log.info(clear_info)
+            return clear_info
 
     def job_q_component_run(
         self, component_kwargs, command, info, cached, lock, parent_lock
@@ -440,15 +495,23 @@ class Client(interface.Interface):
                 ] = datetime.datetime.fromtimestamp(time.time()).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
-                self.q_return.put(
-                    component_return
-                    + (
-                        job,
-                        command,
-                        time.time() - _starttime,
-                        component.block_on_tasks,
-                    )
+
+            if component.queue_sentinel:
+                self.log.info("Worker queue sentinel received.")
+                component_return = list(component_return)
+                component_return.pop()
+                component_return.append(self.purge_queue(job_id=job_id))
+                component_return = tuple(component_return)
+
+            self.q_return.put(
+                component_return
+                + (
+                    job,
+                    command,
+                    time.time() - _starttime,
+                    component.block_on_tasks,
                 )
+            )
 
             if locked:
                 lock.release()
@@ -599,6 +662,8 @@ class Client(interface.Interface):
                 execution_time,
                 block_on_tasks,
             ) = self.q_return.get_nowait()
+        except ValueError as e:
+            self.log.critical("Return object value error [ %s ]", str(e))
         except Exception:
             pass
         else:

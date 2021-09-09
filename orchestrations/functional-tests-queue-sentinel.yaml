@@ -1,0 +1,487 @@
+# This orchestration will run a functional test, exercising much of the functionality Directord offers.
+#
+---
+
+- async: true
+  jobs:
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+- async: true
+  jobs:
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10
+
+  # Simulate long running tasks
+  - RUN: --skip-cache sleep 10

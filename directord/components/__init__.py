@@ -33,6 +33,7 @@ class ComponentBase:
     driver = None
     verb = None
     block_on_tasks = None
+    queue_sentinel = False
 
     def __init__(self, desc=None):
         """Initialize the component base class.
@@ -189,7 +190,10 @@ class ComponentBase:
         :returns: List
         """
 
-        return [i for g in execute for i in g.split()]
+        if execute:
+            return [i for g in execute if g for i in g.split()]
+        else:
+            return list()
 
     def exec_parser(self, parser, exec_array, arg_vars=None):
         """Run the parser and return parsed arguments.
