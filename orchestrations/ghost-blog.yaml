@@ -28,7 +28,7 @@
       firewall-cmd --reload;
       fi
 
-  - RUN: systemctl restart nginx.service
+  - SERVICE: --enable --restarted nginx.service
 
   # Ghost needs sudo privileges, this will allow that to happen via the ghost-application group
   - RUN: >-

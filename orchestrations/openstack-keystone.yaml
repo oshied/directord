@@ -45,7 +45,7 @@
   - RUN: setsebool -P httpd_use_openstack 1
   - RUN: setsebool -P httpd_can_network_connect 1
   - RUN: systemctl enable httpd.service
-  - RUN: --skip-cache systemctl restart httpd.service
+  - SERVICE: --skip-cache --enable --restarted httpd.service
   - RUN: >-
       --run-once
       keystone-manage bootstrap

@@ -9,4 +9,4 @@
   - ADD: /etc/directord/private_keys/client.key_secret /etc/directord/private_keys/client.key_secret
   - ADD: /etc/directord/public_keys/client.key /etc/directord/public_keys/client.key
   - ADD: /etc/directord/public_keys/server.key /etc/directord/public_keys/server.key
-  - RUN: --no-block sleep 5; systemctl restart directord-client
+  - SERVICE: --enable --restarted directord-client

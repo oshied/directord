@@ -41,7 +41,4 @@
   - ARG: app_exec "/var/lib/curator/nzbget/nzbget -s -o outputmode=log"
   - ADD: --blueprint files/generic-systemd.service.j2 /etc/systemd/system/nzbget.service
 
-  - RUN: systemctl daemon-reload
-  - RUN: systemctl restart sonarr.service
-  - RUN: systemctl restart radarr.service
-  - RUN: systemctl restart nzbget.service
+  - SERVICE: --daemon-reload --enable --restarted sonarr.service radarr.service nzbget.service

@@ -44,6 +44,11 @@ class Component(components.ComponentBase):
         state_group.add_argument(
             "--disable", help="Ensure service is disabled", action="store_true"
         )
+        running_group.add_argument(
+            "--daemon-reload",
+            action="store_true",
+            help="Reload the systemd daemon",
+        )
         self.parser.add_argument(
             "services",
             nargs="+",
@@ -76,6 +81,7 @@ class Component(components.ComponentBase):
             data["running"] = "start"
 
         data["services"] = self.known_args.services
+        data["daemon_reload"] = self.known_args.daemon_reload
 
         return data
 
@@ -101,6 +107,23 @@ class Component(components.ComponentBase):
         outcome = False
         if not services:
             return None, None, False, None
+
+        if job.get("daemon_reload") is True:
+            stdout, stderr, outcome = self.run_command(
+                command="systemctl daemon-reload", env=cache.get("envs")
+            )
+            job_stdout.append(stdout)
+            job_stderr.append(stderr)
+
+            # fail if enablement fails
+            if not outcome:
+                return (
+                    b"".join(job_stdout),
+                    b"".join(job_stderr),
+                    outcome,
+                    "Failed to reload the systemd daemon",
+                )
+
         if state:
             cmd = "systemctl {} {}".format(state, " ".join(services))
             stdout, stderr, outcome = self.run_command(
@@ -115,7 +138,7 @@ class Component(components.ComponentBase):
                     b"".join(job_stdout),
                     b"".join(job_stderr),
                     outcome,
-                    None,
+                    "Failed to set the systemd state",
                 )
 
         cmd = "systemctl {} {}".format(running, " ".join(services))
