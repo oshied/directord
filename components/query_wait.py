@@ -88,9 +88,16 @@ class Component(components.ComponentBase):
         missing_identity = set()
         while (time.time() - start_time) < job["query_timeout"]:
             args = cache.get("args")
-            if "identity" in job and job["identity"]:
+            if not args:
+                continue
+
+            query_args = args.get("query", dict())
+            if not query_args:
+                continue
+
+            elif "identity" in job and job["identity"]:
                 for identity in job["identity"]:
-                    items = args.get("query", dict()).get(identity)
+                    items = query_args.get(identity)
                     if isinstance(items, dict):
                         if job["item"] not in items.keys():
                             missing_identity.add(identity)
@@ -108,7 +115,7 @@ class Component(components.ComponentBase):
                         ),
                     )
             else:
-                for value in args.get("query", dict()).values():
+                for value in query_args.values():
                     if job["item"] in value:
                         return (
                             "Item found",
