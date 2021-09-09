@@ -591,7 +591,7 @@ class Client(interface.Interface):
             if not isinstance(stderr, bytes):
                 stderr = stderr.encode()
             conn.stderr = stderr
-            self.log.error(stderr)
+            self.log.warning(stderr)
 
         if outcome is False:
             state = conn.job_state = self.driver.job_failed
