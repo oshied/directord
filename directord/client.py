@@ -425,7 +425,7 @@ class Client(interface.Interface):
             setattr(component, "driver", self.driver)
 
             locked = False
-            if component.requires_lock:
+            if component.requires_lock or job.get("force_lock", False) is True:
                 lock.acquire()
                 locked = True
 
@@ -682,7 +682,8 @@ class Client(interface.Interface):
                 if not locker:
                     parent_locks_tracker.remove(item)
                     self.log.debug(
-                        "Lock item:%s removed as it is no longer active.", item
+                        "Lock item:%s removed as it is no longer active.",
+                        item,
                     )
                 else:
                     locked = locker.acquire(block=False)

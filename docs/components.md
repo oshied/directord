@@ -5,6 +5,21 @@
 
 Components power Directord and provide well documented interfaces.
 
+### Basic Component Options
+
+All component inherit the following basic options.
+
+
+* `--exec-help`        Show this execution help message.
+
+* `--skip-cache`       For a task to skip the on client cache.
+
+* `--run-once`         Force a given task to run once.
+
+* `--timeout` `STRING` Set the action timeout. Default 600.
+
+* `--force-lock`       Force a given task to run with a lock.
+
 ### Built-in Components
 
 The following section covers all of the built-in components Directord ships with.
@@ -319,7 +334,10 @@ orchestrations.
   [here](https://github.com/cloudnull/directord/blob/main/components/echo.py).
 
 
-###### Help Information From User Defined Component
+###### Help Information From Components
+
+All components have access to `--exec-help` which will provide information on
+specific options a component has.
 
 ``` shell
 $ directord exec --verb ECHO "--exec-help true"
@@ -335,6 +353,7 @@ optional arguments:
   --skip-cache       For a task to skip the on client cache.
   --run-once         Force a given task to run once.
   --timeout TIMEOUT  Set the action timeout. Default 600.
+  --force-lock       Force a given task to run with a lock.
 ```
 
 ###### Executing a User Defined Component
