@@ -14,7 +14,7 @@
 
 import unittest
 
-from unittest.mock import call
+from unittest.mock import ANY, call
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -28,6 +28,7 @@ from directord.components import builtin_dnf
 from directord.components import builtin_service
 from directord.components import builtin_run
 from directord.components import builtin_workdir
+from directord.components import builtin_queuesentinel
 
 
 class TestComponents(unittest.TestCase):
@@ -49,12 +50,14 @@ class TestComponents(unittest.TestCase):
         self._transfer = builtin_copy.Component()
         self._run = builtin_run.Component()
         self._workdir = builtin_workdir.Component()
+        self._queuesentinal = builtin_queuesentinel.Component()
         for item in [
             self._dnf,
             self._service,
             self._transfer,
             self._run,
             self._workdir,
+            self._queuesentinal,
         ]:
             item.driver = drivers.BaseDriver(args=self.args)
 
@@ -910,3 +913,27 @@ class TestComponents(unittest.TestCase):
             blueprinted_content, "Can't compile non template nodes"
         )
         mock_log_debug.assert_called()
+
+    def test__job_executor_queuesentinel(self):
+        mock_conn = MagicMock()
+        with patch.object(
+            self.client, "_thread_spawn", autospec=True
+        ) as mock_thread_spawn:
+            self.client._job_executor(
+                conn=mock_conn,
+                info=None,
+                job={"parent_async_bypass": True},
+                job_id="XXXXXX",
+                cached=False,
+                command=b"QUEUESENTINEL",
+            )
+        mock_thread_spawn.assert_called_with(
+            component_kwargs={
+                "cache": None,
+                "job": {"parent_async_bypass": True},
+            },
+            command=b"QUEUESENTINEL",
+            info=None,
+            cached=False,
+            lock=ANY,
+        )

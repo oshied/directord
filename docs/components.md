@@ -162,6 +162,11 @@ and intelligently parse/blueprint data based on node memberships.
 > The `QUERY` will spawn a new async `ARG` task which will store the returned
   values across the orchestration targets.
 
+##### `QUEUESENTINAL`
+
+Evicts all items from all worker queues. This component is useful to halt all further
+execution on a given target.
+
 ### Contributed Components
 
 The following section covers all of the contributed components Directord ships with.
