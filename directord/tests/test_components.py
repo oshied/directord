@@ -75,6 +75,7 @@ class TestComponents(unittest.TestCase):
                 "skip_cache": False,
                 "run_once": False,
                 "timeout": 600,
+                "force_lock": False,
                 "snake_case": "test",
                 "opt0": "*.json",
                 "opt1": None,

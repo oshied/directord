@@ -243,6 +243,11 @@ class ComponentBase:
             type=int,
             help="Set the action timeout. Default %(default)s.",
         )
+        self.parser.add_argument(
+            "--force-lock",
+            action="store_true",
+            help="Force a given task to run with a lock.",
+        )
 
     @staticmethod
     def set_cache(
