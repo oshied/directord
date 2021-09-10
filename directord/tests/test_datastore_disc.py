@@ -15,26 +15,24 @@
 import unittest
 from unittest.mock import patch
 
-import redis
-
-from directord.datastores import redis as datastore_redis
+from directord.datastores import disc as datastore_disc
 
 
-class TestDatastoreRedis(unittest.TestCase):
+class TestDatastoreDisc(unittest.TestCase):
     def setUp(self):
         self.log_patched = patch("directord.logger.getLogger")
         self.log = self.log_patched.start()
-        self.redis_patched = patch.object(
-            redis.Redis, "from_url", autospec=True
+        self.diskcache_patched = patch(
+            "diskcache.Cache", autospec=True
         )
-        self.redis_patched.start()
-        self.datastore = datastore_redis.BaseDocument(
-            url="redis://test.localdomain"
+        self.diskcache_patched.start()
+        self.datastore = datastore_disc.BaseDocument(
+            url="file:///test/things"
         )
 
     def tearDown(self):
         self.log_patched.stop()
-        self.redis_patched.stop()
+        self.diskcache_patched.stop()
 
     def test___getitem__string(self):
         self.datastore.__getitem__(key="test")

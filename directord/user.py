@@ -143,6 +143,15 @@ class Manage(User):
                 continue
             else:
                 data_return = data.get(job_id, dict())
+                if not data_return:
+                    miss += 1
+                    if miss > getattr(self.args, "timeout", 600):
+                        return None, "Job in an unknown state: {}".format(
+                            job_id
+                        )
+                    else:
+                        time.sleep(1)
+                    continue
                 job_state = data_return.get("PROCESSING", "unknown")
                 job_state = job_state.encode()
                 if job_state == self.driver.job_processing:

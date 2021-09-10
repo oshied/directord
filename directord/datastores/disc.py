@@ -12,7 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import json
 import time
 
 import diskcache
@@ -47,7 +46,7 @@ class BaseDocument:
 
         return self.datastore.get(key)
 
-    def __setitem__(self, key, value, expire=None):
+    def __setitem__(self, key, value):
         """Set an item in the datastore.
 
         objects are serialized JSON.
@@ -57,6 +56,22 @@ class BaseDocument:
         :param value: Object to set.
         :type value: Object
         """
+
+        try:
+            key = key.decode()
+        except AttributeError:
+            pass
+
+        if isinstance(value, dict):
+            try:
+                expire = int(value.get("time") - time.time())
+            except TypeError:
+                expire = None
+            else:
+                if expire < 1:
+                    expire = 1
+        else:
+            expire = None
 
         self.datastore.set(key, value, expire=expire)
 
@@ -72,7 +87,7 @@ class BaseDocument:
     def items(self):
         """Yield a tuple for key and value."""
 
-        for item in self.datastore.iterkeys():
+        for item in list(self.datastore):
             yield item, self.__getitem__(item)
 
     def keys(self):
@@ -81,7 +96,7 @@ class BaseDocument:
         :returns: List
         """
 
-        return self.datastore.iterkeys()
+        return [i.encode() for i in self.datastore]
 
     def empty(self):
         """Empty all items from the datastore.
@@ -105,14 +120,8 @@ class BaseDocument:
     def prune(self):
         """Prune items that have a time based expiry."""
 
-        for (key, value) in list(self.items()):
-            try:
-                if time.time() >= value["time"]:
-                    self.pop(key)
-            except (KeyError, TypeError):
-                pass
-
-        return len(list(self.keys()))
+        self.datastore.expire()
+        return len(self.keys())
 
     def get(self, key):
         """Return the value of a given key.

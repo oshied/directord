@@ -56,8 +56,13 @@ class Server(interface.Interface):
                 disc = directord.plugin_import(plugin=".datastores.disc")
                 self.log.debug("Disc base document store initialized")
                 path = os.path.abspath(os.path.expanduser(url.path))
-                self.workers = disc.BaseDocument(url=os.path.join(path, "workers"))
-                self.return_jobs = disc.BaseDocument(url=os.path.join(path, "jobs"))
+                self.workers = disc.BaseDocument(
+                    url=os.path.join(path, "workers")
+                )
+                self.workers.empty()
+                self.return_jobs = disc.BaseDocument(
+                    url=os.path.join(path, "jobs")
+                )
             if url.scheme in ["redis", "rediss"]:
                 self.log.info("Connecting to redis datastore")
                 try:
