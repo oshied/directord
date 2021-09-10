@@ -446,7 +446,7 @@ class Server(interface.Interface):
             else:
                 self.return_jobs[job_id] = job_info
 
-        return 8, time.time()
+        return 1, time.time()
 
     def run_interactions(self, sentinel=False):
         """Execute the interactions loop.
@@ -466,7 +466,7 @@ class Server(interface.Interface):
         self.bind_job = self.driver.job_bind()
         self.bind_transfer = self.driver.transfer_bind()
         poller_time = time.time()
-        poller_interval = 8
+        poller_interval = 1
 
         while True:
             current_time = time.time()
@@ -483,7 +483,7 @@ class Server(interface.Interface):
             if self.driver.bind_check(
                 bind=self.bind_transfer, constant=poller_interval
             ):
-                poller_interval, poller_time = 8, time.time()
+                poller_interval, poller_time = 1, time.time()
 
                 (
                     identity,
@@ -521,7 +521,7 @@ class Server(interface.Interface):
             elif self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
-                poller_interval, poller_time = 8, time.time()
+                poller_interval, poller_time = 1, time.time()
                 (
                     identity,
                     msg_id,

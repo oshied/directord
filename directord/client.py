@@ -826,7 +826,7 @@ class Client(interface.Interface):
 
         self.bind_job = self.driver.job_connect()
         poller_time = time.time()
-        poller_interval = 8
+        poller_interval = 1
         cache_check_time = time.time()
 
         # Ensure that the cache path exists before executing.
@@ -854,7 +854,7 @@ class Client(interface.Interface):
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
-                poller_interval, poller_time = 8, time.time()
+                poller_interval, poller_time = 1, time.time()
                 (
                     _,
                     _,
