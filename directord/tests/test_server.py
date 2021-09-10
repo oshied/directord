@@ -465,7 +465,7 @@ class TestServer(tests.TestDriverBase):
         self.server.job_queue = mock_queue
         self.server.workers = {b"test-node1": 12345, b"test-node2": 12345}
         return_int, _ = self.server.run_job()
-        self.assertEqual(return_int, 8)
+        self.assertEqual(return_int, 1)
         mock_log_debug.assert_called()
         self.mock_driver.socket_send.assert_called()
 
