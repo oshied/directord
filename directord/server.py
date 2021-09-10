@@ -44,7 +44,7 @@ class Server(interface.Interface):
         self.job_queue = self.get_queue()
         self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
-        if not datastore:
+        if not datastore or datastore == "memory":
             self.log.info("Connecting to internal datastore")
             directord.plugin_import(plugin=".datastores.internal")
             manager = multiprocessing.Manager()
@@ -52,6 +52,17 @@ class Server(interface.Interface):
             self.return_jobs = manager.document()
         else:
             url = urlparse.urlparse(datastore)
+            if url.scheme in ["file"]:
+                disc = directord.plugin_import(plugin=".datastores.disc")
+                self.log.debug("Disc base document store initialized")
+                path = os.path.abspath(os.path.expanduser(url.path))
+                self.workers = disc.BaseDocument(
+                    url=os.path.join(path, "workers")
+                )
+                self.workers.empty()
+                self.return_jobs = disc.BaseDocument(
+                    url=os.path.join(path, "jobs")
+                )
             if url.scheme in ["redis", "rediss"]:
                 self.log.info("Connecting to redis datastore")
                 try:

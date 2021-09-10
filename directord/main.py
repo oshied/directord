@@ -62,12 +62,16 @@ def _args(exec_args=None):
             " connection string is RFC-1738 compatible >"
             " driver://username:password@host:port/database. If undefined the"
             " datastore uses an internal manager object. Driver"
-            " supports [None, 'redis']. When using Redis, two keyspaces will"
-            " be used and are incremented by 1 using the database value (which"
-            " has a default of 0)."
+            " supports ['redis', 'file']. When using Redis, two"
+            " keyspaces will be used and are incremented by 1 using the"
+            " database value (which has a default of 0). If the datastore"
+            " option is set to 'memory', the server will spawn a manager"
+            " thread to facilitate the document store."
         ),
         metavar="STRING",
-        default=os.getenv("DIRECTORD_DATASTORE", None),
+        default=os.getenv(
+            "DIRECTORD_DATASTORE", "file:///var/cache/directord"
+        ),
         type=str,
     )
     parser.add_argument(

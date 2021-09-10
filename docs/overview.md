@@ -40,9 +40,9 @@ Directord has two modes of operation for data-storage and persistence.
   process is running.
 
 * Persistent mode, datastore using external datastore; supported datastores
-  are: Redis. The datastore option available in both config, or on the CLI and
-  uses a standard RFC-1738 compatible string. This allows operators to connect to
-  different storage backends to suit their environment needs.
+  are: Redis and File. The datastore option available in both config, or on the
+  CLI and uses a standard RFC-1738 compatible string. This allows operators to
+  connect to different storage backends to suit their environment needs.
 
 > Storing information persistently introduces a dependency on an external system
   and creates latency. While the latency should be minimal, and have nearly no
@@ -50,6 +50,12 @@ Directord has two modes of operation for data-storage and persistence.
   constructing the cluster topology. Inversely, using an external datastore will
   lower the memory utilization of Directord and can have a profound effect on
   deployment node requirements; this is especially true at hyper-scale.
+
+> The `datastore` option has three potential drivers, **memory**, **file**,
+  or **redis**.
+
+> If the datastore option is set to **memory**, the server will spawn a manager
+  thread to facilitate the document store.
 
 #### Profiling
 
