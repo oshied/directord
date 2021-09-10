@@ -44,7 +44,7 @@ class Server(interface.Interface):
         self.job_queue = self.get_queue()
         self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
-        if not datastore:
+        if not datastore or datastore == "memory":
             self.log.info("Connecting to internal datastore")
             directord.plugin_import(plugin=".datastores.internal")
             manager = multiprocessing.Manager()

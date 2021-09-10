@@ -22,13 +22,9 @@ class TestDatastoreDisc(unittest.TestCase):
     def setUp(self):
         self.log_patched = patch("directord.logger.getLogger")
         self.log = self.log_patched.start()
-        self.diskcache_patched = patch(
-            "diskcache.Cache", autospec=True
-        )
+        self.diskcache_patched = patch("diskcache.Cache", autospec=True)
         self.diskcache_patched.start()
-        self.datastore = datastore_disc.BaseDocument(
-            url="file:///test/things"
-        )
+        self.datastore = datastore_disc.BaseDocument(url="file:///test/things")
 
     def tearDown(self):
         self.log_patched.stop()
