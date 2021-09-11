@@ -140,7 +140,6 @@ class Processor:
     """
 
     thread = multiprocessing.Process
-    processes = list()
 
     def __init__(self):
         """Initialize Processor class creating all required manager objects.
@@ -180,10 +179,9 @@ class Processor:
 
         for t, daemon in threads:
             t.daemon = daemon
-            self.processes.append(t)
             t.start()
 
-        for t in self.processes:
+        for t, _ in threads:
             t.join()
 
     def read_in_chunks(self, file_object, chunk_size=10240):

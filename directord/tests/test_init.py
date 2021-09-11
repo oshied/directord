@@ -155,7 +155,6 @@ class TestProcessor(unittest.TestCase):
         thread1 = tests.FakeThread()
         thread2 = tests.FakeThread()
         self.processor.run_threads(threads=[(thread1, False), (thread2, True)])
-        self.assertEqual(len(self.processor.processes), 2)
         self.assertFalse(thread1.daemon)
         self.assertTrue(thread2.daemon)
 
