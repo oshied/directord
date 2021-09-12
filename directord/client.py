@@ -42,8 +42,7 @@ class Client(interface.Interface):
 
         self.heartbeat_failure_interval = 2
         self.bind_heatbeat = None
-        self.q_async = self.get_queue()
-        self.q_general = self.get_queue()
+        self.q_processes = self.get_queue()
         self.q_return = self.get_queue()
         self.base_component = components.ComponentBase()
         self.cache = dict()
@@ -155,206 +154,140 @@ class Client(interface.Interface):
             if sentinel:
                 break
 
-    def _job_executor(
-        self,
-        conn,
-        info,
-        job,
-        job_id,
-        cached,
-        command,
-        lock=None,
-    ):
-        """Queue a given job.
+    def q_processor(self, queue, lock):
+        """Process jobs from the known queue.
 
-        :param conn: Connection object used to store information used in a
-                     return message.
-        :type conn: Object
-        :param info: Information that was sent over with the original message.
-        :type info: Bytes
-        :param job: Information containing the original task specification.
-        :type job: Dictionary
-        :param job_id: Job UUID
-        :type job_id: String
-        :param cached: Boolean option to determin if a command is to be
-                       treated as cached.
-        :type cached: Boolean
-        :param command: Byte encoded command used to run a given job.
-        :type command: Bytes
-        :param parent_lock: Locking object, used if defined.
-        :type parent_lock: Object
-        """
-
-        if not lock:
-            lock = self.get_lock()
-
-        component_kwargs = dict(cache=None, job=job)
-        if job.get("parent_async_bypass") is True:
-            self.log.debug(
-                "Running component:%s, job_id:[ %s ] in bypass",
-                job_id,
-                command.decode(),
-            )
-            self._thread_spawn(
-                component_kwargs=component_kwargs,
-                command=command,
-                info=info,
-                cached=cached,
-                lock=lock,
-            )
-            conn.info = b"bypass task executing"
-        elif job.get("parent_async") is True:
-            self.log.debug(
-                "Running component:%s, job_id:[ %s ] in async queue",
-                job_id,
-                command.decode(),
-            )
-            self.q_async.put((component_kwargs, command, info, cached))
-            conn.info = b"async task queued"
-        else:
-            self.log.debug(
-                "Running component:%s, job_id:[ %s ] in general queue",
-                job_id,
-                command.decode(),
-            )
-            self.q_general.put((component_kwargs, command, info, cached))
-            conn.info = b"general task queued"
-
-    def _thread_spawn(
-        self,
-        component_kwargs,
-        command,
-        info,
-        cached,
-        lock=None,
-        parent_lock=None,
-    ):
-        """Return a thread object.
-
-        Executes a component job and returns the thread object.
-
-        :param component_kwargs: Named arguments used with the componenet
-                                 client.
-        :type component_kwargs: Dictionary
-        :param command: Byte encoded command used to run a given job.
-        :type command: Bytes
-        :param info: Information that was sent over with the original message.
-        :type info: Bytes
-        :param cached: Boolean option to determin if a command is to be
-                       treated as cached.
-        :type cached: Boolean
+        :param queue: Multiprocessing queue object.
+        :type queue: Object
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
-        :param parent_lock: Locking object, used if defined.
-        :type parent_lock: Object
-        :returns: Object
         """
 
-        if not lock:
-            lock = self.get_lock()
+        while True:
+            try:
+                (
+                    component_kwargs,
+                    command,
+                    info,
+                    cached,
+                ) = queue.get(timeout=0.5)
+            except ValueError as e:
+                self.log.critical("Queue object value error [ %s ]", str(e))
+                break
+            except Exception:
+                break
+            else:
+                self.log.debug(
+                    "Job received [ %s ]", component_kwargs["job"]["job_id"]
+                )
+                self.job_q_component_run(
+                    component_kwargs, command, info, cached, lock
+                )
 
-        thread = self.thread(
-            target=self.job_q_component_run,
-            args=(
-                component_kwargs,
-                command,
-                info,
-                cached,
-                lock,
-                parent_lock,
-            ),
-        )
-        thread.daemon = True
-        thread.start()
-        return thread
-
-    def job_q_processor(self, queue, processes=1, lock=None):
+    def job_q_processor(self, processes=5, lock=None):
         """Process a given work queue.
 
         The defined `queue` is processed. The `processes` arg allows this
         method to spawn N processes.
 
-        :param queue: Multiprocessing queue object.
-        :type queue: Object
+
         :param processes: Number of possible processes to spawn
         :type processes: Integer
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
         """
 
+        def _process_spawn(parent, name=None, bypass=False):
+            self.log.debug("Active worker threads: %s", len(threads))
+            if (len(threads) <= processes) or bypass:
+                self.log.debug(
+                    "Executing new thread for parent queue [ %s ]",
+                    _q_name,
+                )
+                thread = parent["t"] = self.thread(
+                    target=self.q_processor,
+                    kwargs=dict(
+                        queue=parent["q"],
+                        lock=lock,
+                    ),
+                    name=name,
+                    daemon=True,
+                )
+                thread.start()
+                threads.add(thread)
+
         if not lock:
             lock = self.get_lock()
 
-        interval = 0.25
-        parent_locks_tracker = set()
+        parent_tracker = dict()
+        threads = set()
         while True:
-            threads = list()
-            for _ in range(processes):
-                try:
-                    (
-                        component_kwargs,
-                        command,
-                        info,
-                        cached,
-                    ) = queue.get_nowait()
-                except ValueError as e:
-                    self.log.critical(
-                        "Queue object value error [ %s ]", str(e)
-                    )
-                    interval = 1
-                except Exception:
-                    interval = 1
+            try:
+                (
+                    component_kwargs,
+                    command,
+                    info,
+                    cached,
+                ) = self.q_processes.get_nowait()
+            except ValueError as e:
+                self.log.critical("Queue object value error [ %s ]", str(e))
+                continue
+            except Exception:
+                for key, value in list(parent_tracker.items()):
+                    if value["q"].empty():
+                        if value["t"] and value["t"].is_alive():
+                            continue
+                        elif value["t"] and not value["t"].is_alive():
+                            parent_tracker.pop(key)
+                            value["q"].close()
+                            value["q"].join_thread()
+                            if value["t"] not in threads:
+                                threads.add(value["t"])
+                            self.log.info("Parent queue [ %s ] pruned.", key)
+                    elif value["t"] and value["t"].is_alive():
+                        continue
+                    else:
+                        _process_spawn(parent=parent_tracker[key], name=key)
                 else:
-                    interval = 0.25
-                    parent_lock = None
-                    parent_sha3_224 = component_kwargs["job"].get(
-                        "parent_sha3_224"
-                    )
-                    if parent_sha3_224:
-                        if not hasattr(self, parent_sha3_224):
-                            parent_lock = self.get_lock()
-                            setattr(self, parent_sha3_224, parent_lock)
+                    for t in list(threads):
+                        t.join(timeout=0.1)
+                        if not t.is_alive():
+                            self.log.info("Process [ %s ] joined", t.name)
+                            threads.remove(t)
+                    else:
+                        if parent_tracker:
                             self.log.debug(
-                                "Set dynamic class lock: %s", parent_sha3_224
+                                "Parent tracker stats [ %s ]", parent_tracker
                             )
-                        else:
-                            parent_lock = getattr(self, parent_sha3_224, None)
-                            self.log.debug(
-                                "Got dynamic class lock: %s", parent_sha3_224
-                            )
-
-                    if parent_lock:
-                        parent_lock.acquire()
-                        setattr(parent_lock, "used", time.time())
-                        parent_locks_tracker.add(parent_sha3_224)
-                        self.log.debug(
-                            "Parent lock acquired for [ %s ] on [ %s ]",
-                            parent_sha3_224,
-                            component_kwargs["job"]["job_id"],
-                        )
-
-                    threads.append(
-                        self._thread_spawn(
-                            component_kwargs=component_kwargs,
-                            command=command,
-                            info=info,
-                            cached=cached,
-                            lock=lock,
-                            parent_lock=parent_lock,
-                        )
+                        time.sleep(0.5)
+            else:
+                job = component_kwargs["job"]
+                self.log.debug("Received job_id [ %s ]", job["job_id"])
+                if job.get("parent_async_bypass") is True:
+                    _q_name = "bypass_{}".format(
+                        job.get("parent_sha3_224", "general")
                     )
-            else:
-                for t in threads:
-                    t.join()
+                elif job.get("parent_async") is True:
+                    _q_name = job.get("parent_sha3_224", "general")
+                else:
+                    _q_name = "general"
 
-            if not threads:
-                time.sleep(interval)
-            else:
-                self.log.debug("Worker threads: %s", len(threads))
+                if _q_name in parent_tracker:
+                    _parent = parent_tracker[_q_name]
+                else:
+                    _parent = parent_tracker[_q_name] = dict(
+                        t=None, q=self.get_queue()
+                    )
+                    self.log.info("Parent queue [ %s ] created.", _q_name)
 
-            self.prune_locks(
-                queue=queue, parent_locks_tracker=parent_locks_tracker
-            )
+                _parent["q"].put((component_kwargs, command, info, cached))
+
+                if _parent["t"] and _parent["t"].is_alive():
+                    continue
+                elif _q_name == "bypass":
+                    _process_spawn(parent=_parent, name=_q_name, bypass=True)
+                else:
+                    _process_spawn(parent=_parent, name=_q_name)
 
     def purge_queue(self, job_id):
         """Purge all jobs from the works queues.
@@ -365,7 +298,10 @@ class Client(interface.Interface):
         """
 
         total_count = 0
-        for q in [self.q_async, self.q_general]:
+        for item in [i for i in dir(self) if i.startswith("_queue_")]:
+            q = getattr(item, None)
+            if not q:
+                continue
             count = 0
             while not q.empty():
                 try:
@@ -407,7 +343,7 @@ class Client(interface.Interface):
             return clear_info
 
     def job_q_component_run(
-        self, component_kwargs, command, info, cached, lock, parent_lock
+        self, component_kwargs, command, info, cached, lock
     ):
         """Execute a component operation.
 
@@ -426,8 +362,6 @@ class Client(interface.Interface):
         :type cached: Boolean
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
-        :param parent_lock: Locking object, used if defined.
-        :type parent_lock: Object
         """
 
         job = component_kwargs["job"]
@@ -436,7 +370,6 @@ class Client(interface.Interface):
             component=command.decode().lower(),
             job_id=job_id,
         )
-        parent_sha3_224 = job.get("parent_sha3_224")
 
         if not success:
             self.log.warning("Component lookup failure [ %s ]", component)
@@ -546,14 +479,6 @@ class Client(interface.Interface):
             self.log.debug(
                 "Component execution complete for job [ %s ].",
                 job["job_id"],
-            )
-
-        if parent_lock:
-            parent_lock.release()
-            self.log.debug(
-                "Parent lock released for [ %s ] on [ %s ]",
-                parent_sha3_224,
-                job_id,
             )
 
     def _set_job_status(
@@ -720,54 +645,6 @@ class Client(interface.Interface):
         else:
             return True
 
-    def prune_locks(self, queue, parent_locks_tracker):
-        """Prune inactive parent lock items.
-
-        When the async queue is empty and parent lock has not been used for
-        more than 60 seconds, and is not currently locked, this method will
-        prune the locked objects from the parent_locks_tracker.
-
-        > If a parent lock is older that 2400 seconds, and the queue async
-          queue is empty, the parent lock will be considered stale and pruned.
-
-        :param queue: Queue object
-        :type queue: Object
-        :param parent_locks_tracker: Set of lock object references
-        :type parent_locks_tracker: Set
-        """
-
-        if not queue.empty():
-            self.log.debug(
-                "Queue not empty, nothing to prune while work is being"
-                " processes."
-            )
-        else:
-            for item in list(parent_locks_tracker):
-                locker = getattr(self, item, None)
-                if not locker:
-                    parent_locks_tracker.remove(item)
-                    self.log.debug(
-                        "Lock item:%s removed as it is no longer active.",
-                        item,
-                    )
-                else:
-                    locked = locker.acquire(block=False)
-                    if locked and time.time() > locker.used + 60:
-                        delattr(self, item)
-                        parent_locks_tracker.remove(item)
-                        self.log.debug("Pruned parent lock [ %s ]", item)
-                    elif time.time() > locker.used + 2400:
-                        delattr(self, item)
-                        parent_locks_tracker.remove(item)
-                        self.log.warning(
-                            "Stale parent lock found [ %s ], pruned", item
-                        )
-                    try:
-                        if locked:
-                            locker.release()
-                    except ValueError:
-                        pass
-
     def prune_cache(self, cache_check_time):
         """Prune the local cache to ensure a tidy environment.
 
@@ -803,7 +680,7 @@ class Client(interface.Interface):
 
         return cache_check_time
 
-    def run_job(self, lock=None, sentinel=False):
+    def run_job(self, sentinel=False):
         """Job entry point.
 
         This creates a cached access object, connects to the socket and begins
@@ -815,33 +692,18 @@ class Client(interface.Interface):
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 128.
 
-        :param lock: Locking object, used if a component requires it.
-        :type lock: Object
         :param sentinel: Breaks the loop
         :type sentinel: Boolean
         """
-
-        if not lock:
-            lock = self.get_lock()
 
         self.bind_job = self.driver.job_connect()
         poller_time = time.time()
         poller_interval = 1
         cache_check_time = time.time()
 
-        # Ensure that the cache path exists before executing.
-        os.makedirs(self.args.cache_path, exist_ok=True)
         while True:
             self.job_q_results()
-            cache_check_time = self.prune_cache(
-                cache_check_time=cache_check_time
-            )
-
-            if (
-                self.q_async.empty()
-                and self.q_general.empty()
-                and self.q_return.empty()
-            ):
+            if self.q_return.empty():
                 if time.time() > poller_time + 64:
                     if poller_interval != 2048:
                         self.log.info("Directord client entering idle state.")
@@ -849,7 +711,7 @@ class Client(interface.Interface):
                 elif time.time() > poller_time + 32:
                     if poller_interval != 1024:
                         self.log.info("Directord client ramping down.")
-                poller_interval = 1024
+                    poller_interval = 1024
 
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
@@ -912,23 +774,32 @@ class Client(interface.Interface):
                                 None,
                             )
                         )
-                        if sentinel:
-                            break
                     else:
                         c.job_state = self.driver.job_processing
-                        self._job_executor(
-                            conn=c,
-                            info=info,
-                            job=job,
-                            job_id=job_id,
-                            cached=(
-                                self.cache.get(job_sha3_224)
-                                == self.driver.job_end.decode()
-                                and not job_skip_cache
-                            ),
-                            command=command,
-                            lock=lock,
+                        component_kwargs = dict(cache=None, job=job)
+                        self.log.debug(
+                            "Queuing component [ %s ], job_id [ %s ]",
+                            command.decode(),
+                            job_id,
                         )
+                        c.info = b"task queued"
+                        self.q_processes.put(
+                            (
+                                component_kwargs,
+                                command,
+                                info,
+                                (
+                                    self.cache.get(job_sha3_224)
+                                    == self.driver.job_end.decode()
+                                    and not job_skip_cache
+                                ),
+                            )
+                        )
+            else:
+                cache_check_time = self.prune_cache(
+                    cache_check_time=cache_check_time
+                )
+                time.sleep(0.01)
 
             if sentinel:
                 break
@@ -943,22 +814,17 @@ class Client(interface.Interface):
         lock = self.get_lock()
         threads = [
             (self.thread(target=self.run_heartbeat), True),
-            (self.thread(target=self.run_job, kwargs=dict(lock=lock)), False),
+            (self.thread(target=self.run_job), True),
             (
                 self.thread(
                     target=self.job_q_processor,
-                    kwargs=dict(queue=self.q_general, lock=lock),
-                ),
-                False,
-            ),
-            (
-                self.thread(
-                    target=self.job_q_processor,
-                    kwargs=dict(queue=self.q_async, processes=4, lock=lock),
+                    kwargs=dict(lock=lock),
                 ),
                 False,
             ),
         ]
+        # Ensure that the cache path exists before executing.
+        os.makedirs(self.args.cache_path, exist_ok=True)
         with diskcache.Cache(
             self.args.cache_path,
             tag_index=True,

@@ -56,6 +56,8 @@ class Server(interface.Interface):
                 disc = directord.plugin_import(plugin=".datastores.disc")
                 self.log.debug("Disc base document store initialized")
                 path = os.path.abspath(os.path.expanduser(url.path))
+                # Ensure that the cache path exists before executing.
+                os.makedirs(path, exist_ok=True)
                 self.workers = disc.BaseDocument(
                     url=os.path.join(path, "workers")
                 )
@@ -587,9 +589,10 @@ class Server(interface.Interface):
                             command=new_task["verb"].encode(),
                             data=json.dumps(new_task).encode(),
                         )
-
             elif self.workers:
                 poller_interval, poller_time = self.run_job()
+            else:
+                time.sleep(0.01)
 
             if sentinel:
                 break
