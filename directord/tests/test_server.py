@@ -413,7 +413,7 @@ class TestServer(tests.TestDriverBase):
     def test_run_job(self, mock_log_debug, mock_queue):
         mock_queue.return_value = MagicMock()
         self.server.job_queue = mock_queue
-        return_int, _ = self.server.run_job()
+        return_int, _ = self.server.run_job(sentinel=True)
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
@@ -430,7 +430,7 @@ class TestServer(tests.TestDriverBase):
             }
         ]
         self.server.job_queue = mock_queue
-        return_int, _ = self.server.run_job()
+        return_int, _ = self.server.run_job(sentinel=True)
         self.assertEqual(return_int, 512)
         mock_log_debug.assert_called()
 
@@ -446,7 +446,7 @@ class TestServer(tests.TestDriverBase):
             }
         ]
         self.server.job_queue = mock_queue
-        return_int, _ = self.server.run_job()
+        return_int, _ = self.server.run_job(sentinel=True)
         self.assertEqual(return_int, 512)
         mock_log_critical.assert_called()
 
@@ -464,7 +464,7 @@ class TestServer(tests.TestDriverBase):
         ]
         self.server.job_queue = mock_queue
         self.server.workers = {b"test-node1": 12345, b"test-node2": 12345}
-        return_int, _ = self.server.run_job()
+        return_int, _ = self.server.run_job(sentinel=True)
         self.assertEqual(return_int, 1)
         mock_log_debug.assert_called()
         self.mock_driver.socket_send.assert_called()
