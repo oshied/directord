@@ -184,37 +184,42 @@ class Client(interface.Interface):
                     component_kwargs, command, info, cached, lock
                 )
 
-    def job_q_processor(self, processes=5, lock=None):
+    def _process_spawn(
+        self, lock, queue, threads=0, processes=5, name=None, bypass=False
+    ):
+        """Spawn a new thread and return it.
+
+        :param processes: Number of possible processes to spawn
+        :type processes: Integer
+        """
+
+        self.log.debug("Active worker threads: %s", threads)
+        if (threads <= processes) or bypass:
+            self.log.debug(
+                "Executing new thread for parent queue [ %s ]",
+                name,
+            )
+            thread = self.thread(
+                target=self.q_processor,
+                kwargs=dict(
+                    queue=queue,
+                    lock=lock,
+                ),
+                name=name,
+                daemon=True,
+            )
+            thread.start()
+            return thread
+
+    def job_q_processor(self, lock=None):
         """Process a given work queue.
 
         The defined `queue` is processed. The `processes` arg allows this
         method to spawn N processes.
 
-
-        :param processes: Number of possible processes to spawn
-        :type processes: Integer
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
         """
-
-        def _process_spawn(parent, name=None, bypass=False):
-            self.log.debug("Active worker threads: %s", len(threads))
-            if (len(threads) <= processes) or bypass:
-                self.log.debug(
-                    "Executing new thread for parent queue [ %s ]",
-                    _q_name,
-                )
-                thread = parent["t"] = self.thread(
-                    target=self.q_processor,
-                    kwargs=dict(
-                        queue=parent["q"],
-                        lock=lock,
-                    ),
-                    name=name,
-                    daemon=True,
-                )
-                thread.start()
-                threads.add(thread)
 
         if not lock:
             lock = self.get_lock()
@@ -238,16 +243,20 @@ class Client(interface.Interface):
                         if value["t"] and value["t"].is_alive():
                             continue
                         elif value["t"] and not value["t"].is_alive():
-                            parent_tracker.pop(key)
                             value["q"].close()
                             value["q"].join_thread()
-                            if value["t"] not in threads:
-                                threads.add(value["t"])
+                            threads.add(value["t"])
+                            parent_tracker.pop(key)
                             self.log.info("Parent queue [ %s ] pruned.", key)
                     elif value["t"] and value["t"].is_alive():
                         continue
                     else:
-                        _process_spawn(parent=parent_tracker[key], name=key)
+                        parent_tracker[key]["t"] = self._process_spawn(
+                            lock=lock,
+                            queue=value["q"],
+                            threads=len(threads),
+                            name=key,
+                        )
                 else:
                     for t in list(threads):
                         t.join(timeout=0.1)
@@ -257,12 +266,27 @@ class Client(interface.Interface):
                     else:
                         if parent_tracker:
                             self.log.debug(
-                                "Parent tracker stats [ %s ]", parent_tracker
+                                "Parent tracker details [ %s ]", parent_tracker
                             )
-                        time.sleep(0.5)
+                        time.sleep(0.1)
             else:
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
+                # NOTE(cloudnull): If the command is queuesentinel purge all
+                #                  queued items. This is on the ONE component
+                #                  where we intercept and react outside of
+                #                  the component structure.
+                if command.decode().lower() == "queuesentinel":
+                    count = 0
+                    for key, value in list(parent_tracker.items()):
+                        count += self.purge_queue(
+                            queue=value["q"], job_id=job["job_id"]
+                        )
+                        parent_tracker.pop(key)
+                    self.log.info(
+                        "Purged %s items from the work queues", count
+                    )
+
                 if job.get("parent_async_bypass") is True:
                     _q_name = "bypass_{}".format(
                         job.get("parent_sha3_224", "general")
@@ -285,62 +309,62 @@ class Client(interface.Interface):
                 if _parent["t"] and _parent["t"].is_alive():
                     continue
                 elif _q_name == "bypass":
-                    _process_spawn(parent=_parent, name=_q_name, bypass=True)
+                    parent_tracker[_q_name]["t"] = self._process_spawn(
+                        lock=lock,
+                        queue=_parent["q"],
+                        threads=len(threads),
+                        name=_q_name,
+                        bypass=True,
+                    )
                 else:
-                    _process_spawn(parent=_parent, name=_q_name)
+                    parent_tracker[_q_name]["t"] = self._process_spawn(
+                        lock=lock,
+                        queue=_parent["q"],
+                        threads=len(threads),
+                        name=_q_name,
+                    )
 
-    def purge_queue(self, job_id):
-        """Purge all jobs from the works queues.
+    def purge_queue(self, queue, job_id):
+        """Purge all jobs from the queue.
 
+        :param queue: Queue object
+        :type queue: Object
         :param job_id: Job UUID
         :type job_id: String
-        :returns: String
+        :returns: Integer
         """
 
         total_count = 0
-        for item in [i for i in dir(self) if i.startswith("_queue_")]:
-            q = getattr(item, None)
-            if not q:
-                continue
-            count = 0
-            while not q.empty():
-                try:
-                    (
-                        _kwargs,
-                        _command,
-                        _,
-                        _,
-                    ) = q.get_nowait()
-                    count += 1
-                    total_count += 1
-                except ValueError as e:
-                    self.log.critical(
-                        "Queue object value error [ %s ]", str(e)
-                    )
-                    break
-                except Exception:
-                    break
-                else:
-                    self.q_return.put(
-                        (
-                            None,
-                            None,
-                            False,
-                            "Omitted due to sentinel from {}".format(job_id),
-                            _kwargs["job"],
-                            _command,
-                            0,
-                            None,
-                        )
-                    )
+        while not queue.empty():
+            try:
+                (
+                    _kwargs,
+                    _command,
+                    _,
+                    _,
+                ) = queue.get_nowait()
+                total_count += 1
+            except ValueError as e:
+                self.log.critical("Queue object value error [ %s ]", str(e))
+                break
+            except Exception:
+                break
             else:
-                self.log.info("Purged %s items from the queue", count)
-        else:
-            clear_info = "Cleared {} items from the work queues.".format(
-                total_count
-            )
-            self.log.info(clear_info)
-            return clear_info
+                self.q_return.put(
+                    (
+                        None,
+                        None,
+                        False,
+                        "Omitted due to sentinel from {}".format(job_id),
+                        _kwargs["job"],
+                        _command,
+                        0,
+                        None,
+                    )
+                )
+
+        self.log.info("Cleared %s items from the work queue", total_count)
+        return total_count
 
     def job_q_component_run(
         self, component_kwargs, command, info, cached, lock
@@ -428,13 +452,6 @@ class Client(interface.Interface):
                 ] = datetime.datetime.fromtimestamp(time.time()).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
-
-            if component.queue_sentinel:
-                self.log.info("Worker queue sentinel received.")
-                component_return = list(component_return)
-                component_return.pop()
-                component_return.append(self.purge_queue(job_id=job_id))
-                component_return = tuple(component_return)
 
             self.q_return.put(
                 component_return
