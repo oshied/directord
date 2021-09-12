@@ -291,6 +291,14 @@ def get_uuid():
 
 
 def print_tabulated_data(data, headers):
+    """Print data in tabulated form.
+
+    :param data: Organized data
+    :type data: List
+    :param headers: List of headers
+    :type headers: List
+    """
+
     print(
         tabulate.tabulate(
             data,

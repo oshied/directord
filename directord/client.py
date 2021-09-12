@@ -268,7 +268,7 @@ class Client(interface.Interface):
                             self.log.debug(
                                 "Parent tracker details [ %s ]", parent_tracker
                             )
-                        time.sleep(0.01)
+                        time.sleep(0.1)
             else:
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
