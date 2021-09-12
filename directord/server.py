@@ -589,7 +589,7 @@ class Server(interface.Interface):
                             command=new_task["verb"].encode(),
                             data=json.dumps(new_task).encode(),
                         )
-            elif self.workers:
+            if self.workers:
                 poller_interval, poller_time = self.run_job()
             else:
                 time.sleep(0.01)
