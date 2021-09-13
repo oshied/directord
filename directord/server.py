@@ -359,25 +359,19 @@ class Server(interface.Interface):
         """
 
         poller_time = time.time()
-        poller_interval = 8
+        poller_interval = 1
         while True:
-            current_time = time.time()
             try:
                 job_item = self.job_queue.get_nowait()
             except Exception:
                 if sentinel:
                     break
                 else:
-                    if current_time > poller_time + 64:
-                        if poller_interval != 2048:
-                            self.log.info(
-                                "Directord server entering idle state."
-                            )
-                        poller_interval = 2048
-                    elif current_time > poller_time + 32:
-                        if poller_interval != 1024:
-                            self.log.info("Directord server ramping down.")
-                        poller_interval = 1024
+                    poller_interval = utils.return_poller_interval(
+                        poller_time=poller_time,
+                        poller_interval=poller_interval,
+                        log=self.log,
+                    )
                     time.sleep(poller_interval * 0.001)
             else:
                 poller_interval, poller_time = 8, time.time()
@@ -504,18 +498,14 @@ class Server(interface.Interface):
         poller_interval = 1
 
         while True:
-            current_time = time.time()
             if self.job_queue.empty() and self.send_queue.empty():
-                if current_time > poller_time + 64:
-                    if poller_interval != 2048:
-                        self.log.info("Directord server entering idle state.")
-                    poller_interval = 2048
-                elif current_time > poller_time + 32:
-                    if poller_interval != 1024:
-                        self.log.info("Directord server ramping down.")
-                    poller_interval = 1024
+                poller_interval = utils.return_poller_interval(
+                    poller_time=poller_time,
+                    poller_interval=poller_interval,
+                    log=self.log,
+                )
 
-            while self.workers:
+            while self.workers and not self.send_queue.empty():
                 try:
                     send_item = self.send_queue.get_nowait()
                 except Exception:

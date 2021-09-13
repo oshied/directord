@@ -126,19 +126,16 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job(sentinel=True)
 
     @patch("diskcache.Cache", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_cache_check(
         self,
         mock_time,
-        mock_log_info,
         mock_diskcache,
     ):
         mock_time.side_effect = [1, 1, 1, 1, 5000, 1, 1, 1, 1, 1]
         mock_diskcache.return_value = tests.FakeCache()
         with patch.object(self.mock_driver, "bind_check", return_value=False):
             self.client.run_job(sentinel=True)
-        mock_log_info.assert_called()
 
     @patch("diskcache.Cache", autospec=True)
     @patch("logging.Logger.info", autospec=True)

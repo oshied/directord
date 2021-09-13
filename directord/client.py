@@ -735,14 +735,11 @@ class Client(interface.Interface):
         while True:
             self.job_q_results()
             if self.q_return.empty():
-                if time.time() > poller_time + 64:
-                    if poller_interval != 2048:
-                        self.log.info("Directord client entering idle state.")
-                    poller_interval = 2048
-                elif time.time() > poller_time + 32:
-                    if poller_interval != 1024:
-                        self.log.info("Directord client ramping down.")
-                    poller_interval = 1024
+                poller_interval = utils.return_poller_interval(
+                    poller_time=poller_time,
+                    poller_interval=poller_interval,
+                    log=self.log,
+                )
 
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
