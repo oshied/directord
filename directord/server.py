@@ -42,6 +42,7 @@ class Server(interface.Interface):
 
         super(Server, self).__init__(args=args)
         self.job_queue = self.get_queue()
+        self.send_queue = self.get_queue()
         self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
         if not datastore or datastore == "memory":
@@ -270,6 +271,7 @@ class Server(interface.Interface):
                 job_metadata["SUCCESS"] = [identity]
         elif job_status == self.driver.job_failed:
             _set_time()
+            self.log.debug("%s failed %s", identity, job_id)
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
@@ -341,7 +343,7 @@ class Server(interface.Interface):
             },
         )
 
-    def run_job(self):
+    def run_job(self, sentinel=False):
         """Run a job interaction
 
         As the job loop executes it will interrogate the job item as returned
@@ -351,104 +353,129 @@ class Server(interface.Interface):
         receive the message. If a defined target is not found within the
         workers object no job will be executed.
 
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
         :returns: Tuple
         """
 
-        try:
-            job_item = self.job_queue.get_nowait()
-        except Exception:
-            self.log.debug(
-                "Directord server found nothing to do, cooling down"
-                " the poller."
-            )
-            return 512, time.time()
-        else:
-            restrict_sha3_224 = job_item.get("restrict")
-            if restrict_sha3_224:
-                if job_item["job_sha3_224"] not in restrict_sha3_224:
-                    self.log.debug(
-                        "Job restriction %s is unknown.", restrict_sha3_224
+        poller_time = time.time()
+        poller_interval = 1
+        while True:
+            try:
+                job_item = self.job_queue.get_nowait()
+            except Exception:
+                if sentinel:
+                    break
+                else:
+                    poller_interval = utils.return_poller_interval(
+                        poller_time=poller_time,
+                        poller_interval=poller_interval,
+                        log=self.log,
                     )
-                    return 512, time.time()
-
-            job_targets = job_item.pop("targets", list())
-            # NOTE(cloudnull): We run on all targets if query is used.
-            run_query = job_item["verb"] == "QUERY"
-
-            if job_targets and not run_query:
-                targets = list()
-                for job_target in job_targets:
-                    job_target = job_target.encode()
-                    if job_target in self.workers:
-                        targets.append(job_target)
-                    else:
-                        self.log.critical(
-                            "Target %s is in an unknown state.", job_target
-                        )
-                        return 512, time.time()
+                    time.sleep(poller_interval * 0.001)
             else:
-                targets = self.workers.keys()
-
-            if job_item.get("run_once", False) and not run_query:
-                self.log.debug("Run once enabled.")
-                targets = [targets[0]]
-
-            if run_query:
-                job_item["targets"] = [i.decode() for i in targets]
-
-            job_id = job_item.get("job_id", utils.get_uuid())
-            job_info = self.create_return_jobs(
-                task=job_id, job_item=job_item, targets=targets
-            )
-            self.log.debug("Sending job:%s", job_item)
-            for identity in targets:
-                if job_item["verb"] in ["ADD", "COPY"]:
-                    for file_path in job_item["from"]:
-                        job_item["file_sha3_224"] = utils.file_sha3_224(
-                            file_path=file_path
-                        )
-                        if job_item["to"].endswith(os.sep):
-                            job_item["file_to"] = os.path.join(
-                                job_item["to"],
-                                os.path.basename(file_path),
-                            )
-                        else:
-                            job_item["file_to"] = job_item["to"]
-
-                        if job_item["file_to"] not in job_info["TRANSFERS"]:
-                            job_info["TRANSFERS"].append(job_item["file_to"])
-
+                poller_interval, poller_time = 8, time.time()
+                restrict_sha3_224 = job_item.get("restrict")
+                if restrict_sha3_224:
+                    if job_item["job_sha3_224"] not in restrict_sha3_224:
                         self.log.debug(
-                            "Sending file transfer message for"
-                            " file_path:%s to identity:%s",
-                            file_path,
+                            "Job restriction %s is unknown.", restrict_sha3_224
+                        )
+                        if sentinel:
+                            break
+                        else:
+                            time.sleep(poller_interval * 0.001)
+                            continue
+                job_targets = job_item.pop("targets", list())
+                # NOTE(cloudnull): We run on all targets if query is used.
+                run_query = job_item["verb"] == "QUERY"
+
+                if job_targets and not run_query:
+                    targets = list()
+                    for job_target in job_targets:
+                        job_target = job_target.encode()
+                        if job_target in self.workers:
+                            targets.append(job_target)
+                        else:
+                            self.log.critical(
+                                "Target %s is in an unknown state.", job_target
+                            )
+                            if sentinel:
+                                break
+                            else:
+                                time.sleep(poller_interval * 0.001)
+                                continue
+                else:
+                    targets = self.workers.keys()
+
+                if job_item.get("run_once", False) and not run_query:
+                    self.log.debug("Run once enabled.")
+                    targets = [targets[0]]
+
+                if run_query:
+                    job_item["targets"] = [i.decode() for i in targets]
+
+                job_id = job_item.get("job_id", utils.get_uuid())
+                job_info = self.create_return_jobs(
+                    task=job_id, job_item=job_item, targets=targets
+                )
+                self.log.debug("Processing job [ %s ]", job_item)
+                for identity in targets:
+                    if job_item["verb"] in ["ADD", "COPY"]:
+                        for file_path in job_item["from"]:
+                            job_item["file_sha3_224"] = utils.file_sha3_224(
+                                file_path=file_path
+                            )
+                            if job_item["to"].endswith(os.sep):
+                                job_item["file_to"] = os.path.join(
+                                    job_item["to"],
+                                    os.path.basename(file_path),
+                                )
+                            else:
+                                job_item["file_to"] = job_item["to"]
+
+                            if (
+                                job_item["file_to"]
+                                not in job_info["TRANSFERS"]
+                            ):
+                                job_info["TRANSFERS"].append(
+                                    job_item["file_to"]
+                                )
+
+                            self.log.debug(
+                                "Queueing file transfer for"
+                                " file_path [ %s ] to identity [ %s ]",
+                                file_path,
+                                identity.decode(),
+                            )
+                            self.send_queue.put(
+                                dict(
+                                    identity=identity,
+                                    command=job_item["verb"].encode(),
+                                    data=job_item,
+                                    info=file_path.encode(),
+                                )
+                            )
+                    else:
+                        self.log.debug(
+                            "Queuing job [ %s ] for identity [ %s ]",
+                            job_item["job_id"],
                             identity.decode(),
                         )
-                        self.driver.socket_send(
-                            socket=self.bind_job,
-                            identity=identity,
-                            command=job_item["verb"].encode(),
-                            data=json.dumps(job_item).encode(),
-                            info=file_path.encode(),
+                        self.send_queue.put(
+                            dict(
+                                identity=identity,
+                                command=job_item["verb"].encode(),
+                                data=job_item,
+                            )
                         )
                 else:
-                    self.log.debug(
-                        "Sending job message for job:%s to identity:%s",
-                        job_item["verb"].encode(),
-                        identity.decode(),
-                    )
-                    self.driver.socket_send(
-                        socket=self.bind_job,
-                        identity=identity,
-                        command=job_item["verb"].encode(),
-                        data=json.dumps(job_item).encode(),
-                    )
+                    self.return_jobs[job_id] = job_info
 
-                self.log.debug("Sent job %s to %s", job_id, identity)
+            if sentinel:
+                break
             else:
-                self.return_jobs[job_id] = job_info
-
-        return 1, time.time()
+                time.sleep(poller_interval * 0.001)
 
     def run_interactions(self, sentinel=False):
         """Execute the interactions loop.
@@ -471,16 +498,29 @@ class Server(interface.Interface):
         poller_interval = 1
 
         while True:
-            current_time = time.time()
-            if self.job_queue.empty():
-                if current_time > poller_time + 64:
-                    if poller_interval != 2048:
-                        self.log.info("Directord server entering idle state.")
-                    poller_interval = 2048
-                elif current_time > poller_time + 32:
-                    if poller_interval != 1024:
-                        self.log.info("Directord server ramping down.")
-                    poller_interval = 1024
+            if self.job_queue.empty() and self.send_queue.empty():
+                poller_interval = utils.return_poller_interval(
+                    poller_time=poller_time,
+                    poller_interval=poller_interval,
+                    log=self.log,
+                )
+
+            while self.workers and not self.send_queue.empty():
+                try:
+                    send_item = self.send_queue.get_nowait()
+                except Exception:
+                    break
+                else:
+                    self.log.debug(
+                        "Sending job [ %s ] sent to [ %s ]",
+                        send_item["data"]["job_id"],
+                        send_item["identity"].decode(),
+                    )
+                    send_item["data"] = json.dumps(send_item["data"]).encode()
+                    self.driver.socket_send(
+                        socket=self.bind_job,
+                        **send_item,
+                    )
 
             if self.driver.bind_check(
                 bind=self.bind_transfer, constant=poller_interval
@@ -497,6 +537,7 @@ class Server(interface.Interface):
                     _,
                     _,
                 ) = self.driver.socket_recv(socket=self.bind_transfer)
+                self.log.debug("Transfer job received [ %s ]", msg_id.decode())
 
                 if control == self.driver.transfer_end:
                     self.log.debug(
@@ -534,6 +575,9 @@ class Server(interface.Interface):
                     stderr,
                     stdout,
                 ) = self.driver.socket_recv(socket=self.bind_job)
+                self.log.debug(
+                    "Execution job received [ %s ]", msg_id.decode()
+                )
                 node = identity.decode()
                 node_output = info.decode()
                 if stderr:
@@ -579,20 +623,17 @@ class Server(interface.Interface):
 
                     for target in targets:
                         self.log.debug(
-                            "Runing job %s against TARGET: %s",
+                            "Queuing job [ %s ] for identity [ %s ]",
                             new_task["job_id"],
                             target.decode(),
                         )
-                        self.driver.socket_send(
-                            socket=self.bind_job,
-                            identity=target,
-                            command=new_task["verb"].encode(),
-                            data=json.dumps(new_task).encode(),
+                        self.send_queue.put(
+                            dict(
+                                identity=target,
+                                command=new_task["verb"].encode(),
+                                data=new_task,
+                            )
                         )
-            if self.workers:
-                poller_interval, poller_time = self.run_job()
-            else:
-                time.sleep(0.01)
 
             if sentinel:
                 break
@@ -707,7 +748,6 @@ class Server(interface.Interface):
                         )
                     else:
                         self.log.debug("Data sent to queue, %s", json_data)
-                    finally:
                         self.job_queue.put(json_data)
             if sentinel:
                 break
@@ -723,6 +763,7 @@ class Server(interface.Interface):
             (self.thread(target=self.run_socket_server), True),
             (self.thread(target=self.run_heartbeat), True),
             (self.thread(target=self.run_interactions), True),
+            (self.thread(target=self.run_job), True),
         ]
 
         if self.args.run_ui:

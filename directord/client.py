@@ -191,6 +191,7 @@ class Client(interface.Interface):
 
         :param processes: Number of possible processes to spawn
         :type processes: Integer
+        :returns: Object
         """
 
         self.log.debug("Active worker threads: %s", threads)
@@ -238,37 +239,47 @@ class Client(interface.Interface):
                 self.log.critical("Queue object value error [ %s ]", str(e))
                 continue
             except Exception:
+                for t in list(threads):
+                    if not t.is_alive():
+                        self.log.info(
+                            "Process [ %s ] finished with status [ %s ]",
+                            t.name,
+                            t.exitcode,
+                        )
+                        threads.remove(t)
+                        p = parent_tracker.get(t.name)
+                        if p:
+                            if p["q"].empty():
+                                parent_tracker.pop(t.name)
+                                self.log.info(
+                                    "Parent queue [ %s ] pruned.", t.name
+                                )
+                            else:
+                                p["t"] = None
+
                 for key, value in list(parent_tracker.items()):
-                    if value["q"].empty():
-                        if value["t"] and value["t"].is_alive():
-                            continue
-                        elif value["t"] and not value["t"].is_alive():
-                            value["q"].close()
-                            value["q"].join_thread()
+                    if value["t"]:
+                        if value["t"].is_alive():
                             threads.add(value["t"])
-                            parent_tracker.pop(key)
-                            self.log.info("Parent queue [ %s ] pruned.", key)
-                    elif value["t"] and value["t"].is_alive():
-                        continue
+                        elif value["q"].empty():
+                            self.log.info(
+                                "Founed orphaned parent [ %s ]",
+                                key,
+                            )
+                            threads.add(value["t"])
+                        else:
+                            parent_tracker[key]["t"] = None
                     else:
-                        parent_tracker[key]["t"] = self._process_spawn(
+                        t = parent_tracker[key]["t"] = self._process_spawn(
                             lock=lock,
                             queue=value["q"],
                             threads=len(threads),
                             name=key,
                         )
-                else:
-                    for t in list(threads):
-                        t.join(timeout=0.1)
-                        if not t.is_alive():
-                            self.log.info("Process [ %s ] joined", t.name)
-                            threads.remove(t)
-                    else:
-                        if parent_tracker:
-                            self.log.debug(
-                                "Parent tracker details [ %s ]", parent_tracker
-                            )
-                        time.sleep(0.1)
+                        if t:
+                            threads.add(t)
+
+                time.sleep(0.01)
             else:
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
@@ -282,7 +293,6 @@ class Client(interface.Interface):
                         count += self.purge_queue(
                             queue=value["q"], job_id=job["job_id"]
                         )
-                        parent_tracker.pop(key)
                     self.log.info(
                         "Purged %s items from the work queues", count
                     )
@@ -306,10 +316,11 @@ class Client(interface.Interface):
 
                 _parent["q"].put((component_kwargs, command, info, cached))
 
-                if _parent["t"] and _parent["t"].is_alive():
+                t = _parent.get("t")
+                if t and t.is_alive():
                     continue
                 elif _q_name == "bypass":
-                    parent_tracker[_q_name]["t"] = self._process_spawn(
+                    t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
                         threads=len(threads),
@@ -317,12 +328,15 @@ class Client(interface.Interface):
                         bypass=True,
                     )
                 else:
-                    parent_tracker[_q_name]["t"] = self._process_spawn(
+                    t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
                         threads=len(threads),
                         name=_q_name,
                     )
+
+                if t:
+                    threads.add(t)
 
     def purge_queue(self, queue, job_id):
         """Purge all jobs from the queue.
@@ -721,14 +735,11 @@ class Client(interface.Interface):
         while True:
             self.job_q_results()
             if self.q_return.empty():
-                if time.time() > poller_time + 64:
-                    if poller_interval != 2048:
-                        self.log.info("Directord client entering idle state.")
-                    poller_interval = 2048
-                elif time.time() > poller_time + 32:
-                    if poller_interval != 1024:
-                        self.log.info("Directord client ramping down.")
-                    poller_interval = 1024
+                poller_interval = utils.return_poller_interval(
+                    poller_time=poller_time,
+                    poller_interval=poller_interval,
+                    log=self.log,
+                )
 
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval

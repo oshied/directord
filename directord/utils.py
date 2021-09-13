@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import socket
+import time
 import uuid
 
 import tabulate
@@ -306,3 +307,28 @@ def print_tabulated_data(data, headers):
             disable_numparse=True,
         )
     )
+
+
+def return_poller_interval(poller_time, poller_interval, log=None):
+    """Return a new poller interval time.
+
+    Review the poller time vs the current time, and if the poller is outside
+    our expected margins return a new poller time to cool down the poller
+    processes.
+
+    :returns: Integer
+    """
+
+    current_time = time.time()
+    if current_time > poller_time + 64:
+        if poller_interval != 2048:
+            if log:
+                log.info("Directord entering idle state.")
+        poller_interval = 2048
+    elif current_time > poller_time + 32:
+        if poller_interval != 1024:
+            if log:
+                log.info("Directord ramping down.")
+        poller_interval = 1024
+
+    return poller_interval

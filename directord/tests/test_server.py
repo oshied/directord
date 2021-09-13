@@ -413,8 +413,7 @@ class TestServer(tests.TestDriverBase):
     def test_run_job(self, mock_log_debug, mock_queue):
         mock_queue.return_value = MagicMock()
         self.server.job_queue = mock_queue
-        return_int, _ = self.server.run_job()
-        self.assertEqual(return_int, 512)
+        self.server.run_job(sentinel=True)
         mock_log_debug.assert_called()
 
     @patch("queue.Queue", autospec=True)
@@ -430,8 +429,7 @@ class TestServer(tests.TestDriverBase):
             }
         ]
         self.server.job_queue = mock_queue
-        return_int, _ = self.server.run_job()
-        self.assertEqual(return_int, 512)
+        self.server.run_job(sentinel=True)
         mock_log_debug.assert_called()
 
     @patch("queue.Queue", autospec=True)
@@ -446,8 +444,7 @@ class TestServer(tests.TestDriverBase):
             }
         ]
         self.server.job_queue = mock_queue
-        return_int, _ = self.server.run_job()
-        self.assertEqual(return_int, 512)
+        self.server.run_job(sentinel=True)
         mock_log_critical.assert_called()
 
     @patch("queue.Queue", autospec=True)
@@ -464,10 +461,8 @@ class TestServer(tests.TestDriverBase):
         ]
         self.server.job_queue = mock_queue
         self.server.workers = {b"test-node1": 12345, b"test-node2": 12345}
-        return_int, _ = self.server.run_job()
-        self.assertEqual(return_int, 1)
+        self.server.run_job(sentinel=True)
         mock_log_debug.assert_called()
-        self.mock_driver.socket_send.assert_called()
 
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time):
@@ -503,9 +498,7 @@ class TestServer(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 66, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_log_info.assert_called_with(
-            ANY, "Directord server entering idle state."
-        )
+        mock_log_info.assert_called_with(ANY, "Directord entering idle state.")
 
     @patch("time.time", autospec=True)
     @patch("logging.Logger.info", autospec=True)
@@ -524,7 +517,7 @@ class TestServer(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 34, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_log_info.assert_called_with(ANY, "Directord server ramping down.")
+        mock_log_info.assert_called_with(ANY, "Directord ramping down.")
 
     @patch("directord.server.Server._run_transfer", autospec=True)
     @patch("time.time", autospec=True)
@@ -851,7 +844,7 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY])
+        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
 
     @patch("directord.server.Server.run_threads", autospec=True)
     def test_worker_run_ui(self, mock_run_threads):
@@ -860,7 +853,9 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
+        mock_run_threads.assert_called_with(
+            ANY, threads=[ANY, ANY, ANY, ANY, ANY]
+        )
 
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
