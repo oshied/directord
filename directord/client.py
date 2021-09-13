@@ -308,10 +308,7 @@ class Client(interface.Interface):
 
                 _parent["q"].put((component_kwargs, command, info))
 
-                t = _parent.get("t")
-                if t and t.is_alive():
-                    continue
-                elif _q_name == "bypass":
+                if _q_name.startswith("bypass"):
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
@@ -319,6 +316,8 @@ class Client(interface.Interface):
                         name=_q_name,
                         bypass=True,
                     )
+                elif _parent["t"] and _parent["t"].is_alive():
+                    continue
                 else:
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
@@ -493,7 +492,7 @@ class Client(interface.Interface):
                                 "waiting for callback job to complete. %s",
                                 block_on_task_data,
                             )
-                            time.sleep(0.5)
+                            time.sleep(1)
 
                 self.log.debug(
                     "Task sha [ %s ] callback complete",
