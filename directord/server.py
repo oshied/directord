@@ -390,8 +390,8 @@ class Server(interface.Interface):
 
                 targets = list()
                 self.log.debug("Processing targets.")
-                for target in job_item.pop(
-                    "targets", list(self.workers.keys())
+                for target in (
+                    job_item.pop("targets", None) or self.workers.keys()
                 ):
                     try:
                         target = target.encode()
@@ -408,6 +408,11 @@ class Server(interface.Interface):
                             " the available targets",
                             target,
                         )
+
+                if not targets:
+                    self.log.error("No known targets defined.")
+                    time.sleep(poller_interval * 0.001)
+                    continue
 
                 self.log.debug("All targets [ %s ]", targets)
                 if job_item["verb"] == "QUERY":
@@ -543,7 +548,7 @@ class Server(interface.Interface):
 
                 if control == self.driver.transfer_end:
                     self.log.debug(
-                        "Transfer complete for [ %s ]", info.decode()
+                        "Transfer complete for [ %s ]", identity.decode()
                     )
                     self._set_job_status(
                         job_status=control,
@@ -554,7 +559,7 @@ class Server(interface.Interface):
                 elif command == b"transfer":
                     transfer_obj = info.decode()
                     self.log.debug(
-                        "Executing transfer for [ %s ]", transfer_obj
+                        "Executing transfer for [ %s ]", identity.decode()
                     )
                     self._run_transfer(
                         identity=identity,
