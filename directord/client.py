@@ -220,7 +220,14 @@ class Client(interface.Interface):
 
         parent_tracker = dict()
         threads = set()
+        poller_time = time.time()
+        poller_interval = 8
         while True:
+            poller_interval = utils.return_poller_interval(
+                poller_time=poller_time,
+                poller_interval=poller_interval,
+                log=self.log,
+            )
             try:
                 (
                     component_kwargs,
@@ -271,7 +278,7 @@ class Client(interface.Interface):
                         if t:
                             threads.add(t)
 
-                time.sleep(0.01)
+                time.sleep(poller_interval * 0.001)
             else:
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
@@ -290,13 +297,15 @@ class Client(interface.Interface):
                     )
 
                 if job.get("parent_async_bypass") is True:
-                    _q_name = "bypass_{}".format(
+                    _q_name = "q_bypass_{}".format(
                         job.get("parent_sha3_224", "general")
                     )
                 elif job.get("parent_async") is True:
                     _q_name = job.get("parent_sha3_224", "general")
+                    if _q_name != "general":
+                        _q_name = "q_async_{}".format(_q_name)
                 else:
-                    _q_name = "general"
+                    _q_name = "q_general"
 
                 if _q_name in parent_tracker:
                     _parent = parent_tracker[_q_name]
@@ -307,15 +316,16 @@ class Client(interface.Interface):
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
                 _parent["q"].put((component_kwargs, command, info))
+                poller_interval, poller_time = 8, time.time()
 
-                if _q_name.startswith("bypass"):
+                if _q_name.startswith("q_bypass"):
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
-                        threads=len(threads),
                         name=_q_name,
                         bypass=True,
                     )
+                    threads.add(t)
                 elif _parent["t"] and _parent["t"].is_alive():
                     continue
                 else:
@@ -325,9 +335,8 @@ class Client(interface.Interface):
                         threads=len(threads),
                         name=_q_name,
                     )
-
-                if t:
-                    threads.add(t)
+                    if t:
+                        threads.add(t)
 
     def purge_queue(self, queue, job_id):
         """Purge all jobs from the queue.
