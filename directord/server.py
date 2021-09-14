@@ -374,6 +374,7 @@ class Server(interface.Interface):
                     )
                     time.sleep(poller_interval * 0.001)
             else:
+                self.log.debug("Job item received [ %s ]", job_item)
                 poller_interval, poller_time = 8, time.time()
                 restrict_sha3_224 = job_item.get("restrict")
                 if restrict_sha3_224:
@@ -386,34 +387,40 @@ class Server(interface.Interface):
                         else:
                             time.sleep(poller_interval * 0.001)
                             continue
-                job_targets = job_item.pop("targets", list())
-                # NOTE(cloudnull): We run on all targets if query is used.
-                run_query = job_item["verb"] == "QUERY"
 
-                if job_targets and not run_query:
-                    targets = list()
-                    for job_target in job_targets:
-                        job_target = job_target.encode()
-                        if job_target in self.workers:
-                            targets.append(job_target)
-                        else:
-                            self.log.critical(
-                                "Target %s is in an unknown state.", job_target
-                            )
-                            if sentinel:
-                                break
-                            else:
-                                time.sleep(poller_interval * 0.001)
-                                continue
-                else:
-                    targets = self.workers.keys()
+                targets = list()
+                self.log.debug("Processing targets.")
+                for target in (
+                    job_item.pop("targets", None) or self.workers.keys()
+                ):
+                    try:
+                        target = target.encode()
+                    except AttributeError:
+                        pass
 
-                if job_item.get("run_once", False) and not run_query:
+                    self.log.debug("Target data [ %s ]", target)
+                    if target in self.workers.keys():
+                        self.log.debug("Target identified [ %s ].", target)
+                        targets.append(target)
+                    else:
+                        self.log.critical(
+                            "Target [ %s ] is unknown. Check the name againt"
+                            " the available targets",
+                            target,
+                        )
+
+                if not targets:
+                    self.log.error("No known targets defined.")
+                    time.sleep(poller_interval * 0.001)
+                    continue
+
+                self.log.debug("All targets [ %s ]", targets)
+                if job_item["verb"] == "QUERY":
+                    self.log.debug("Query mode enabled.")
+                    job_item["targets"] = [i.decode() for i in targets]
+                elif job_item.get("run_once", False):
                     self.log.debug("Run once enabled.")
                     targets = [targets[0]]
-
-                if run_query:
-                    job_item["targets"] = [i.decode() for i in targets]
 
                 job_id = job_item.get("job_id", utils.get_uuid())
                 job_info = self.create_return_jobs(
@@ -541,7 +548,7 @@ class Server(interface.Interface):
 
                 if control == self.driver.transfer_end:
                     self.log.debug(
-                        "Transfer complete for [ %s ]", info.decode()
+                        "Transfer complete for [ %s ]", identity.decode()
                     )
                     self._set_job_status(
                         job_status=control,
@@ -552,7 +559,7 @@ class Server(interface.Interface):
                 elif command == b"transfer":
                     transfer_obj = info.decode()
                     self.log.debug(
-                        "Executing transfer for [ %s ]", transfer_obj
+                        "Executing transfer for [ %s ]", identity.decode()
                     )
                     self._run_transfer(
                         identity=identity,
@@ -747,7 +754,7 @@ class Server(interface.Interface):
                             str(e),
                         )
                     else:
-                        self.log.debug("Data sent to queue, %s", json_data)
+                        self.log.debug("Data sent to queue [ %s ]", json_data)
                         self.job_queue.put(json_data)
             if sentinel:
                 break

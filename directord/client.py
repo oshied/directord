@@ -165,12 +165,7 @@ class Client(interface.Interface):
 
         while True:
             try:
-                (
-                    component_kwargs,
-                    command,
-                    info,
-                    cached,
-                ) = queue.get(timeout=0.5)
+                (component_kwargs, command, info) = queue.get(timeout=0.5)
             except ValueError as e:
                 self.log.critical("Queue object value error [ %s ]", str(e))
                 break
@@ -180,9 +175,7 @@ class Client(interface.Interface):
                 self.log.debug(
                     "Job received [ %s ]", component_kwargs["job"]["job_id"]
                 )
-                self.job_q_component_run(
-                    component_kwargs, command, info, cached, lock
-                )
+                self.job_q_component_run(component_kwargs, command, info, lock)
 
     def _process_spawn(
         self, lock, queue, threads=0, processes=5, name=None, bypass=False
@@ -227,13 +220,19 @@ class Client(interface.Interface):
 
         parent_tracker = dict()
         threads = set()
+        poller_time = time.time()
+        poller_interval = 8
         while True:
+            poller_interval = utils.return_poller_interval(
+                poller_time=poller_time,
+                poller_interval=poller_interval,
+                log=self.log,
+            )
             try:
                 (
                     component_kwargs,
                     command,
                     info,
-                    cached,
                 ) = self.q_processes.get_nowait()
             except ValueError as e:
                 self.log.critical("Queue object value error [ %s ]", str(e))
@@ -268,6 +267,11 @@ class Client(interface.Interface):
                             )
                             threads.add(value["t"])
                         else:
+                            self.log.info(
+                                "Dead parent [ %s ] found with queue items,"
+                                " resetting parent thread",
+                                key,
+                            )
                             parent_tracker[key]["t"] = None
                     else:
                         t = parent_tracker[key]["t"] = self._process_spawn(
@@ -279,7 +283,7 @@ class Client(interface.Interface):
                         if t:
                             threads.add(t)
 
-                time.sleep(0.01)
+                time.sleep(poller_interval * 0.001)
             else:
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
@@ -298,13 +302,15 @@ class Client(interface.Interface):
                     )
 
                 if job.get("parent_async_bypass") is True:
-                    _q_name = "bypass_{}".format(
+                    _q_name = "q_bypass_{}".format(
                         job.get("parent_sha3_224", "general")
                     )
                 elif job.get("parent_async") is True:
                     _q_name = job.get("parent_sha3_224", "general")
+                    if _q_name != "general":
+                        _q_name = "q_async_{}".format(_q_name)
                 else:
-                    _q_name = "general"
+                    _q_name = "q_general"
 
                 if _q_name in parent_tracker:
                     _parent = parent_tracker[_q_name]
@@ -314,19 +320,19 @@ class Client(interface.Interface):
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
-                _parent["q"].put((component_kwargs, command, info, cached))
+                _parent["q"].put((component_kwargs, command, info))
+                poller_interval, poller_time = 8, time.time()
 
-                t = _parent.get("t")
-                if t and t.is_alive():
-                    continue
-                elif _q_name == "bypass":
+                if _q_name.startswith("q_bypass"):
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
-                        threads=len(threads),
                         name=_q_name,
                         bypass=True,
                     )
+                    threads.add(t)
+                elif _parent["t"] and _parent["t"].is_alive():
+                    continue
                 else:
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
@@ -334,9 +340,8 @@ class Client(interface.Interface):
                         threads=len(threads),
                         name=_q_name,
                     )
-
-                if t:
-                    threads.add(t)
+                    if t:
+                        threads.add(t)
 
     def purge_queue(self, queue, job_id):
         """Purge all jobs from the queue.
@@ -380,9 +385,7 @@ class Client(interface.Interface):
         self.log.info("Cleared %s items from the work queue", total_count)
         return total_count
 
-    def job_q_component_run(
-        self, component_kwargs, command, info, cached, lock
-    ):
+    def job_q_component_run(self, component_kwargs, command, info, lock):
         """Execute a component operation.
 
         Components are dynamically loaded based on the given component name.
@@ -395,9 +398,6 @@ class Client(interface.Interface):
         :type command: Bytes
         :param info: Information that was sent over with the original message.
         :type info: Bytes
-        :param cached: Boolean option to determin if a command is to be
-                       treated as cached.
-        :type cached: Boolean
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
         """
@@ -407,6 +407,12 @@ class Client(interface.Interface):
         success, _, component = directord.component_import(
             component=command.decode().lower(),
             job_id=job_id,
+        )
+
+        cached = self.cache.get(
+            job["job_sha3_224"]
+        ) == self.driver.job_end.decode() and not job.get(
+            "skip_cache", job.get("ignore_cache", False)
         )
 
         if not success:
@@ -500,7 +506,7 @@ class Client(interface.Interface):
                                 "waiting for callback job to complete. %s",
                                 block_on_task_data,
                             )
-                            time.sleep(0.5)
+                            time.sleep(1)
 
                 self.log.debug(
                     "Task sha [ %s ] callback complete",
@@ -765,10 +771,6 @@ class Client(interface.Interface):
                     control=self.driver.job_ack,
                 )
 
-                job_skip_cache = job.get(
-                    "skip_cache", job.get("ignore_cache", False)
-                )
-
                 job_parent_id = job.get("parent_id")
                 job_parent_sha3_224 = job.get("parent_sha3_224")
                 self.log.info(
@@ -816,11 +818,6 @@ class Client(interface.Interface):
                                 component_kwargs,
                                 command,
                                 info,
-                                (
-                                    self.cache.get(job_sha3_224)
-                                    == self.driver.job_end.decode()
-                                    and not job_skip_cache
-                                ),
                             )
                         )
             else:
