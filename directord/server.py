@@ -493,7 +493,7 @@ class Server(interface.Interface):
         nothing to do.
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
-          present, the poll interval is 128.
+          present, the poll interval is 1.
 
         :param sentinel: Breaks the loop
         :type sentinel: Boolean
