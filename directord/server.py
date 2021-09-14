@@ -361,17 +361,17 @@ class Server(interface.Interface):
         poller_time = time.time()
         poller_interval = 1
         while True:
+            poller_interval = utils.return_poller_interval(
+                poller_time=poller_time,
+                poller_interval=poller_interval,
+                log=self.log,
+            )
             try:
                 job_item = self.job_queue.get_nowait()
             except Exception:
                 if sentinel:
                     break
                 else:
-                    poller_interval = utils.return_poller_interval(
-                        poller_time=poller_time,
-                        poller_interval=poller_interval,
-                        log=self.log,
-                    )
                     time.sleep(poller_interval * 0.001)
             else:
                 self.log.debug("Job item received [ %s ]", job_item)

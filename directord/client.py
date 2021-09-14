@@ -283,6 +283,9 @@ class Client(interface.Interface):
                         if t:
                             threads.add(t)
 
+                if len(threads) > 0:
+                    poller_interval, poller_time = 8, time.time()
+
                 time.sleep(poller_interval * 0.001)
             else:
                 job = component_kwargs["job"]
@@ -824,7 +827,7 @@ class Client(interface.Interface):
                 cache_check_time = self.prune_cache(
                     cache_check_time=cache_check_time
                 )
-                time.sleep(0.01)
+                time.sleep(poller_interval * 0.001)
 
             if sentinel:
                 break
