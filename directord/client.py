@@ -267,6 +267,11 @@ class Client(interface.Interface):
                             )
                             threads.add(value["t"])
                         else:
+                            self.log.info(
+                                "Dead parent [ %s ] found with queue items,"
+                                " resetting parent thread",
+                                key,
+                            )
                             parent_tracker[key]["t"] = None
                     else:
                         t = parent_tracker[key]["t"] = self._process_spawn(

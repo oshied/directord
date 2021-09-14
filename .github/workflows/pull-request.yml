@@ -51,6 +51,9 @@ jobs:
           sudo /opt/directord/bin/directord-client-systemd
           sudo systemctl daemon-reload
           sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
       - name: Execute functional check
         run: |
           cd /opt/directord/share/directord/orchestrations
@@ -61,6 +64,7 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
@@ -95,6 +99,9 @@ jobs:
           sudo /opt/directord/bin/directord-client-systemd
           sudo systemctl daemon-reload
           sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
       - name: Execute functional check
         run: |
           cd /opt/directord/share/directord/orchestrations
@@ -105,6 +112,7 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
@@ -139,6 +147,9 @@ jobs:
           sudo /opt/directord/bin/directord-client-systemd
           sudo systemctl daemon-reload
           sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
       - name: Execute functional check
         run: |
           cd /opt/directord/share/directord/orchestrations
@@ -148,6 +159,7 @@ jobs:
                                                              --check
       - name: Generate log details
         run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
@@ -182,6 +194,9 @@ jobs:
           sudo /opt/directord/bin/directord-client-systemd
           sudo systemctl daemon-reload
           sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
       - name: Execute async-functional check
         run: |
           cd /opt/directord/share/directord/orchestrations
@@ -208,6 +223,7 @@ jobs:
                                              --check
       - name: Generate log details
         run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
@@ -242,6 +258,9 @@ jobs:
           sudo /opt/directord/bin/directord-client-systemd
           sudo systemctl daemon-reload
           sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
       - name: Execute functional podman install
         run: |
           cd /opt/directord/share/directord/orchestrations
@@ -289,6 +308,7 @@ jobs:
           fi
       - name: Generate log details
         run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
