@@ -408,13 +408,24 @@ class Server(interface.Interface):
                             " the available targets",
                             target,
                         )
+                        self._set_job_status(
+                            job_status=self.driver.job_failed,
+                            job_id=job_item["job_id"],
+                            identity=target,
+                            job_output=(
+                                "Target unknown. Available targets {}".format(
+                                    list(self.workers.keys())
+                                )
+                            ),
+                            recv_time=time.time(),
+                        )
 
                 if not targets:
                     self.log.error("No known targets defined.")
                     time.sleep(poller_interval * 0.001)
                     continue
 
-                self.log.debug("All targets [ %s ]", targets)
+                self.log.debug("All targets %s", targets)
                 if job_item["verb"] == "QUERY":
                     self.log.debug("Query mode enabled.")
                     job_item["targets"] = [i.decode() for i in targets]
@@ -512,22 +523,22 @@ class Server(interface.Interface):
                     log=self.log,
                 )
 
-            while self.workers and not self.send_queue.empty():
-                try:
-                    send_item = self.send_queue.get_nowait()
-                except Exception:
-                    break
-                else:
-                    self.log.debug(
-                        "Sending job [ %s ] sent to [ %s ]",
-                        send_item["data"]["job_id"],
-                        send_item["identity"].decode(),
-                    )
-                    send_item["data"] = json.dumps(send_item["data"]).encode()
-                    self.driver.socket_send(
-                        socket=self.bind_job,
-                        **send_item,
-                    )
+            try:
+                send_item = self.send_queue.get_nowait()
+            except Exception:
+                pass
+            else:
+                poller_interval, poller_time = 1, time.time()
+                self.log.debug(
+                    "Sending job [ %s ] sent to [ %s ]",
+                    send_item["data"]["job_id"],
+                    send_item["identity"].decode(),
+                )
+                send_item["data"] = json.dumps(send_item["data"]).encode()
+                self.driver.socket_send(
+                    socket=self.bind_job,
+                    **send_item,
+                )
 
             if self.driver.bind_check(
                 bind=self.bind_transfer, constant=poller_interval
@@ -767,10 +778,23 @@ class Server(interface.Interface):
         """
 
         threads = [
-            (self.thread(target=self.run_socket_server), True),
-            (self.thread(target=self.run_heartbeat), True),
-            (self.thread(target=self.run_interactions), True),
-            (self.thread(target=self.run_job), True),
+            (
+                self.thread(
+                    name="run_socket_server", target=self.run_socket_server
+                ),
+                True,
+            ),
+            (
+                self.thread(name="run_heartbeat", target=self.run_heartbeat),
+                True,
+            ),
+            (
+                self.thread(
+                    name="run_interactions", target=self.run_interactions
+                ),
+                True,
+            ),
+            (self.thread(name="run_job", target=self.run_job), True),
         ]
 
         if self.args.run_ui:
@@ -780,6 +804,8 @@ class Server(interface.Interface):
             ui_obj = ui.UI(
                 args=self.args, jobs=self.return_jobs, nodes=self.workers
             )
-            threads.append((self.thread(target=ui_obj.start_app), True))
+            threads.append(
+                (self.thread(name="ui", target=ui_obj.start_app), True)
+            )
 
         self.run_threads(threads=threads)

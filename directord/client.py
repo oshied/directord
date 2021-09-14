@@ -874,10 +874,14 @@ class Client(interface.Interface):
 
         lock = self.get_lock()
         threads = [
-            (self.thread(target=self.run_heartbeat), True),
-            (self.thread(target=self.run_job), True),
+            (
+                self.thread(name="run_heartbeat", target=self.run_heartbeat),
+                True,
+            ),
+            (self.thread(name="run_job", target=self.run_job), True),
             (
                 self.thread(
+                    name="job_q_processor",
                     target=self.job_q_processor,
                     kwargs=dict(lock=lock),
                 ),
