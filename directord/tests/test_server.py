@@ -482,8 +482,7 @@ class TestServer(tests.TestDriverBase):
         self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
-    def test_run_interactions_idle(self, mock_log_info, mock_time):
+    def test_run_interactions_idle(self, mock_time):
         self.mock_driver.socket_recv.side_effect = [
             (
                 b"test-node",
@@ -498,11 +497,9 @@ class TestServer(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 66, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_log_info.assert_called_with(ANY, "Directord entering idle state.")
 
     @patch("time.time", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
-    def test_run_interactions_ramp(self, mock_log_info, mock_time):
+    def test_run_interactions_ramp(self, mock_time):
         self.mock_driver.socket_recv.side_effect = [
             (
                 b"test-node",
@@ -517,7 +514,6 @@ class TestServer(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 34, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_log_info.assert_called_with(ANY, "Directord ramping down.")
 
     @patch("directord.server.Server._run_transfer", autospec=True)
     @patch("time.time", autospec=True)

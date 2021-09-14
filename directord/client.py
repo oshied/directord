@@ -187,7 +187,6 @@ class Client(interface.Interface):
         :returns: Object
         """
 
-        self.log.debug("Active worker threads: %s", threads)
         if (threads <= processes) or bypass:
             self.log.debug(
                 "Executing new thread for parent queue [ %s ]",
@@ -204,6 +203,29 @@ class Client(interface.Interface):
             )
             thread.start()
             return thread
+
+    def _parent_q_pruning(self, parent_name, parent_tracker):
+        """Check and prune parent objects when they become stale.
+
+        * This method will timestamp parent objects. Parent objects will
+          be considered stale after 30 seconds of inactivity.
+
+        :param parent_name: String name of parent queue to inspect.
+        :type parent_name: String
+        :param parent_tracker: Dictionary object containing all parent
+                               references.
+        :type parent_tracker: Dictionary
+        """
+
+        timestamp = time.time()
+        if (
+            timestamp - parent_tracker[parent_name].get("time", timestamp)
+        ) >= 30:
+            parent_tracker.pop(parent_name)
+            self.log.info("Pruned parent [ %s ]", parent_name)
+        else:
+            if "time" not in parent_tracker[parent_name]:
+                parent_tracker[parent_name]["time"] = timestamp
 
     def job_q_processor(self, lock=None):
         """Process a given work queue.
@@ -240,7 +262,7 @@ class Client(interface.Interface):
             except Exception:
                 for t in list(threads):
                     if not t.is_alive():
-                        self.log.info(
+                        self.log.debug(
                             "Process [ %s ] finished with status [ %s ]",
                             t.name,
                             t.exitcode,
@@ -249,23 +271,23 @@ class Client(interface.Interface):
                         p = parent_tracker.get(t.name)
                         if p:
                             if p["q"].empty():
-                                parent_tracker.pop(t.name)
-                                self.log.info(
-                                    "Parent queue [ %s ] pruned.", t.name
+                                self._parent_q_pruning(
+                                    parent_tracker=parent_tracker,
+                                    parent_name=t.name,
                                 )
                             else:
+                                parent_tracker[t.name].pop("time", None)
                                 p["t"] = None
 
                 for key, value in list(parent_tracker.items()):
                     if value["t"]:
                         if value["t"].is_alive():
                             threads.add(value["t"])
+                            parent_tracker[key].pop("time", None)
                         elif value["q"].empty():
-                            self.log.info(
-                                "Founed orphaned parent [ %s ]",
-                                key,
+                            self._parent_q_pruning(
+                                parent_tracker=parent_tracker, parent_name=key
                             )
-                            threads.add(value["t"])
                         else:
                             self.log.info(
                                 "Dead parent [ %s ] found with queue items,"
@@ -273,7 +295,9 @@ class Client(interface.Interface):
                                 key,
                             )
                             parent_tracker[key]["t"] = None
+                            parent_tracker[key].pop("time", None)
                     else:
+                        parent_tracker[key].pop("time", None)
                         t = parent_tracker[key]["t"] = self._process_spawn(
                             lock=lock,
                             queue=value["q"],
@@ -305,9 +329,7 @@ class Client(interface.Interface):
                     )
 
                 if job.get("parent_async_bypass") is True:
-                    _q_name = "q_bypass_{}".format(
-                        job.get("parent_sha3_224", "general")
-                    )
+                    _q_name = "q_bypass"
                 elif job.get("parent_async") is True:
                     _q_name = job.get("parent_sha3_224", "general")
                     if _q_name != "general":
@@ -330,6 +352,7 @@ class Client(interface.Interface):
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
+                        threads=len(threads),
                         name=_q_name,
                         bypass=True,
                     )
@@ -474,6 +497,16 @@ class Client(interface.Interface):
                     "component_exec_timestamp"
                 ] = datetime.datetime.fromtimestamp(time.time()).strftime(
                     "%Y-%m-%d %H:%M:%S"
+                )
+
+            try:
+                component_return
+            except UnboundLocalError:
+                component_return = (
+                    None,
+                    None,
+                    False,
+                    "Job was unable to finish",
                 )
 
             self.q_return.put(
@@ -730,7 +763,7 @@ class Client(interface.Interface):
           waiting for data chunks until an `transfer_end` signal is passed.
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
-          present, the poll interval is 128.
+          present, the poll interval is 1.
 
         :param sentinel: Breaks the loop
         :type sentinel: Boolean
