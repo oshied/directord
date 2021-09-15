@@ -120,7 +120,7 @@ class TestManager(tests.TestDriverBase):
                     }
                 }
             )
-            status, info = self.manage.poll_job("test-id")
+            status, info, _, _, _ = self.manage.poll_job("test-id")
         self.assertEqual(status, None)
         self.assertEqual(info, "Job in an unknown state: test-id")
 
@@ -135,7 +135,7 @@ class TestManager(tests.TestDriverBase):
                 }
             }
         )
-        status, info = self.manage.poll_job("test-id")
+        status, info, _, _, _ = self.manage.poll_job("test-id")
         self.assertEqual(status, True)
         self.assertEqual(info, "Job Success: test-id")
 
@@ -151,7 +151,7 @@ class TestManager(tests.TestDriverBase):
                 }
             }
         )
-        status, info = self.manage.poll_job("test-id")
+        status, info, _, _, _ = self.manage.poll_job("test-id")
         self.assertEqual(status, False)
         self.assertEqual(info, "Job Degrated: test-id")
 
@@ -166,7 +166,7 @@ class TestManager(tests.TestDriverBase):
                 }
             }
         )
-        status, info = self.manage.poll_job("test-id")
+        status, info, _, _, _ = self.manage.poll_job("test-id")
         self.assertEqual(status, False)
         self.assertEqual(info, "Job Failed: test-id")
 
@@ -182,7 +182,7 @@ class TestManager(tests.TestDriverBase):
                     }
                 }
             )
-            status, info = self.manage.poll_job("test-id")
+            status, info, _, _, _ = self.manage.poll_job("test-id")
         self.assertEqual(status, True)
         self.assertEqual(info, "Job Skipped: test-id")
 

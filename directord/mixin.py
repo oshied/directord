@@ -277,7 +277,12 @@ class Mixin:
                         defined_targets=defined_targets,
                         restrict=self.args.restrict,
                         ignore_cache=self.args.ignore_cache,
-                        return_raw=getattr(self.args, "poll", False),
+                        return_raw=getattr(
+                            self.args,
+                            "poll",
+                            False,
+                        )
+                        or getattr(self.args, "stream", False),
                     )
                 )
         else:
@@ -296,7 +301,8 @@ class Mixin:
             verb=self.args.verb,
             execute=self.args.exec,
             parent_async=getattr(self.args, "force_async", False),
-            return_raw=getattr(self.args, "poll", False),
+            return_raw=getattr(self.args, "poll", False)
+            or getattr(self.args, "stream", False),
         )
         if self.args.target:
             format_kwargs["targets"] = list(set(self.args.target))

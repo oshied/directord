@@ -536,9 +536,7 @@ class Client(interface.Interface):
                     "Number of job call backs [ %s ]",
                     len(component.block_on_tasks),
                 )
-                self.log.debug(
-                    "Query job call backs: %s ", component.block_on_tasks
-                )
+                self.log.debug("Job call backs: %s ", component.block_on_tasks)
                 block_on_task = False
                 with self.timeout(
                     time=block_on_task_data.get("timeout", 600),

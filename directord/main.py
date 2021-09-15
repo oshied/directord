@@ -205,6 +205,11 @@ def _args(exec_args=None):
         help="Finger print a set of orchestrations.",
         action="store_true",
     )
+    orchestrate_group.add_argument(
+        "--stream",
+        help="Stream the STDOUT|STDERR for tasks.",
+        action="store_true",
+    )
     parser_orchestrate.add_argument(
         "--check",
         help=(
@@ -242,6 +247,11 @@ def _args(exec_args=None):
     parser_exec.add_argument(
         "--poll",
         help="Block on client return for the completion of executed jobs.",
+        action="store_true",
+    )
+    parser_exec.add_argument(
+        "--stream",
+        help="Stream the STDOUT|STDERR for tasks.",
         action="store_true",
     )
     parser_exec.add_argument(
@@ -530,17 +540,37 @@ def main():
 
         job_items = [i.decode() for i in return_data if i]
 
-        if args.poll:
+        if args.poll or args.stream:
             failed = list()
             manage = user.Manage(args=args)
             for item in job_items:
-                state, status = manage.poll_job(job_id=item)
+                state, status, stdout, stderr, info = manage.poll_job(
+                    job_id=item
+                )
                 if args.check and state is False:
                     failed.append(item)
-                else:
-                    print(status)
+
+                if args.stream:
+                    for node in sorted(
+                        set(
+                            i for v in [stdout, stderr, info] for i in v.keys()
+                        )
+                    ):
+                        for k, n, v in [
+                            (node, name, d[node])
+                            for name, d in [
+                                ("STDOUT", stdout),
+                                ("STDERR", stderr),
+                                ("INFO", info),
+                            ]
+                            if node in d
+                        ]:
+                            print("{} -- {} {}".format(k, n, v))
+
+                print(status)
 
             if any(failed):
+                print("FAILED JOBS")
                 for item in failed:
                     print(item)
                 raise SystemExit(1)

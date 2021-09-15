@@ -258,8 +258,8 @@ class TestDirectordConnect(unittest.TestCase):
 
     @patch("directord.user.Manage.poll_job", autospec=True)
     def test_poll_job(self, mock_poll_job):
-        mock_poll_job.return_value = (True, "info")
-        status_boolean, info = self.dc.poll(job_id="XXX")
+        mock_poll_job.return_value = (True, "info", None, None, None)
+        status_boolean, _ = self.dc.poll(job_id="XXX")
         self.assertEqual(status_boolean, True)
         mock_poll_job.assert_called_with(ANY, job_id="XXX")
 
