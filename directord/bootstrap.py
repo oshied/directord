@@ -153,8 +153,8 @@ class Bootstrap(directord.Processor):
         return return_jobs
 
     @staticmethod
-    def _read_chunks(fh, chunk_size=1024):
-        """Read file in 1024 chunks."""
+    def _read_chunks(fh, chunk_size=2048):
+        """Read file in 2048 chunks."""
 
         while True:
             data = fh.read(chunk_size)
@@ -202,7 +202,7 @@ class Bootstrap(directord.Processor):
 
             flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
             with open(localfile, "rb") as local_f:
-                for data in local_f:
+                for data in self._read_chunks(fh=local_f, chunk_size=1024):
                     with chan.open(
                         remotefile, flags, fileinfo.st_mode
                     ) as remote_f:
@@ -211,6 +211,13 @@ class Bootstrap(directord.Processor):
             with PrintError():
                 self.log.critical(str(e))
                 raise SystemExit("File [ {} ] ADD failed.".format(remotefile))
+        else:
+            self.log.info(
+                "HOST: [ %s ] SUCCESS: ADD [ %s ] TO [ %s ]",
+                ssh.host,
+                localfile,
+                remotefile,
+            )
 
     def bootstrap_file_get(self, ssh, localfile, remotefile):
         """Run a remote get command.
@@ -252,6 +259,13 @@ class Bootstrap(directord.Processor):
             with PrintError():
                 self.log.critical(str(e))
                 raise SystemExit("File [ {} ] GET failed.".format(remotefile))
+        else:
+            self.log.info(
+                "HOST: [ %s ] SUCCESS: GET [ %s ] TO [ %s ]",
+                ssh.host,
+                remotefile,
+                localfile,
+            )
 
     def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.

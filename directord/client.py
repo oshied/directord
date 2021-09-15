@@ -528,17 +528,24 @@ class Client(interface.Interface):
             self.q_return.put(component_return)
 
             try:
-                block_on_task_data = component.block_on_tasks[-1]
-            except (IndexError, TypeError):
-                pass
+                block_on_task_data = [
+                    i
+                    for i in component.block_on_tasks
+                    if self.driver.identity in i.get("targets", list())
+                ][-1]
+            except IndexError:
+                self.log.debug(
+                    "No valid callbacks for this node %s.",
+                    self.driver.identity,
+                )
+            except TypeError:
+                self.log.debug("No callbacks defined.")
             else:
                 self.log.info(
                     "Number of job call backs [ %s ]",
                     len(component.block_on_tasks),
                 )
-                self.log.debug(
-                    "Query job call backs: %s ", component.block_on_tasks
-                )
+                self.log.debug("Job call backs: %s ", component.block_on_tasks)
                 block_on_task = False
                 with self.timeout(
                     time=block_on_task_data.get("timeout", 600),

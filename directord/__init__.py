@@ -359,7 +359,8 @@ class DirectordConnect:
         :returns: Tuple
         """
 
-        return self.manage.poll_job(job_id=job_id)
+        state, status, _, _, _ = self.manage.poll_job(job_id=job_id)
+        return state, status
 
     def list_nodes(self):
         """Return a list of all active Directord Nodes.

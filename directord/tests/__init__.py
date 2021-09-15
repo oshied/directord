@@ -127,6 +127,7 @@ class FakeArgs:
     bind_address = "10.1.10.1"
     shared_key = None
     socket_path = "/var/run/directord.sock"
+    stream = False
     socket_group = "root"
     cache_path = "/var/cache/directord"
     transfer_port = 5556
