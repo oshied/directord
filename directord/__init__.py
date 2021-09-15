@@ -184,10 +184,10 @@ class Processor:
         for t, _ in threads:
             t.join()
 
-    def read_in_chunks(self, file_object, chunk_size=10240):
+    def read_in_chunks(self, file_object, chunk_size=8192):
         """Generator to read a file piece by piece.
 
-        Default chunk size: 10K.
+        Default chunk size: 8K.
 
         :param file_object: Open File Object
         :type file_object: Object
@@ -198,7 +198,6 @@ class Processor:
             data = file_object.read(chunk_size)
             if not data:
                 break
-            self.log.debug("Transimitting a %s Chunk ", len(data))
             yield data
 
     @contextlib.contextmanager
@@ -220,7 +219,7 @@ class Processor:
             yield
         except TimeoutError:
             self.log.warning(
-                "Timeout encountered after %s seconds running %s.",
+                "Timeout encountered after [ %s ] seconds running [ %s ].",
                 time,
                 job_id,
             )

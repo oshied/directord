@@ -532,14 +532,16 @@ class Client(interface.Interface):
                 ][-1]
             except IndexError:
                 self.log.debug(
-                    "No valid callbacks for this node %s.",
+                    "Job [ %s ] no valid callbacks for this node %s.",
+                    job["job_id"],
                     self.driver.identity,
                 )
             except TypeError:
                 self.log.debug("No callbacks defined.")
             else:
                 self.log.info(
-                    "Number of job call backs [ %s ]",
+                    "Job [ %s ] number of job call backs [ %s ]",
+                    job["job_id"],
                     len(component.block_on_tasks),
                 )
                 self.log.debug("Job call backs: %s ", component.block_on_tasks)
@@ -561,7 +563,9 @@ class Client(interface.Interface):
                         else:
 
                             self.log.debug(
-                                "waiting for callback job to complete. %s",
+                                "waiting for callback job from [ %s ] to"
+                                " complete. %s",
+                                job["job_id"],
                                 block_on_task_data,
                             )
                             count += 1
@@ -569,12 +573,14 @@ class Client(interface.Interface):
 
                 if block_on_task:
                     self.log.debug(
-                        "Task sha [ %s ] callback complete",
+                        "Job [ %s ] task sha [ %s ] callback complete",
+                        job["job_id"],
                         block_on_task_data["job_sha3_224"],
                     )
                 else:
                     self.log.error(
-                        "Task sha [ %s ] callback never completed",
+                        "Job [ %s ] task sha [ %s ] callback never completed",
+                        job["job_id"],
                         block_on_task_data["job_sha3_224"],
                     )
                     self.q_return.put(
@@ -632,7 +638,7 @@ class Client(interface.Interface):
             if not isinstance(stderr, bytes):
                 stderr = stderr.encode()
             conn.stderr = stderr
-            self.log.warning(stderr)
+            self.log.warning("Job [ %s ], stderr: %s", job["job_id"], stderr)
 
         if outcome is False:
             state = conn.job_state = self.driver.job_failed

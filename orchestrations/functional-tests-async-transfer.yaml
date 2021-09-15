@@ -1,0 +1,19 @@
+# This orchestration will run a functional test, exercising much of the functionality Directord offers.
+#
+---
+
+- async: true
+  jobs:
+  - ADD: /etc/services /tmp/test0-1
+  - ADD: /etc/services /tmp/test0-2
+  - ADD: /etc/services /tmp/test0-3
+  - ADD: /etc/services /tmp/test0-4
+  - ADD: /etc/services /tmp/test0-5
+
+- async: true
+  jobs:
+  - ADD: /etc/services /tmp/test1-1
+  - ADD: /etc/services /tmp/test1-2
+  - ADD: /etc/services /tmp/test1-3
+  - ADD: /etc/services /tmp/test1-4
+  - ADD: /etc/services /tmp/test1-5

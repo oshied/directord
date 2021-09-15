@@ -195,7 +195,9 @@ class Component(components.ComponentBase):
                     None,
                 )
         except Exception as e:
-            self.log.critical(str(e))
+            self.log.critical(
+                "Job [ %s ] critical error %s", job["job_id"], str(e)
+            )
             return None, traceback.format_exc(), False, None
 
 
