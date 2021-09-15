@@ -244,6 +244,7 @@ class Client(interface.Interface):
         threads = set()
         poller_time = time.time()
         poller_interval = 8
+        poller_loop = 0
         while True:
             poller_interval = utils.return_poller_interval(
                 poller_time=poller_time,
@@ -260,25 +261,6 @@ class Client(interface.Interface):
                 self.log.critical("Queue object value error [ %s ]", str(e))
                 continue
             except Exception:
-                for t in list(threads):
-                    if not t.is_alive():
-                        self.log.debug(
-                            "Process [ %s ] finished with status [ %s ]",
-                            t.name,
-                            t.exitcode,
-                        )
-                        threads.remove(t)
-                        p = parent_tracker.get(t.name)
-                        if p:
-                            if p["q"].empty():
-                                self._parent_q_pruning(
-                                    parent_tracker=parent_tracker,
-                                    parent_name=t.name,
-                                )
-                            else:
-                                parent_tracker[t.name].pop("time", None)
-                                p["t"] = None
-
                 for key, value in list(parent_tracker.items()):
                     if value["t"]:
                         if value["t"].is_alive():
@@ -288,6 +270,15 @@ class Client(interface.Interface):
                             self._parent_q_pruning(
                                 parent_tracker=parent_tracker, parent_name=key
                             )
+                            try:
+                                threads.remove(value["t"])
+                            except KeyError:
+                                pass
+                            else:
+                                self.log.debug(
+                                    "Process [ %s ] finished",
+                                    value["t"].name,
+                                )
                         else:
                             self.log.info(
                                 "Dead parent [ %s ] found with queue items,"
@@ -308,7 +299,17 @@ class Client(interface.Interface):
                             threads.add(t)
 
                 if len(threads) > 0:
+                    for t in list(threads):
+                        if t.exitcode is not None:
+                            self.log.debug(
+                                "Cleaned up dead thread [ %s ]", t.name
+                            )
+                            threads.remove(t)
                     poller_interval, poller_time = 8, time.time()
+                    poller_loop += 1
+                    if poller_loop >= 128:
+                        self.log.debug("Active threads %s", threads)
+                        poller_loop = 0
 
                 time.sleep(poller_interval * 0.001)
             else:
@@ -329,11 +330,13 @@ class Client(interface.Interface):
                     )
 
                 if job.get("parent_async_bypass") is True:
-                    _q_name = "q_bypass"
+                    _q_name = "q_bypass_{}".format(
+                        job.get("parent_id", job["job_id"])
+                    )
                 elif job.get("parent_async") is True:
-                    _q_name = job.get("parent_sha3_224", "general")
-                    if _q_name != "general":
-                        _q_name = "q_async_{}".format(_q_name)
+                    _q_name = "q_async_{}".format(
+                        job.get("parent_id", job["job_id"])
+                    )
                 else:
                     _q_name = "q_general"
 
@@ -348,7 +351,9 @@ class Client(interface.Interface):
                 _parent["q"].put((component_kwargs, command, info))
                 poller_interval, poller_time = 8, time.time()
 
-                if _q_name.startswith("q_bypass"):
+                if _parent["t"] and _parent["t"].is_alive():
+                    continue
+                elif _q_name.startswith("q_bypass"):
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
@@ -357,8 +362,6 @@ class Client(interface.Interface):
                         bypass=True,
                     )
                     threads.add(t)
-                elif _parent["t"] and _parent["t"].is_alive():
-                    continue
                 else:
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
@@ -500,54 +503,90 @@ class Client(interface.Interface):
                 )
 
             try:
-                component_return
-            except UnboundLocalError:
-                component_return = (
-                    None,
-                    None,
-                    False,
-                    "Job was unable to finish",
-                )
-
-            self.q_return.put(
-                component_return
-                + (
+                component_return = component_return + (
                     job,
                     command,
                     time.time() - _starttime,
                     component.block_on_tasks,
                 )
-            )
+            except UnboundLocalError:
+                component.block_on_tasks = list()
+                component_return = (
+                    None,
+                    None,
+                    False,
+                    "Job was unable to finish",
+                    job,
+                    command,
+                    time.time() - _starttime,
+                    None,
+                )
 
             if locked:
                 lock.release()
 
-            if component.block_on_tasks:
+            self.q_return.put(component_return)
+
+            try:
                 block_on_task_data = component.block_on_tasks[-1]
-                block_on_task = True
+            except (IndexError, TypeError):
+                pass
+            else:
+                self.log.info(
+                    "Number of job call backs [ %s ]",
+                    len(component.block_on_tasks),
+                )
+                self.log.debug(
+                    "Query job call backs: %s ", component.block_on_tasks
+                )
+                block_on_task = False
                 with self.timeout(
                     time=block_on_task_data.get("timeout", 600),
                     job_id=block_on_task_data["job_id"],
                 ):
-                    while block_on_task:
+                    count = 0
+                    while True:
                         if self.cache.get(
                             block_on_task_data["job_sha3_224"]
                         ) in [
                             self.driver.job_end.decode(),
                             self.driver.job_failed.decode(),
                         ]:
-                            block_on_task = False
+                            block_on_task = True
+                            break
                         else:
+
                             self.log.debug(
                                 "waiting for callback job to complete. %s",
                                 block_on_task_data,
                             )
-                            time.sleep(1)
+                            count += 1
+                            time.sleep(count if count < 5 else 5)
 
-                self.log.debug(
-                    "Task sha [ %s ] callback complete",
-                    block_on_task_data["job_sha3_224"],
-                )
+                if block_on_task:
+                    self.log.debug(
+                        "Task sha [ %s ] callback complete",
+                        block_on_task_data["job_sha3_224"],
+                    )
+                else:
+                    self.log.error(
+                        "Task sha [ %s ] callback never completed",
+                        block_on_task_data["job_sha3_224"],
+                    )
+                    self.q_return.put(
+                        (
+                            component_return[0],
+                            component_return[1],
+                            False,
+                            "Callback [ {} ] never completed".format(
+                                block_on_task_data["job_id"]
+                            ),
+                            job,
+                            command,
+                            time.time() - _starttime,
+                            None,
+                        )
+                    )
 
             self.log.debug(
                 "Component execution complete for job [ %s ].",

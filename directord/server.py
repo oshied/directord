@@ -408,10 +408,16 @@ class Server(interface.Interface):
                             " the available targets",
                             target,
                         )
+                        if not self.return_jobs.get(job_item["job_id"]):
+                            self.create_return_jobs(
+                                task=job_item["job_id"],
+                                job_item=job_item,
+                                targets=targets,
+                            )
                         self._set_job_status(
                             job_status=self.driver.job_failed,
                             job_id=job_item["job_id"],
-                            identity=target,
+                            identity=target.decode(),
                             job_output=(
                                 "Target unknown. Available targets {}".format(
                                     list(self.workers.keys())
@@ -523,22 +529,22 @@ class Server(interface.Interface):
                     log=self.log,
                 )
 
-            try:
-                send_item = self.send_queue.get_nowait()
-            except Exception:
-                pass
-            else:
-                poller_interval, poller_time = 1, time.time()
-                self.log.debug(
-                    "Sending job [ %s ] sent to [ %s ]",
-                    send_item["data"]["job_id"],
-                    send_item["identity"].decode(),
-                )
-                send_item["data"] = json.dumps(send_item["data"]).encode()
-                self.driver.socket_send(
-                    socket=self.bind_job,
-                    **send_item,
-                )
+            while True:
+                try:
+                    send_item = self.send_queue.get_nowait()
+                except Exception:
+                    break
+                else:
+                    self.log.debug(
+                        "Sending job [ %s ] sent to [ %s ]",
+                        send_item["data"]["job_id"],
+                        send_item["identity"].decode(),
+                    )
+                    send_item["data"] = json.dumps(send_item["data"]).encode()
+                    self.driver.socket_send(
+                        socket=self.bind_job,
+                        **send_item,
+                    )
 
             if self.driver.bind_check(
                 bind=self.bind_transfer, constant=poller_interval

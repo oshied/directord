@@ -253,6 +253,11 @@ def _args(exec_args=None):
         ),
         action="store_true",
     )
+    parser_exec.add_argument(
+        "--force-async",
+        help=("Instruct the execution engine to run asynchronously."),
+        action="store_true",
+    )
     parser_server = subparsers.add_parser("server", help="Server mode help")
     parser_server.add_argument(
         "--bind-address",
