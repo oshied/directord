@@ -180,7 +180,9 @@ class Component(components.ComponentBase):
             return info, None, True, None
         else:
             self.log.debug(
-                "Requesting transfer of source file:%s", source_file
+                "Job [ %s ] requesting transfer of source file:%s",
+                job["job_id"],
+                source_file,
             )
             driver.socket_send(
                 socket=bind_transfer,
@@ -204,12 +206,30 @@ class Component(components.ComponentBase):
                         ) = driver.socket_recv(socket=bind_transfer)
                         if control == driver.transfer_end:
                             break
-                    except Exception:
+                        if not data:
+                            raise SystemError(
+                                "Job [ %s ] Failed. No data transmitted".format(
+                                    job["job_id"]
+                                )
+                            )
+                    except Exception as e:
+                        self.log.debug(
+                            "Job [ %s ] failed to run transfer %s",
+                            job["job_id"],
+                            str(e),
+                        )
                         break
                     else:
+                        self.log.debug(
+                            "Job [ %s ] write Chunk %s",
+                            job["job_id"],
+                            len(data),
+                        )
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
-            self.log.critical(str(e))
+            self.log.critical(
+                "Job [ %s ] file failure: %s", job["job_id"], str(e)
+            )
             return None, traceback.format_exc(), False, None
 
         success, error = self.file_blueprinter(cache=cache, file_to=file_to)

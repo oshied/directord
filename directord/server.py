@@ -256,7 +256,15 @@ class Server(interface.Interface):
             job_metadata["STDERR"][identity] = job_stderr
 
         self.log.debug("current job [ %s ] state [ %s ]", job_id, job_status)
-        job_metadata["PROCESSING"] = job_status.decode()
+        job_metadata["_processing"][identity] = job_status.decode()
+        for process in job_metadata["_processing"].values():
+            if process == self.driver.job_processing.decode():
+                job_metadata[
+                    "PROCESSING"
+                ] = self.driver.job_processing.decode()
+                break
+        else:
+            job_metadata["PROCESSING"] = self.driver.job_end.decode()
 
         if job_status == self.driver.job_ack:
             self.log.debug("%s received job %s", identity, job_id)
@@ -340,6 +348,7 @@ class Server(interface.Interface):
                 "_createtime": time.time(),
                 "_executiontime": dict(),
                 "_roundtripltime": dict(),
+                "_processing": dict(),
             },
         )
 
@@ -398,7 +407,6 @@ class Server(interface.Interface):
                     except AttributeError:
                         pass
 
-                    self.log.debug("Target data [ %s ]", target)
                     if target in self.workers.keys():
                         self.log.debug("Target identified [ %s ].", target)
                         targets.append(target)

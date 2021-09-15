@@ -66,6 +66,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x06"},
             }
         }
         self.server._set_job_status(
@@ -90,6 +91,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             },
         )
 
@@ -107,6 +109,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": dict(),
             }
         }
         self.server._set_job_status(
@@ -132,6 +135,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x06"},
             },
         )
 
@@ -149,6 +153,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x06"},
             }
         }
         self.server._set_job_status(
@@ -174,6 +179,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             },
         )
 
@@ -191,6 +197,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x16"},
             }
         }
         self.server._set_job_status(
@@ -215,6 +222,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             },
         )
 
@@ -232,6 +240,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             }
         }
         self.server._set_job_status(
@@ -257,6 +266,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             },
         )
 
@@ -274,6 +284,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x00"},
             }
         }
         self.server._set_job_status(
@@ -299,6 +310,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             },
         )
 
@@ -316,6 +328,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x15"},
             }
         }
         self.server._set_job_status(
@@ -341,6 +354,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x15"},
             },
         )
 
@@ -386,6 +400,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "TEST",
                 "_createtime": ANY,
+                "_processing": ANY,
                 "_executiontime": ANY,
                 "_roundtripltime": ANY,
             },
