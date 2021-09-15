@@ -91,6 +91,7 @@ class TestMain(unittest.TestCase):
                 "verb": "RUN",
                 "target": None,
                 "exec": ["command1"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -118,6 +119,7 @@ class TestMain(unittest.TestCase):
                 "verb": "COPY",
                 "target": None,
                 "exec": ["file1 file2"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -145,6 +147,7 @@ class TestMain(unittest.TestCase):
                 "verb": "ADD",
                 "target": None,
                 "exec": ["file1 file2"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -172,6 +175,7 @@ class TestMain(unittest.TestCase):
                 "verb": "ARG",
                 "target": None,
                 "exec": ["key value"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -199,6 +203,7 @@ class TestMain(unittest.TestCase):
                 "verb": "ENV",
                 "target": None,
                 "exec": ["key value"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -227,6 +232,7 @@ class TestMain(unittest.TestCase):
                 "verb": "WORKDIR",
                 "target": None,
                 "exec": ["/path"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -254,6 +260,7 @@ class TestMain(unittest.TestCase):
                 "verb": "CACHEFILE",
                 "target": None,
                 "exec": ["/path"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -281,6 +288,7 @@ class TestMain(unittest.TestCase):
                 "verb": "CACHEEVICT",
                 "target": None,
                 "exec": ["all"],
+                "force_async": False,
                 "poll": False,
             },
         )
@@ -308,6 +316,7 @@ class TestMain(unittest.TestCase):
                 "verb": "QUERY",
                 "target": None,
                 "exec": ["var"],
+                "force_async": False,
                 "poll": False,
             },
         )

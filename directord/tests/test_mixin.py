@@ -307,9 +307,10 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "QUERY",
                     "query": "test",
+                    "no_wait": False,
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "6a3389639ebec5f7bcae998f73545fb9efb9cc975a38606168b6ceb9",  # noqa
+                    "job_sha3_224": "1ff48da6d87a9f451029040c02f99cf26efa6614e5af7a20ba53352d",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }

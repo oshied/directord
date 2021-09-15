@@ -295,6 +295,7 @@ class Mixin:
         format_kwargs = dict(
             verb=self.args.verb,
             execute=self.args.exec,
+            parent_async=getattr(self.args, "force_async", False),
             return_raw=getattr(self.args, "poll", False),
         )
         if self.args.target:

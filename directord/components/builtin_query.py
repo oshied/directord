@@ -34,6 +34,14 @@ class Component(components.ComponentBase):
 
         super().args()
         self.parser.add_argument(
+            "--no-wait",
+            action="store_true",
+            help=(
+                "Disable waiting for the queried key to be present in the"
+                " local cache."
+            ),
+        )
+        self.parser.add_argument(
             "query",
             help=(
                 "Scan the environment for a given cached argument and"
@@ -56,6 +64,7 @@ class Component(components.ComponentBase):
 
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         data["query"] = self.known_args.query
+        data["no_wait"] = self.known_args.no_wait
         return data
 
     def client(self, cache, job):
@@ -98,22 +107,18 @@ class Component(components.ComponentBase):
         arg_job["parent_id"] = utils.get_uuid()
         arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
         self.block_on_tasks.append(arg_job)
-        wait_job = dict(
-            skip_cache=True,
-            verb="QUERY_WAIT",
-            item=query_item,
-            query_timeout=600,
-            parent_async_bypass=True,
-        )
-        wait_job["job_id"] = utils.get_uuid()
-        wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)
-        wait_job["parent_id"] = arg_job["parent_id"]
-        wait_job["parent_sha3_224"] = arg_job["parent_sha3_224"]
-        self.block_on_tasks.append(wait_job)
-
-        self.log.info(
-            "Number of query job call backs [ %s ]", len(self.block_on_tasks)
-        )
-        self.log.debug("Query job call backs: %s ", self.block_on_tasks)
+        if not job.get("no_wait"):
+            wait_job = dict(
+                skip_cache=True,
+                verb="QUERY_WAIT",
+                item=query_item,
+                query_timeout=600,
+                parent_async_bypass=True,
+            )
+            wait_job["job_id"] = utils.get_uuid()
+            wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)
+            wait_job["parent_id"] = arg_job["parent_id"]
+            wait_job["parent_sha3_224"] = arg_job["parent_sha3_224"]
+            self.block_on_tasks.append(wait_job)
 
         return json.dumps(query), None, True, None

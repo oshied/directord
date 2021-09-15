@@ -87,8 +87,8 @@ class Component(components.ComponentBase):
         )
 
         if stdout_arg and stdout:
-            clean_info = stdout.decode().strip()
             self.block_on_tasks = list()
+            clean_info = stdout.decode().strip()
             arg_job = job.copy()
             arg_job.pop("parent_sha3_224", None)
             arg_job.pop("parent_id", None)
@@ -105,6 +105,5 @@ class Component(components.ComponentBase):
             arg_job["parent_id"] = utils.get_uuid()
             arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
             self.block_on_tasks.append(arg_job)
-            self.log.debug("Job call backs: %s ", self.block_on_tasks)
 
         return stdout, stderr, outcome, command.encode()
