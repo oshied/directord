@@ -434,10 +434,16 @@ class Server(interface.Interface):
                 self.log.debug("All targets %s", targets)
                 if job_item["verb"] == "QUERY":
                     self.log.debug("Query mode enabled.")
+                    # NOTE(cloudnull): QUERY runs across the cluster. The
+                    #                  callback tasks are scoped to only
+                    #                  the nodes defined within the job
+                    #                  execution.
                     job_item["targets"] = [i.decode() for i in targets]
+                    targets = self.workers.keys()
                 elif job_item.get("run_once", False):
                     self.log.debug("Run once enabled.")
                     targets = [targets[0]]
+                    job_item["targets"] = [targets[0].decode()]
 
                 job_id = job_item.get("job_id", utils.get_uuid())
                 job_info = self.create_return_jobs(
@@ -633,8 +639,17 @@ class Server(interface.Interface):
                     self.log.debug("New task found: %s", new_task)
                     if "targets" in new_task:
                         targets = [i.encode() for i in new_task["targets"]]
+                        self.log.debug(
+                            "Using existing targets from old job"
+                            " specification %s",
+                            targets,
+                        )
                     else:
                         targets = self.workers.keys()
+                        self.log.debug(
+                            "Targets undefined in old job specification"
+                            " running everwhere"
+                        )
 
                     if "job_id" not in new_task:
                         new_task["job_id"] = utils.get_uuid()
@@ -647,7 +662,7 @@ class Server(interface.Interface):
 
                     for target in targets:
                         self.log.debug(
-                            "Queuing job [ %s ] for identity [ %s ]",
+                            "Queuing callback job [ %s ] for identity [ %s ]",
                             new_task["job_id"],
                             target.decode(),
                         )

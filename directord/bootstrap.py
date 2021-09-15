@@ -152,16 +152,6 @@ class Bootstrap(directord.Processor):
 
         return return_jobs
 
-    @staticmethod
-    def _read_chunks(fh, chunk_size=1024):
-        """Read file in 1024 chunks."""
-
-        while True:
-            data = fh.read(chunk_size)
-            if not data:
-                break
-            yield data
-
     def bootstrap_file_send(self, ssh, localfile, remotefile):
         """Run a remote put command.
 

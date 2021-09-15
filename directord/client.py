@@ -528,7 +528,10 @@ class Client(interface.Interface):
             self.q_return.put(component_return)
 
             try:
-                block_on_task_data = component.block_on_tasks[-1]
+                block_on_task_data = [
+                    i for i in component.block_on_tasks
+                    if self.driver.identity in i.get("targets", list())
+                ][-1]
             except (IndexError, TypeError):
                 pass
             else:

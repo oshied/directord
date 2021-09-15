@@ -87,6 +87,7 @@ class Component(components.ComponentBase):
         self.block_on_tasks = list()
         arg_job = job.copy()
         query_item = arg_job.pop("query")
+        targets = arg_job.get("targets", list())
         arg_job.pop("parent_sha3_224", None)
         arg_job.pop("parent_id", None)
         arg_job.pop("job_sha3_224", None)
@@ -100,25 +101,26 @@ class Component(components.ComponentBase):
             }
         else:
             arg_job["args"] = query
-
         arg_job["parent_async_bypass"] = True
         arg_job["job_id"] = utils.get_uuid()
         arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
         arg_job["parent_id"] = utils.get_uuid()
         arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
         self.block_on_tasks.append(arg_job)
-        if not job.get("no_wait"):
-            wait_job = dict(
-                skip_cache=True,
-                verb="QUERY_WAIT",
-                item=query_item,
-                query_timeout=600,
-                parent_async_bypass=True,
-            )
-            wait_job["job_id"] = utils.get_uuid()
-            wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)
-            wait_job["parent_id"] = arg_job["parent_id"]
-            wait_job["parent_sha3_224"] = arg_job["parent_sha3_224"]
-            self.block_on_tasks.append(wait_job)
+        if self.driver.identity in targets:
+            if not job.get("no_wait"):
+                wait_job = dict(
+                    skip_cache=True,
+                    verb="QUERY_WAIT",
+                    item=query_item,
+                    query_timeout=600,
+                    parent_async_bypass=True,
+                    targets=targets,
+                )
+                wait_job["job_id"] = utils.get_uuid()
+                wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)
+                wait_job["parent_id"] = arg_job["parent_id"]
+                wait_job["parent_sha3_224"] = arg_job["parent_sha3_224"]
+                self.block_on_tasks.append(wait_job)
 
         return json.dumps(query), None, True, None
