@@ -529,11 +529,17 @@ class Client(interface.Interface):
 
             try:
                 block_on_task_data = [
-                    i for i in component.block_on_tasks
+                    i
+                    for i in component.block_on_tasks
                     if self.driver.identity in i.get("targets", list())
                 ][-1]
-            except (IndexError, TypeError):
-                pass
+            except IndexError:
+                self.log.debug(
+                    "No valid callbacks for this node %s.",
+                    self.driver.identity,
+                )
+            except TypeError:
+                self.log.debug("No callbacks defined.")
             else:
                 self.log.info(
                     "Number of job call backs [ %s ]",
