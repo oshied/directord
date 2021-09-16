@@ -80,6 +80,9 @@ class Driver(drivers.BaseDriver):
             bind.hwm = 0
 
         bind.set_hwm(0)
+        # bind.setsockopt(zmq.HWM, 0)
+        if socket_type == zmq.ROUTER:
+            bind.setsockopt(zmq.ROUTER_MANDATORY, 1)
         return bind
 
     def _socket_bind(

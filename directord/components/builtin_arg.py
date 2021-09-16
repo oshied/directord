@@ -123,16 +123,12 @@ class Component(components.ComponentBase):
                 "{} added to cache".format(cache_type),
                 None,
                 True,
-                "type:{}, value:{}".format(
-                    cache_type, cache_value
-                ).encode(),
+                "type:{}, value:{}".format(cache_type, cache_value).encode(),
             )
         else:
             return (
                 "Nothing added to cache. {} had no value".format(cache_type),
                 None,
                 True,
-                "type:{}, value:{}".format(
-                    cache_type, cache_value
-                ).encode(),
+                "type:{}, value:{}".format(cache_type, cache_value).encode(),
             )
