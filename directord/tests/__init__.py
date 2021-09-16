@@ -20,6 +20,7 @@ from unittest.mock import patch
 from collections import namedtuple
 
 from directord import drivers
+from directord.drivers import zmq
 
 
 TEST_BLUEPRINT_CONTENT = "This is a blueprint string {{ test }}"
@@ -245,6 +246,7 @@ class TestConnectionBase(unittest.TestCase):
 
 class TestDriverBase(unittest.TestCase):
     def setUp(self):
+        self.zmq = zmq.Driver
         base_driver = drivers.BaseDriver(args=FakeArgs())
         self.mock_driver_patched = patch(
             "directord.drivers.BaseDriver",
@@ -262,6 +264,10 @@ class TestDriverBase(unittest.TestCase):
         self.mock_driver.job_failed = base_driver.job_failed
         self.mock_driver.transfer_start = base_driver.transfer_start
         self.mock_driver.transfer_end = base_driver.transfer_end
+        self.addCleanup(self.restoreZmq)
+
+    def restoreZmq(self):
+        zmq.Driver = self.zmq
 
     def tearDown(self) -> None:
         self.mock_driver_patched.stop()
