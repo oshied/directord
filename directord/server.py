@@ -15,7 +15,6 @@
 import decimal
 import grp
 import json
-import multiprocessing
 import os
 import socket
 import struct
@@ -43,12 +42,13 @@ class Server(interface.Interface):
         super(Server, self).__init__(args=args)
         self.job_queue = self.get_queue()
         self.send_queue = self.get_queue()
+        self.run_jobs_thread = None
         self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
         if not datastore or datastore == "memory":
+            manager = self.get_manager()
             self.log.info("Connecting to internal datastore")
             directord.plugin_import(plugin=".datastores.internal")
-            manager = multiprocessing.Manager()
             self.workers = manager.document()
             self.return_jobs = manager.document()
         else:
@@ -190,7 +190,7 @@ class Server(interface.Interface):
     ):
         """Set job status.
 
-        This will update the manager object for job tracking, allowing the
+        This will update the object for job tracking, allowing the
         user to know what happened within the environment.
 
         :param job_status: ASCII Control Character
@@ -332,24 +332,13 @@ class Server(interface.Interface):
         :returns: Tuple
         """
 
-        poller_time = time.time()
-        poller_interval = 1
-        while True:
-            poller_interval = utils.return_poller_interval(
-                poller_time=poller_time,
-                poller_interval=poller_interval,
-                log=self.log,
-            )
+        while not self.job_queue.empty():
             try:
-                job_item = self.job_queue.get_nowait()
+                job_item = self.job_queue.get(timeout=60)
             except Exception:
-                if sentinel:
-                    break
-                else:
-                    time.sleep(poller_interval * 0.001)
+                break
             else:
                 self.log.debug("Job item received [ %s ]", job_item)
-                poller_interval, poller_time = 8, time.time()
                 restrict_sha3_224 = job_item.get("restrict")
                 if restrict_sha3_224:
                     if job_item["job_sha3_224"] not in restrict_sha3_224:
@@ -359,7 +348,6 @@ class Server(interface.Interface):
                         if sentinel:
                             break
                         else:
-                            time.sleep(poller_interval * 0.001)
                             continue
 
                 targets = list()
@@ -401,7 +389,6 @@ class Server(interface.Interface):
 
                 if not targets:
                     self.log.error("No known targets defined.")
-                    time.sleep(poller_interval * 0.001)
                     continue
 
                 self.log.debug("All targets %s", targets)
@@ -478,8 +465,6 @@ class Server(interface.Interface):
 
             if sentinel:
                 break
-            else:
-                time.sleep(poller_interval * 0.001)
 
     def run_transfers(self, sentinel=False):
         """Execute the transfer loop.
@@ -770,6 +755,7 @@ class Server(interface.Interface):
             gid = grp.getgrnam(group).gr_gid
         os.chown(self.args.socket_path, uid, gid)
         sock.listen(1)
+        self.run_jobs_thread = directord.ProcessProxy(target=self.run_job, name="run_job")
         while True:
             conn, _ = sock.accept()
             with conn:
@@ -843,6 +829,8 @@ class Server(interface.Interface):
                     else:
                         self.log.debug("Data sent to queue [ %s ]", json_data)
                         self.job_queue.put(json_data)
+                        if not self.run_jobs_thread.is_alive():
+                            self.run_jobs_thread.start()
             if sentinel:
                 break
 
@@ -858,7 +846,7 @@ class Server(interface.Interface):
                 self.thread(
                     name="run_socket_server", target=self.run_socket_server
                 ),
-                True,
+                False,
             ),
             (
                 self.thread(name="run_heartbeat", target=self.run_heartbeat),
@@ -874,7 +862,6 @@ class Server(interface.Interface):
                 self.thread(name="run_transfers", target=self.run_transfers),
                 True,
             ),
-            (self.thread(name="run_job", target=self.run_job), True),
         ]
 
         if self.args.run_ui:

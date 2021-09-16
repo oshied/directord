@@ -150,6 +150,11 @@ class Processor:
 
         self.log = logger.getLogger(name="directord")
 
+    def get_manager():
+        """Returns a multiprocessing manager."""
+
+        return multiprocessing.Manager()
+
     @staticmethod
     def get_lock():
         """Returns a multiprocessing lock."""
@@ -405,3 +410,19 @@ class DirectordConnect:
         return self._from_json(self.manage.run(override="purge-jobs"))[
             "success"
         ]
+
+
+class ProcessProxy(multiprocessing.Process):
+    def __init__(self, target, args=None, kwargs=None, name=None):
+        super(ProcessProxy, self).__init__()
+        self.target = target
+        self.p = None
+        self.args = args
+        self.kwargs = kwargs
+        self.name = name
+
+    def run(self):
+        self.p = multiprocessing.Process(target=self.target, args=self.args, kwargs=self.kwargs, name=self.name, daemon=True)
+        self.p.start()
+        self.p.join()
+        self.p = None
