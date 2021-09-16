@@ -78,6 +78,8 @@ class Driver(drivers.BaseDriver):
             bind.sndhwm = bind.rcvhwm = 0
         except AttributeError:
             bind.hwm = 0
+
+        bind.set_hwm(0)
         return bind
 
     def _socket_bind(

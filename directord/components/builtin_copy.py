@@ -251,7 +251,7 @@ class Component(components.ComponentBase):
                             job["job_id"],
                             str(e),
                         )
-                        break
+                        return None, traceback.format_exc(), False, str(e)
                     else:
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:

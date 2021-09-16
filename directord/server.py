@@ -42,13 +42,12 @@ class Server(interface.Interface):
         super(Server, self).__init__(args=args)
         self.job_queue = self.get_queue()
         self.send_queue = self.get_queue()
-        self.run_jobs_thread = None
         self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
         if not datastore or datastore == "memory":
-            manager = self.get_manager()
             self.log.info("Connecting to internal datastore")
             directord.plugin_import(plugin=".datastores.internal")
+            manager = self.get_manager()
             self.workers = manager.document()
             self.return_jobs = manager.document()
         else:
@@ -332,6 +331,7 @@ class Server(interface.Interface):
         :returns: Tuple
         """
 
+        self.log.info("Starting run process.")
         while not self.job_queue.empty():
             try:
                 job_item = self.job_queue.get(timeout=60)
@@ -605,9 +605,21 @@ class Server(interface.Interface):
         self.bind_job = self.driver.job_bind()
         poller_time = time.time()
         poller_interval = 1
-
+        run_jobs_thread = None
         while True:
-            if self.job_queue.empty() and self.send_queue.empty():
+            if run_jobs_thread and not run_jobs_thread.is_alive():
+                run_jobs_thread.terminate()
+                run_jobs_thread = None
+
+            if not self.job_queue.empty():
+                if not run_jobs_thread:
+                    run_jobs_thread = self.thread(
+                        target=self.run_job,
+                        name="run_job",
+                        daemon=True,
+                    )
+                    run_jobs_thread.start()
+            elif self.send_queue.empty():
                 poller_interval = utils.return_poller_interval(
                     poller_time=poller_time,
                     poller_interval=poller_interval,
@@ -755,7 +767,6 @@ class Server(interface.Interface):
             gid = grp.getgrnam(group).gr_gid
         os.chown(self.args.socket_path, uid, gid)
         sock.listen(1)
-        self.run_jobs_thread = directord.ProcessProxy(target=self.run_job, name="run_job")
         while True:
             conn, _ = sock.accept()
             with conn:
@@ -829,8 +840,7 @@ class Server(interface.Interface):
                     else:
                         self.log.debug("Data sent to queue [ %s ]", json_data)
                         self.job_queue.put(json_data)
-                        if not self.run_jobs_thread.is_alive():
-                            self.run_jobs_thread.start()
+
             if sentinel:
                 break
 
@@ -846,7 +856,7 @@ class Server(interface.Interface):
                 self.thread(
                     name="run_socket_server", target=self.run_socket_server
                 ),
-                False,
+                True,
             ),
             (
                 self.thread(name="run_heartbeat", target=self.run_heartbeat),
@@ -856,7 +866,7 @@ class Server(interface.Interface):
                 self.thread(
                     name="run_interactions", target=self.run_interactions
                 ),
-                True,
+                False,
             ),
             (
                 self.thread(name="run_transfers", target=self.run_transfers),
