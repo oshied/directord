@@ -246,7 +246,7 @@ class Component(components.ComponentBase):
                                 len(data),
                             )
                     except Exception as e:
-                        self.log.debug(
+                        self.log.error(
                             "Job [ %s ] failed to run transfer %s",
                             job["job_id"],
                             str(e),

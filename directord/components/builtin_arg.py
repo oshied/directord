@@ -13,6 +13,7 @@
 #   under the License.
 
 import ast
+import json
 
 from directord import components
 
@@ -100,13 +101,14 @@ class Component(components.ComponentBase):
         except (ValueError, SyntaxError):
             cache_value = job[cache_type]
 
+        self.log.debug("Job [ %s ] ARG value: %s", job["job_id"], cache_value)
         success, value = self.blueprinter(
-            content=cache_value,
+            content=json.dumps(cache_value),
             values=cache.get("args"),
             allow_empty_values=True,
         )
         if success:
-            cache_value = value
+            cache_value = json.loads(value)
 
         if cache_value:
             self.set_cache(
@@ -122,7 +124,7 @@ class Component(components.ComponentBase):
                 None,
                 True,
                 "type:{}, value:{}".format(
-                    cache_type, job[cache_type]
+                    cache_type, cache_value
                 ).encode(),
             )
         else:
@@ -131,6 +133,6 @@ class Component(components.ComponentBase):
                 None,
                 True,
                 "type:{}, value:{}".format(
-                    cache_type, job[cache_type]
+                    cache_type, cache_value
                 ).encode(),
             )
