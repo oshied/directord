@@ -62,6 +62,24 @@ class Driver(drivers.BaseDriver):
             connection_string=connection_string,
         )
 
+    def _socket_context(self, socket_type):
+        """Create socket context and return a bind object.
+
+        :param socket_type: Set the Socket type, typically defined using a ZMQ
+                            constant.
+        :type socket_type: Integer
+        :returns: Object
+        """
+
+        bind = self.ctx.socket(socket_type)
+        # NOTE(cloudnull): STUPID SOLUTION. We should have
+        #                  a more intelligent HWM solution.
+        try:
+            bind.sndhwm = bind.rcvhwm = 0
+        except AttributeError:
+            bind.hwm = 0
+        return bind
+
     def _socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN
     ):
@@ -85,14 +103,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        bind = self.ctx.socket(socket_type)
-        # NOTE(cloudnull): STUPID SOLUTION TO FILE TRANSFER ISSUES
-        #                  we need to develop a better one.
-        try:
-            bind.sndhwm = bind.rcvhwm = 0
-        except AttributeError:
-            bind.hwm = 0
-
+        bind = self._socket_context(socket_type=socket_type)
         auth_enabled = self.args.shared_key or self.args.curve_encryption
 
         if auth_enabled:
@@ -189,7 +200,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        bind = self.ctx.socket(socket_type)
+        bind = self._socket_context(socket_type=socket_type)
 
         if self.args.shared_key:
             bind.plain_username = b"admin"  # User is hard coded.
