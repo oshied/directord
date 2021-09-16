@@ -17,6 +17,7 @@ import grp
 import os
 import pwd
 import shlex
+import time
 import traceback
 
 from directord import components
@@ -26,23 +27,56 @@ from directord import utils
 class Transfer:
     """Transfer connection context manager."""
 
-    def __init__(self, driver):
+    def __init__(self, driver, log, job_id):
         """Initialize the transfer context manager class."""
 
-        self.bind_transfer = driver.transfer_connect()
+        self.driver = driver
+        self.bind_transfer = self.driver.transfer_connect()
+        self.log = log
+        self.job_id = job_id
 
     def __enter__(self):
         """Return the bind_transfer object on enter."""
 
+        self.log.debug(
+            "Transfer started to %s for job [ %s ]",
+            self.driver.identity,
+            self.job_id,
+        )
         return self.bind_transfer
 
     def __exit__(self, *args, **kwargs):
         """Close the bind transfer object."""
 
         try:
-            self.bind_transfer.close()
-        except AttributeError:
-            pass
+            self.bind_transfer.close(linger=2)
+            count = 0
+            while not self.bind_transfer.closed:
+                count += 1
+                if count > 60:
+                    raise TimeoutError(
+                        "Job [ {} ] failed to close transfer socket".format(
+                            self.job_id
+                        )
+                    )
+                else:
+                    self.bind_transfer.close(linger=2)
+                    time.sleep(1)
+        except Exception as e:
+            self.log.error(
+                "Job [ %s ] transfer ran into an exception"
+                " while closing the socket %s",
+                str(e),
+                self.job_id,
+            )
+        else:
+            self.log.debug("Job [ %s ] transfer socket closed", self.job_id)
+
+        self.log.debug(
+            "Transfer ended for %s for job [ %s ]",
+            self.driver.identity,
+            self.job_id,
+        )
 
 
 class Component(components.ComponentBase):
@@ -118,7 +152,9 @@ class Component(components.ComponentBase):
         """
 
         self.log.debug("client(): job: %s, cache: %s", job, cache)
-        with Transfer(driver=self.driver) as bind_transfer:
+        with Transfer(
+            driver=self.driver, log=self.log, job_id=job["job_id"]
+        ) as bind_transfer:
             return self._client(
                 cache, job, self.info, self.driver, bind_transfer
             )
@@ -162,25 +198,23 @@ class Component(components.ComponentBase):
             os.path.isfile(file_to)
             and utils.file_sha3_224(file_to) == file_sha3_224
         ):
-            info = (
+            stdout = (
                 "File exists {} and SHA3_224 {} matches, nothing to"
                 " transfer".format(file_to, file_sha3_224)
             )
-            driver.socket_send(
-                socket=bind_transfer,
-                msg_id=job["job_id"].encode(),
-                control=driver.transfer_end,
-            )
-            success, error = self.file_blueprinter(
-                cache=cache, file_to=file_to
-            )
-            if blueprint and not success:
-                return utils.file_sha3_224(file_to), error, False, None
+            if blueprint:
+                success, error = self.file_blueprinter(
+                    cache=cache, file_to=file_to
+                )
+                if not success:
+                    return utils.file_sha3_224(file_to), error, False, None
 
-            return info, None, True, None
+            return stdout, None, True, None
         else:
             self.log.debug(
-                "Requesting transfer of source file:%s", source_file
+                "Job [ %s ] requesting transfer of source file:%s",
+                job["job_id"],
+                source_file,
             )
             driver.socket_send(
                 socket=bind_transfer,
@@ -204,17 +238,48 @@ class Component(components.ComponentBase):
                         ) = driver.socket_recv(socket=bind_transfer)
                         if control == driver.transfer_end:
                             break
-                    except Exception:
+                        elif control == driver.job_processing:
+                            self.log.debug(
+                                "Job [ %s ] identity [ %s ] received %s",
+                                job["job_id"],
+                                self.driver.identity,
+                                len(data),
+                            )
+                    except Exception as e:
+                        self.log.debug(
+                            "Job [ %s ] failed to run transfer %s",
+                            job["job_id"],
+                            str(e),
+                        )
                         break
                     else:
                         f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
-            self.log.critical(str(e))
+            self.log.critical(
+                "Job [ %s ] file failure: %s", job["job_id"], str(e)
+            )
             return None, traceback.format_exc(), False, None
+        except Exception as e:
+            return (
+                None,
+                "Transfer never started: {}".format(str(e)),
+                False,
+                None,
+            )
+        else:
+            self.log.debug(
+                "Job [ %s ] transfer of source file:%s complete to [ %s ]",
+                job["job_id"],
+                source_file,
+                file_to,
+            )
 
-        success, error = self.file_blueprinter(cache=cache, file_to=file_to)
-        if blueprint and not success:
-            return utils.file_sha3_224(file_to), error, False, None
+        if blueprint:
+            success, error = self.file_blueprinter(
+                cache=cache, file_to=file_to
+            )
+            if not success:
+                return utils.file_sha3_224(file_to), error, False, None
 
         stderr = None
         outcome = True
@@ -244,5 +309,14 @@ class Component(components.ComponentBase):
 
         if mode:
             os.chmod(file_to, mode)
+
+        if not blueprint and utils.file_sha3_224(file_to) != file_sha3_224:
+            stderr = (
+                "Data integrity failure. Expected SHA {}, found SHA {}."
+                " Check transfer logs for more details.".format(
+                    utils.file_sha3_224(file_to), file_sha3_224
+                )
+            )
+            return None, stderr, False, None
 
         return utils.file_sha3_224(file_to), stderr, outcome, None

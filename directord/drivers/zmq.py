@@ -86,6 +86,13 @@ class Driver(drivers.BaseDriver):
         """
 
         bind = self.ctx.socket(socket_type)
+        # NOTE(cloudnull): STUPID SOLUTION TO FILE TRANSFER ISSUES
+        #                  we need to develop a better one.
+        try:
+            bind.sndhwm = bind.rcvhwm = 0
+        except AttributeError:
+            bind.hwm = 0
+
         auth_enabled = self.args.shared_key or self.args.curve_encryption
 
         if auth_enabled:

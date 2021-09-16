@@ -204,29 +204,6 @@ class Client(interface.Interface):
             thread.start()
             return thread
 
-    def _parent_q_pruning(self, parent_name, parent_tracker):
-        """Check and prune parent objects when they become stale.
-
-        * This method will timestamp parent objects. Parent objects will
-          be considered stale after 30 seconds of inactivity.
-
-        :param parent_name: String name of parent queue to inspect.
-        :type parent_name: String
-        :param parent_tracker: Dictionary object containing all parent
-                               references.
-        :type parent_tracker: Dictionary
-        """
-
-        timestamp = time.time()
-        if (
-            timestamp - parent_tracker[parent_name].get("time", timestamp)
-        ) >= 30:
-            parent_tracker.pop(parent_name)
-            self.log.info("Pruned parent [ %s ]", parent_name)
-        else:
-            if "time" not in parent_tracker[parent_name]:
-                parent_tracker[parent_name]["time"] = timestamp
-
     def job_q_processor(self, lock=None):
         """Process a given work queue.
 
@@ -241,10 +218,8 @@ class Client(interface.Interface):
             lock = self.get_lock()
 
         parent_tracker = dict()
-        threads = set()
         poller_time = time.time()
         poller_interval = 8
-        poller_loop = 0
         while True:
             poller_interval = utils.return_poller_interval(
                 poller_time=poller_time,
@@ -263,22 +238,21 @@ class Client(interface.Interface):
             except Exception:
                 for key, value in list(parent_tracker.items()):
                     if value["t"]:
-                        if value["t"].is_alive():
-                            threads.add(value["t"])
+                        if value["t"].exitcode is None:
                             parent_tracker[key].pop("time", None)
                         elif value["q"].empty():
-                            self._parent_q_pruning(
-                                parent_tracker=parent_tracker, parent_name=key
-                            )
-                            try:
-                                threads.remove(value["t"])
-                            except KeyError:
-                                pass
+                            timestamp = time.time()
+                            if timestamp - value.get("time", timestamp) >= 30:
+                                parent_tracker.pop(key)
+                                self.log.info("Pruned parent [ %s ]", key)
                             else:
-                                self.log.debug(
-                                    "Process [ %s ] finished",
-                                    value["t"].name,
-                                )
+                                if "time" not in value:
+                                    parent_tracker[key]["time"] = timestamp
+                                    self.log.debug(
+                                        "Process [ %s ] finished, begining"
+                                        " prune",
+                                        key,
+                                    )
                         else:
                             self.log.info(
                                 "Dead parent [ %s ] found with queue items,"
@@ -288,28 +262,38 @@ class Client(interface.Interface):
                             parent_tracker[key]["t"] = None
                             parent_tracker[key].pop("time", None)
                     else:
-                        parent_tracker[key].pop("time", None)
+                        if value["bypass"]:
+                            _threads = len(
+                                [
+                                    True
+                                    for i in parent_tracker.values()
+                                    if i["t"]
+                                    and i["t"].is_alive()
+                                    and i["bypass"]
+                                ]
+                            )
+                        else:
+                            _threads = len(
+                                [
+                                    True
+                                    for i in parent_tracker.values()
+                                    if i["t"]
+                                    and i["t"].is_alive()
+                                    and not i["bypass"]
+                                ]
+                            )
                         t = parent_tracker[key]["t"] = self._process_spawn(
                             lock=lock,
                             queue=value["q"],
-                            threads=len(threads),
+                            threads=_threads,
+                            processes=10 if value["bypass"] else 5,
                             name=key,
                         )
                         if t:
-                            threads.add(t)
+                            parent_tracker[key].pop("time", None)
 
-                if len(threads) > 0:
-                    for t in list(threads):
-                        if t.exitcode is not None:
-                            self.log.debug(
-                                "Cleaned up dead thread [ %s ]", t.name
-                            )
-                            threads.remove(t)
-                    poller_interval, poller_time = 8, time.time()
-                    poller_loop += 1
-                    if poller_loop >= 128:
-                        self.log.debug("Active threads %s", threads)
-                        poller_loop = 0
+                if poller_interval > 8 and parent_tracker:
+                    self.log.debug("All pending parents %s", parent_tracker)
 
                 time.sleep(poller_interval * 0.001)
             else:
@@ -344,7 +328,7 @@ class Client(interface.Interface):
                     _parent = parent_tracker[_q_name]
                 else:
                     _parent = parent_tracker[_q_name] = dict(
-                        t=None, q=self.get_queue()
+                        t=None, q=self.get_queue(), bypass=False
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
@@ -357,20 +341,32 @@ class Client(interface.Interface):
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
-                        threads=len(threads),
+                        threads=len(
+                            [
+                                True
+                                for i in parent_tracker.values()
+                                if i["t"] and i["t"].is_alive() and i["bypass"]
+                            ]
+                        ),
+                        processes=10,
                         name=_q_name,
-                        bypass=True,
                     )
-                    threads.add(t)
+                    parent_tracker[_q_name]["bypass"] = True
                 else:
                     t = parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
-                        threads=len(threads),
+                        threads=len(
+                            [
+                                True
+                                for i in parent_tracker.values()
+                                if i["t"]
+                                and i["t"].is_alive()
+                                and not i["bypass"]
+                            ]
+                        ),
                         name=_q_name,
                     )
-                    if t:
-                        threads.add(t)
 
     def purge_queue(self, queue, job_id):
         """Purge all jobs from the queue.
@@ -487,8 +483,8 @@ class Client(interface.Interface):
 
             locked = False
             if component.requires_lock or job.get("force_lock", False) is True:
-                lock.acquire()
-                locked = True
+                locked = lock.acquire()
+                self.log.debug("Component lock acquired for [ %s ]", job_id)
 
             with self.timeout(
                 time=job.get("timeout", 600),
@@ -524,6 +520,7 @@ class Client(interface.Interface):
 
             if locked:
                 lock.release()
+                self.log.debug("Component lock released for [ %s ]", job_id)
 
             self.q_return.put(component_return)
 
@@ -535,14 +532,16 @@ class Client(interface.Interface):
                 ][-1]
             except IndexError:
                 self.log.debug(
-                    "No valid callbacks for this node %s.",
+                    "Job [ %s ] no valid callbacks for this node %s.",
+                    job["job_id"],
                     self.driver.identity,
                 )
             except TypeError:
                 self.log.debug("No callbacks defined.")
             else:
                 self.log.info(
-                    "Number of job call backs [ %s ]",
+                    "Job [ %s ] number of job call backs [ %s ]",
+                    job["job_id"],
                     len(component.block_on_tasks),
                 )
                 self.log.debug("Job call backs: %s ", component.block_on_tasks)
@@ -564,7 +563,9 @@ class Client(interface.Interface):
                         else:
 
                             self.log.debug(
-                                "waiting for callback job to complete. %s",
+                                "waiting for callback job from [ %s ] to"
+                                " complete. %s",
+                                job["job_id"],
                                 block_on_task_data,
                             )
                             count += 1
@@ -572,12 +573,14 @@ class Client(interface.Interface):
 
                 if block_on_task:
                     self.log.debug(
-                        "Task sha [ %s ] callback complete",
+                        "Job [ %s ] task sha [ %s ] callback complete",
+                        job["job_id"],
                         block_on_task_data["job_sha3_224"],
                     )
                 else:
                     self.log.error(
-                        "Task sha [ %s ] callback never completed",
+                        "Job [ %s ] task sha [ %s ] callback never completed",
+                        job["job_id"],
                         block_on_task_data["job_sha3_224"],
                     )
                     self.q_return.put(
@@ -635,7 +638,7 @@ class Client(interface.Interface):
             if not isinstance(stderr, bytes):
                 stderr = stderr.encode()
             conn.stderr = stderr
-            self.log.warning(stderr)
+            self.log.warning("Job [ %s ], stderr: %s", job["job_id"], stderr)
 
         if outcome is False:
             state = conn.job_state = self.driver.job_failed

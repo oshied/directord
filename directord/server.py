@@ -256,8 +256,7 @@ class Server(interface.Interface):
             job_metadata["STDERR"][identity] = job_stderr
 
         self.log.debug("current job [ %s ] state [ %s ]", job_id, job_status)
-        job_metadata["PROCESSING"] = job_status.decode()
-
+        job_metadata["_processing"][identity] = job_status.decode()
         if job_status == self.driver.job_ack:
             self.log.debug("%s received job %s", identity, job_id)
         elif job_status == self.driver.job_processing:
@@ -269,6 +268,9 @@ class Server(interface.Interface):
                 job_metadata["SUCCESS"].append(identity)
             else:
                 job_metadata["SUCCESS"] = [identity]
+            job_metadata["_processing"][
+                identity
+            ] = self.driver.job_end.decode()
         elif job_status == self.driver.job_failed:
             _set_time()
             self.log.debug("%s failed %s", identity, job_id)
@@ -283,45 +285,16 @@ class Server(interface.Interface):
         if component_exec_timestamp:
             job_metadata["COMPONENT_TIMESTAMP"] = component_exec_timestamp
 
+        for process in job_metadata["_processing"].values():
+            if process == self.driver.job_processing.decode():
+                job_metadata[
+                    "PROCESSING"
+                ] = self.driver.job_processing.decode()
+                break
+        else:
+            job_metadata["PROCESSING"] = self.driver.job_end.decode()
+
         self.return_jobs[job_id] = job_metadata
-
-    def _run_transfer(self, identity, verb, file_path):
-        """Run file transfer job.
-
-        The transfer process will transfer all files from a given meta data
-        set using strict identity targetting.
-
-        When a file is initiated all chunks will be sent over the wire.
-
-        :param identity: Node name
-        :type identity: String
-        :param verb: Action taken
-        :type verb: Bytes
-        :param file_path: Path of file to transfer.
-        :type file_path: String
-        """
-
-        self.log.debug("Processing file [ %s ]", file_path)
-        if not os.path.isfile(file_path):
-            self.log.error("File was not found. File path:%s", file_path)
-            return
-
-        self.log.info("File transfer for [ %s ] starting", file_path)
-        with open(file_path, "rb") as f:
-            for chunk in self.read_in_chunks(file_object=f):
-                self.driver.socket_send(
-                    socket=self.bind_transfer,
-                    identity=identity,
-                    command=verb,
-                    data=chunk,
-                )
-            else:
-                self.driver.socket_send(
-                    socket=self.bind_transfer,
-                    identity=identity,
-                    control=self.driver.transfer_end,
-                    command=verb,
-                )
 
     def create_return_jobs(self, task, job_item, targets):
         return self.return_jobs.set(
@@ -340,6 +313,7 @@ class Server(interface.Interface):
                 "_createtime": time.time(),
                 "_executiontime": dict(),
                 "_roundtripltime": dict(),
+                "_processing": dict(),
             },
         )
 
@@ -398,7 +372,6 @@ class Server(interface.Interface):
                     except AttributeError:
                         pass
 
-                    self.log.debug("Target data [ %s ]", target)
                     if target in self.workers.keys():
                         self.log.debug("Target identified [ %s ].", target)
                         targets.append(target)
@@ -473,8 +446,9 @@ class Server(interface.Interface):
                                 )
 
                             self.log.debug(
-                                "Queueing file transfer for"
+                                "Queueing file transfer job [ %s ] for"
                                 " file_path [ %s ] to identity [ %s ]",
+                                job_item["job_id"],
                                 file_path,
                                 identity.decode(),
                             )
@@ -507,6 +481,127 @@ class Server(interface.Interface):
             else:
                 time.sleep(poller_interval * 0.001)
 
+    def run_transfers(self, sentinel=False):
+        """Execute the transfer loop.
+
+        Directord's interaction executor will slow down the poll interval
+        when no work is present. This means Directord will ramp-up resource
+        utilization when required and become virtually idle when there's
+        nothing to do.
+
+        * Initial poll interval is 1024, maxing out at 2048. When work is
+          present, the poll interval is 1.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
+        """
+
+        self.bind_transfer = self.driver.transfer_bind()
+        poller_time = time.time()
+        poller_interval = 128
+
+        while True:
+            poller_interval = utils.return_poller_interval(
+                poller_time=poller_time,
+                poller_interval=poller_interval,
+                log=self.log,
+            )
+
+            if self.driver.bind_check(
+                bind=self.bind_transfer, constant=poller_interval
+            ):
+                poller_interval, poller_time = 128, time.time()
+
+                (
+                    identity,
+                    msg_id,
+                    control,
+                    command,
+                    _,
+                    info,
+                    _,
+                    _,
+                ) = self.driver.socket_recv(socket=self.bind_transfer)
+                self.log.debug(
+                    "Identity [ %s ] Transfer job received [ %s ]",
+                    identity,
+                    msg_id.decode(),
+                )
+
+                if command == b"transfer":
+                    transfer_obj = info.decode()
+                    transfer_job_id = msg_id.decode()
+                    transfer_identity = identity.decode()
+                    transfer_verb = b"ADD"
+                    transfer_file_path = os.path.abspath(
+                        os.path.expanduser(transfer_obj)
+                    )
+                    self.log.debug(
+                        "Queing transfer for [ %s ] job [ %s ]",
+                        identity.decode(),
+                        msg_id.decode(),
+                    )
+                    self.log.debug(
+                        "Identity [ %s ] Job [ %s ] processing file [ %s ]",
+                        transfer_identity,
+                        transfer_job_id,
+                        transfer_file_path,
+                    )
+                    if not os.path.isfile(transfer_file_path):
+                        self.log.error(
+                            "Identity [ %s ] Job [ %s ] File was not found."
+                            " File path [ %s ]",
+                            transfer_identity,
+                            transfer_job_id,
+                            transfer_file_path,
+                        )
+                        return
+
+                    self.log.info(
+                        "Identity [ %s ] Job [ %s ] file transfer for [ %s ]"
+                        " starting",
+                        transfer_identity,
+                        transfer_job_id,
+                        transfer_file_path,
+                    )
+                    with open(transfer_file_path, "rb") as f:
+                        for chunk in self.read_in_chunks(file_object=f):
+                            self.driver.socket_send(
+                                socket=self.bind_transfer,
+                                identity=transfer_identity.encode(),
+                                control=self.driver.job_processing,
+                                command=transfer_verb,
+                                data=chunk,
+                            )
+                        else:
+                            self.driver.socket_send(
+                                socket=self.bind_transfer,
+                                identity=transfer_identity.encode(),
+                                control=self.driver.transfer_end,
+                                command=transfer_verb,
+                            )
+                            self.log.info(
+                                "Identity [ %s ] Job [ %s ] file transfer for"
+                                " [ %s ] complete",
+                                transfer_identity,
+                                transfer_job_id,
+                                transfer_file_path,
+                            )
+                else:
+                    self.log.warning(
+                        "Unknown transfer job [ %s ] connection received from"
+                        " [ %s ], using command [ %s ], control [ %s ] with"
+                        " info [ %s ]",
+                        msg_id.decode(),
+                        identity.decode(),
+                        command.decode(),
+                        control.decode(),
+                        info.decode(),
+                    )
+
+            if sentinel:
+                break
+
     def run_interactions(self, sentinel=False):
         """Execute the interactions loop.
 
@@ -523,7 +618,6 @@ class Server(interface.Interface):
         """
 
         self.bind_job = self.driver.job_bind()
-        self.bind_transfer = self.driver.transfer_bind()
         poller_time = time.time()
         poller_interval = 1
 
@@ -553,45 +647,6 @@ class Server(interface.Interface):
                     )
 
             if self.driver.bind_check(
-                bind=self.bind_transfer, constant=poller_interval
-            ):
-                poller_interval, poller_time = 1, time.time()
-
-                (
-                    identity,
-                    msg_id,
-                    control,
-                    command,
-                    _,
-                    info,
-                    _,
-                    _,
-                ) = self.driver.socket_recv(socket=self.bind_transfer)
-                self.log.debug("Transfer job received [ %s ]", msg_id.decode())
-
-                if control == self.driver.transfer_end:
-                    self.log.debug(
-                        "Transfer complete for [ %s ]", identity.decode()
-                    )
-                    self._set_job_status(
-                        job_status=control,
-                        job_id=msg_id.decode(),
-                        identity=identity.decode(),
-                        job_output=info.decode(),
-                    )
-                elif command == b"transfer":
-                    transfer_obj = info.decode()
-                    self.log.debug(
-                        "Executing transfer for [ %s ]", identity.decode()
-                    )
-                    self._run_transfer(
-                        identity=identity,
-                        verb=b"ADD",
-                        file_path=os.path.abspath(
-                            os.path.expanduser(transfer_obj)
-                        ),
-                    )
-            elif self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
                 poller_interval, poller_time = 1, time.time()
@@ -599,7 +654,7 @@ class Server(interface.Interface):
                     identity,
                     msg_id,
                     control,
-                    command,
+                    _,
                     data,
                     info,
                     stderr,
@@ -813,6 +868,10 @@ class Server(interface.Interface):
                 self.thread(
                     name="run_interactions", target=self.run_interactions
                 ),
+                True,
+            ),
+            (
+                self.thread(name="run_transfers", target=self.run_transfers),
                 True,
             ),
             (self.thread(name="run_job", target=self.run_job), True),

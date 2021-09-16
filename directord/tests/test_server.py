@@ -66,6 +66,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x06"},
             }
         }
         self.server._set_job_status(
@@ -83,13 +84,14 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x06",
+                "PROCESSING": "\x04",
                 "STDERR": {},
                 "STDOUT": {},
                 "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x06"},
             },
         )
 
@@ -107,6 +109,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": dict(),
             }
         }
         self.server._set_job_status(
@@ -125,13 +128,14 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x06",
+                "PROCESSING": "\x04",
                 "STDERR": {},
                 "STDOUT": {"test-node": "stdout"},
                 "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x06"},
             },
         )
 
@@ -149,6 +153,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             }
         }
         self.server._set_job_status(
@@ -167,13 +172,14 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x06",
+                "PROCESSING": "\x04",
                 "STDERR": {"test-node": "stderr"},
                 "STDOUT": {},
                 "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x06"},
             },
         )
 
@@ -191,6 +197,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x16"},
             }
         }
         self.server._set_job_status(
@@ -215,6 +222,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x16"},
             },
         )
 
@@ -232,6 +240,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             }
         }
         self.server._set_job_status(
@@ -257,6 +266,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             },
         )
 
@@ -274,6 +284,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x00"},
             }
         }
         self.server._set_job_status(
@@ -291,7 +302,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x00",
+                "PROCESSING": "\x04",
                 "STDERR": {},
                 "STDOUT": {},
                 "SUCCESS": ["test-node"],
@@ -299,6 +310,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x04"},
             },
         )
 
@@ -316,6 +328,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x15"},
             }
         }
         self.server._set_job_status(
@@ -333,7 +346,7 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x15",
+                "PROCESSING": "\x04",
                 "STDERR": {},
                 "STDOUT": {},
                 "FAILED": ["test-node"],
@@ -341,19 +354,30 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
+                "_processing": {"test-node": "\x15"},
             },
         )
 
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.info", autospec=True)
-    def test__run_transfer(self, mock_log_info, mock_isfile):
+    def test_run_transfers(self, mock_log_info, mock_isfile):
+        self.mock_driver.socket_recv.side_effect = [
+            (
+                b"test-node",
+                b"XXX",
+                self.server.driver.job_processing,
+                b"transfer",
+                None,
+                b"/fake/file",
+                None,
+                None,
+            )
+        ]
         self.server.bind_transfer = MagicMock()
         mock_isfile.return_value = True
         m = unittest.mock.mock_open(read_data="test data")
         with patch("builtins.open", m):
-            self.server._run_transfer(
-                identity="test-node", verb=b"ADD", file_path="/test/file1"
-            )
+            self.server.run_transfers(sentinel=True)
         self.mock_driver.socket_send.assert_called()
         mock_log_info.assert_called()
 
@@ -386,6 +410,7 @@ class TestServer(tests.TestDriverBase):
                 "TRANSFERS": [],
                 "VERB": "TEST",
                 "_createtime": ANY,
+                "_processing": ANY,
                 "_executiontime": ANY,
                 "_roundtripltime": ANY,
             },
@@ -473,7 +498,7 @@ class TestServer(tests.TestDriverBase):
                 None,
                 None,
                 None,
-                None,
+                b"info",
                 None,
                 None,
             )
@@ -490,7 +515,7 @@ class TestServer(tests.TestDriverBase):
                 None,
                 None,
                 None,
-                None,
+                b"info",
                 None,
                 None,
             )
@@ -507,7 +532,7 @@ class TestServer(tests.TestDriverBase):
                 None,
                 None,
                 None,
-                None,
+                b"info",
                 None,
                 None,
             )
@@ -515,14 +540,12 @@ class TestServer(tests.TestDriverBase):
         mock_time.side_effect = [1, 34, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
 
-    @patch("directord.server.Server._run_transfer", autospec=True)
     @patch("time.time", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
-    def test_run_interactions_run_transfer(
+    def test_run_interactions_run_transfers(
         self,
         mock_log_debug,
         mock_time,
-        mock_run_transfer,
     ):
         self.mock_driver.socket_recv.side_effect = [
             (
@@ -540,9 +563,6 @@ class TestServer(tests.TestDriverBase):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
         mock_log_debug.assert_called()
-        mock_run_transfer.assert_called_with(
-            ANY, identity=b"test-node", verb=b"ADD", file_path="/test/file1"
-        )
 
     @patch("directord.server.Server._set_job_status", autospec=True)
     @patch("time.time", autospec=True)
@@ -575,83 +595,6 @@ class TestServer(tests.TestDriverBase):
             job_id="XXX",
             identity="test-node",
             job_output="/test/file1",
-        )
-
-    @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("time.time", autospec=True)
-    def test_run_interactions_set_status(
-        self,
-        mock_time,
-        mock_set_job_status,
-    ):
-        self.mock_driver.bind_check.side_effect = [False, True]
-        self.mock_driver.socket_recv.side_effect = [
-            (
-                b"test-node",
-                b"XXX",
-                self.server.driver.job_end,
-                b"RUN",
-                b"{}",
-                b"info",
-                None,
-                None,
-            )
-        ]
-        self.mock_driver.job_bind.return_value = MagicMock()
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.server.run_interactions(sentinel=True)
-        mock_set_job_status.assert_called_with(
-            ANY,
-            job_status=b"\x04",
-            job_id="XXX",
-            identity="test-node",
-            job_output="info",
-            job_stdout=None,
-            job_stderr=None,
-            execution_time=0,
-            return_timestamp=0,
-            component_exec_timestamp=0,
-            recv_time=1,
-        )
-
-    @patch("directord.server.Server._set_job_status", autospec=True)
-    @patch("time.time", autospec=True)
-    def test_run_interactions_run_query(
-        self,
-        mock_time,
-        mock_set_job_status,
-    ):
-        self.mock_driver.bind_check.side_effect = [False, True]
-        self.mock_driver.socket_recv.side_effect = [
-            (
-                b"test-node",
-                b"XXX",
-                self.server.driver.job_end,
-                b"QUERY",
-                json.dumps(
-                    {
-                        "verb": "RUN",
-                        "restrict": "12345",
-                        "job_sha3_224": "YYY",
-                        "targets": ["test-node1", "test-node2"],
-                        "job_id": "XXX",
-                        "query": "key",
-                    }
-                ).encode(),
-                b'{"key": "value"}',
-                None,
-                None,
-            )
-        ]
-        self.mock_driver.job_bind.return_value = MagicMock()
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.server.run_interactions(sentinel=True)
-        mock_set_job_status.assert_called_with(
-            ANY,
-            job_status=b"\x04",
-            job_id="XXX",
-            identity="test-node",
-            job_output='{"key": "value"}',
             job_stdout=None,
             job_stderr=None,
             execution_time=0,
@@ -840,7 +783,9 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
+        mock_run_threads.assert_called_with(
+            ANY, threads=[ANY, ANY, ANY, ANY, ANY]
+        )
 
     @patch("directord.server.Server.run_threads", autospec=True)
     def test_worker_run_ui(self, mock_run_threads):
@@ -850,7 +795,7 @@ class TestServer(tests.TestDriverBase):
         finally:
             self.args = tests.FakeArgs()
         mock_run_threads.assert_called_with(
-            ANY, threads=[ANY, ANY, ANY, ANY, ANY]
+            ANY, threads=[ANY, ANY, ANY, ANY, ANY, ANY]
         )
 
     @patch("time.time", autospec=True)
