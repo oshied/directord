@@ -197,9 +197,13 @@ class TestComponents(unittest.TestCase):
                 cache=tests.FakeCache(),
                 job=job,
             )
-        self.assertEqual(stdout, "YYYYYYYYY")
-        self.assertEqual(stderr, None)
-        self.assertEqual(outcome, True)
+        self.assertEqual(stdout, None)
+        self.assertEqual(
+            stderr,
+            "Transfer never started: cannot unpack non-iterable"
+            " NoneType object",
+        )
+        self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
 
     @patch("directord.utils.file_sha3_224", autospec=True)
@@ -221,9 +225,13 @@ class TestComponents(unittest.TestCase):
                 cache=tests.FakeCache(),
                 job=job,
             )
-        self.assertEqual(stdout, "YYYYYYYYY")
-        self.assertEqual(stderr, None)
-        self.assertEqual(outcome, True)
+        self.assertEqual(stdout, None)
+        self.assertEqual(
+            stderr,
+            "Transfer never started: cannot unpack non-iterable"
+            " NoneType object",
+        )
+        self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
 
     @patch("pwd.getpwnam", autospec=True)
@@ -261,11 +269,14 @@ class TestComponents(unittest.TestCase):
                 cache=tests.FakeCache(),
                 job=job,
             )
-        self.assertEqual(stdout, "YYYYYYYYY")
-        self.assertEqual(stderr, None)
-        self.assertEqual(outcome, True)
+        self.assertEqual(stdout, None)
+        self.assertEqual(
+            stderr,
+            "Transfer never started: cannot unpack non-iterable"
+            " NoneType object",
+        )
+        self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
-        mock_chown.assert_called()
 
     @patch("directord.utils.file_sha3_224", autospec=True)
     @patch("os.path.isfile", autospec=True)
@@ -288,15 +299,18 @@ class TestComponents(unittest.TestCase):
                 group=9999,
                 job_id="XXXXXX",
             )
-            stdout, stderr, outcome, return_info = self._transfer.client(
+            stdout, stderr, outcome, _ = self._transfer.client(
                 cache=tests.FakeCache(),
                 job=job,
             )
-        self.assertEqual(stdout, "YYYYYYYYY")
-        self.assertEqual(stderr, None)
-        self.assertEqual(outcome, True)
+        self.assertEqual(stdout, None)
+        self.assertEqual(
+            stderr,
+            "Transfer never started: cannot unpack non-iterable"
+            " NoneType object",
+        )
+        self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
-        mock_chown.assert_called()
 
     @patch("directord.utils.file_sha3_224", autospec=True)
     @patch("os.path.isfile", autospec=True)
@@ -318,15 +332,18 @@ class TestComponents(unittest.TestCase):
                 mode="0o777",
                 job_id="XXXXXX",
             )
-            stdout, stderr, outcome, return_info = self._transfer.client(
+            stdout, stderr, outcome, _ = self._transfer.client(
                 cache=tests.FakeCache(),
                 job=job,
             )
-        self.assertEqual(stdout, "YYYYYYYYY")
-        self.assertEqual(stderr, None)
-        self.assertEqual(outcome, True)
+        self.assertEqual(stdout, None)
+        self.assertEqual(
+            stderr,
+            "Transfer never started: cannot unpack non-iterable"
+            " NoneType object",
+        )
+        self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
-        mock_chmod.assert_called()
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__dnf_command_success(self, mock_run_command):

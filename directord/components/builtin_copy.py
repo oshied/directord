@@ -77,6 +77,7 @@ class Transfer:
             self.driver.identity,
             self.job_id,
         )
+        time.sleep(0.25)
 
 
 class Component(components.ComponentBase):
@@ -216,44 +217,61 @@ class Component(components.ComponentBase):
                 job["job_id"],
                 source_file,
             )
-            driver.socket_send(
-                socket=bind_transfer,
-                msg_id=job["job_id"].encode(),
-                control=driver.job_ack,
-                command=b"transfer",
-                info=source_file,
-            )
+
         try:
+            offset = 0
+            chunk = 131072
             with open(file_to, "wb") as f:
                 while True:
-                    try:
-                        (
-                            _,
-                            control,
-                            _,
-                            data,
-                            _,
-                            _,
-                            _,
-                        ) = driver.socket_recv(socket=bind_transfer)
+                    driver.socket_send(
+                        socket=bind_transfer,
+                        msg_id=job["job_id"].encode(),
+                        control=driver.transfer_start,
+                        command="{}".format(offset).encode(),
+                        data="{}".format(chunk).encode(),
+                        info=source_file,
+                    )
+                    offset += chunk
+                    (
+                        _,
+                        control,
+                        _,
+                        data,
+                        info,
+                        _,
+                        _,
+                    ) = driver.socket_recv(socket=bind_transfer)
+                    if control in [driver.job_processing, driver.transfer_end]:
+                        chunk_size = len(data)
+                        self.log.debug(
+                            "Job [ %s ] identity [ %s ] received %s",
+                            job["job_id"],
+                            self.driver.identity,
+                            chunk_size,
+                        )
+                        f.write(data)
                         if control == driver.transfer_end:
-                            break
-                        elif control == driver.job_processing:
                             self.log.debug(
-                                "Job [ %s ] identity [ %s ] received %s",
+                                "Job [ %s ] identity [ %s ] stopped transfer",
                                 job["job_id"],
                                 self.driver.identity,
-                                len(data),
                             )
-                    except Exception as e:
-                        self.log.error(
-                            "Job [ %s ] failed to run transfer %s",
-                            job["job_id"],
-                            str(e),
+                            break
+                        elif chunk_size < chunk:
+                            self.log.debug(
+                                "Job [ %s ] identity [ %s ] received the last"
+                                " chunk",
+                                job["job_id"],
+                                self.driver.identity,
+                            )
+                            break
+                    elif control == driver.job_failed:
+                        return (
+                            None,
+                            "Transfer failed: {}".format(info.decode),
+                            False,
+                            None,
                         )
-                        return None, traceback.format_exc(), False, str(e)
-                    else:
-                        f.write(data)
         except (FileNotFoundError, NotADirectoryError) as e:
             self.log.critical(
                 "Job [ %s ] file failure: %s", job["job_id"], str(e)

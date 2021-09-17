@@ -158,30 +158,6 @@ class TestProcessor(unittest.TestCase):
         self.assertFalse(thread1.daemon)
         self.assertTrue(thread2.daemon)
 
-    def test_read_in_chunks(self):
-        chunks = list()
-        with unittest.mock.patch(
-            "builtins.open", unittest.mock.mock_open(read_data="data")
-        ) as mock_file:
-            with open(mock_file) as f:
-                for d in self.processor.read_in_chunks(file_object=f):
-                    chunks.append(d)
-                    self.log.debug.called_once()
-        self.assertListEqual(chunks, ["data"])
-
-    def test_read_in_chunks_set_chunk(self):
-        chunks = list()
-        with unittest.mock.patch(
-            "builtins.open", unittest.mock.mock_open(read_data="data")
-        ) as mock_file:
-            with open(mock_file) as f:
-                for d in self.processor.read_in_chunks(
-                    file_object=f, chunk_size=1
-                ):
-                    chunks.append(d)
-                    self.log.debug.called_once()
-        self.assertListEqual(chunks, ["d", "a", "t", "a"])
-
     def test_timeout_error_reraise(self):
         with self.assertRaises(TimeoutError):
             with self.processor.timeout(1, "test-job_id", reraise=True):

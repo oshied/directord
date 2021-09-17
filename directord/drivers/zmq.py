@@ -80,7 +80,8 @@ class Driver(drivers.BaseDriver):
             bind.hwm = 0
 
         bind.set_hwm(0)
-        # bind.setsockopt(zmq.HWM, 0)
+        bind.setsockopt(zmq.SNDHWM, 0)
+        bind.setsockopt(zmq.RCVHWM, 0)
         if socket_type == zmq.ROUTER:
             bind.setsockopt(zmq.ROUTER_MANDATORY, 1)
         return bind
@@ -253,7 +254,6 @@ class Driver(drivers.BaseDriver):
         else:
             bind.setsockopt_string(zmq.IDENTITY, self.identity)
 
-        bind.linger = 0
         self.poller.register(bind, poller_type)
         bind.connect(
             "{connection}:{port}".format(
@@ -439,12 +439,19 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.debug("Establishing transfer connection.")
-        return self._socket_connect(
+        bind = self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.transfer_port,
             send_ready=False,
         )
+        bind.set_hwm(16)
+        self.log.debug(
+            "Identity [ %s ] transfer connect hwm state [ %s ]",
+            self.identity,
+            bind.get_hwm(),
+        )
+        return bind
 
     def heartbeat_connect(self):
         """Connect to a heartbeat socket and return the socket.
@@ -510,11 +517,18 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self._socket_bind(
+        bind = self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
             port=self.args.transfer_port,
         )
+        bind.set_hwm(16)
+        self.log.debug(
+            "Identity [ %s ] transfer connect hwm state [ %s ]",
+            self.identity,
+            bind.get_hwm(),
+        )
+        return bind
 
     def bind_check(self, bind, interval=1, constant=1000):
         """Return True if a bind type contains work ready.

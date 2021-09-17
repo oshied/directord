@@ -365,9 +365,9 @@ class TestServer(tests.TestDriverBase):
             (
                 b"test-node",
                 b"XXX",
-                self.server.driver.job_processing,
-                b"transfer",
-                None,
+                self.server.driver.transfer_start,
+                b"1",
+                b"1",
                 b"/fake/file",
                 None,
                 None,

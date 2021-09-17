@@ -43,7 +43,7 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
                     connection="tcp://test",
                     port=1234,
                 )
-            self.assertEqual(bind.linger, 0)
+            self.assertEqual(bind.linger, -1)
         mock_info_logging.assert_called()
 
     @patch("zmq.backend.Socket", autospec=True)
@@ -126,7 +126,7 @@ class TestDriverZMQ(unittest.TestCase):
         )
         self.assertEqual(bind.plain_username, b"admin")
         self.assertEqual(bind.plain_password, b"test-key")
-        self.assertEqual(bind.linger, 0)
+        self.assertEqual(bind.linger, -1)
         mock_info_logging.assert_called()
 
     @patch("logging.Logger.info", autospec=True)
@@ -136,7 +136,7 @@ class TestDriverZMQ(unittest.TestCase):
             connection="tcp://test",
             port=1234,
         )
-        self.assertEqual(bind.linger, 0)
+        self.assertEqual(bind.linger, -1)
         mock_info_logging.assert_called()
 
     @patch("zmq.sugar.socket.Socket", autospec=True)

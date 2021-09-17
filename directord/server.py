@@ -502,32 +502,23 @@ class Server(interface.Interface):
                     msg_id,
                     control,
                     command,
-                    _,
+                    data,
                     info,
                     _,
                     _,
                 ) = self.driver.socket_recv(socket=self.bind_transfer)
-                self.log.debug(
-                    "Identity [ %s ] Transfer job received [ %s ]",
-                    identity,
-                    msg_id.decode(),
+                transfer_identity = identity.decode()
+                transfer_job_id = msg_id.decode()
+                transfer_file_path = os.path.abspath(
+                    os.path.expanduser(info.decode())
                 )
+                offset = int(command)
+                chunk_size = int(data)
 
-                if command == b"transfer":
-                    transfer_obj = info.decode()
-                    transfer_job_id = msg_id.decode()
-                    transfer_identity = identity.decode()
-                    transfer_verb = b"ADD"
-                    transfer_file_path = os.path.abspath(
-                        os.path.expanduser(transfer_obj)
-                    )
+                if control == self.driver.transfer_start:
                     self.log.debug(
-                        "Queing transfer for [ %s ] job [ %s ]",
-                        identity.decode(),
-                        msg_id.decode(),
-                    )
-                    self.log.debug(
-                        "Identity [ %s ] Job [ %s ] processing file [ %s ]",
+                        "Identity [ %s ] transfer job [ %s ] processing"
+                        " file [ %s ]",
                         transfer_identity,
                         transfer_job_id,
                         transfer_file_path,
@@ -540,46 +531,49 @@ class Server(interface.Interface):
                             transfer_job_id,
                             transfer_file_path,
                         )
-                        return
-
-                    self.log.info(
-                        "Identity [ %s ] Job [ %s ] file transfer for [ %s ]"
-                        " starting",
-                        transfer_identity,
-                        transfer_job_id,
-                        transfer_file_path,
-                    )
-                    with open(transfer_file_path, "rb") as f:
-                        for chunk in self.read_in_chunks(file_object=f):
+                        self.driver.socket_send(
+                            socket=self.bind_transfer,
+                            identity=transfer_identity.encode(),
+                            control=self.driver.job_failed,
+                            info="File [ {} ] was not found".format(
+                                transfer_file_path
+                            ).encode(),
+                        )
+                    else:
+                        self.log.info(
+                            "Identity [ %s ] Job [ %s ] file transfer for"
+                            " [ %s ] starting",
+                            transfer_identity,
+                            transfer_job_id,
+                            transfer_file_path,
+                        )
+                        with open(transfer_file_path, "rb") as f:
+                            f.seek(offset, os.SEEK_SET)
+                            data = f.read(chunk_size)
                             self.driver.socket_send(
                                 socket=self.bind_transfer,
                                 identity=transfer_identity.encode(),
-                                control=self.driver.job_processing,
-                                command=transfer_verb,
-                                data=chunk,
+                                control=(
+                                    self.driver.transfer_end
+                                    if len(data) < chunk_size
+                                    else self.driver.job_processing
+                                ),
+                                data=data,
                             )
-                        else:
-                            self.driver.socket_send(
-                                socket=self.bind_transfer,
-                                identity=transfer_identity.encode(),
-                                control=self.driver.transfer_end,
-                                command=transfer_verb,
-                            )
-                            self.log.info(
-                                "Identity [ %s ] Job [ %s ] file transfer for"
-                                " [ %s ] complete",
-                                transfer_identity,
-                                transfer_job_id,
-                                transfer_file_path,
-                            )
+                        self.log.info(
+                            "Identity [ %s ] Job [ %s ] file transfer for"
+                            " [ %s ] blob sent",
+                            transfer_identity,
+                            transfer_job_id,
+                            transfer_file_path,
+                        )
                 else:
                     self.log.warning(
                         "Unknown transfer job [ %s ] connection received from"
-                        " [ %s ], using command [ %s ], control [ %s ] with"
+                        " [ %s ], control [ %s ] with"
                         " info [ %s ]",
                         msg_id.decode(),
                         identity.decode(),
-                        command.decode(),
                         control.decode(),
                         info.decode(),
                     )
