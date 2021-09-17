@@ -601,8 +601,7 @@ class Server(interface.Interface):
         poller_interval = 1
         run_jobs_thread = None
         while True:
-            if run_jobs_thread and not run_jobs_thread.is_alive():
-                run_jobs_thread.terminate()
+            if self.terminate_process(process=run_jobs_thread):
                 run_jobs_thread = None
 
             if not self.job_queue.empty():

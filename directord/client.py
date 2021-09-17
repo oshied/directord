@@ -212,12 +212,34 @@ class Client(interface.Interface):
         :type lock: Object
         """
 
+        def _parent_prune(parents, parent):
+            """Prune parent objects when possible.
+
+            :param parents: Dictionary of all parent objects.
+            :type parents: Dictionary
+            :param parent: Name of parent to check.
+            :type parent: String
+            :returns: Boolean
+            """
+            timestamp = time.time()
+            if "time" not in parents[parent]:
+                parents[parent]["time"] = timestamp
+                self.log.debug(
+                    "Parent [ %s ] begining prune", parent,
+                )
+            elif timestamp - parents[parent].get("time", timestamp) >= 30:
+                parents.pop(parent)
+                self.log.info("Pruned parent [ %s ]", parent)
+                return True
+            return False
+
         if not lock:
             lock = self.get_lock()
 
         parent_tracker = dict()
         poller_time = time.time()
         poller_interval = 8
+        bypass_threads = set()
         while True:
             poller_interval = utils.return_poller_interval(
                 poller_time=poller_time,
@@ -234,23 +256,17 @@ class Client(interface.Interface):
                 self.log.critical("Queue object value error [ %s ]", str(e))
                 continue
             except Exception:
+                for t in list(bypass_threads):
+                    if self.terminate_process(process=t):
+                        bypass_threads.remove(t)
+
                 for key, value in list(parent_tracker.items()):
                     if value["t"]:
                         if value["t"].exitcode is None:
                             parent_tracker[key].pop("time", None)
                         elif value["q"].empty():
-                            timestamp = time.time()
-                            if timestamp - value.get("time", timestamp) >= 30:
-                                parent_tracker.pop(key)
-                                self.log.info("Pruned parent [ %s ]", key)
-                            else:
-                                if "time" not in value:
-                                    parent_tracker[key]["time"] = timestamp
-                                    self.log.debug(
-                                        "Process [ %s ] finished, begining"
-                                        " prune",
-                                        key,
-                                    )
+                            if _parent_prune(parents=parent_tracker, parent=key):
+                                self.terminate_process(process=value["t"])
                         else:
                             self.log.info(
                                 "Dead parent [ %s ] found with queue items,"
@@ -260,20 +276,18 @@ class Client(interface.Interface):
                             parent_tracker[key]["t"] = None
                             parent_tracker[key].pop("time", None)
                     elif value["q"].empty():
-                        timestamp = time.time()
-                        if "time" not in value:
-                            parent_tracker[key]["time"] = timestamp
-                        elif timestamp - value.get("time", timestamp) >= 30:
-                            parent_tracker.pop(key)
-                            self.log.info("Pruned parent [ %s ]", key)
+                        if _parent_prune(parents=parent_tracker, parent=key):
+                            self.terminate_process(process=value["t"])
                     else:
                         if value["bypass"]:
-                            self._process_spawn(
+                            t = self._process_spawn(
                                 lock=lock,
                                 queue=value["q"],
                                 threads=0,
                                 name=key,
                             )
+                            if t:
+                                bypass_threads.add(t)
                         else:
                             _threads = len(
                                 [
@@ -339,13 +353,15 @@ class Client(interface.Interface):
                 if _parent["t"] and _parent["t"].is_alive():
                     continue
                 elif _q_name.startswith("q_bypass"):
-                    self._process_spawn(
+                    parent_tracker[_q_name]["bypass"] = True
+                    t = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
                         threads=0,
                         name=_q_name,
                     )
-                    parent_tracker[_q_name]["bypass"] = True
+                    if t:
+                        bypass_threads.add(t)
                 else:
                     parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,

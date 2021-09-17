@@ -168,6 +168,36 @@ class Processor:
 
         return multiprocessing.Queue()
 
+    def terminate_process(self, process):
+        """Terminate a processes when possible.
+
+        * If the process object is null, return False
+        * If the process is in an "alive", return False.
+
+        :param process: Multiprocessing object.
+        :type process: Object
+        :returns: Boolean
+        """
+
+        if not process:
+            return False
+
+        try:
+            if not process.is_alive():
+                process.join(timeout=0.1)
+                process.terminate()
+                self.log.info("Process [ %s ] cleaned up", process.name)
+                return True
+        except Exception as e:
+            self.log.warning(
+                "Thread [ %s ] saw exception when"
+                " terminating: %s",
+                process.name,
+                str(e)
+            )
+
+        return False
+
     def run_threads(self, threads):
         """Execute process objects from an array.
 

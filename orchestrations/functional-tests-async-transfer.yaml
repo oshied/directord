@@ -4,16 +4,39 @@
 
 - async: true
   jobs:
+  - ADD: /etc/services /tmp/test0-0
   - ADD: /etc/services /tmp/test0-1
   - ADD: /etc/services /tmp/test0-2
   - ADD: /etc/services /tmp/test0-3
   - ADD: /etc/services /tmp/test0-4
   - ADD: /etc/services /tmp/test0-5
+  - ADD: /etc/services /tmp/test0-6
+  - ADD: /etc/services /tmp/test0-7
+  - ADD: /etc/services /tmp/test0-8
+  - ADD: /etc/services /tmp/test0-9
 
 - async: true
   jobs:
+  - ADD: /etc/services /tmp/test1-0
   - ADD: /etc/services /tmp/test1-1
   - ADD: /etc/services /tmp/test1-2
   - ADD: /etc/services /tmp/test1-3
   - ADD: /etc/services /tmp/test1-4
   - ADD: /etc/services /tmp/test1-5
+  - ADD: /etc/services /tmp/test1-6
+  - ADD: /etc/services /tmp/test1-7
+  - ADD: /etc/services /tmp/test1-8
+  - ADD: /etc/services /tmp/test1-9
+
+- async: true
+  jobs:
+  - ADD: /etc/services /tmp/test2-0
+  - ADD: /etc/services /tmp/test2-1
+  - ADD: /etc/services /tmp/test2-2
+  - ADD: /etc/services /tmp/test2-3
+  - ADD: /etc/services /tmp/test2-4
+  - ADD: /etc/services /tmp/test2-5
+  - ADD: /etc/services /tmp/test2-6
+  - ADD: /etc/services /tmp/test2-7
+  - ADD: /etc/services /tmp/test2-8
+  - ADD: /etc/services /tmp/test2-9
