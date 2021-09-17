@@ -17,7 +17,6 @@ import grp
 import json
 import os
 import socket
-import struct
 import time
 import urllib.parse as urlparse
 
@@ -80,99 +79,6 @@ class Server(interface.Interface):
                 self.return_jobs = redis.BaseDocument(
                     url=url._replace(path="").geturl(), database=(db + 2)
                 )
-
-    def run_heartbeat(self, sentinel=False):
-        """Execute the heartbeat loop.
-
-        If the heartbeat loop detects a problem, the server will send a
-        heartbeat probe to the client to ensure that it is alive. At the
-        end of the loop workers without a valid heartbeat will be pruned
-        from the available pool.
-
-        :param sentinel: Breaks the loop
-        :type sentinel: Boolean
-        """
-
-        self.bind_heatbeat = self.driver.heartbeat_bind()
-        heartbeat_at = self.driver.get_heartbeat(
-            interval=self.heartbeat_interval
-        )
-        while True:
-            idle_time = heartbeat_at + (self.heartbeat_interval * 3)
-            if self.bind_heatbeat and self.driver.bind_check(
-                bind=self.bind_heatbeat
-            ):
-                (
-                    identity,
-                    _,
-                    control,
-                    _,
-                    data,
-                    _,
-                    _,
-                    _,
-                ) = self.driver.socket_recv(socket=self.bind_heatbeat)
-                if control in [
-                    self.driver.heartbeat_ready,
-                    self.driver.heartbeat_notice,
-                ]:
-                    self.log.debug(
-                        "Received Heartbeat from [ %s ], client online",
-                        identity.decode(),
-                    )
-                    expire = self.driver.get_expiry(
-                        heartbeat_interval=self.heartbeat_interval,
-                        interval=self.heartbeat_liveness,
-                    )
-                    worker_metadata = {"time": expire}
-                    try:
-                        loaded_data = json.loads(data.decode())
-                    except Exception:
-                        pass
-                    else:
-                        worker_metadata.update(loaded_data)
-
-                    self.workers[identity] = worker_metadata
-                    heartbeat_at = self.driver.get_heartbeat(
-                        interval=self.heartbeat_interval
-                    )
-                    self.driver.socket_send(
-                        socket=self.bind_heatbeat,
-                        identity=identity,
-                        control=self.driver.heartbeat_notice,
-                        info=struct.pack("<f", expire),
-                    )
-                    self.log.debug(
-                        "Sent Heartbeat to [ %s ]", identity.decode()
-                    )
-
-            # Send heartbeats to idle workers if it's time
-            elif time.time() > idle_time:
-                for worker in list(self.workers.keys()):
-                    self.log.warning(
-                        "Sending idle worker [ %s ] a heartbeat", worker
-                    )
-                    self.driver.socket_send(
-                        socket=self.bind_heatbeat,
-                        identity=worker,
-                        control=self.driver.heartbeat_notice,
-                        command=b"reset",
-                        info=struct.pack(
-                            "<f",
-                            self.driver.get_expiry(
-                                heartbeat_interval=self.heartbeat_interval,
-                                interval=self.heartbeat_liveness,
-                            ),
-                        ),
-                    )
-                    if time.time() > idle_time + 3:
-                        self.log.warning("Removing dead worker %s", worker)
-                        self.workers.pop(worker)
-            else:
-                self.log.debug("Items after prune %s", self.workers.prune())
-
-            if sentinel:
-                break
 
     def _set_job_status(
         self,
@@ -596,8 +502,10 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
+        self.bind_heatbeat = self.driver.heartbeat_bind()
         self.bind_job = self.driver.job_bind()
         poller_time = time.time()
+        prune_time = time.time()
         poller_interval = 1
         run_jobs_thread = None
         while True:
@@ -619,7 +527,7 @@ class Server(interface.Interface):
                     log=self.log,
                 )
 
-            while True:
+            while not self.send_queue.empty():
                 try:
                     send_item = self.send_queue.get_nowait()
                 except Exception:
@@ -718,6 +626,43 @@ class Server(interface.Interface):
                                 data=new_task,
                             )
                         )
+
+            if self.bind_heatbeat and self.driver.bind_check(
+                bind=self.bind_heatbeat, constant=1
+            ):
+                (
+                    heartbeat_identity,
+                    _,
+                    heartbeat_control,
+                    _,
+                    heartbeat_data,
+                    _,
+                    _,
+                    _,
+                ) = self.driver.socket_recv(socket=self.bind_heatbeat)
+                if heartbeat_control == self.driver.heartbeat_notice:
+                    self.log.debug(
+                        "Received Heartbeat from [ %s ]",
+                        heartbeat_identity.decode(),
+                    )
+                    expire = self.driver.get_expiry(
+                        heartbeat_interval=self.heartbeat_interval,
+                        interval=self.heartbeat_liveness,
+                    )
+                    metadata = {"time": expire}
+                    if heartbeat_data:
+                        try:
+                            loaded_data = json.loads(heartbeat_data.decode())
+                        except Exception:
+                            pass
+                        else:
+                            metadata.update(loaded_data)
+
+                    self.workers[heartbeat_identity.decode()] = metadata
+
+            if time.time() > prune_time:
+                self.workers.prune()
+                prune_time = time.time() + 762
 
             if sentinel:
                 break
@@ -849,10 +794,6 @@ class Server(interface.Interface):
                 self.thread(
                     name="run_socket_server", target=self.run_socket_server
                 ),
-                True,
-            ),
-            (
-                self.thread(name="run_heartbeat", target=self.run_heartbeat),
                 True,
             ),
             (

@@ -33,25 +33,6 @@ class TestServer(tests.TestDriverBase):
         self.server.return_jobs = datastores.BaseDocument()
         self.server.driver = self.mock_driver
 
-    @patch("time.time", autospec=True)
-    @patch("logging.Logger.warning", autospec=True)
-    def test_run_heartbeat_idle_workers(self, mock_log_warning, mock_time):
-        self.mock_driver.bind_check.side_effect = [False, True]
-        self.mock_driver.get_heartbeat.return_value = 1
-        self.server.workers.update({b"test-node": 10000})
-        mock_time.side_effect = [9000, 10000]
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
-            self.server.run_heartbeat(sentinel=True)
-        mock_log_warning.assert_called()
-        self.mock_driver.socket_send.assert_called_with(
-            socket=ANY,
-            identity=b"test-node",
-            control=b"\x05",
-            command=b"reset",
-            info=b"\x00\x00\x80?",
-        )
-        self.mock_driver.heartbeat_bind.assert_called()
-
     def test__set_job_status(self):
         self.server.return_jobs = {
             "XXX": {
@@ -497,7 +478,17 @@ class TestServer(tests.TestDriverBase):
                 b"info",
                 None,
                 None,
-            )
+            ),
+            (
+                b"test-node",
+                None,
+                self.mock_driver.heartbeat_notice,
+                None,
+                b"{}",
+                None,
+                None,
+                None,
+            ),
         ]
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
@@ -514,7 +505,17 @@ class TestServer(tests.TestDriverBase):
                 b"info",
                 None,
                 None,
-            )
+            ),
+            (
+                b"test-node",
+                None,
+                self.mock_driver.heartbeat_notice,
+                None,
+                b"{}",
+                None,
+                None,
+                None,
+            ),
         ]
         mock_time.side_effect = [1, 66, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
@@ -531,7 +532,17 @@ class TestServer(tests.TestDriverBase):
                 b"info",
                 None,
                 None,
-            )
+            ),
+            (
+                b"test-node",
+                None,
+                self.mock_driver.heartbeat_notice,
+                None,
+                b"{}",
+                None,
+                None,
+                None,
+            ),
         ]
         mock_time.side_effect = [1, 34, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
@@ -553,7 +564,17 @@ class TestServer(tests.TestDriverBase):
                 b"/test/file1",
                 None,
                 None,
-            )
+            ),
+            (
+                b"test-node",
+                None,
+                self.mock_driver.heartbeat_notice,
+                None,
+                b"{}",
+                None,
+                None,
+                None,
+            ),
         ]
         self.mock_driver.transfer_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
@@ -578,7 +599,17 @@ class TestServer(tests.TestDriverBase):
                 b"/test/file1",
                 None,
                 None,
-            )
+            ),
+            (
+                b"test-node",
+                None,
+                self.mock_driver.heartbeat_notice,
+                None,
+                b"{}",
+                None,
+                None,
+                None,
+            ),
         ]
         self.mock_driver.transfer_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
@@ -778,7 +809,7 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
+        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY])
 
     @patch("directord.server.Server.run_threads", autospec=True)
     def test_worker_run_ui(self, mock_run_threads):
@@ -787,46 +818,4 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(
-            ANY, threads=[ANY, ANY, ANY, ANY, ANY]
-        )
-
-    @patch("time.time", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_heartbeat_ready(self, mock_log_debug, mock_time):
-        self.mock_driver.socket_recv.side_effect = [
-            (
-                b"test-node",
-                None,
-                self.mock_driver.heartbeat_ready,
-                None,
-                None,
-                b"x.x.x",
-                None,
-                None,
-            )
-        ]
-        mock_time.side_effect = [1, 1000, 3000]
-        self.server.run_heartbeat(sentinel=True)
-        mock_log_debug.assert_called()
-        self.assertIn(b"test-node", self.server.workers)
-
-    @patch("time.time", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_heartbeat_notice(self, mock_log_debug, mock_time):
-        self.mock_driver.socket_recv.side_effect = [
-            (
-                b"test-node",
-                None,
-                self.mock_driver.heartbeat_notice,
-                None,
-                None,
-                b"x.x.x",
-                None,
-                None,
-            )
-        ]
-        mock_time.side_effect = [1, 1000, 3000]
-        self.server.run_heartbeat(sentinel=True)
-        mock_log_debug.assert_called()
-        self.assertIn(b"test-node", self.server.workers)
+        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])

@@ -320,12 +320,7 @@ def return_poller_interval(poller_time, poller_interval, log=None):
     """
 
     current_time = time.time()
-    if current_time >= poller_time + 1024:
-        if poller_interval != 4096:
-            if log:
-                log.debug("Directord entering sleep state.")
-        poller_interval = 4096
-    elif current_time >= poller_time + 64:
+    if current_time >= poller_time + 64:
         if poller_interval != 2048:
             if log:
                 log.debug("Directord entering idle state.")
