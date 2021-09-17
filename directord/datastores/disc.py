@@ -106,7 +106,7 @@ class BaseDocument:
         method will pop all items from the object.
         """
 
-        self.datastore.clear()
+        self.datastore.clear(retry=True)
 
     def pop(self, key):
         """Delete the value of a given key.

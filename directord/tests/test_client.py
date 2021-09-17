@@ -28,85 +28,6 @@ class TestClient(tests.TestDriverBase):
         self.client = client.Client(args=self.args)
         self.client.driver = self.mock_driver
 
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_heartbeat(self, mock_log_debug):
-        self.mock_driver.socket_recv.side_effect = [
-            (None, None, None, json.dumps({}).encode(), b".001", None, None)
-        ]
-        self.client.run_heartbeat(sentinel=True)
-        mock_log_debug.assert_called()
-
-    @patch("logging.Logger.warning", autospec=True)
-    def test_run_heartbeat_reset(self, mock_log_warning):
-        self.mock_driver.socket_recv.side_effect = [
-            (
-                None,
-                None,
-                b"reset",
-                json.dumps({}).encode(),
-                b".001",
-                None,
-                None,
-            )
-        ]
-        self.client.run_heartbeat(sentinel=True)
-        mock_log_warning.assert_called()
-
-    @patch("time.time", autospec=True)
-    @patch("time.sleep", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_heartbeat_missed(self, mock_log_debug, mock_sleep, mock_time):
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.mock_driver.socket_recv.side_effect = [
-            (None, None, None, json.dumps({}).encode(), b".001", None, None)
-        ]
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
-            with patch.object(
-                self.mock_driver, "get_heartbeat", return_value=0
-            ):
-                self.client.run_heartbeat(sentinel=True, heartbeat_misses=10)
-        mock_log_debug.assert_called()
-        mock_sleep.assert_called()
-
-    @patch("time.time", autospec=True)
-    @patch("time.sleep", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_heartbeat_missed_long_interval(
-        self, mock_log_debug, mock_sleep, mock_time
-    ):
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.mock_driver.socket_recv.side_effect = [
-            (None, None, None, json.dumps({}).encode(), b".001", None, None)
-        ]
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
-            with patch.object(
-                self.mock_driver, "get_heartbeat", return_value=0
-            ):
-                self.client.heartbeat_failure_interval = 64
-                self.client.run_heartbeat(sentinel=True, heartbeat_misses=10)
-        mock_log_debug.assert_called()
-        mock_sleep.assert_called()
-
-    @patch("time.time", autospec=True)
-    def test_run_heartbeat_update(self, mock_time):
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.mock_driver.socket_recv.side_effect = [
-            (
-                None,
-                None,
-                b"reset",
-                json.dumps({}).encode(),
-                b".001",
-                None,
-                None,
-            )
-        ]
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
-            with patch.object(
-                self.mock_driver, "get_heartbeat", return_value=0
-            ):
-                self.client.run_heartbeat(sentinel=True)
-
     @patch("time.time", autospec=True)
     def test_run_job(self, mock_time):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
@@ -345,6 +266,6 @@ class TestClient(tests.TestDriverBase):
     @patch("directord.client.Client.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads, mock_diskcache, mock_makedirs):
         self.client.worker_run()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY])
+        mock_run_threads.assert_called_with(ANY, threads=[ANY])
         mock_diskcache.assert_called()
         mock_makedirs.assert_called()
