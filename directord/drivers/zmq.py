@@ -41,12 +41,14 @@ class Driver(drivers.BaseDriver):
         """
 
         self.args = args
-        if encrypted_traffic_data:
-            self.encrypted_traffic = encrypted_traffic_data.get("enabled")
-            self.secret_keys_dir = encrypted_traffic_data.get(
+        self.encrypted_traffic_data = encrypted_traffic_data
+        self.connection_string = connection_string
+        if self.encrypted_traffic_data:
+            self.encrypted_traffic = self.encrypted_traffic_data.get("enabled")
+            self.secret_keys_dir = self.encrypted_traffic_data.get(
                 "secret_keys_dir"
             )
-            self.public_keys_dir = encrypted_traffic_data.get(
+            self.public_keys_dir = self.encrypted_traffic_data.get(
                 "public_keys_dir"
             )
         else:
@@ -58,8 +60,15 @@ class Driver(drivers.BaseDriver):
         self.poller = zmq.Poller()
         super(Driver, self).__init__(
             args=args,
-            encrypted_traffic_data=encrypted_traffic_data,
-            connection_string=connection_string,
+            encrypted_traffic_data=self.encrypted_traffic_data,
+            connection_string=self.connection_string,
+        )
+
+    def __copy__(self):
+        return Driver(
+            args=self.args,
+            encrypted_traffic_data=self.encrypted_traffic_data,
+            connection_string=self.connection_string,
         )
 
     def _socket_context(self, socket_type):

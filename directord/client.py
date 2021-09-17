@@ -42,7 +42,6 @@ class Client(interface.Interface):
 
         self.heartbeat_failure_interval = 2
         self.bind_heatbeat = None
-        self.q_processes = self.get_queue()
         self.q_return = self.get_queue()
         self.base_component = components.ComponentBase()
         self.cache = dict()
@@ -180,8 +179,16 @@ class Client(interface.Interface):
     def _process_spawn(self, lock, queue, threads=0, processes=5, name=None):
         """Spawn a new thread and return it.
 
+        :param lock: Locking object, used if a component requires it.
+        :type lock: Object
+        :param queue: Queue object
+        :type queue: Object
+        :param threads: Number of current processes
+        :type threads: Integer
         :param processes: Number of possible processes to spawn
         :type processes: Integer
+        :param name: Process name
+        :type name: String
         :returns: Object
         """
 
@@ -202,55 +209,72 @@ class Client(interface.Interface):
             thread.start()
             return thread
 
-    def job_q_processor(self, lock=None):
+    def job_q_processor(self, q_processes, lock=None):
         """Process a given work queue.
 
         The defined `queue` is processed. The `processes` arg allows this
         method to spawn N processes.
 
+        :param q_processes: Queue object
+        :type q_processes: Object
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
         """
+
+        def _parent_prune(parents, parent):
+            """Prune parent objects when possible.
+
+            :param parents: Dictionary of all parent objects.
+            :type parents: Dictionary
+            :param parent: Name of parent to check.
+            :type parent: String
+            :returns: Boolean
+            """
+
+            timestamp = time.time()
+            if "time" not in parents[parent]:
+                parents[parent]["time"] = timestamp
+                self.log.debug(
+                    "Parent [ %s ] begining prune",
+                    parent,
+                )
+            elif timestamp - parents[parent].get("time", timestamp) >= 30:
+                parents.pop(parent)
+                self.log.info("Pruned parent [ %s ]", parent)
+                return True
+            return False
 
         if not lock:
             lock = self.get_lock()
 
         parent_tracker = dict()
-        poller_time = time.time()
-        poller_interval = 8
-        while True:
-            poller_interval = utils.return_poller_interval(
-                poller_time=poller_time,
-                poller_interval=poller_interval,
-                log=self.log,
-            )
+        bypass_threads = set()
+        while not q_processes.empty() or bypass_threads or parent_tracker:
             try:
                 (
                     component_kwargs,
                     command,
                     info,
-                ) = self.q_processes.get_nowait()
+                ) = q_processes.get_nowait()
             except ValueError as e:
                 self.log.critical("Queue object value error [ %s ]", str(e))
                 continue
             except Exception:
+                for t in list(bypass_threads):
+                    if t.is_alive():
+                        bypass_threads.remove(t)
+
                 for key, value in list(parent_tracker.items()):
                     if value["t"]:
                         if value["t"].exitcode is None:
                             parent_tracker[key].pop("time", None)
                         elif value["q"].empty():
-                            timestamp = time.time()
-                            if timestamp - value.get("time", timestamp) >= 30:
-                                parent_tracker.pop(key)
-                                self.log.info("Pruned parent [ %s ]", key)
-                            else:
-                                if "time" not in value:
-                                    parent_tracker[key]["time"] = timestamp
-                                    self.log.debug(
-                                        "Process [ %s ] finished, begining"
-                                        " prune",
-                                        key,
-                                    )
+                            if _parent_prune(
+                                parents=parent_tracker, parent=key
+                            ):
+                                self.terminate_process(process=value["t"])
+                                value["q"].close()
+                                value["q"].join_thread()
                         else:
                             self.log.info(
                                 "Dead parent [ %s ] found with queue items,"
@@ -260,20 +284,20 @@ class Client(interface.Interface):
                             parent_tracker[key]["t"] = None
                             parent_tracker[key].pop("time", None)
                     elif value["q"].empty():
-                        timestamp = time.time()
-                        if "time" not in value:
-                            parent_tracker[key]["time"] = timestamp
-                        elif timestamp - value.get("time", timestamp) >= 30:
-                            parent_tracker.pop(key)
-                            self.log.info("Pruned parent [ %s ]", key)
+                        if _parent_prune(parents=parent_tracker, parent=key):
+                            self.terminate_process(process=value["t"])
+                            value["q"].close()
+                            value["q"].join_thread()
                     else:
                         if value["bypass"]:
-                            self._process_spawn(
+                            t = self._process_spawn(
                                 lock=lock,
                                 queue=value["q"],
                                 threads=0,
                                 name=key,
                             )
+                            if t:
+                                bypass_threads.add(t)
                         else:
                             _threads = len(
                                 [
@@ -292,11 +316,7 @@ class Client(interface.Interface):
                             )
                             if t:
                                 parent_tracker[key].pop("time", None)
-
-                if poller_interval > 8 and parent_tracker:
-                    self.log.debug("All pending parents %s", parent_tracker)
-
-                time.sleep(poller_interval * 0.001)
+                time.sleep(0.1)
             else:
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
@@ -334,18 +354,19 @@ class Client(interface.Interface):
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
                 _parent["q"].put((component_kwargs, command, info))
-                poller_interval, poller_time = 8, time.time()
 
                 if _parent["t"] and _parent["t"].is_alive():
                     continue
                 elif _q_name.startswith("q_bypass"):
-                    self._process_spawn(
+                    parent_tracker[_q_name]["bypass"] = True
+                    t = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
                         threads=0,
                         name=_q_name,
                     )
-                    parent_tracker[_q_name]["bypass"] = True
+                    if t:
+                        bypass_threads.add(t)
                 else:
                     parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
@@ -796,7 +817,7 @@ class Client(interface.Interface):
 
         return cache_check_time
 
-    def run_job(self, sentinel=False):
+    def run_job(self, lock=None, sentinel=False):
         """Job entry point.
 
         This creates a cached access object, connects to the socket and begins
@@ -816,8 +837,21 @@ class Client(interface.Interface):
         poller_time = time.time()
         poller_interval = 1
         cache_check_time = time.time()
-
+        run_q_processor_thread = None
+        q_processes = self.get_queue()
         while True:
+            if self.terminate_process(process=run_q_processor_thread):
+                run_q_processor_thread = None
+
+            if not q_processes.empty() and not run_q_processor_thread:
+                run_q_processor_thread = self.thread(
+                    target=self.job_q_processor,
+                    kwargs=dict(q_processes=q_processes, lock=lock),
+                    name="job_q_processor",
+                    daemon=False,
+                )
+                run_q_processor_thread.start()
+
             self.job_q_results()
             if self.q_return.empty():
                 poller_interval = utils.return_poller_interval(
@@ -892,7 +926,7 @@ class Client(interface.Interface):
                             job_id,
                         )
                         c.info = b"task queued"
-                        self.q_processes.put(
+                        q_processes.put(
                             (
                                 component_kwargs,
                                 command,
@@ -921,12 +955,9 @@ class Client(interface.Interface):
                 self.thread(name="run_heartbeat", target=self.run_heartbeat),
                 True,
             ),
-            (self.thread(name="run_job", target=self.run_job), True),
             (
                 self.thread(
-                    name="job_q_processor",
-                    target=self.job_q_processor,
-                    kwargs=dict(lock=lock),
+                    name="run_job", target=self.run_job, kwargs=dict(lock=lock)
                 ),
                 False,
             ),
