@@ -105,5 +105,7 @@ class Component(components.ComponentBase):
             arg_job["parent_id"] = utils.get_uuid()
             arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
             self.block_on_tasks.append(arg_job)
+        elif stdout_arg and not stdout:
+            return stdout, stderr, False, command.encode()
 
         return stdout, stderr, outcome, command.encode()

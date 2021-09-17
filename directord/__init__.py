@@ -151,6 +151,12 @@ class Processor:
         self.log = logger.getLogger(name="directord")
 
     @staticmethod
+    def get_manager():
+        """Returns a multiprocessing manager."""
+
+        return multiprocessing.Manager()
+
+    @staticmethod
     def get_lock():
         """Returns a multiprocessing lock."""
 
@@ -183,22 +189,6 @@ class Processor:
 
         for t, _ in threads:
             t.join()
-
-    def read_in_chunks(self, file_object, chunk_size=8192):
-        """Generator to read a file piece by piece.
-
-        Default chunk size: 8K.
-
-        :param file_object: Open File Object
-        :type file_object: Object
-        :yields: Data
-        """
-
-        while True:
-            data = file_object.read(chunk_size)
-            if not data:
-                break
-            yield data
 
     @contextlib.contextmanager
     def timeout(self, time, job_id, reraise=False):

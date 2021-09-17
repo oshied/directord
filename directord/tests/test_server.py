@@ -365,9 +365,9 @@ class TestServer(tests.TestDriverBase):
             (
                 b"test-node",
                 b"XXX",
-                self.server.driver.job_processing,
-                b"transfer",
-                None,
+                self.server.driver.transfer_start,
+                b"1",
+                b"1",
                 b"/fake/file",
                 None,
                 None,
@@ -439,7 +439,6 @@ class TestServer(tests.TestDriverBase):
         mock_queue.return_value = MagicMock()
         self.server.job_queue = mock_queue
         self.server.run_job(sentinel=True)
-        mock_log_debug.assert_called()
 
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -455,7 +454,6 @@ class TestServer(tests.TestDriverBase):
         ]
         self.server.job_queue = mock_queue
         self.server.run_job(sentinel=True)
-        mock_log_debug.assert_called()
 
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.critical", autospec=True)
@@ -470,7 +468,6 @@ class TestServer(tests.TestDriverBase):
         ]
         self.server.job_queue = mock_queue
         self.server.run_job(sentinel=True)
-        mock_log_critical.assert_called()
 
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -487,7 +484,6 @@ class TestServer(tests.TestDriverBase):
         self.server.job_queue = mock_queue
         self.server.workers = {b"test-node1": 12345, b"test-node2": 12345}
         self.server.run_job(sentinel=True)
-        mock_log_debug.assert_called()
 
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time):
@@ -562,7 +558,6 @@ class TestServer(tests.TestDriverBase):
         self.mock_driver.transfer_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
-        mock_log_debug.assert_called()
 
     @patch("directord.server.Server._set_job_status", autospec=True)
     @patch("time.time", autospec=True)
@@ -783,9 +778,7 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(
-            ANY, threads=[ANY, ANY, ANY, ANY, ANY]
-        )
+        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
 
     @patch("directord.server.Server.run_threads", autospec=True)
     def test_worker_run_ui(self, mock_run_threads):
@@ -795,7 +788,7 @@ class TestServer(tests.TestDriverBase):
         finally:
             self.args = tests.FakeArgs()
         mock_run_threads.assert_called_with(
-            ANY, threads=[ANY, ANY, ANY, ANY, ANY, ANY]
+            ANY, threads=[ANY, ANY, ANY, ANY, ANY]
         )
 
     @patch("time.time", autospec=True)

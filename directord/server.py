@@ -15,7 +15,6 @@
 import decimal
 import grp
 import json
-import multiprocessing
 import os
 import socket
 import struct
@@ -48,7 +47,7 @@ class Server(interface.Interface):
         if not datastore or datastore == "memory":
             self.log.info("Connecting to internal datastore")
             directord.plugin_import(plugin=".datastores.internal")
-            manager = multiprocessing.Manager()
+            manager = self.get_manager()
             self.workers = manager.document()
             self.return_jobs = manager.document()
         else:
@@ -190,7 +189,7 @@ class Server(interface.Interface):
     ):
         """Set job status.
 
-        This will update the manager object for job tracking, allowing the
+        This will update the object for job tracking, allowing the
         user to know what happened within the environment.
 
         :param job_status: ASCII Control Character
@@ -332,24 +331,14 @@ class Server(interface.Interface):
         :returns: Tuple
         """
 
-        poller_time = time.time()
-        poller_interval = 1
-        while True:
-            poller_interval = utils.return_poller_interval(
-                poller_time=poller_time,
-                poller_interval=poller_interval,
-                log=self.log,
-            )
+        self.log.info("Starting run process.")
+        while not self.job_queue.empty():
             try:
-                job_item = self.job_queue.get_nowait()
+                job_item = self.job_queue.get(timeout=60)
             except Exception:
-                if sentinel:
-                    break
-                else:
-                    time.sleep(poller_interval * 0.001)
+                break
             else:
                 self.log.debug("Job item received [ %s ]", job_item)
-                poller_interval, poller_time = 8, time.time()
                 restrict_sha3_224 = job_item.get("restrict")
                 if restrict_sha3_224:
                     if job_item["job_sha3_224"] not in restrict_sha3_224:
@@ -359,7 +348,6 @@ class Server(interface.Interface):
                         if sentinel:
                             break
                         else:
-                            time.sleep(poller_interval * 0.001)
                             continue
 
                 targets = list()
@@ -401,7 +389,6 @@ class Server(interface.Interface):
 
                 if not targets:
                     self.log.error("No known targets defined.")
-                    time.sleep(poller_interval * 0.001)
                     continue
 
                 self.log.debug("All targets %s", targets)
@@ -478,8 +465,6 @@ class Server(interface.Interface):
 
             if sentinel:
                 break
-            else:
-                time.sleep(poller_interval * 0.001)
 
     def run_transfers(self, sentinel=False):
         """Execute the transfer loop.
@@ -517,32 +502,23 @@ class Server(interface.Interface):
                     msg_id,
                     control,
                     command,
-                    _,
+                    data,
                     info,
                     _,
                     _,
                 ) = self.driver.socket_recv(socket=self.bind_transfer)
-                self.log.debug(
-                    "Identity [ %s ] Transfer job received [ %s ]",
-                    identity,
-                    msg_id.decode(),
+                transfer_identity = identity.decode()
+                transfer_job_id = msg_id.decode()
+                transfer_file_path = os.path.abspath(
+                    os.path.expanduser(info.decode())
                 )
+                offset = int(command)
+                chunk_size = int(data)
 
-                if command == b"transfer":
-                    transfer_obj = info.decode()
-                    transfer_job_id = msg_id.decode()
-                    transfer_identity = identity.decode()
-                    transfer_verb = b"ADD"
-                    transfer_file_path = os.path.abspath(
-                        os.path.expanduser(transfer_obj)
-                    )
+                if control == self.driver.transfer_start:
                     self.log.debug(
-                        "Queing transfer for [ %s ] job [ %s ]",
-                        identity.decode(),
-                        msg_id.decode(),
-                    )
-                    self.log.debug(
-                        "Identity [ %s ] Job [ %s ] processing file [ %s ]",
+                        "Identity [ %s ] transfer job [ %s ] processing"
+                        " file [ %s ]",
                         transfer_identity,
                         transfer_job_id,
                         transfer_file_path,
@@ -555,46 +531,49 @@ class Server(interface.Interface):
                             transfer_job_id,
                             transfer_file_path,
                         )
-                        return
-
-                    self.log.info(
-                        "Identity [ %s ] Job [ %s ] file transfer for [ %s ]"
-                        " starting",
-                        transfer_identity,
-                        transfer_job_id,
-                        transfer_file_path,
-                    )
-                    with open(transfer_file_path, "rb") as f:
-                        for chunk in self.read_in_chunks(file_object=f):
+                        self.driver.socket_send(
+                            socket=self.bind_transfer,
+                            identity=transfer_identity.encode(),
+                            control=self.driver.job_failed,
+                            info="File [ {} ] was not found".format(
+                                transfer_file_path
+                            ).encode(),
+                        )
+                    else:
+                        self.log.info(
+                            "Identity [ %s ] Job [ %s ] file transfer for"
+                            " [ %s ] starting",
+                            transfer_identity,
+                            transfer_job_id,
+                            transfer_file_path,
+                        )
+                        with open(transfer_file_path, "rb") as f:
+                            f.seek(offset, os.SEEK_SET)
+                            data = f.read(chunk_size)
                             self.driver.socket_send(
                                 socket=self.bind_transfer,
                                 identity=transfer_identity.encode(),
-                                control=self.driver.job_processing,
-                                command=transfer_verb,
-                                data=chunk,
+                                control=(
+                                    self.driver.transfer_end
+                                    if len(data) < chunk_size
+                                    else self.driver.job_processing
+                                ),
+                                data=data,
                             )
-                        else:
-                            self.driver.socket_send(
-                                socket=self.bind_transfer,
-                                identity=transfer_identity.encode(),
-                                control=self.driver.transfer_end,
-                                command=transfer_verb,
-                            )
-                            self.log.info(
-                                "Identity [ %s ] Job [ %s ] file transfer for"
-                                " [ %s ] complete",
-                                transfer_identity,
-                                transfer_job_id,
-                                transfer_file_path,
-                            )
+                        self.log.info(
+                            "Identity [ %s ] Job [ %s ] file transfer for"
+                            " [ %s ] blob sent",
+                            transfer_identity,
+                            transfer_job_id,
+                            transfer_file_path,
+                        )
                 else:
                     self.log.warning(
                         "Unknown transfer job [ %s ] connection received from"
-                        " [ %s ], using command [ %s ], control [ %s ] with"
+                        " [ %s ], control [ %s ] with"
                         " info [ %s ]",
                         msg_id.decode(),
                         identity.decode(),
-                        command.decode(),
                         control.decode(),
                         info.decode(),
                     )
@@ -620,9 +599,21 @@ class Server(interface.Interface):
         self.bind_job = self.driver.job_bind()
         poller_time = time.time()
         poller_interval = 1
-
+        run_jobs_thread = None
         while True:
-            if self.job_queue.empty() and self.send_queue.empty():
+            if run_jobs_thread and not run_jobs_thread.is_alive():
+                run_jobs_thread.terminate()
+                run_jobs_thread = None
+
+            if not self.job_queue.empty():
+                if not run_jobs_thread:
+                    run_jobs_thread = self.thread(
+                        target=self.run_job,
+                        name="run_job",
+                        daemon=True,
+                    )
+                    run_jobs_thread.start()
+            elif self.send_queue.empty():
                 poller_interval = utils.return_poller_interval(
                     poller_time=poller_time,
                     poller_interval=poller_interval,
@@ -843,6 +834,7 @@ class Server(interface.Interface):
                     else:
                         self.log.debug("Data sent to queue [ %s ]", json_data)
                         self.job_queue.put(json_data)
+
             if sentinel:
                 break
 
@@ -868,13 +860,12 @@ class Server(interface.Interface):
                 self.thread(
                     name="run_interactions", target=self.run_interactions
                 ),
-                True,
+                False,
             ),
             (
                 self.thread(name="run_transfers", target=self.run_transfers),
                 True,
             ),
-            (self.thread(name="run_job", target=self.run_job), True),
         ]
 
         if self.args.run_ui:

@@ -177,9 +177,7 @@ class Client(interface.Interface):
                 )
                 self.job_q_component_run(component_kwargs, command, info, lock)
 
-    def _process_spawn(
-        self, lock, queue, threads=0, processes=5, name=None, bypass=False
-    ):
+    def _process_spawn(self, lock, queue, threads=0, processes=5, name=None):
         """Spawn a new thread and return it.
 
         :param processes: Number of possible processes to spawn
@@ -187,7 +185,7 @@ class Client(interface.Interface):
         :returns: Object
         """
 
-        if (threads <= processes) or bypass:
+        if (threads <= processes) and not queue.empty():
             self.log.debug(
                 "Executing new thread for parent queue [ %s ]",
                 name,
@@ -261,36 +259,39 @@ class Client(interface.Interface):
                             )
                             parent_tracker[key]["t"] = None
                             parent_tracker[key].pop("time", None)
+                    elif value["q"].empty():
+                        timestamp = time.time()
+                        if "time" not in value:
+                            parent_tracker[key]["time"] = timestamp
+                        elif timestamp - value.get("time", timestamp) >= 30:
+                            parent_tracker.pop(key)
+                            self.log.info("Pruned parent [ %s ]", key)
                     else:
                         if value["bypass"]:
-                            _threads = len(
-                                [
-                                    True
-                                    for i in parent_tracker.values()
-                                    if i["t"]
-                                    and i["t"].is_alive()
-                                    and i["bypass"]
-                                ]
+                            self._process_spawn(
+                                lock=lock,
+                                queue=value["q"],
+                                threads=0,
+                                name=key,
                             )
                         else:
                             _threads = len(
                                 [
                                     True
                                     for i in parent_tracker.values()
-                                    if i["t"]
+                                    if not i["bypass"]
+                                    and i["t"]
                                     and i["t"].is_alive()
-                                    and not i["bypass"]
                                 ]
                             )
-                        t = parent_tracker[key]["t"] = self._process_spawn(
-                            lock=lock,
-                            queue=value["q"],
-                            threads=_threads,
-                            processes=10 if value["bypass"] else 5,
-                            name=key,
-                        )
-                        if t:
-                            parent_tracker[key].pop("time", None)
+                            t = parent_tracker[key]["t"] = self._process_spawn(
+                                lock=lock,
+                                queue=value["q"],
+                                threads=_threads,
+                                name=key,
+                            )
+                            if t:
+                                parent_tracker[key].pop("time", None)
 
                 if poller_interval > 8 and parent_tracker:
                     self.log.debug("All pending parents %s", parent_tracker)
@@ -338,31 +339,24 @@ class Client(interface.Interface):
                 if _parent["t"] and _parent["t"].is_alive():
                     continue
                 elif _q_name.startswith("q_bypass"):
-                    t = parent_tracker[_q_name]["t"] = self._process_spawn(
+                    self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
-                        threads=len(
-                            [
-                                True
-                                for i in parent_tracker.values()
-                                if i["t"] and i["t"].is_alive() and i["bypass"]
-                            ]
-                        ),
-                        processes=10,
+                        threads=0,
                         name=_q_name,
                     )
                     parent_tracker[_q_name]["bypass"] = True
                 else:
-                    t = parent_tracker[_q_name]["t"] = self._process_spawn(
+                    parent_tracker[_q_name]["t"] = self._process_spawn(
                         lock=lock,
                         queue=_parent["q"],
                         threads=len(
                             [
                                 True
                                 for i in parent_tracker.values()
-                                if i["t"]
+                                if not i["bypass"]
+                                and i["t"]
                                 and i["t"].is_alive()
-                                and not i["bypass"]
                             ]
                         ),
                         name=_q_name,
