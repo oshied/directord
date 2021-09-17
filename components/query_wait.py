@@ -94,7 +94,6 @@ class Component(components.ComponentBase):
             query_args = args.get("query", dict())
             if not query_args:
                 continue
-
             elif "identity" in job and job["identity"]:
                 for identity in job["identity"]:
                     items = query_args.get(identity)
@@ -102,6 +101,12 @@ class Component(components.ComponentBase):
                         if job["item"] not in items.keys():
                             missing_identity.add(identity)
                             break
+                        else:
+                            if identity in missing_identity:
+                                missing_identity.remove(identity)
+                    else:
+                        missing_identity.add(identity)
+                        break
                 else:
                     return (
                         "Item found in all identities",
