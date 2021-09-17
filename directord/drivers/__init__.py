@@ -41,10 +41,19 @@ class BaseDriver:
         :type encrypted_traffic: Boolean
         """
 
+        self.encrypted_traffic_data = encrypted_traffic_data
         self.connection_string = connection_string
         self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
         self.args = args
+
+    def __copy__(self):
+        """Return a copy of the base class.
+
+        :returns: Object
+        """
+
+        return self
 
     def socket_send(
         self,

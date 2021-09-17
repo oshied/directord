@@ -152,13 +152,12 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
+        driver = self.driver.__copy__()
         self.log.debug("client(): job: %s, cache: %s", job, cache)
         with Transfer(
-            driver=self.driver, log=self.log, job_id=job["job_id"]
+            driver=driver, log=self.log, job_id=job["job_id"]
         ) as bind_transfer:
-            return self._client(
-                cache, job, self.info, self.driver, bind_transfer
-            )
+            return self._client(cache, job, self.info, driver, bind_transfer)
 
     def _client(self, cache, job, source_file, driver, bind_transfer):
         """Run file transfer operation.
@@ -246,7 +245,7 @@ class Component(components.ComponentBase):
                         self.log.debug(
                             "Job [ %s ] identity [ %s ] received %s",
                             job["job_id"],
-                            self.driver.identity,
+                            driver.identity,
                             chunk_size,
                         )
                         f.write(data)
@@ -254,7 +253,7 @@ class Component(components.ComponentBase):
                             self.log.debug(
                                 "Job [ %s ] identity [ %s ] stopped transfer",
                                 job["job_id"],
-                                self.driver.identity,
+                                driver.identity,
                             )
                             break
                         elif chunk_size < chunk:
@@ -262,7 +261,7 @@ class Component(components.ComponentBase):
                                 "Job [ %s ] identity [ %s ] received the last"
                                 " chunk",
                                 job["job_id"],
-                                self.driver.identity,
+                                driver.identity,
                             )
                             break
                     elif control == driver.job_failed:
