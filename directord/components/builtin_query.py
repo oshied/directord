@@ -95,12 +95,9 @@ class Component(components.ComponentBase):
         arg_job["skip_cache"] = True
         arg_job["extend_args"] = True
         arg_job["verb"] = "ARG"
-        if query:
-            arg_job["args"] = {
-                "query": {self.driver.identity: {query_item: query}}
-            }
-        else:
-            arg_job["args"] = query
+        arg_job["args"] = {
+            "query": {self.driver.identity: {query_item: query}}
+        }
         arg_job["parent_async_bypass"] = True
         arg_job["job_id"] = utils.get_uuid()
         arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
@@ -116,6 +113,9 @@ class Component(components.ComponentBase):
                     query_timeout=600,
                     parent_async_bypass=True,
                     targets=targets,
+                    identity=[
+                        i for i in targets if i is not self.driver.identity
+                    ],
                 )
                 wait_job["job_id"] = utils.get_uuid()
                 wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)
