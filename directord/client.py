@@ -225,7 +225,8 @@ class Client(interface.Interface):
             if "time" not in parents[parent]:
                 parents[parent]["time"] = timestamp
                 self.log.debug(
-                    "Parent [ %s ] begining prune", parent,
+                    "Parent [ %s ] begining prune",
+                    parent,
                 )
             elif timestamp - parents[parent].get("time", timestamp) >= 30:
                 parents.pop(parent)
@@ -265,7 +266,9 @@ class Client(interface.Interface):
                         if value["t"].exitcode is None:
                             parent_tracker[key].pop("time", None)
                         elif value["q"].empty():
-                            if _parent_prune(parents=parent_tracker, parent=key):
+                            if _parent_prune(
+                                parents=parent_tracker, parent=key
+                            ):
                                 self.terminate_process(process=value["t"])
                         else:
                             self.log.info(
