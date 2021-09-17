@@ -270,6 +270,8 @@ class Client(interface.Interface):
                                 parents=parent_tracker, parent=key
                             ):
                                 self.terminate_process(process=value["t"])
+                                value["q"].close()
+                                value["q"].join_thread()
                         else:
                             self.log.info(
                                 "Dead parent [ %s ] found with queue items,"
@@ -281,6 +283,8 @@ class Client(interface.Interface):
                     elif value["q"].empty():
                         if _parent_prune(parents=parent_tracker, parent=key):
                             self.terminate_process(process=value["t"])
+                            value["q"].close()
+                            value["q"].join_thread()
                     else:
                         if value["bypass"]:
                             t = self._process_spawn(
