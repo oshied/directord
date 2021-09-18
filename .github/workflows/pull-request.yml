@@ -462,7 +462,7 @@ jobs:
           cd /opt/directord/share/directord/orchestrations
           sudo timeout 240 /opt/directord/bin/directord \
                                               orchestrate \
-                                              {functional-tests-async-race.yaml,functional-tests-async-time.yaml,functional-tests-async.yaml,functional-tests-query.yaml,functional-tests-async-transfer.yaml,functional-tests.yaml} \
+                                              {functional-tests-async-race.yaml,functional-tests-async-time.yaml,functional-tests-async.yaml,functional-tests-query.yaml,functional-tests-async-transfer.yaml} \
                                               --poll \
                                               --check
       - name: Generate log details

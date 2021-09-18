@@ -111,7 +111,7 @@ class Component(components.ComponentBase):
             cache_value = json.loads(value)
 
         if cache_value:
-            self.set_cache(
+            cache_set = self.set_cache(
                 cache=cache,
                 key=cache_type,
                 value=cache_value,
@@ -119,12 +119,29 @@ class Component(components.ComponentBase):
                 tag=cache_type,
                 extend=job.get("extend_args", False),
             )
-            return (
-                "{} added to cache".format(cache_type),
-                None,
-                True,
-                "type:{}, value:{}".format(cache_type, cache_value).encode(),
-            )
+            if cache_set:
+                self.log.debug(
+                    "ARG [ %s ] = [ %s ] added to cache",
+                    cache_type,
+                    cache_value,
+                )
+                return (
+                    "{} added to cache".format(cache_type),
+                    None,
+                    True,
+                    "type:{}, value:{}".format(
+                        cache_type, cache_value
+                    ).encode(),
+                )
+            else:
+                return (
+                    None,
+                    "Failed to add {} to cache".format(cache_type),
+                    False,
+                    "type:{}, value:{}".format(
+                        cache_type, cache_value
+                    ).encode(),
+                )
         else:
             return (
                 "Nothing added to cache. {} had no value".format(cache_type),
