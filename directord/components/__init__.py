@@ -259,7 +259,7 @@ class ComponentBase:
         key,
         value,
         value_update=False,
-        expire=28800,
+        expire=259200,
         tag=None,
         extend=False,
     ):
@@ -280,6 +280,7 @@ class ComponentBase:
         :type tag: String
         :param extend: Enable|Disable Extend a map
         :type extend: Boolean
+        :returns" Boolean
         """
 
         if value_update:
@@ -291,7 +292,10 @@ class ComponentBase:
             except (ValueError, AttributeError):
                 pass
 
-        cache.set(key, value, tag=tag, expire=expire, retry=True)
+        cache_set = cache.set(key, value, tag=tag, expire=expire, retry=True)
+        if not cache_set:
+            return cache.set(key, value, tag=tag, expire=expire, retry=True)
+        return cache_set
 
     def file_blueprinter(self, cache, file_to):
         """Read a file and blueprint its contents.

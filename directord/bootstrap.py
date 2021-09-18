@@ -153,7 +153,7 @@ class Bootstrap(directord.Processor):
         return return_jobs
 
     @staticmethod
-    def _read_chunks(fh, chunk_size=2048):
+    def _read_chunks(fh, chunk_size=131072):
         """Read file in 2048 chunks."""
 
         while True:
@@ -202,7 +202,7 @@ class Bootstrap(directord.Processor):
 
             flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
             with open(localfile, "rb") as local_f:
-                for data in self._read_chunks(fh=local_f, chunk_size=1024):
+                for data in self._read_chunks(fh=local_f, chunk_size=131072):
                     with chan.open(
                         remotefile, flags, fileinfo.st_mode
                     ) as remote_f:
