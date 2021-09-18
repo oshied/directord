@@ -41,7 +41,6 @@ class Server(interface.Interface):
         super(Server, self).__init__(args=args)
         self.job_queue = self.get_queue()
         self.send_queue = self.get_queue()
-        self.bind_heatbeat = None
         datastore = getattr(self.args, "datastore", None)
         if not datastore or datastore == "memory":
             self.log.info("Connecting to internal datastore")
@@ -502,7 +501,6 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_heatbeat = self.driver.heartbeat_bind()
         self.bind_job = self.driver.job_bind()
         poller_time = time.time()
         prune_time = time.time()
@@ -547,7 +545,6 @@ class Server(interface.Interface):
             if self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
-                poller_interval, poller_time = 1, time.time()
                 (
                     identity,
                     msg_id,
@@ -558,107 +555,95 @@ class Server(interface.Interface):
                     stderr,
                     stdout,
                 ) = self.driver.socket_recv(socket=self.bind_job)
-                self.log.debug(
-                    "Execution job received [ %s ]", msg_id.decode()
-                )
-                node = identity.decode()
-                node_output = info.decode()
-                if stderr:
-                    stderr = stderr.decode()
-                if stdout:
-                    stdout = stdout.decode()
-
-                try:
-                    data_item = json.loads(data.decode())
-                except Exception:
-                    data_item = dict()
-
-                self._set_job_status(
-                    job_status=control,
-                    job_id=msg_id.decode(),
-                    identity=node,
-                    job_output=node_output,
-                    job_stdout=stdout,
-                    job_stderr=stderr,
-                    execution_time=data_item.get("execution_time", 0),
-                    return_timestamp=data_item.get("return_timestamp", 0),
-                    component_exec_timestamp=data_item.get(
-                        "component_exec_timestamp", 0
-                    ),
-                    recv_time=time.time(),
-                )
-
-                for new_task in data_item.get("new_tasks", list()):
-                    self.log.debug("New task found: %s", new_task)
-                    if "targets" in new_task:
-                        targets = [i.encode() for i in new_task["targets"]]
-                        self.log.debug(
-                            "Using existing targets from old job"
-                            " specification %s",
-                            targets,
-                        )
-                    else:
-                        targets = self.workers.keys()
-                        self.log.debug(
-                            "Targets undefined in old job specification"
-                            " running everwhere"
-                        )
-
-                    if "job_id" not in new_task:
-                        new_task["job_id"] = utils.get_uuid()
-
-                    self.create_return_jobs(
-                        task=new_task["job_id"],
-                        job_item=new_task,
-                        targets=targets,
-                    )
-
-                    for target in targets:
-                        self.log.debug(
-                            "Queuing callback job [ %s ] for identity [ %s ]",
-                            new_task["job_id"],
-                            target.decode(),
-                        )
-                        self.send_queue.put(
-                            dict(
-                                identity=target,
-                                command=new_task["verb"].encode(),
-                                data=new_task,
-                            )
-                        )
-
-            if self.bind_heatbeat and self.driver.bind_check(
-                bind=self.bind_heatbeat, constant=1
-            ):
-                (
-                    heartbeat_identity,
-                    _,
-                    heartbeat_control,
-                    _,
-                    heartbeat_data,
-                    _,
-                    _,
-                    _,
-                ) = self.driver.socket_recv(socket=self.bind_heatbeat)
-                if heartbeat_control == self.driver.heartbeat_notice:
+                if control == self.driver.heartbeat_notice:
                     self.log.debug(
                         "Received Heartbeat from [ %s ]",
-                        heartbeat_identity.decode(),
+                        identity.decode(),
                     )
                     expire = self.driver.get_expiry(
                         heartbeat_interval=self.heartbeat_interval,
-                        interval=self.heartbeat_liveness,
                     )
                     metadata = {"time": expire}
-                    if heartbeat_data:
+                    if data:
                         try:
-                            loaded_data = json.loads(heartbeat_data.decode())
+                            loaded_data = json.loads(data.decode())
                         except Exception:
                             pass
                         else:
                             metadata.update(loaded_data)
 
-                    self.workers[heartbeat_identity.decode()] = metadata
+                    self.workers[identity.decode()] = metadata
+                else:
+                    poller_interval, poller_time = 1, time.time()
+                    self.log.debug(
+                        "Execution job received [ %s ]", msg_id.decode()
+                    )
+                    node = identity.decode()
+                    node_output = info.decode()
+                    if stderr:
+                        stderr = stderr.decode()
+                    if stdout:
+                        stdout = stdout.decode()
+
+                    try:
+                        data_item = json.loads(data.decode())
+                    except Exception:
+                        data_item = dict()
+
+                    self._set_job_status(
+                        job_status=control,
+                        job_id=msg_id.decode(),
+                        identity=node,
+                        job_output=node_output,
+                        job_stdout=stdout,
+                        job_stderr=stderr,
+                        execution_time=data_item.get("execution_time", 0),
+                        return_timestamp=data_item.get("return_timestamp", 0),
+                        component_exec_timestamp=data_item.get(
+                            "component_exec_timestamp", 0
+                        ),
+                        recv_time=time.time(),
+                    )
+
+                    for new_task in data_item.get("new_tasks", list()):
+                        self.log.debug("New task found: %s", new_task)
+                        if "targets" in new_task:
+                            targets = [i.encode() for i in new_task["targets"]]
+                            self.log.debug(
+                                "Using existing targets from old job"
+                                " specification %s",
+                                targets,
+                            )
+                        else:
+                            targets = self.workers.keys()
+                            self.log.debug(
+                                "Targets undefined in old job specification"
+                                " running everwhere"
+                            )
+
+                        if "job_id" not in new_task:
+                            new_task["job_id"] = utils.get_uuid()
+
+                        self.create_return_jobs(
+                            task=new_task["job_id"],
+                            job_item=new_task,
+                            targets=targets,
+                        )
+
+                        for target in targets:
+                            self.log.debug(
+                                "Queuing callback job [ %s ] for identity"
+                                " [ %s ]",
+                                new_task["job_id"],
+                                target.decode(),
+                            )
+                            self.send_queue.put(
+                                dict(
+                                    identity=target,
+                                    command=new_task["verb"].encode(),
+                                    data=new_task,
+                                )
+                            )
 
             if time.time() > prune_time:
                 self.workers.prune()

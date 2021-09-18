@@ -19,6 +19,5 @@ simple key=value pair.
 
 ``` yaml
 ---
-heartbeat_interval: 1
 debug: true
 ```

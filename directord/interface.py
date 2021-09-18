@@ -54,7 +54,6 @@ class Interface(directord.Processor):
             proto=self.proto, addr=self.bind_address
         )
 
-        self.heartbeat_liveness = 3
         try:
             self.heartbeat_interval = self.args.heartbeat_interval
         except AttributeError:
