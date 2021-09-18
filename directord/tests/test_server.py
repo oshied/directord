@@ -490,7 +490,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
@@ -517,7 +517,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 66, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 66, 1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
@@ -544,7 +544,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 34, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 34, 1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
