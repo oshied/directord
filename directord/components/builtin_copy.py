@@ -61,7 +61,7 @@ class Transfer:
                     )
                 else:
                     self.bind_transfer.close(linger=2)
-                    time.sleep(1)
+                    self.delay(1)
         except Exception as e:
             self.log.error(
                 "Job [ %s ] transfer ran into an exception"

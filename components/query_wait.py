@@ -14,8 +14,6 @@
 
 import time
 
-from multiprocessing import Event
-
 from directord import components
 
 
@@ -141,7 +139,7 @@ class Component(components.ComponentBase):
             self.log.warning(
                 "QUERY argument [ %s ] not found in cache", job["item"]
             )
-            Event().wait(2)
+            self.delay(2)
 
         if missing_identity:
             info = (

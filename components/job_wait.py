@@ -81,7 +81,7 @@ class Component(components.ComponentBase):
                     "Job {} found complete".format(job["sha"]),
                 )
 
-            time.sleep(1)
+            self.delay(1)
 
         return (
             None,
