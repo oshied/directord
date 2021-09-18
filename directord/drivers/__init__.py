@@ -226,7 +226,7 @@ class BaseDriver:
 
         return time.time() + interval
 
-    def get_expiry(self, heartbeat_interval=60, interval=1):
+    def get_expiry(self, heartbeat_interval=60, interval=3):
         """Return a new expiry time.
 
         :param interval: Exponential back off for expiration.

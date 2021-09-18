@@ -40,8 +40,6 @@ class Client(interface.Interface):
 
         super(Client, self).__init__(args=args)
 
-        self.heartbeat_failure_interval = 2
-        self.bind_heatbeat = None
         self.q_return = self.get_queue()
         self.base_component = components.ComponentBase()
         self.cache = dict()
@@ -705,7 +703,6 @@ class Client(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_heatbeat = self.driver.heartbeat_connect()
         self.bind_job = self.driver.job_connect()
         poller_time = time.time()
         heartbeat_time = time.time()
@@ -739,7 +736,7 @@ class Client(interface.Interface):
                     uptime = float(f.readline().split()[0])
 
                 self.driver.socket_send(
-                    socket=self.bind_heatbeat,
+                    socket=self.bind_job,
                     control=self.driver.heartbeat_notice,
                     data=json.dumps(
                         {
@@ -758,7 +755,7 @@ class Client(interface.Interface):
                 heartbeat_time = time.time() + 30
                 self.log.info("Heartbeat sent to server")
 
-            if self.driver.bind_check(
+            elif self.driver.bind_check(
                 bind=self.bind_job, constant=poller_interval
             ):
                 poller_interval, poller_time = 1, time.time()
@@ -835,7 +832,6 @@ class Client(interface.Interface):
                 cache_check_time = self.prune_cache(
                     cache_check_time=cache_check_time
                 )
-                time.sleep(poller_interval * 0.001)
 
             if sentinel:
                 break
