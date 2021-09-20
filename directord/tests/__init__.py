@@ -131,7 +131,7 @@ class FakeArgs:
     stream = False
     socket_group = "root"
     cache_path = "/var/cache/directord"
-    transfer_port = 5556
+    backend_port = 5556
     timeout = 600
     curve_encryption = None
     force_async = False
@@ -255,7 +255,6 @@ class TestDriverBase(unittest.TestCase):
         self.mock_driver = self.mock_driver_patched.start()
         self.mock_driver.bind_check.return_value = True
         self.mock_driver.nullbyte = base_driver.nullbyte
-        self.mock_driver.heartbeat_ready = base_driver.heartbeat_ready
         self.mock_driver.heartbeat_notice = base_driver.heartbeat_notice
         self.mock_driver.heartbeat_reset = base_driver.heartbeat_reset
         self.mock_driver.job_ack = base_driver.job_ack

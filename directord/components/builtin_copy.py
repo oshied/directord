@@ -31,7 +31,7 @@ class Transfer:
         """Initialize the transfer context manager class."""
 
         self.driver = driver
-        self.bind_transfer = self.driver.transfer_connect()
+        self.bind_transfer = self.driver.backend_connect()
         self.log = log
         self.job_id = job_id
 

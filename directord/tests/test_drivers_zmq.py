@@ -334,8 +334,8 @@ class TestDriverZMQ(unittest.TestCase):
         )
 
     @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
-    def test_transfer_bind(self, mock_socket_bind):
-        self.driver.transfer_bind()
+    def test_backend_bind(self, mock_socket_bind):
+        self.driver.backend_bind()
         mock_socket_bind.assert_called_with(
             ANY,
             socket_type=zmq.ROUTER,
@@ -370,8 +370,8 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
-    def test_transfer_connect(self, mock_log_debug, mock_socket_connect):
-        self.driver.transfer_connect()
+    def test_backend_connect(self, mock_log_debug, mock_socket_connect):
+        self.driver.backend_connect()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()
 

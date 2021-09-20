@@ -110,10 +110,10 @@ def _args(exec_args=None):
         type=int,
     )
     parser.add_argument(
-        "--transfer-port",
-        help="Transfer port to bind. Default: %(default)s",
+        "--backend-port",
+        help="Backend port to bind. Default: %(default)s",
         metavar="INT",
-        default=int(os.getenv("DIRECTORD_TRANSFER_PORT", 5556)),
+        default=int(os.getenv("DIRECTORD_BACKEND_PORT", 5556)),
         type=int,
     )
     parser.add_argument(

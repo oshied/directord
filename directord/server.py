@@ -16,6 +16,7 @@ import decimal
 import grp
 import json
 import os
+from queue import Empty
 import socket
 import time
 import urllib.parse as urlparse
@@ -371,7 +372,7 @@ class Server(interface.Interface):
             if sentinel:
                 break
 
-    def run_transfers(self, sentinel=False):
+    def run_backend(self, sentinel=False):
         """Execute the transfer loop.
 
         Directord's interaction executor will slow down the poll interval
@@ -386,7 +387,8 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_transfer = self.driver.transfer_bind()
+        self.bind_backend = self.driver.backend_bind()
+
         poller_time = time.time()
         poller_interval = 128
 
@@ -398,7 +400,7 @@ class Server(interface.Interface):
             )
 
             if self.driver.bind_check(
-                bind=self.bind_transfer, constant=poller_interval
+                bind=self.bind_backend, constant=poller_interval
             ):
                 poller_interval, poller_time = 128, time.time()
 
@@ -411,16 +413,105 @@ class Server(interface.Interface):
                     info,
                     _,
                     _,
-                ) = self.driver.socket_recv(socket=self.bind_transfer)
-                transfer_identity = identity.decode()
-                transfer_job_id = msg_id.decode()
-                transfer_file_path = os.path.abspath(
-                    os.path.expanduser(info.decode())
-                )
-                offset = int(command)
-                chunk_size = int(data)
+                ) = self.driver.socket_recv(socket=self.bind_backend)
+                if control == self.driver.coordination_notice:
+                    self.log.debug(
+                        "Received coordination request for job [ %s ] from"
+                        " [ %s ]",
+                        msg_id.decode(),
+                        identity.decode(),
+                    )
+                    coordination_targets = dict()
+                    for ident in json.loads(data.decode()):
+                        coordination_targets[ident] = {
+                            "failures": 0,
+                            "success": False,
+                        }
+                        self.log.debug(
+                            "Job [ %s ] loaded target [ %s ] for coordination",
+                            msg_id.decode(),
+                            ident,
+                        )
 
-                if control == self.driver.transfer_start:
+                    while not all(
+                        i["success"] for i in coordination_targets.values()
+                    ):
+                        target_ident, value = coordination_targets.popitem()
+                        try:
+                            self.log.debug(
+                                "Job [ %s ] processing target [ %s ] for"
+                                " coordination",
+                                msg_id.decode(),
+                                target_ident,
+                            )
+                            self.driver.socket_send(
+                                socket=self.bind_backend,
+                                identity=target_ident.encode(),
+                                msg_id=msg_id,
+                                control=self.driver.coordination_notice,
+                                command=command,
+                                info=identity,
+                            )
+                        except Empty:
+                            break
+                        except Exception as e:
+                            if value["failures"] >= 5:
+                                self.driver.socket_send(
+                                    socket=self.bind_backend,
+                                    identity=identity,
+                                    msg_id=msg_id,
+                                    control=self.driver.job_failed,
+                                    command=command,
+                                    info=target_ident.encode(),
+                                )
+                                self.log.error(
+                                    "Job [ %s ] failed to coordinate with"
+                                    " [ %s ]. Error information: %s",
+                                    msg_id.decode(),
+                                    target_ident,
+                                    str(e),
+                                )
+                                break
+                            else:
+                                value["failures"] += 1
+                                self.log.warning(
+                                    "Job [ %s ] failed to send coordination"
+                                    " notice to [ %s ]. Error information: %s"
+                                    " -- retrying, attempt [ %s ]",
+                                    msg_id.decode(),
+                                    target_ident,
+                                    str(e),
+                                    value["failures"],
+                                )
+                                coordination_targets[target_ident] = value
+                                time.sleep(value["failures"])
+                        else:
+                            self.log.info(
+                                "Job [ %s ] coordination notice sent to"
+                                " [ %s ]",
+                                msg_id.decode(),
+                                target_ident,
+                            )
+                            self.log.debug(
+                                "Job [ %s ] coordination failures %s",
+                                msg_id.decode(),
+                                coordination_targets,
+                            )
+                elif control == self.driver.coordination_ack:
+                    self.driver.socket_send(
+                        socket=self.bind_backend,
+                        identity=info,
+                        control=self.driver.coordination_ack,
+                        info=identity,
+                    )
+                elif control == self.driver.transfer_start:
+                    transfer_identity = identity.decode()
+                    transfer_job_id = msg_id.decode()
+                    transfer_file_path = os.path.abspath(
+                        os.path.expanduser(info.decode())
+                    )
+                    offset = int(command)
+                    chunk_size = int(data)
                     self.log.debug(
                         "Identity [ %s ] transfer job [ %s ] processing"
                         " file [ %s ]",
@@ -437,7 +528,7 @@ class Server(interface.Interface):
                             transfer_file_path,
                         )
                         self.driver.socket_send(
-                            socket=self.bind_transfer,
+                            socket=self.bind_backend,
                             identity=transfer_identity.encode(),
                             control=self.driver.job_failed,
                             info="File [ {} ] was not found".format(
@@ -456,7 +547,7 @@ class Server(interface.Interface):
                             f.seek(offset, os.SEEK_SET)
                             data = f.read(chunk_size)
                             self.driver.socket_send(
-                                socket=self.bind_transfer,
+                                socket=self.bind_backend,
                                 identity=transfer_identity.encode(),
                                 control=(
                                     self.driver.transfer_end
@@ -788,7 +879,7 @@ class Server(interface.Interface):
                 False,
             ),
             (
-                self.thread(name="run_transfers", target=self.run_transfers),
+                self.thread(name="run_backend", target=self.run_backend),
                 True,
             ),
         ]
