@@ -80,7 +80,7 @@ class Component(components.ComponentBase):
         """Initialize the component cache class."""
 
         super().__init__(desc="Process coordination commands")
-        self.requires_lock = False
+        self.requires_lock = True
 
     def args(self):
         """Set default arguments for a component."""
@@ -160,6 +160,14 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
+        if not job["identity"]:
+            return (
+                None,
+                None,
+                True,
+                "No identities to process",
+            )
+
         start_time = time.time()
         confirmed_identities = set()
         driver.socket_send(
@@ -167,13 +175,11 @@ class Component(components.ComponentBase):
             msg_id=job["job_id"].encode(),
             control=driver.coordination_notice,
             command=job["job_sha"].encode(),
-            data=json.dumps(
-                [i for i in job["identity"] if i is not driver.identity]
-            ).encode(),
+            data=json.dumps(job["identity"]).encode(),
         )
         self.log.debug("Job [ %s ] coordination notice sent", job["job_id"])
         while (time.time() - start_time) < job["job_timeout"]:
-            if driver.bind_check(bind=bind_backend, constant=512):
+            if driver.bind_check(bind=bind_backend, constant=2048):
                 (
                     msg_id,
                     control,
@@ -185,9 +191,10 @@ class Component(components.ComponentBase):
                 ) = driver.socket_recv(socket=bind_backend)
                 self.log.debug(
                     "Received backend message for job [ %s ]"
-                    " control [ %s ]",
+                    " command [ %s ] from [ %s ]",
                     msg_id.decode(),
-                    control.decode(),
+                    command.decode(),
+                    info.decode()
                 )
                 if control == driver.coordination_notice:
                     self.log.debug(
@@ -195,21 +202,30 @@ class Component(components.ComponentBase):
                         msg_id.decode(),
                         info.decode(),
                     )
-                    if cache.get(command.decode()) in [
-                        driver.job_end.decode(),
-                        driver.job_failed.decode(),
-                    ]:
-                        driver.socket_send(
-                            socket=bind_backend,
-                            msg_id=msg_id,
-                            control=driver.coordination_ack,
-                            info=info,
-                        )
-                        self.log.debug(
-                            "Job [ %s ] coordination complete for [ %s ]",
-                            msg_id.decode(),
-                            info.decode(),
-                        )
+                    while (time.time() - start_time) < 300:
+                        if cache.get(command.decode()) in [
+                            driver.job_end.decode(),
+                            driver.job_failed.decode(),
+                        ]:
+                            driver.socket_send(
+                                socket=bind_backend,
+                                msg_id=msg_id,
+                                control=driver.coordination_ack,
+                                info=info,
+                            )
+                            self.log.debug(
+                                "Job [ %s ] coordination complete for [ %s ]",
+                                msg_id.decode(),
+                                info.decode(),
+                            )
+                            break
+                        else:
+                            self.log.debug(
+                                "Job [ %s ] coordination missing for [ %s ]",
+                                msg_id.decode(),
+                                info.decode(),
+                            )
+                            time.sleep(2)
                 elif control == driver.coordination_ack:
                     if info.decode() in job["identity"]:
                         self.log.debug(
@@ -259,6 +275,8 @@ class Component(components.ComponentBase):
                         job["job_id"], job["job_sha"], job["identity"]
                     ),
                 )
+            else:
+                self.log.debug("Job [ %s ] found identities %s", job["job_id"], confirmed_identities)
 
         return (
             None,

@@ -387,7 +387,6 @@ class Server(interface.Interface):
         """
 
         self.bind_backend = self.driver.backend_bind()
-
         poller_time = time.time()
         poller_interval = 128
 
@@ -429,7 +428,7 @@ class Server(interface.Interface):
                             ident,
                         )
 
-                    while [i for i in coordination_targets.keys()]:
+                    while coordination_targets:
                         target_ident, value = coordination_targets.popitem()
                         try:
                             self.log.debug(
@@ -466,7 +465,6 @@ class Server(interface.Interface):
                                 )
                                 break
                             else:
-                                value["failures"] += 1
                                 self.log.warning(
                                     "Job [ %s ] failed to send coordination"
                                     " notice to [ %s ]. Error information: %s"
@@ -476,6 +474,7 @@ class Server(interface.Interface):
                                     str(e),
                                     value["failures"],
                                 )
+                                value["failures"] += 1
                                 coordination_targets[target_ident] = value
                                 time.sleep(value["failures"])
                         else:
@@ -484,12 +483,6 @@ class Server(interface.Interface):
                                 " [ %s ]",
                                 msg_id.decode(),
                                 target_ident,
-                            )
-                        finally:
-                            self.log.debug(
-                                "Job [ %s ] coordination status %s",
-                                msg_id.decode(),
-                                coordination_targets,
                             )
 
                 elif control == self.driver.coordination_ack:

@@ -210,7 +210,7 @@ class Client(interface.Interface):
                 time.sleep(0.1)
             else:
                 job = component_kwargs["job"]
-                self.log.debug("Received job_id [ %s ]", job["job_id"])
+                self.log.debug("Received job [ %s ]", job["job_id"])
                 # NOTE(cloudnull): If the command is queuesentinel purge all
                 #                  queued items. This is on the ONE component
                 #                  where we intercept and react outside of

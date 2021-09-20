@@ -100,7 +100,7 @@ class Component(components.ComponentBase):
         }
         arg_job["parent_async_bypass"] = True
         arg_job["job_id"] = utils.get_uuid()
-        arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
+        job_sha3_224 = arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
         arg_job["parent_id"] = utils.get_uuid()
         arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
         self.block_on_tasks.append(arg_job)
@@ -108,9 +108,9 @@ class Component(components.ComponentBase):
             if not job.get("no_wait"):
                 wait_job = dict(
                     skip_cache=True,
-                    verb="QUERY_WAIT",
-                    item=query_item,
-                    query_timeout=600,
+                    verb="JOB_WAIT",
+                    job_sha=job_sha3_224,
+                    job_timeout=600,
                     parent_async_bypass=True,
                     targets=targets,
                     identity=[
