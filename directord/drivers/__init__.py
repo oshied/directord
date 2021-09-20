@@ -21,6 +21,7 @@ from directord import utils
 
 class BaseDriver:
     nullbyte = b"\000"  # Signals null
+    coordination_failed = b"\007"  # Signals worker is ready
     coordination_ack = b"\020"  # Signals worker is ready
     coordination_notice = b"\021"  # Signals worker is ready
 
