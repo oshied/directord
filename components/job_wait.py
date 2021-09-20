@@ -12,7 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import json
 import time
 
 from directord import components
@@ -91,15 +90,6 @@ class Component(components.ComponentBase):
             help=("job sha to be completed."),
         )
         self.parser.add_argument(
-            "--job-timeout",
-            help=(
-                "Wait for %(default)s seconds for a given item to be present"
-                " in cache."
-            ),
-            default=600,
-            type=int,
-        )
-        self.parser.add_argument(
             "--identity",
             help=(
                 "Worker identities to search for a specific job item."
@@ -127,7 +117,6 @@ class Component(components.ComponentBase):
 
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         data["job_sha"] = self.known_args.sha
-        data["job_timeout"] = self.known_args.job_timeout
         data["identity"] = self.known_args.identity
         return data
 
@@ -168,104 +157,103 @@ class Component(components.ComponentBase):
                 "No identities to process",
             )
 
-        start_time = time.time()
+        for identity in job["identity"]:
+            driver.socket_send(
+                socket=bind_backend,
+                msg_id=job["job_id"].encode(),
+                control=driver.coordination_notice,
+                command=job["job_sha"].encode(),
+                info=identity.encode(),
+            )
+            self.log.debug(
+                "Job [ %s ] coordination notice sent to %s",
+                job["job_id"],
+                identity,
+            )
+
         confirmed_identities = set()
-        driver.socket_send(
-            socket=bind_backend,
-            msg_id=job["job_id"].encode(),
-            control=driver.coordination_notice,
-            command=job["job_sha"].encode(),
-            data=json.dumps(job["identity"]).encode(),
-        )
-        self.log.debug("Job [ %s ] coordination notice sent", job["job_id"])
-        while (time.time() - start_time) < job["job_timeout"]:
-            if driver.bind_check(bind=bind_backend, constant=2048):
+        while True:
+            if driver.bind_check(bind=bind_backend):
                 (
                     msg_id,
                     control,
                     command,
-                    _,
+                    data,
                     info,
                     _,
                     _,
                 ) = driver.socket_recv(socket=bind_backend)
-                self.log.debug(
-                    "Received backend message for job [ %s ]"
-                    " command [ %s ] from [ %s ]",
-                    msg_id.decode(),
-                    command.decode(),
-                    info.decode()
-                )
                 if control == driver.coordination_notice:
                     self.log.debug(
                         "Job [ %s ] coordination notice received from [ %s ]",
                         msg_id.decode(),
                         info.decode(),
                     )
-                    while (time.time() - start_time) < 300:
-                        if cache.get(command.decode()) in [
-                            driver.job_end.decode(),
-                            driver.job_failed.decode(),
-                        ]:
-                            driver.socket_send(
-                                socket=bind_backend,
-                                msg_id=msg_id,
-                                control=driver.coordination_ack,
-                                info=info,
-                            )
-                            self.log.debug(
-                                "Job [ %s ] coordination complete for [ %s ]",
-                                msg_id.decode(),
-                                info.decode(),
-                            )
-                            break
-                        else:
-                            self.log.debug(
-                                "Job [ %s ] coordination missing for [ %s ]",
-                                msg_id.decode(),
-                                info.decode(),
-                            )
-                            time.sleep(2)
-                elif control == driver.coordination_ack:
-                    if info.decode() in job["identity"]:
+                    if cache.get(command.decode()) in [
+                        driver.job_end.decode(),
+                        driver.job_failed.decode(),
+                    ]:
                         self.log.debug(
-                            "Job [ %s ] coordination acknowledged from"
-                            " [ %s ]",
+                            "Job [ %s ] coordination complete for [ %s ]",
                             msg_id.decode(),
                             info.decode(),
                         )
-                        confirmed_identities.add(info.decode())
+                        driver.socket_send(
+                            socket=bind_backend,
+                            msg_id=msg_id,
+                            control=driver.coordination_ack,
+                            info=info,
+                        )
                     else:
-                        self.log.warning(
-                            "Job [ %s ] coordination acknowledgement from"
-                            " [ %s ] was not found in our expected identities"
-                            " %s",
+                        self.log.debug(
+                            "Job [ %s ] coordination missing for [ %s ]",
                             msg_id.decode(),
                             info.decode(),
-                            job["identity"],
                         )
-
+                        driver.socket_send(
+                            socket=bind_backend,
+                            msg_id=msg_id,
+                            control=driver.coordination_failed,
+                            info=info,
+                            data=b"Item was not found in cache",
+                        )
+                elif control == driver.coordination_ack:
+                    self.log.debug(
+                        "Job [ %s ] coordination ACK for [ %s ] received",
+                        msg_id.decode(),
+                        info.decode(),
+                    )
+                    confirmed_identities.add(info.decode())
+                elif control == driver.coordination_failed:
+                    self.log.error(
+                        "Job [ %s ] coordination failed from"
+                        " [ %s ] error %s",
+                        msg_id.decode(),
+                        info.decode(),
+                        data.decode(),
+                    )
+                    time.sleep(2)
                 elif control == driver.job_failed:
                     return (
                         None,
-                        "Failed to coordinate with target identity"
-                        " [ {} ]".format(info.decode()),
-                        False,
                         None,
+                        False,
+                        "Job failed when attempting coordination with [ %s ]",
+                        info.decode(),
                     )
                 else:
                     self.log.critical(
                         "Unknown control received [ %s ] from [ %s ]",
-                        control,
+                        control.decode(),
                         info.decode(),
                     )
-            else:
-                self.log.debug(
-                    "Job [ %s ] no coordination message received",
-                    job["job_id"],
-                )
 
             if sorted(confirmed_identities) == sorted(job["identity"]):
+                self.log.debug(
+                    "Job [ %s ] coordination with %s success",
+                    job["job_id"],
+                    confirmed_identities,
+                )
                 return (
                     "Job completed",
                     None,
@@ -276,11 +264,7 @@ class Component(components.ComponentBase):
                     ),
                 )
             else:
-                self.log.debug("Job [ %s ] found identities %s", job["job_id"], confirmed_identities)
-
-        return (
-            None,
-            "Timeout after {} seconds".format(job["job_timeout"]),
-            False,
-            "Job {} was never found in a completed state".format(job["sha"]),
-        )
+                self.log.debug(
+                    "Waiting for coordination messages from %s",
+                    sorted(set(job["identity"]) - confirmed_identities),
+                )

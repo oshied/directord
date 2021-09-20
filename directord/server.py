@@ -401,7 +401,6 @@ class Server(interface.Interface):
                 bind=self.bind_backend, constant=poller_interval
             ):
                 poller_interval, poller_time = 128, time.time()
-
                 (
                     identity,
                     msg_id,
@@ -412,86 +411,12 @@ class Server(interface.Interface):
                     _,
                     _,
                 ) = self.driver.socket_recv(socket=self.bind_backend)
-                if control == self.driver.coordination_notice:
-                    self.log.debug(
-                        "Received coordination request for job [ %s ] from"
-                        " [ %s ]",
-                        msg_id.decode(),
-                        identity.decode(),
-                    )
-                    coordination_targets = dict()
-                    for ident in json.loads(data.decode()):
-                        coordination_targets[ident] = {"failures": 0}
-                        self.log.debug(
-                            "Job [ %s ] loaded target [ %s ] for coordination",
-                            msg_id.decode(),
-                            ident,
-                        )
-
-                    while coordination_targets:
-                        target_ident, value = coordination_targets.popitem()
-                        try:
-                            self.log.debug(
-                                "Job [ %s ] processing target [ %s ] for"
-                                " coordination, attempt [ %s ]",
-                                msg_id.decode(),
-                                target_ident,
-                                value["failures"],
-                            )
-                            self.driver.socket_send(
-                                socket=self.bind_backend,
-                                identity=target_ident.encode(),
-                                msg_id=msg_id,
-                                control=self.driver.coordination_notice,
-                                command=command,
-                                info=identity,
-                            )
-                        except Exception as e:
-                            if value["failures"] >= 5:
-                                self.driver.socket_send(
-                                    socket=self.bind_backend,
-                                    identity=identity,
-                                    msg_id=msg_id,
-                                    control=self.driver.job_failed,
-                                    command=command,
-                                    info=target_ident.encode(),
-                                )
-                                self.log.error(
-                                    "Job [ %s ] failed to coordinate with"
-                                    " [ %s ]. Error information: %s",
-                                    msg_id.decode(),
-                                    target_ident,
-                                    str(e),
-                                )
-                                break
-                            else:
-                                self.log.warning(
-                                    "Job [ %s ] failed to send coordination"
-                                    " notice to [ %s ]. Error information: %s"
-                                    " -- retrying, attempt [ %s ]",
-                                    msg_id.decode(),
-                                    target_ident,
-                                    str(e),
-                                    value["failures"],
-                                )
-                                value["failures"] += 1
-                                coordination_targets[target_ident] = value
-                                time.sleep(value["failures"])
-                        else:
-                            self.log.info(
-                                "Job [ %s ] coordination notice sent to"
-                                " [ %s ]",
-                                msg_id.decode(),
-                                target_ident,
-                            )
-
-                elif control == self.driver.coordination_ack:
-                    self.driver.socket_send(
-                        socket=self.bind_backend,
-                        identity=info,
-                        control=self.driver.coordination_ack,
-                        info=identity,
-                    )
+                if control in [
+                    self.driver.coordination_notice,
+                    self.driver.coordination_ack,
+                    self.driver.coordination_failed,
+                ]:
+                    self.log.critical("Coordination not Implimented yet.")
                 elif control == self.driver.transfer_start:
                     transfer_identity = identity.decode()
                     transfer_job_id = msg_id.decode()

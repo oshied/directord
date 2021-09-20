@@ -430,12 +430,12 @@ class Driver(drivers.BaseDriver):
         )
 
     def backend_connect(self):
-        """Connect to a transfer socket and return the socket.
+        """Connect to a backend socket and return the socket.
 
         :returns: Object
         """
 
-        self.log.debug("Establishing transfer connection.")
+        self.log.debug("Establishing backend connection.")
         bind = self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
@@ -443,7 +443,7 @@ class Driver(drivers.BaseDriver):
         )
         bind.set_hwm(16)
         self.log.debug(
-            "Identity [ %s ] transfer connect hwm state [ %s ]",
+            "Identity [ %s ] backend connect hwm state [ %s ]",
             self.identity,
             bind.get_hwm(),
         )
@@ -508,7 +508,7 @@ class Driver(drivers.BaseDriver):
         )
 
     def backend_bind(self):
-        """Bind an address to a transfer socket and return the socket.
+        """Bind an address to a backend socket and return the socket.
 
         :returns: Object
         """
@@ -520,7 +520,7 @@ class Driver(drivers.BaseDriver):
         )
         bind.set_hwm(16)
         self.log.debug(
-            "Identity [ %s ] transfer connect hwm state [ %s ]",
+            "Identity [ %s ] backend connect hwm state [ %s ]",
             self.identity,
             bind.get_hwm(),
         )
