@@ -185,17 +185,9 @@ class Driver(drivers.BaseDriver):
         ),
     )
     def _socket_connect(
-        self,
-        socket_type,
-        connection,
-        port,
-        poller_type=zmq.POLLIN,
-        send_ready=True,
+        self, socket_type, connection, port, poller_type=zmq.POLLIN
     ):
         """Return a socket object which has been bound to a given address.
-
-        When send_ready is set True and the socket_type is not SUB or PULL,
-        the bound socket will send a single SOH ready message.
 
         > A connection back to the server will wait 10 seconds for an ack
           before going into a retry loop. This is done to forcefully cycle
@@ -270,9 +262,6 @@ class Driver(drivers.BaseDriver):
                 port=port,
             )
         )
-
-        if send_ready and socket_type not in [zmq.SUB, zmq.PULL]:
-            self.socket_send(socket=bind, control=self.heartbeat_ready)
 
         self.log.info("Socket connected to [ %s ].", connection)
         return bind
@@ -438,10 +427,9 @@ class Driver(drivers.BaseDriver):
             socket_type=zmq.DEALER,
             connection=self.connection_string,
             port=self.args.job_port,
-            send_ready=False,
         )
 
-    def transfer_connect(self):
+    def backend_connect(self):
         """Connect to a transfer socket and return the socket.
 
         :returns: Object
@@ -451,8 +439,7 @@ class Driver(drivers.BaseDriver):
         bind = self._socket_connect(
             socket_type=zmq.DEALER,
             connection=self.connection_string,
-            port=self.args.transfer_port,
-            send_ready=False,
+            port=self.args.backend_port,
         )
         bind.set_hwm(16)
         self.log.debug(
@@ -520,7 +507,7 @@ class Driver(drivers.BaseDriver):
             port=self.args.job_port,
         )
 
-    def transfer_bind(self):
+    def backend_bind(self):
         """Bind an address to a transfer socket and return the socket.
 
         :returns: Object
@@ -529,7 +516,7 @@ class Driver(drivers.BaseDriver):
         bind = self._socket_bind(
             socket_type=zmq.ROUTER,
             connection=self.connection_string,
-            port=self.args.transfer_port,
+            port=self.args.backend_port,
         )
         bind.set_hwm(16)
         self.log.debug(
@@ -565,3 +552,16 @@ class Driver(drivers.BaseDriver):
         """
 
         zmq_auth.create_certificates(keys_dir, key_type)
+
+    def create_proxy(front, back):
+        """Create proxy bind.
+
+        Bind two interfaces into a proxy.
+
+        :param front: Frontend interface.
+        :type front: Object
+        :param back: Backend interface.
+        :type back: Object
+        """
+
+        return zmq.proxy(frontend=front, backend=back)

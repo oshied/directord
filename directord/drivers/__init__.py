@@ -21,14 +21,17 @@ from directord import utils
 
 class BaseDriver:
     nullbyte = b"\000"  # Signals null
-    heartbeat_ready = b"\001"  # Signals worker is ready
+    coordination_ack = b"\020"  # Signals worker is ready
+    coordination_notice = b"\021"  # Signals worker is ready
+
+    transfer_start = b"\002"  # Signals start file transfer
+    transfer_end = b"\003"  # Signals start file transfer
+
     heartbeat_notice = b"\005"  # Signals worker heartbeat
     job_ack = b"\006"  # Signals job started
     job_end = b"\004"  # Signals job ended
-    job_processing = b"\026"  # Signals job running
     job_failed = b"\025"  # Signals job failed
-    transfer_start = b"\002"  # Signals start file transfer
-    transfer_end = b"\003"  # Signals start file transfer
+    job_processing = b"\026"  # Signals job running
 
     def __init__(
         self, args, encrypted_traffic_data=None, connection_string=None
@@ -137,7 +140,7 @@ class BaseDriver:
 
         pass
 
-    def transfer_connect(self):
+    def backend_connect(self):
         """Connect to a transfer socket and return the socket.
 
         :returns: Object
@@ -184,7 +187,7 @@ class BaseDriver:
 
         pass
 
-    def transfer_bind(self):
+    def backend_bind(self):
         """Bind an address to a transfer socket and return the socket.
 
         :returns: Object
@@ -204,6 +207,8 @@ class BaseDriver:
         :type constant: Integer
         :returns: Object
         """
+
+        pass
 
     def key_generate(self, keys_dir, key_type):
         """Generate certificate.
@@ -235,3 +240,16 @@ class BaseDriver:
         """
 
         return time.time() + (heartbeat_interval * interval)
+
+    def create_proxy(front, back):
+        """Create proxy bind.
+
+        Bind two interfaces into a proxy.
+
+        :param front: Frontend interface.
+        :type front: Object
+        :param back: Backend interface.
+        :type back: Object
+        """
+
+        pass

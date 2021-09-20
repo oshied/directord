@@ -341,7 +341,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.info", autospec=True)
-    def test_run_transfers(self, mock_log_info, mock_isfile):
+    def test_run_backend(self, mock_log_info, mock_isfile):
         self.mock_driver.socket_recv.side_effect = [
             (
                 b"test-node",
@@ -354,11 +354,11 @@ class TestServer(tests.TestDriverBase):
                 None,
             )
         ]
-        self.server.bind_transfer = MagicMock()
+        self.server.bind_backend = MagicMock()
         mock_isfile.return_value = True
         m = unittest.mock.mock_open(read_data="test data")
         with patch("builtins.open", m):
-            self.server.run_transfers(sentinel=True)
+            self.server.run_backend(sentinel=True)
         self.mock_driver.socket_send.assert_called()
         mock_log_info.assert_called()
 
@@ -548,10 +548,8 @@ class TestServer(tests.TestDriverBase):
         self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_interactions_run_transfers(
+    def test_run_interactions_run_backend(
         self,
-        mock_log_debug,
         mock_time,
     ):
         self.mock_driver.socket_recv.side_effect = [
@@ -576,8 +574,8 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        self.mock_driver.transfer_bind.return_value = MagicMock()
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
+        self.mock_driver.backend_bind.return_value = MagicMock()
+        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
 
     @patch("directord.server.Server._set_job_status", autospec=True)
@@ -611,7 +609,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        self.mock_driver.transfer_bind.return_value = MagicMock()
+        self.mock_driver.backend_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
         mock_log_debug.assert_called()
