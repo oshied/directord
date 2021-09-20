@@ -80,7 +80,7 @@ class Component(components.ComponentBase):
         """Initialize the component cache class."""
 
         super().__init__(desc="Process coordination commands")
-        self.requires_lock = True
+        self.requires_lock = False
 
     def args(self):
         """Set default arguments for a component."""

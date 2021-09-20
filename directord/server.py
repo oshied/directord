@@ -16,7 +16,6 @@ import decimal
 import grp
 import json
 import os
-from queue import Empty
 import socket
 import time
 import urllib.parse as urlparse
@@ -423,26 +422,22 @@ class Server(interface.Interface):
                     )
                     coordination_targets = dict()
                     for ident in json.loads(data.decode()):
-                        coordination_targets[ident] = {
-                            "failures": 0,
-                            "success": False,
-                        }
+                        coordination_targets[ident] = {"failures": 0}
                         self.log.debug(
                             "Job [ %s ] loaded target [ %s ] for coordination",
                             msg_id.decode(),
                             ident,
                         )
 
-                    while not all(
-                        i["success"] for i in coordination_targets.values()
-                    ):
+                    while [i for i in coordination_targets.keys()]:
                         target_ident, value = coordination_targets.popitem()
                         try:
                             self.log.debug(
                                 "Job [ %s ] processing target [ %s ] for"
-                                " coordination",
+                                " coordination, attempt [ %s ]",
                                 msg_id.decode(),
                                 target_ident,
+                                value["failures"],
                             )
                             self.driver.socket_send(
                                 socket=self.bind_backend,
@@ -452,8 +447,6 @@ class Server(interface.Interface):
                                 command=command,
                                 info=identity,
                             )
-                        except Empty:
-                            break
                         except Exception as e:
                             if value["failures"] >= 5:
                                 self.driver.socket_send(
@@ -492,11 +485,13 @@ class Server(interface.Interface):
                                 msg_id.decode(),
                                 target_ident,
                             )
+                        finally:
                             self.log.debug(
-                                "Job [ %s ] coordination failures %s",
+                                "Job [ %s ] coordination status %s",
                                 msg_id.decode(),
                                 coordination_targets,
                             )
+
                 elif control == self.driver.coordination_ack:
                     self.driver.socket_send(
                         socket=self.bind_backend,
