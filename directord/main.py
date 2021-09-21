@@ -153,7 +153,7 @@ def _args(exec_args=None):
     )
     parser.add_argument(
         "--cache-path",
-        help=("Client cache path." " Default: %(default)s"),
+        help=("Client cache path. Default: %(default)s"),
         metavar="STRING",
         default=str(os.getenv("DIRECTORD_CACHE_PATH", "/var/cache/directord")),
         type=str,

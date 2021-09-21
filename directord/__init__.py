@@ -190,7 +190,7 @@ class Processor:
                 return True
         except Exception as e:
             self.log.warning(
-                "Thread [ %s ] saw exception when" " terminating: %s",
+                "Thread [ %s ] saw exception when terminating: %s",
                 process.name,
                 str(e),
             )
