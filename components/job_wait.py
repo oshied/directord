@@ -80,6 +80,7 @@ class Component(components.ComponentBase):
 
         super().__init__(desc="Process coordination commands")
         self.requires_lock = True
+        self.cacheable = False
 
     def args(self):
         """Set default arguments for a component."""
@@ -162,7 +163,7 @@ class Component(components.ComponentBase):
                 socket=bind_backend,
                 msg_id=job["job_id"].encode(),
                 control=driver.coordination_notice,
-                command=job["job_sha"].encode(),
+                data=job["job_sha"].encode(),
                 info=identity.encode(),
             )
             self.log.debug(
@@ -173,15 +174,15 @@ class Component(components.ComponentBase):
 
         confirmed_identities = set()
         while True:
-            if driver.bind_check(bind=bind_backend):
+            if driver.bind_check(bind=bind_backend, interval=5):
                 (
                     msg_id,
                     control,
-                    command,
+                    _,
                     data,
                     info,
-                    _,
-                    _,
+                    stderr,
+                    stdout,
                 ) = driver.socket_recv(socket=bind_backend)
                 if control == driver.coordination_notice:
                     self.log.debug(
@@ -189,33 +190,42 @@ class Component(components.ComponentBase):
                         msg_id.decode(),
                         info.decode(),
                     )
-                    if cache.get(command.decode()) in [
-                        driver.job_end.decode(),
-                        driver.job_failed.decode(),
-                    ]:
+                    for _ in range(10):
+                        if cache.get(data.decode()) in [
+                            driver.job_end.decode(),
+                            driver.job_failed.decode(),
+                        ]:
+                            self.log.debug(
+                                "Job [ %s ] coordination complete for [ %s ]",
+                                msg_id.decode(),
+                                info.decode(),
+                            )
+                            driver.socket_send(
+                                socket=bind_backend,
+                                msg_id=msg_id,
+                                control=driver.coordination_ack,
+                                info=info,
+                            )
+                            break
                         self.log.debug(
-                            "Job [ %s ] coordination complete for [ %s ]",
+                            "Job [ %s ] coordination missing for [ %s ] --"
+                            " retrying",
                             msg_id.decode(),
                             info.decode(),
                         )
-                        driver.socket_send(
-                            socket=bind_backend,
-                            msg_id=msg_id,
-                            control=driver.coordination_ack,
-                            info=info,
-                        )
+                        self.delay(1)
                     else:
                         self.log.debug(
-                            "Job [ %s ] coordination missing for [ %s ]",
+                            "Job [ %s ] expected SHA [ %s ] was not found.",
                             msg_id.decode(),
-                            info.decode(),
+                            data.decode(),
                         )
                         driver.socket_send(
                             socket=bind_backend,
                             msg_id=msg_id,
                             control=driver.coordination_failed,
                             info=info,
-                            data=b"Item was not found in cache",
+                            stderr=b"Item was not found in cache",
                         )
                 elif control == driver.coordination_ack:
                     self.log.debug(
@@ -232,14 +242,12 @@ class Component(components.ComponentBase):
                         info.decode(),
                         data.decode(),
                     )
-                    time.sleep(2)
-                elif control == driver.job_failed:
                     return (
-                        None,
-                        None,
+                        stderr.decode(),
+                        stdout.decode(),
                         False,
-                        "Job failed when attempting coordination with [ %s ]",
-                        info.decode(),
+                        "Job [ {} ] failed when attempting coordination with"
+                        " [ {} ]".format(msg_id.decode(), info.decode()),
                     )
                 else:
                     self.log.critical(
