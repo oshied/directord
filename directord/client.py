@@ -437,7 +437,6 @@ class Client(interface.Interface):
                         time=block_on_task_data.get("timeout", 600),
                         job_id=block_on_task_data["job_id"],
                     ):
-                        count = 0
                         while True:
                             if self.cache.get(
                                 block_on_task_data["job_sha3_224"]
@@ -454,8 +453,7 @@ class Client(interface.Interface):
                                     job["job_id"],
                                     block_on_task_data,
                                 )
-                                count += 1
-                                time.sleep(count if count < 5 else 5)
+                                time.sleep(1)
 
                     if block_on_task_success:
                         self.log.debug(

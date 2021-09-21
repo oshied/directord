@@ -139,7 +139,7 @@ class Component(components.ComponentBase):
             self.log.warning(
                 "QUERY argument [ %s ] not found in cache", job["item"]
             )
-            self.delay(2)
+            self.delay(1)
 
         if missing_identity:
             info = (
