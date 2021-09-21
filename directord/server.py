@@ -416,7 +416,38 @@ class Server(interface.Interface):
                     self.driver.coordination_ack,
                     self.driver.coordination_failed,
                 ]:
-                    self.log.critical("Coordination not Implimented yet.")
+                    for _ in range(3):
+                        try:
+                            self.driver.socket_send(
+                                socket=self.bind_backend,
+                                identity=info,
+                                control=control,
+                                command=command,
+                                data=data,
+                                info=identity,
+                            )
+                            break
+                        except Exception as e:
+                            self.log.warning(
+                                "Job [ %s ] saw exception %s -- retrying",
+                                msg_id.decode(),
+                                str(e)
+                            )
+                            time.sleep(3)
+                    else:
+                        self.driver.socket_send(
+                            socket=self.bind_backend,
+                            identity=identity,
+                            control=self.driver.coordination_failed,
+                            data=data,
+                            info=info,
+                            stderr=(
+                                "Failed to connect to coordination node"
+                                " [ {} ] after three attempts.".format(
+                                    info.decode()
+                                )
+                            )
+                        )
                 elif control == self.driver.transfer_start:
                     transfer_identity = identity.decode()
                     transfer_job_id = msg_id.decode()
