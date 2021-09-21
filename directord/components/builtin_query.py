@@ -113,7 +113,7 @@ class Component(components.ComponentBase):
                     query_timeout=600,
                     parent_async_bypass=True,
                     targets=targets,
-                    identity=targets,
+                    identity=list(),
                 )
                 wait_job["job_id"] = utils.get_uuid()
                 wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)

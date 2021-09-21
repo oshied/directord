@@ -625,6 +625,15 @@ class Server(interface.Interface):
                                 " running everwhere"
                             )
 
+                        # NOTE(cloudnull): If the new task identity is set but
+                        #                  with a null value, reset the value
+                        #                  to that of the known workers.
+                        if "identity" in new_task and not new_task["identity"]:
+                            self.log.debug("identities reset to all workers")
+                            new_task["identity"] = [
+                                i.decode() for i in self.workers.keys()
+                            ]
+
                         if "job_id" not in new_task:
                             new_task["job_id"] = utils.get_uuid()
 
