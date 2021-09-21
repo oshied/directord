@@ -411,11 +411,11 @@ class Client(interface.Interface):
             self.q_return.put(component_return)
 
             try:
-                block_on_task_datas = [
+                block_on_task_data = [
                     i
                     for i in component.block_on_tasks
                     if self.driver.identity in i.get("targets", list())
-                ]
+                ][-1]
             except IndexError:
                 self.log.debug(
                     "Job [ %s ] no valid callbacks for this node %s.",
@@ -431,57 +431,56 @@ class Client(interface.Interface):
                     len(component.block_on_tasks),
                 )
                 self.log.debug("Job call backs: %s ", component.block_on_tasks)
-                for block_on_task_data in block_on_task_datas:
-                    block_on_task_success = False
-                    with self.timeout(
-                        time=block_on_task_data.get("timeout", 600),
-                        job_id=block_on_task_data["job_id"],
-                    ):
-                        while True:
-                            if self.cache.get(
-                                block_on_task_data["job_sha3_224"]
-                            ) in [
-                                self.driver.job_end.decode(),
-                                self.driver.job_failed.decode(),
-                            ]:
-                                block_on_task_success = True
-                                break
-                            else:
-                                self.log.debug(
-                                    "waiting for callback job from [ %s ] to"
-                                    " complete. %s",
-                                    job["job_id"],
-                                    block_on_task_data,
-                                )
-                                time.sleep(1)
-
-                    if block_on_task_success:
-                        self.log.debug(
-                            "Job [ %s ] task sha [ %s ] callback complete",
-                            job["job_id"],
-                            block_on_task_data["job_sha3_224"],
-                        )
-                    else:
-                        self.log.error(
-                            "Job [ %s ] task sha [ %s ] callback never"
-                            " completed",
-                            job["job_id"],
-                            block_on_task_data["job_sha3_224"],
-                        )
-                        self.q_return.put(
-                            (
-                                component_return[0],
-                                component_return[1],
-                                False,
-                                "Callback [ {} ] never completed".format(
-                                    block_on_task_data["job_id"]
-                                ),
-                                job,
-                                command,
-                                time.time() - _starttime,
-                                None,
+                block_on_task_success = False
+                with self.timeout(
+                    time=block_on_task_data.get("timeout", 600),
+                    job_id=block_on_task_data["job_id"],
+                ):
+                    while True:
+                        if self.cache.get(
+                            block_on_task_data["job_sha3_224"]
+                        ) in [
+                            self.driver.job_end.decode(),
+                            self.driver.job_failed.decode(),
+                        ]:
+                            block_on_task_success = True
+                            break
+                        else:
+                            self.log.debug(
+                                "waiting for callback job from [ %s ] to"
+                                " complete. %s",
+                                job["job_id"],
+                                block_on_task_data,
                             )
+                            time.sleep(1)
+
+                if block_on_task_success:
+                    self.log.debug(
+                        "Job [ %s ] task sha [ %s ] callback complete",
+                        job["job_id"],
+                        block_on_task_data["job_sha3_224"],
+                    )
+                else:
+                    self.log.error(
+                        "Job [ %s ] task sha [ %s ] callback never"
+                        " completed",
+                        job["job_id"],
+                        block_on_task_data["job_sha3_224"],
+                    )
+                    self.q_return.put(
+                        (
+                            component_return[0],
+                            component_return[1],
+                            False,
+                            "Callback [ {} ] never completed".format(
+                                block_on_task_data["job_id"]
+                            ),
+                            job,
+                            command,
+                            time.time() - _starttime,
+                            None,
                         )
+                    )
 
             self.log.debug(
                 "Component execution complete for job [ %s ].",
