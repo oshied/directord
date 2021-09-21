@@ -13,6 +13,7 @@
 #   under the License.
 
 import time
+import queue
 
 from directord import components
 
@@ -53,7 +54,7 @@ class Coordination:
                     )
                 else:
                     self.bind_backend.close(linger=2)
-                    self.delay(1)
+                    time.sleep(1)
         except Exception as e:
             self.log.error(
                 "Job [ %s ] coordination ran into an exception"
@@ -71,7 +72,6 @@ class Coordination:
             self.driver.identity,
             self.job_id,
         )
-        time.sleep(0.25)
 
 
 class Component(components.ComponentBase):
@@ -79,7 +79,6 @@ class Component(components.ComponentBase):
         """Initialize the component cache class."""
 
         super().__init__(desc="Process coordination commands")
-        self.requires_lock = True
         self.cacheable = False
 
     def args(self):
@@ -158,23 +157,35 @@ class Component(components.ComponentBase):
                 "No identities to process",
             )
 
-        for identity in job["identity"]:
-            driver.socket_send(
-                socket=bind_backend,
-                msg_id=job["job_id"].encode(),
-                control=driver.coordination_notice,
-                data=job["job_sha"].encode(),
-                info=identity.encode(),
-            )
-            self.log.debug(
-                "Job [ %s ] coordination notice sent to %s",
-                job["job_id"],
-                identity,
-            )
+        q = queue.Queue()
 
+        if driver.identity in job["identity"]:
+            job["identity"].remove(driver.identity)
+            job["identity"].append(driver.identity)
+
+        list(map(q.put, job["identity"]))
         confirmed_identities = set()
+        all_identities_sent = False
         while True:
-            if driver.bind_check(bind=bind_backend, interval=5):
+            try:
+                identity = q.get_nowait()
+            except queue.Empty:
+                all_identities_sent = True
+            else:
+                driver.socket_send(
+                    socket=bind_backend,
+                    msg_id=job["job_id"].encode(),
+                    control=driver.coordination_notice,
+                    data=job["job_sha"].encode(),
+                    info=identity.encode(),
+                )
+                self.log.debug(
+                    "Job [ %s ] coordination notice sent to %s",
+                    job["job_id"],
+                    identity,
+                )
+
+            if driver.bind_check(bind=bind_backend, interval=0.5):
                 (
                     msg_id,
                     control,
@@ -184,49 +195,63 @@ class Component(components.ComponentBase):
                     stderr,
                     stdout,
                 ) = driver.socket_recv(socket=bind_backend)
+
                 if control == driver.coordination_notice:
-                    self.log.debug(
-                        "Job [ %s ] coordination notice received from [ %s ]",
-                        msg_id.decode(),
-                        info.decode(),
-                    )
-                    for _ in range(10):
-                        if cache.get(data.decode()) in [
-                            driver.job_end.decode(),
-                            driver.job_failed.decode(),
-                        ]:
+                    if data != job["job_sha"].encode():
+                        self.log.debug(
+                            "Job [ %s ] coordination notice received from"
+                            " [ %s ] but data miss-matched, sending back.",
+                            msg_id.decode(),
+                            info.decode(),
+                        )
+                        driver.socket_send(
+                            msg_id=msg_id,
+                            control=control,
+                            data=data,
+                            info=info,
+                            stderr=stderr,
+                            stdout=stdout,
+                        )
+                    else:
+                        self.log.debug(
+                            "Job [ %s ] coordination notice received from"
+                            " [ %s ]",
+                            msg_id.decode(),
+                            info.decode(),
+                        )
+                        for _ in range(2400):
+                            if cache.get(data.decode()) in [
+                                driver.job_end.decode(),
+                                driver.job_failed.decode(),
+                            ]:
+                                self.log.debug(
+                                    "Job [ %s ] coordination complete for"
+                                    " [ %s ]",
+                                    msg_id.decode(),
+                                    info.decode(),
+                                )
+                                driver.socket_send(
+                                    socket=bind_backend,
+                                    msg_id=msg_id,
+                                    control=driver.coordination_ack,
+                                    info=info,
+                                )
+                                break
+                            self.delay(0.25)
+                        else:
                             self.log.debug(
-                                "Job [ %s ] coordination complete for [ %s ]",
+                                "Job [ %s ] expected SHA [ %s ] was not"
+                                " found.",
                                 msg_id.decode(),
-                                info.decode(),
+                                data.decode(),
                             )
                             driver.socket_send(
                                 socket=bind_backend,
                                 msg_id=msg_id,
-                                control=driver.coordination_ack,
+                                control=driver.coordination_failed,
                                 info=info,
+                                stderr=b"Item was not found in cache",
                             )
-                            break
-                        self.log.debug(
-                            "Job [ %s ] coordination missing for [ %s ] --"
-                            " retrying",
-                            msg_id.decode(),
-                            info.decode(),
-                        )
-                        self.delay(1)
-                    else:
-                        self.log.debug(
-                            "Job [ %s ] expected SHA [ %s ] was not found.",
-                            msg_id.decode(),
-                            data.decode(),
-                        )
-                        driver.socket_send(
-                            socket=bind_backend,
-                            msg_id=msg_id,
-                            control=driver.coordination_failed,
-                            info=info,
-                            stderr=b"Item was not found in cache",
-                        )
                 elif control == driver.coordination_ack:
                     self.log.debug(
                         "Job [ %s ] coordination ACK for [ %s ] received",
@@ -255,20 +280,22 @@ class Component(components.ComponentBase):
                         control.decode(),
                         info.decode(),
                     )
-
-            if sorted(confirmed_identities) == sorted(job["identity"]):
+            elif (
+                sorted(confirmed_identities) == sorted(job["identity"])
+                and all_identities_sent
+            ):
                 self.log.debug(
                     "Job [ %s ] coordination with %s success",
                     job["job_id"],
                     confirmed_identities,
                 )
                 return (
-                    "Job completed",
+                    "Job completed, found SHA [ {} ]".format(job["job_sha"]),
                     None,
                     True,
-                    "Job [ {} ] found SHA [ {} ] completed on all"
+                    "Job [ {} ] completed on all"
                     " coordinated targets: {}".format(
-                        job["job_id"], job["job_sha"], job["identity"]
+                        job["job_id"], job["identity"]
                     ),
                 )
             else:

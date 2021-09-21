@@ -416,7 +416,7 @@ class Server(interface.Interface):
                     self.driver.coordination_ack,
                     self.driver.coordination_failed,
                 ]:
-                    for _ in range(3):
+                    for _ in range(120):
                         try:
                             self.driver.socket_send(
                                 socket=self.bind_backend,
@@ -430,12 +430,14 @@ class Server(interface.Interface):
                             )
                             break
                         except Exception as e:
-                            self.log.warning(
-                                "Job [ %s ] saw exception %s -- retrying",
+                            self.log.debug(
+                                "Job [ %s ] connecting to target [ %s ] saw"
+                                " exception %s -- retrying",
                                 msg_id.decode(),
+                                info.decode(),
                                 str(e),
                             )
-                            time.sleep(3)
+                            time.sleep(0.01)
                     else:
                         try:
                             self.driver.socket_send(
@@ -455,8 +457,10 @@ class Server(interface.Interface):
                             )
                         except Exception as e:
                             self.log.error(
-                                "Job [ %s ] saw exception %s",
+                                "Job [ %s ] connecting to target [ %s ] saw"
+                                " exception %s",
                                 msg_id.decode(),
+                                info.decode(),
                                 str(e),
                             )
                 elif control == self.driver.transfer_start:
