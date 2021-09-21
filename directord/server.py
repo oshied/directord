@@ -408,8 +408,8 @@ class Server(interface.Interface):
                     command,
                     data,
                     info,
-                    _,
-                    _,
+                    stderr,
+                    stdout,
                 ) = self.driver.socket_recv(socket=self.bind_backend)
                 if control in [
                     self.driver.coordination_notice,
@@ -425,29 +425,40 @@ class Server(interface.Interface):
                                 command=command,
                                 data=data,
                                 info=identity,
+                                stderr=stderr,
+                                stdout=stdout,
                             )
                             break
                         except Exception as e:
                             self.log.warning(
                                 "Job [ %s ] saw exception %s -- retrying",
                                 msg_id.decode(),
-                                str(e)
+                                str(e),
                             )
                             time.sleep(3)
                     else:
-                        self.driver.socket_send(
-                            socket=self.bind_backend,
-                            identity=identity,
-                            control=self.driver.coordination_failed,
-                            data=data,
-                            info=info,
-                            stderr=(
-                                "Failed to connect to coordination node"
-                                " [ {} ] after three attempts.".format(
-                                    info.decode()
-                                )
+                        try:
+                            self.driver.socket_send(
+                                socket=self.bind_backend,
+                                identity=identity,
+                                control=self.driver.coordination_failed,
+                                command=command,
+                                data=data,
+                                info=info,
+                                stderr=(
+                                    "Failed to connect to coordination node"
+                                    " [ {} ] after three attempts.".format(
+                                        info.decode()
+                                    )
+                                ).encode(),
+                                stdout=stdout,
                             )
-                        )
+                        except Exception as e:
+                            self.log.error(
+                                "Job [ %s ] saw exception %s",
+                                msg_id.decode(),
+                                str(e),
+                            )
                 elif control == self.driver.transfer_start:
                     transfer_identity = identity.decode()
                     transfer_job_id = msg_id.decode()
@@ -642,7 +653,7 @@ class Server(interface.Interface):
 
                     for new_task in data_item.get("new_tasks", list()):
                         self.log.debug("New task found: %s", new_task)
-                        if "targets" in new_task:
+                        if "targets" in new_task and new_task["targets"]:
                             targets = [i.encode() for i in new_task["targets"]]
                             self.log.debug(
                                 "Using existing targets from old job"
