@@ -852,6 +852,10 @@ class Server(interface.Interface):
                 self.thread(name="run_backend", target=self.run_backend),
                 True,
             ),
+            (
+                self.thread(name="run_driver", target=self.driver.run),
+                True,
+            ),
         ]
 
         if self.args.run_ui:

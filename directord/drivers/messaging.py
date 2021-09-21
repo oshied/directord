@@ -12,8 +12,13 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import json
+import subprocess
+import time
+
 from oslo_config import cfg
 import oslo_messaging
+from oslo_messaging.rpc import dispatcher
 
 from directord import drivers
 
@@ -35,3 +40,28 @@ class Driver(drivers.BaseDriver):
             self.interface.bind_address
         )
         self.transport = oslo_messaging.get_rpc_transport(self.conf)
+
+    def run(self):
+        if self.mode == "server":
+            self.qdrouterd()
+            server = socket.gethostbyaddr(self.interface.bind_address)[0]
+        else:
+            server = self.interface.uuid
+
+        target = oslo_messaging.Target(topic="directord", server=server)
+        endpoints = [self]
+        server = oslo_messaging.get_rpc_server(
+            self.transport,
+            target,
+            endpoints,
+            executor="threading",
+            access_policy=dispatcher.ExplicitRPCAccessPolicy,
+        )
+        self.log.info("Starting messaging server.")
+        server.start()
+        while True:
+            time.sleep(1)
+
+    def qdrouterd(self):
+        self.log.info("Starting qdrouterd.")
+        subprocess.run(["qdrouterd", "-d"], check=True)

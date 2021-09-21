@@ -259,3 +259,10 @@ class BaseDriver:
         """
 
         pass
+
+    def run(self):
+        """Driver code to run in it's own thread. Will not need to be
+        implemented for all driver types.
+        """
+
+        pass
