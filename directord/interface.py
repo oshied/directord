@@ -85,4 +85,5 @@ class Interface(directord.Processor):
                     "secret_keys_dir": self.secret_keys_dir,
                 },
                 connection_string=self.connection_string,
+                interface=self,
             )

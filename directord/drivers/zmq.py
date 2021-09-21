@@ -27,7 +27,11 @@ from directord import utils
 
 class Driver(drivers.BaseDriver):
     def __init__(
-        self, args, encrypted_traffic_data=None, connection_string=None
+        self,
+        args,
+        encrypted_traffic_data=None,
+        connection_string=None,
+        interface=None,
     ):
         """Initialize the Driver.
 
@@ -38,6 +42,8 @@ class Driver(drivers.BaseDriver):
         :param connection_string: Connection string used to provide connection
                                   instructions to the driver.
         :type connection_string: String.
+        :param interface: The interface instance (client/server)
+        :type interface: Object
         """
 
         self.args = args
@@ -62,6 +68,7 @@ class Driver(drivers.BaseDriver):
             args=args,
             encrypted_traffic_data=self.encrypted_traffic_data,
             connection_string=self.connection_string,
+            interface=interface,
         )
 
     def __copy__(self):

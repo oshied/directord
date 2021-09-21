@@ -35,7 +35,11 @@ class BaseDriver:
     job_processing = b"\026"  # Signals job running
 
     def __init__(
-        self, args, encrypted_traffic_data=None, connection_string=None
+        self,
+        args,
+        encrypted_traffic_data=None,
+        connection_string=None,
+        interface=None,
     ):
         """Initialize the Driver.
 
@@ -50,6 +54,7 @@ class BaseDriver:
         self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
         self.args = args
+        self.interface = interface
 
     def __copy__(self):
         """Return a copy of the base class.
