@@ -154,7 +154,7 @@ class Client(interface.Interface):
                 #                  the component structure.
                 if command.decode().lower() == "queuesentinel":
                     count = 0
-                    for _, value in list(parent_tracker.items()):
+                    for value in list(parent_tracker.values()):
                         count += self.purge_queue(
                             queue=value["q"], job_id=job["job_id"]
                         )
