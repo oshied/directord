@@ -117,26 +117,26 @@ class Manage(User):
             suffix=".key_secret",
         )
 
-    def poll_job(self, job_id, miss=0):
+    def poll_job(self, job_id):
         """Given a job poll for its completion and return status.
 
         > The status return is (Boolean, String)
 
         :param job_id: UUID for job
         :type job_id: String
-        :param miss: Cache miss counter
-        :type miss: Integer
         :returns: Tuple
         """
 
         job_processing_interval = 0.25
         processing_attempts = 0
+        state_timeout = time.time()
+        timeout = getattr(self.args, "timeout", 600)
         while True:
             try:
                 data = dict(json.loads(self.run(override=job_id)))
             except json.JSONDecodeError:
-                miss += 1
-                if miss > getattr(self.args, "timeout", 600):
+                if time.time() - state_timeout > timeout:
+                    state_timeout = time.time()
                     return (
                         None,
                         "Job in an unknown state: {}".format(job_id),
@@ -150,8 +150,8 @@ class Manage(User):
             else:
                 data_return = data.get(job_id, dict())
                 if not data_return:
-                    miss += 1
-                    if miss > getattr(self.args, "timeout", 600):
+                    if time.time() - state_timeout > timeout:
+                        state_timeout = time.time()
                         return (
                             None,
                             "Job in an unknown state: {}".format(job_id),
@@ -173,6 +173,7 @@ class Manage(User):
                     if processing_attempts > 20:
                         job_processing_interval = 1
                 elif job_state == self.driver.job_failed:
+                    state_timeout = time.time()
                     return (
                         False,
                         "Job Failed: {}".format(job_id),
@@ -187,6 +188,7 @@ class Manage(User):
                 ]:
                     nodes = len(data_return.get("_nodes"))
                     if len(data_return.get("FAILED", list())) > 0:
+                        state_timeout = time.time()
                         return (
                             False,
                             "Job Degrated: {}".format(job_id),
@@ -195,6 +197,7 @@ class Manage(User):
                             info,
                         )
                     elif len(data_return.get("SUCCESS", list())) == nodes:
+                        state_timeout = time.time()
                         return (
                             True,
                             "Job Success: {}".format(job_id),
@@ -203,8 +206,8 @@ class Manage(User):
                             info,
                         )
                     else:
-                        miss += 1
-                        if miss > 15:
+                        if time.time() - state_timeout > timeout:
+                            state_timeout = time.time()
                             return (
                                 True,
                                 "Job Skipped: {}".format(job_id),
@@ -215,8 +218,8 @@ class Manage(User):
                         else:
                             time.sleep(1)
                 else:
-                    miss += 1
-                    if miss > getattr(self.args, "timeout", 600):
+                    if time.time() - state_timeout > timeout:
+                        state_timeout = time.time()
                         return (
                             None,
                             "Job in an unknown state: {}".format(job_id),

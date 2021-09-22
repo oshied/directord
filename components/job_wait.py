@@ -44,10 +44,9 @@ class Coordination:
 
         try:
             self.bind_backend.close(linger=2)
-            count = 0
+            close_timeout = time.time()
             while not self.bind_backend.closed:
-                count += 1
-                if count > 60:
+                if time.time() - close_timeout > 60:
                     raise TimeoutError(
                         "Job [ {} ] failed to close coordination"
                         " socket".format(self.job_id)

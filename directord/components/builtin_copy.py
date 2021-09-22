@@ -50,10 +50,9 @@ class Transfer:
 
         try:
             self.bind_transfer.close(linger=2)
-            count = 0
+            close_time = time.time()
             while not self.bind_transfer.closed:
-                count += 1
-                if count > 60:
+                if time.time() - close_time > 60:
                     raise TimeoutError(
                         "Job [ {} ] failed to close transfer socket".format(
                             self.job_id

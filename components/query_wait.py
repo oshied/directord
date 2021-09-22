@@ -137,8 +137,8 @@ class Component(components.ComponentBase):
                             ),
                         )
 
-            if time.time() - warning_loops >= 2:
-                self.log.warning(
+            if time.time() - warning_loops >= 5:
+                self.log.debug(
                     "QUERY argument [ %s ] not found in cache", job["item"]
                 )
                 warning_loops = time.time()
