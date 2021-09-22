@@ -199,7 +199,7 @@ class Client(interface.Interface):
                 self.log.info("Starting bypass process [ %s ]", t)
                 parent_tracker[t]["t"].start()
 
-            while _get_thread_count(parents=parent_tracker) <= 5:
+            while _get_thread_count(parents=parent_tracker) <= self.cpu_count:
                 for t in _get_pending_threads(parents=parent_tracker):
                     self.log.info("Starting process [ %s ]", t)
                     parent_tracker[t]["t"].start()
