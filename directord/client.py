@@ -133,6 +133,7 @@ class Client(interface.Interface):
 
         loop_time = time.time()
         parent_tracker = collections.OrderedDict()
+        locks = dict(global_lock=lock)
         while not q_processes.empty() or parent_tracker:
             try:
                 (
@@ -144,15 +145,20 @@ class Client(interface.Interface):
                 self.log.critical("Queue object value error [ %s ]", str(e))
                 pass
             except Exception:
-                pass
+                sleep_interval = 0.1
             else:
+                sleep_interval = 0.001
+                lower_command = command.decode().lower()
+                if lower_command not in locks:
+                    locks[lower_command] = self.get_lock()
+
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
                 # NOTE(cloudnull): If the command is queuesentinel purge all
                 #                  queued items. This is on the ONE component
                 #                  where we intercept and react outside of
                 #                  the component structure.
-                if command.decode().lower() == "queuesentinel":
+                if lower_command == "queuesentinel":
                     count = 0
                     for value in list(parent_tracker.values()):
                         count += self.purge_queue(
@@ -180,6 +186,7 @@ class Client(interface.Interface):
                         t=None,
                         q=self.get_queue(),
                         bypass=job.get("parent_async_bypass", False),
+                        lock=locks[lower_command],
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
@@ -189,7 +196,7 @@ class Client(interface.Interface):
                         target=self.q_processor,
                         kwargs=dict(
                             queue=_parent["q"],
-                            lock=lock,
+                            lock=_parent["lock"],
                         ),
                         name=_q_name,
                         daemon=True,
@@ -235,7 +242,7 @@ class Client(interface.Interface):
                             target=self.q_processor,
                             kwargs=dict(
                                 queue=parent_tracker[key]["q"],
-                                lock=lock,
+                                lock=parent_tracker[key]["lock"],
                             ),
                             name=key,
                             daemon=True,
@@ -252,7 +259,7 @@ class Client(interface.Interface):
                 )
                 loop_time = time.time() + 30
 
-            time.sleep(0.01)
+            time.sleep(sleep_interval)
 
     def purge_queue(self, queue, job_id):
         """Purge all jobs from the queue.
