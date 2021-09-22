@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import json
 import logging
 import os
 
@@ -423,6 +424,30 @@ class Driver(drivers.BaseDriver):
 
         return socket.recv_multipart(flags=flags)
 
+    def job_recv(self):
+        """Receive a job message."""
+
+        (
+            identity,
+            msg_id,
+            control,
+            _,
+            data,
+            info,
+            stderr,
+            stdout,
+        ) = Driver.socket_recv(socket=self.bind_job)
+        return (
+            identity.decode(),
+            msg_id.decode(),
+            control,
+            _,
+            data.decode(),
+            info.decode(),
+            stderr.decode(),
+            stdout.decode(),
+        )
+
     def job_connect(self):
         """Connect to a job socket and return the socket.
 
@@ -435,6 +460,20 @@ class Driver(drivers.BaseDriver):
             connection=self.connection_string,
             port=self.args.job_port,
         )
+
+    def job_init(self):
+        """Initialize the heartbeat socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+        if self.args.mode == "server":
+            self.bind_job = self.job_bind()
+        else:
+            self.bind_job = self.job_connect()
+        return self.bind_job
 
     def backend_connect(self):
         """Connect to a backend socket and return the socket.
@@ -572,3 +611,29 @@ class Driver(drivers.BaseDriver):
         """
 
         return zmq.proxy(frontend=front, backend=back)
+
+    def heartbeat_send(
+        self, identity=None, host_uptime=None, agent_uptime=None, version=None
+    ):
+        """Send a heartbeat.
+
+        :param identity: Sender identity (uuid)
+        :type identity: String
+        :param host_uptime: Sender uptime
+        :type host_uptime: String
+        :param agent_uptime: Sender agent uptime
+        :type agent_uptime: String
+        :param version: Sender directord version
+        :type version: String
+        """
+        self.socket_send(
+            socket=self.bind_job,
+            control=self.heartbeat_notice,
+            data=json.dumps(
+                {
+                    "version": version,
+                    "host_uptime": host_uptime,
+                    "agent_uptime": agent_uptime,
+                }
+            ).encode(),
+        )

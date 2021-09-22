@@ -15,6 +15,7 @@
 import logging
 import os
 import directord
+import uuid
 
 
 class Interface(directord.Processor):
@@ -53,6 +54,8 @@ class Interface(directord.Processor):
         self.connection_string = "{proto}://{addr}".format(
             proto=self.proto, addr=self.bind_address
         )
+
+        self.uuid = str(uuid.uuid4())
 
         try:
             self.heartbeat_interval = self.args.heartbeat_interval

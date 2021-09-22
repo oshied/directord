@@ -265,6 +265,8 @@ class TestDriverBase(unittest.TestCase):
         self.mock_driver.job_failed = base_driver.job_failed
         self.mock_driver.transfer_start = base_driver.transfer_start
         self.mock_driver.transfer_end = base_driver.transfer_end
+        self.mock_driver.bind_job = MagicMock()
+        self.mock_driver.heartbeat_send = MagicMock()
         self.addCleanup(self.restoreDrivers)
 
     def restoreDrivers(self):

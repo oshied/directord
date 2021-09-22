@@ -266,3 +266,18 @@ class BaseDriver:
         """
 
         pass
+
+    @staticmethod
+    def job_recv():
+        """Receive a job message."""
+
+        pass
+
+    def job_init(self):
+        """Initialize job connection handling. May not need to be implemented
+        for each driver.
+
+        :returns: Object
+        """
+
+        pass

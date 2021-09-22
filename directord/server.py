@@ -551,7 +551,7 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_job = self.driver.job_bind()
+        self.driver.job_init()
         poller_time = time.time()
         prune_time = time.time()
         poller_interval = 1
@@ -588,12 +588,12 @@ class Server(interface.Interface):
                     )
                     send_item["data"] = json.dumps(send_item["data"]).encode()
                     self.driver.socket_send(
-                        socket=self.bind_job,
+                        socket=self.driver.bind_job,
                         **send_item,
                     )
 
             if self.driver.bind_check(
-                bind=self.bind_job, constant=poller_interval
+                bind=self.driver.bind_job, constant=poller_interval
             ):
                 (
                     identity,
@@ -604,46 +604,27 @@ class Server(interface.Interface):
                     info,
                     stderr,
                     stdout,
-                ) = self.driver.socket_recv(socket=self.bind_job)
+                ) = self.driver.job_recv()
                 if control == self.driver.heartbeat_notice:
-                    self.log.debug(
-                        "Received Heartbeat from [ %s ]",
-                        identity.decode(),
-                    )
-                    expire = self.driver.get_expiry(
-                        heartbeat_interval=self.heartbeat_interval,
-                    )
-                    metadata = {"time": expire}
-                    if data:
-                        try:
-                            loaded_data = json.loads(data.decode())
-                        except Exception:
-                            pass
-                        else:
-                            if loaded_data:
-                                metadata.update(loaded_data)
-
-                    self.workers[identity.decode()] = metadata
+                    self.handle_heartbeat(identity, data)
                 else:
                     poller_interval, poller_time = 1, time.time()
-                    self.log.debug(
-                        "Execution job received [ %s ]", msg_id.decode()
-                    )
-                    node = identity.decode()
-                    node_output = info.decode()
+                    self.log.debug("Execution job received [ %s ]", msg_id)
+                    node = identity
+                    node_output = info
                     if stderr:
-                        stderr = stderr.decode()
+                        stderr = stderr
                     if stdout:
-                        stdout = stdout.decode()
+                        stdout = stdout
 
                     try:
-                        data_item = json.loads(data.decode())
+                        data_item = json.loads(data)
                     except Exception:
                         data_item = dict()
 
                     self._set_job_status(
                         job_status=control,
-                        job_id=msg_id.decode(),
+                        job_id=msg_id,
                         identity=node,
                         job_output=node_output,
                         job_stdout=stdout,
@@ -827,6 +808,34 @@ class Server(interface.Interface):
 
             if sentinel:
                 break
+
+    def handle_heartbeat(self, identity, data):
+        """Handle a heartbeat from the client.
+
+        :param identity: Client identity
+        :type identity: String
+        :param data: Client heartbeat data
+        :type data: Dict
+        """
+
+        self.log.debug(
+            "Received Heartbeat from [ %s ]",
+            identity,
+        )
+        expire = self.driver.get_expiry(
+            heartbeat_interval=self.heartbeat_interval,
+        )
+        metadata = {"time": expire}
+        if data:
+            try:
+                loaded_data = json.loads(data)
+            except Exception:
+                pass
+            else:
+                if loaded_data:
+                    metadata.update(loaded_data)
+
+        self.workers[identity] = metadata
 
     def worker_run(self):
         """Run all work related threads.

@@ -453,7 +453,6 @@ class TestServer(tests.TestDriverBase):
     @patch("queue.Queue", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_run_job_run(self, mock_log_debug, mock_queue):
-        self.server.bind_job = MagicMock()
         mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
@@ -468,7 +467,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time):
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -495,7 +494,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions_idle(self, mock_time):
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -522,7 +521,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions_ramp(self, mock_time):
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -552,7 +551,7 @@ class TestServer(tests.TestDriverBase):
         self,
         mock_time,
     ):
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -587,23 +586,23 @@ class TestServer(tests.TestDriverBase):
         mock_time,
         mock_set_job_status,
     ):
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
-                b"test-node",
-                b"XXX",
+                "test-node",
+                "XXX",
                 self.server.driver.transfer_end,
                 None,
                 None,
-                b"/test/file1",
+                "/test/file1",
                 None,
                 None,
             ),
             (
-                b"test-node",
+                "test-node",
                 None,
                 self.mock_driver.heartbeat_notice,
                 None,
-                b"{}",
+                "{}",
                 None,
                 None,
                 None,
