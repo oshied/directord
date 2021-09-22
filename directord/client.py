@@ -408,8 +408,6 @@ class Client(interface.Interface):
                 lock.release()
                 self.log.debug("Component lock released for [ %s ]", job_id)
 
-            self.q_return.put(component_return)
-
             try:
                 block_on_task_data = [
                     i
@@ -482,6 +480,7 @@ class Client(interface.Interface):
                         )
                     )
 
+            self.q_return.put(component_return)
             self.log.debug(
                 "Component execution complete for job [ %s ].",
                 job["job_id"],
