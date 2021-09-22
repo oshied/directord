@@ -133,6 +133,7 @@ class Client(interface.Interface):
 
         loop_time = time.time()
         parent_tracker = collections.OrderedDict()
+        component_locks = set()
         while not q_processes.empty() or parent_tracker:
             try:
                 (
@@ -148,6 +149,13 @@ class Client(interface.Interface):
             else:
                 sleep_interval = 0.001
                 lower_command = command.decode().lower()
+                if not hasattr(self, "lock_{}".format(lower_command)):
+                    self.log.debug("Creating a new lock for %s", lower_command)
+                    setattr(
+                        self, "lock_{}".format(lower_command), self.get_lock()
+                    )
+                    component_locks.add("lock_{}".format(lower_command))
+
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
                 # NOTE(cloudnull): If the command is queuesentinel purge all
@@ -256,6 +264,17 @@ class Client(interface.Interface):
 
             time.sleep(sleep_interval)
 
+        for component_lock in component_locks:
+            try:
+                delattr(getattr(self, component_lock))
+            except AttributeError:
+                pass
+            else:
+                self.log.debug(
+                    "Cleaned up removed dynamic component lock %s",
+                    component_lock,
+                )
+
     def purge_queue(self, queue, job_id):
         """Purge all jobs from the queue.
 
@@ -317,8 +336,9 @@ class Client(interface.Interface):
 
         job = component_kwargs["job"]
         job_id = job["job_id"]
+        command_lower = command.decode().lower()
         success, _, component = directord.component_import(
-            component=command.decode().lower(),
+            component=command_lower,
             job_id=job_id,
         )
 
@@ -371,8 +391,17 @@ class Client(interface.Interface):
 
             locked = False
             if component.requires_lock:
+                try:
+                    lock = getattr(self, "lock_{}".format(command_lower))
+                except AttributeError:
+                    self.log.warning(
+                        "No component lock found for [ %s ], falling back"
+                        " to global lock",
+                        command_lower,
+                    )
+
                 locked = lock.acquire()
-                self.log.debug("Component lock acquired for [ %s ]", job_id)
+                self.log.debug("Lock acquired for [ %s ]", job_id)
 
             with self.timeout(
                 time=job.get("timeout", 600),
@@ -425,8 +454,8 @@ class Client(interface.Interface):
                 )
 
             if locked:
-                lock.release()
-                self.log.debug("Component lock released for [ %s ]", job_id)
+                getattr(self, "lock_{}".format(command_lower), lock).release()
+                self.log.debug("Lock released for [ %s ]", job_id)
 
             self.q_return.put(component_return)
 
