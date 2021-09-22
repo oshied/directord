@@ -286,12 +286,11 @@ class TestServer(tests.TestDriverBase):
                 "PROCESSING": "\x04",
                 "STDERR": {},
                 "STDOUT": {},
-                "SUCCESS": ["test-node"],
                 "JOB_SHA3_224": "YYY",
                 "TRANSFERS": [],
                 "VERB": "RUN",
                 "_createtime": 1,
-                "_processing": {"test-node": "\x04"},
+                "_processing": {"test-node": "\x00"},
             },
         )
 
