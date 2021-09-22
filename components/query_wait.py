@@ -84,9 +84,8 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        start_time = time.time()
+        warning_loops = start_time = time.time()
         missing_identity = set()
-        warning_loops = 0
         while (time.time() - start_time) < job["query_timeout"]:
             args = cache.get("args")
             if not args:
@@ -138,14 +137,13 @@ class Component(components.ComponentBase):
                             ),
                         )
 
-            if warning_loops >= 200:
+            if time.time() - warning_loops >= 2:
                 self.log.warning(
                     "QUERY argument [ %s ] not found in cache", job["item"]
                 )
-                warning_loops = 0
+                warning_loops = time.time()
 
             self.delay(0.01)
-            warning_loops += 1
 
         if missing_identity:
             info = (
