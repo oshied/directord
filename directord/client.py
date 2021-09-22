@@ -397,9 +397,17 @@ class Client(interface.Interface):
                 )
 
             try:
-                if outcome and component.block_on_tasks:
-                    outcome = None
-                    info = "Waiting for callback tasks to complete"
+                if component.block_on_tasks:
+                    block_on_tasks_data = [
+                        i
+                        for i in component.block_on_tasks
+                        if self.driver.identity in i.get("targets", list())
+                    ]
+                    if outcome and block_on_tasks_data:
+                        outcome = None
+                        info = "Waiting for callback tasks to complete"
+                else:
+                    block_on_tasks_data = None
 
                 component_return = (
                     stdout,
@@ -431,11 +439,7 @@ class Client(interface.Interface):
             self.q_return.put(component_return)
 
             try:
-                block_on_task_data = [
-                    i
-                    for i in component.block_on_tasks
-                    if self.driver.identity in i.get("targets", list())
-                ][-1]
+                block_on_task_data = block_on_tasks_data[-1]
             except IndexError:
                 self.log.debug(
                     "Job [ %s ] no valid callbacks for this node %s.",
