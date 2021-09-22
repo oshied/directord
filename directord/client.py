@@ -186,7 +186,9 @@ class Client(interface.Interface):
                         t=None,
                         q=self.get_queue(),
                         bypass=job.get("parent_async_bypass", False),
-                        lock=locks[lower_command],
+                        lock=locks[lower_command]
+                        if not job.get("force_lock", False)
+                        else locks["global_lock"],
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
@@ -375,7 +377,7 @@ class Client(interface.Interface):
             setattr(component, "driver", self.driver)
 
             locked = False
-            if component.requires_lock or job.get("force_lock", False) is True:
+            if component.requires_lock:
                 locked = lock.acquire()
                 self.log.debug("Component lock acquired for [ %s ]", job_id)
 
