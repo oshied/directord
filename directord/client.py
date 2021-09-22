@@ -568,7 +568,7 @@ class Client(interface.Interface):
             conn.info = b"task skipped"
             state = conn.job_state = self.driver.job_end
         else:
-            state = conn.job_state = self.driver.nullbyte
+            state = conn.job_state = self.driver.job_processing
 
         conn.info = b"task finished"
         if return_info:

@@ -165,7 +165,7 @@ class Server(interface.Interface):
             self.log.debug("%s received job %s", identity, job_id)
         elif job_status == self.driver.job_processing:
             self.log.debug("%s is processing %s", identity, job_id)
-        elif job_status in [self.driver.job_end, self.driver.nullbyte]:
+        elif job_status == self.driver.job_end:
             _set_time()
             self.log.debug("%s finished processing %s", identity, job_id)
             if "SUCCESS" in job_metadata:
