@@ -133,7 +133,6 @@ class Client(interface.Interface):
 
         loop_time = time.time()
         parent_tracker = collections.OrderedDict()
-        locks = dict()
         while not q_processes.empty() or parent_tracker:
             try:
                 (
@@ -149,10 +148,6 @@ class Client(interface.Interface):
             else:
                 sleep_interval = 0.001
                 lower_command = command.decode().lower()
-                if lower_command not in locks:
-                    self.log.debug("Creating a new lock for %s", lower_command)
-                    locks[lower_command] = self.get_lock()
-
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
                 # NOTE(cloudnull): If the command is queuesentinel purge all
@@ -187,9 +182,6 @@ class Client(interface.Interface):
                         t=None,
                         q=self.get_queue(),
                         bypass=job.get("parent_async_bypass", False),
-                        lock=locks[lower_command]
-                        if not job.get("force_lock", False)
-                        else lock,
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
@@ -199,7 +191,7 @@ class Client(interface.Interface):
                         target=self.q_processor,
                         kwargs=dict(
                             queue=_parent["q"],
-                            lock=_parent["lock"],
+                            lock=lock,
                         ),
                         name=_q_name,
                         daemon=True,
@@ -245,7 +237,7 @@ class Client(interface.Interface):
                             target=self.q_processor,
                             kwargs=dict(
                                 queue=parent_tracker[key]["q"],
-                                lock=parent_tracker[key]["lock"],
+                                lock=lock,
                             ),
                             name=key,
                             daemon=True,
