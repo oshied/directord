@@ -133,7 +133,6 @@ class Client(interface.Interface):
 
         loop_time = time.time()
         parent_tracker = collections.OrderedDict()
-        component_locks = set()
         while not q_processes.empty() or parent_tracker:
             try:
                 (
@@ -149,12 +148,13 @@ class Client(interface.Interface):
             else:
                 sleep_interval = 0.001
                 lower_command = command.decode().lower()
-                if not hasattr(self, "lock_{}".format(lower_command)):
+                if not hasattr(self, "__lock_{}__".format(lower_command)):
                     self.log.debug("Creating a new lock for %s", lower_command)
                     setattr(
-                        self, "lock_{}".format(lower_command), self.get_lock()
+                        self,
+                        "__lock_{}__".format(lower_command),
+                        self.get_lock(),
                     )
-                    component_locks.add("lock_{}".format(lower_command))
 
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
@@ -264,9 +264,11 @@ class Client(interface.Interface):
 
             time.sleep(sleep_interval)
 
-        for component_lock in component_locks:
+        for component_lock in [
+            i for i in self.__dict__.keys() if i.startswith("__lock_")
+        ]:
             try:
-                delattr(getattr(self, component_lock))
+                delattr(self, component_lock)
             except AttributeError:
                 pass
             else:
@@ -392,12 +394,17 @@ class Client(interface.Interface):
             locked = False
             if component.requires_lock:
                 try:
-                    lock = getattr(self, "lock_{}".format(command_lower))
+                    lock = getattr(self, "__lock_{}__".format(command_lower))
                 except AttributeError:
                     self.log.warning(
                         "No component lock found for [ %s ], falling back"
                         " to global lock",
                         command_lower,
+                    )
+                else:
+                    self.log.debug(
+                        "Found component lock [ %s ]",
+                        "__lock_{}__".format(command_lower),
                     )
 
                 locked = lock.acquire()
@@ -454,7 +461,7 @@ class Client(interface.Interface):
                 )
 
             if locked:
-                getattr(self, "lock_{}".format(command_lower), lock).release()
+                lock.release()
                 self.log.debug("Lock released for [ %s ]", job_id)
 
             self.q_return.put(component_return)
