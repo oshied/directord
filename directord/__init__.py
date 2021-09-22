@@ -139,6 +139,7 @@ class Processor:
     This is a base class.
     """
 
+    cpu_count = multiprocessing.cpu_count()
     thread = multiprocessing.Process
 
     def __init__(self):
