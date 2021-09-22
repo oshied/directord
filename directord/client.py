@@ -377,7 +377,9 @@ class Client(interface.Interface):
                 job_id=job_id,
             ):
                 _starttime = time.time()
-                component_return = component.client(cache=self.cache, job=job)
+                stdout, stderr, outcome, info = component.client(
+                    cache=self.cache, job=job
+                )
                 job[
                     "component_exec_timestamp"
                 ] = datetime.datetime.fromtimestamp(time.time()).strftime(
@@ -385,7 +387,15 @@ class Client(interface.Interface):
                 )
 
             try:
-                component_return = component_return + (
+                if outcome and component.block_on_tasks:
+                    outcome = None
+                    info = "Waiting for callback tasks to complete"
+
+                component_return = (
+                    stdout,
+                    stderr,
+                    outcome,
+                    info,
                     job,
                     command,
                     time.time() - _starttime,
@@ -407,6 +417,8 @@ class Client(interface.Interface):
             if locked:
                 lock.release()
                 self.log.debug("Component lock released for [ %s ]", job_id)
+
+            self.q_return.put(component_return)
 
             try:
                 block_on_task_data = [
@@ -458,6 +470,20 @@ class Client(interface.Interface):
                         job["job_id"],
                         block_on_task_data["job_sha3_224"],
                     )
+                    self.q_return.put(
+                        (
+                            stdout,
+                            stderr,
+                            True,
+                            "Callback [ {} ] completed".format(
+                                block_on_task_data["job_id"]
+                            ),
+                            job,
+                            command,
+                            time.time() - _starttime,
+                            None,
+                        )
+                    )
                 else:
                     self.log.error(
                         "Job [ %s ] task sha [ %s ] callback never"
@@ -467,8 +493,8 @@ class Client(interface.Interface):
                     )
                     self.q_return.put(
                         (
-                            component_return[0],
-                            component_return[1],
+                            stdout,
+                            stderr,
                             False,
                             "Callback [ {} ] never completed".format(
                                 block_on_task_data["job_id"]
@@ -480,7 +506,6 @@ class Client(interface.Interface):
                         )
                     )
 
-            self.q_return.put(component_return)
             self.log.debug(
                 "Component execution complete for job [ %s ].",
                 job["job_id"],
