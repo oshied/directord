@@ -75,8 +75,8 @@ directord_server:
 
 directord_clients:
   args:
-  port: 22
-  username: fedora
+    port: 22
+    username: fedora
   targets:
   - host: 192.168.1.100
   - host: 192.168.1.101
