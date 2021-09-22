@@ -620,7 +620,8 @@ class Server(interface.Interface):
                         except Exception:
                             pass
                         else:
-                            metadata.update(loaded_data)
+                            if loaded_data:
+                                metadata.update(loaded_data)
 
                     self.workers[identity.decode()] = metadata
                 else:
@@ -760,13 +761,14 @@ class Server(interface.Interface):
                     key, value = next(iter(json_data["manage"].items()))
                     if key == "list_nodes":
                         data = list()
-                        for key, value in self.workers.items():
-                            expiry = value.pop("time") - time.time()
-                            value["expiry"] = expiry
-                            try:
-                                data.append((key.decode(), value))
-                            except AttributeError:
-                                data.append((str(key), value))
+                        for k, v in self.workers.items():
+                            if v:
+                                expiry = v.pop("time") - time.time()
+                                v["expiry"] = expiry
+                                try:
+                                    data.append((k.decode(), v))
+                                except AttributeError:
+                                    data.append((str(k), v))
                     elif key == "list_jobs":
                         data = [
                             (str(k), v) for k, v in self.return_jobs.items()
