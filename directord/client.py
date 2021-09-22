@@ -133,7 +133,7 @@ class Client(interface.Interface):
 
         loop_time = time.time()
         parent_tracker = collections.OrderedDict()
-        locks = dict(global_lock=lock)
+        locks = dict()
         while not q_processes.empty() or parent_tracker:
             try:
                 (
@@ -150,6 +150,7 @@ class Client(interface.Interface):
                 sleep_interval = 0.001
                 lower_command = command.decode().lower()
                 if lower_command not in locks:
+                    self.log.debug("Creating a new lock for %s", lower_command)
                     locks[lower_command] = self.get_lock()
 
                 job = component_kwargs["job"]
@@ -188,7 +189,7 @@ class Client(interface.Interface):
                         bypass=job.get("parent_async_bypass", False),
                         lock=locks[lower_command]
                         if not job.get("force_lock", False)
-                        else locks["global_lock"],
+                        else lock,
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
 
