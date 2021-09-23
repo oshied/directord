@@ -14,7 +14,6 @@
 
 
 import json
-from multiprocessing import Lock
 import os
 import time
 
@@ -266,6 +265,8 @@ class Manage(User):
             manage = execution_map[override]
             if callable(manage):
                 return manage()
+        elif isinstance(override, str):
+            manage = execution_map["job-info"]
         else:
             for k, v in execution_map.items():
                 k_obj = k.replace("-", "_")
@@ -279,9 +280,7 @@ class Manage(User):
                         manage = v
                         break
             else:
-                raise SystemExit(
-                    "No known management function was defined."
-                )
+                raise SystemExit("No known management function was defined.")
 
         self.log.debug("Executing Management Command:%s", manage)
         return directord.send_data(

@@ -76,18 +76,6 @@ class TestDriverZMQ(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @patch("zmq.Poller.unregister", autospec=True)
-    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_reset_heartbeat(
-        self, mock_log_debug, mock_socket_connect, mock_poller
-    ):
-        bind_heatbeat = self.driver.heartbeat_connect()
-        self.driver.heartbeat_reset(bind_heatbeat=bind_heatbeat)
-        mock_poller.assert_called()
-        mock_socket_connect.assert_called()
-        mock_log_debug.assert_called()
-
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
     def test_socket_bind_no_auth(self, mock_poller, mock_socket):
@@ -314,16 +302,6 @@ class TestDriverZMQ(unittest.TestCase):
         )
 
     @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
-    def test_heartbeat_bind(self, mock_socket_bind):
-        self.driver.heartbeat_bind()
-        mock_socket_bind.assert_called_with(
-            ANY,
-            socket_type=zmq.ROUTER,
-            connection="tcp://localhost",
-            port=5557,
-        )
-
-    @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
     def test_job_bind(self, mock_socket_bind):
         self.driver.job_bind()
         mock_socket_bind.assert_called_with(
@@ -372,12 +350,5 @@ class TestDriverZMQ(unittest.TestCase):
     @patch("logging.Logger.debug", autospec=True)
     def test_backend_connect(self, mock_log_debug, mock_socket_connect):
         self.driver.backend_connect()
-        mock_socket_connect.assert_called()
-        mock_log_debug.assert_called()
-
-    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_heartbeat_connect(self, mock_log_debug, mock_socket_connect):
-        self.driver.heartbeat_connect()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()
