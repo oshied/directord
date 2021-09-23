@@ -15,6 +15,7 @@
 import logging
 import os
 import directord
+import uuid
 
 
 class Interface(directord.Processor):
@@ -54,6 +55,8 @@ class Interface(directord.Processor):
             proto=self.proto, addr=self.bind_address
         )
 
+        self.uuid = str(uuid.uuid4())
+
         try:
             self.heartbeat_interval = self.args.heartbeat_interval
         except AttributeError:
@@ -85,4 +88,5 @@ class Interface(directord.Processor):
                     "secret_keys_dir": self.secret_keys_dir,
                 },
                 connection_string=self.connection_string,
+                interface=self,
             )

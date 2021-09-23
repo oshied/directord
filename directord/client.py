@@ -666,7 +666,7 @@ class Client(interface.Interface):
         else:
             self.log.debug("Found task results for [ %s ].", job["job_id"])
             with utils.ClientStatus(
-                socket=self.bind_job,
+                socket=self.driver.bind_job,
                 job_id=job["job_id"].encode(),
                 command=command,
                 ctx=self,
@@ -765,7 +765,7 @@ class Client(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_job = self.driver.job_connect()
+        self.driver.job_init()
         poller_time = time.time()
         heartbeat_time = time.time()
         poller_interval = 1
@@ -797,28 +797,19 @@ class Client(interface.Interface):
                 with open("/proc/uptime", "r") as f:
                     uptime = float(f.readline().split()[0])
 
-                self.driver.socket_send(
-                    socket=self.bind_job,
-                    control=self.driver.heartbeat_notice,
-                    data=json.dumps(
-                        {
-                            "version": directord.__version__,
-                            "host_uptime": str(
-                                datetime.timedelta(seconds=uptime)
-                            ),
-                            "agent_uptime": str(
-                                datetime.timedelta(
-                                    seconds=(time.time() - self.start_time)
-                                )
-                            ),
-                        }
-                    ).encode(),
+                version = directord.__version__
+                host_uptime = str(datetime.timedelta(seconds=uptime))
+                agent_uptime = str(
+                    datetime.timedelta(seconds=(time.time() - self.start_time))
+                )
+                self.driver.heartbeat_send(
+                    self.uuid, host_uptime, agent_uptime, version
                 )
                 heartbeat_time = time.time() + 30
                 self.log.info("Heartbeat sent to server")
 
             if self.driver.bind_check(
-                bind=self.bind_job, constant=poller_interval
+                bind=self.driver.bind_job, constant=poller_interval
             ):
                 poller_interval, poller_time = 1, time.time()
                 (
@@ -829,14 +820,14 @@ class Client(interface.Interface):
                     info,
                     _,
                     _,
-                ) = self.driver.socket_recv(socket=self.bind_job)
+                ) = self.driver.socket_recv(socket=self.driver.bind_job)
                 job = json.loads(data.decode())
                 job["job_id"] = job_id = job.get("job_id", utils.get_uuid())
                 job["job_sha3_224"] = job_sha3_224 = job.get(
                     "job_sha3_224", utils.object_sha3_224(job)
                 )
                 self.driver.socket_send(
-                    socket=self.bind_job,
+                    socket=self.driver.bind_job,
                     msg_id=job_id.encode(),
                     control=self.driver.job_ack,
                 )
@@ -854,7 +845,7 @@ class Client(interface.Interface):
                 )
 
                 with utils.ClientStatus(
-                    socket=self.bind_job,
+                    socket=self.driver.bind_job,
                     job_id=job_id.encode(),
                     command=command,
                     ctx=self,
@@ -913,6 +904,10 @@ class Client(interface.Interface):
                     name="run_job", target=self.run_job, kwargs=dict(lock=lock)
                 ),
                 False,
+            ),
+            (
+                self.thread(name="run_driver", target=self.driver.run),
+                True,
             ),
         ]
         # Ensure that the cache path exists before executing.

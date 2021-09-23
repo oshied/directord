@@ -35,7 +35,11 @@ class BaseDriver:
     job_processing = b"\026"  # Signals job running
 
     def __init__(
-        self, args, encrypted_traffic_data=None, connection_string=None
+        self,
+        args,
+        encrypted_traffic_data=None,
+        connection_string=None,
+        interface=None,
     ):
         """Initialize the Driver.
 
@@ -50,6 +54,7 @@ class BaseDriver:
         self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
         self.args = args
+        self.interface = interface
 
     def __copy__(self):
         """Return a copy of the base class.
@@ -251,6 +256,28 @@ class BaseDriver:
         :type front: Object
         :param back: Backend interface.
         :type back: Object
+        """
+
+        pass
+
+    def run(self):
+        """Driver code to run in it's own thread. Will not need to be
+        implemented for all driver types.
+        """
+
+        pass
+
+    @staticmethod
+    def job_recv():
+        """Receive a job message."""
+
+        pass
+
+    def job_init(self):
+        """Initialize job connection handling. May not need to be implemented
+        for each driver.
+
+        :returns: Object
         """
 
         pass
