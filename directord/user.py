@@ -14,6 +14,7 @@
 
 
 import json
+from multiprocessing import Lock
 import os
 import time
 
@@ -238,34 +239,7 @@ class Manage(User):
         :returns: String
         """
 
-        if (
-            override == "list-jobs"
-            or getattr(self.args, "list_jobs", False)
-            or getattr(self.args, "export_jobs", False)
-        ):
-            manage = {"list_jobs": None}
-        elif (
-            override == "list-nodes"
-            or getattr(self.args, "list_nodes", False)
-            or getattr(self.args, "export_nodes", False)
-        ):
-            manage = {"list_nodes": None}
-        elif override == "purge-jobs" or getattr(
-            self.args, "purge_jobs", False
-        ):
-            manage = {"purge_jobs": None}
-        elif override == "purge-nodes" or getattr(
-            self.args, "purge_nodes", False
-        ):
-            manage = {"purge_nodes": None}
-        elif override == "generate-keys" or getattr(
-            self.args, "generate_keys", False
-        ):
-            return self.generate_certificates()
-        elif override == "dump-cache" or getattr(
-            self.args, "dump_cache", False
-        ):
-            manage = {"dump_cache": None}
+        def _cache_dump():
             with diskcache.Cache(
                 self.args.cache_path,
                 tag_index=True,
@@ -275,13 +249,39 @@ class Manage(User):
                 for item in cache.iterkeys():
                     cache_dict[item] = cache.get(item)
                 print(json.dumps(cache_dict, indent=4))
-                return
+
+        execution_map = {
+            "dump-cache": _cache_dump,
+            "export-jobs": {"list_jobs": None},
+            "export-nodes": {"list_nodes": None},
+            "generate-keys": self.generate_certificates,
+            "job-info": {"job_info": override},
+            "list-jobs": {"list_jobs": None},
+            "list-nodes": {"list_nodes": None},
+            "purge-jobs": {"purge_jobs": None},
+            "purge-nodes": {"purge_nodes": None},
+        }
+
+        if override and override in execution_map:
+            manage = execution_map[override]
+            if callable(manage):
+                return manage()
         else:
-            job_id = override or getattr(self.args, "job_info", None)
-            if job_id:
-                manage = {"job_info": job_id}
+            for k, v in execution_map.items():
+                k_obj = k.replace("-", "_")
+                k_arg = getattr(self.args, k_obj, False)
+                if k_arg:
+                    if callable(v):
+                        return v()
+                    else:
+                        if isinstance(k_arg, str):
+                            v[k_obj] = k_arg
+                        manage = v
+                        break
             else:
-                raise SystemExit("No known management function was defined.")
+                raise SystemExit(
+                    "No known management function was defined."
+                )
 
         self.log.debug("Executing Management Command:%s", manage)
         return directord.send_data(
