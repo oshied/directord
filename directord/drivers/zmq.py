@@ -449,52 +449,6 @@ class Driver(drivers.BaseDriver):
         )
         return bind
 
-    def heartbeat_connect(self):
-        """Connect to a heartbeat socket and return the socket.
-
-        :returns: Object
-        """
-
-        self.log.debug("Establishing Heartbeat connection.")
-        return self._socket_connect(
-            socket_type=zmq.DEALER,
-            connection=self.connection_string,
-            port=self.args.heartbeat_port,
-        )
-
-    def heartbeat_bind(self):
-        """Bind an address to a heartbeat socket and return the socket.
-
-        :returns: Object
-        """
-
-        return self._socket_bind(
-            socket_type=zmq.ROUTER,
-            connection=self.connection_string,
-            port=self.args.heartbeat_port,
-        )
-
-    def heartbeat_reset(self, bind_heatbeat=None):
-        """Reset the connection on the heartbeat socket.
-
-        Returns a new ttl after reconnect.
-
-        :param bind_heatbeat: heart beat bind object.
-        :type bind_heatbeat: Object
-        :returns: Tuple
-        """
-
-        if bind_heatbeat:
-            self.poller.unregister(bind_heatbeat)
-            self.log.debug("Unregistered heartbeat.")
-            bind_heatbeat.close()
-            self.log.debug("Heartbeat connection closed.")
-
-        return (
-            self.get_heartbeat(interval=self.args.heartbeat_interval),
-            self.heartbeat_connect(),
-        )
-
     def job_bind(self):
         """Bind an address to a job socket and return the socket.
 

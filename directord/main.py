@@ -117,13 +117,6 @@ def _args(exec_args=None):
         type=int,
     )
     parser.add_argument(
-        "--heartbeat-port",
-        help="heartbeat port to bind. Default: %(default)s",
-        metavar="INT",
-        default=int(os.getenv("DIRECTORD_HEARTBEAT_PORT", 5557)),
-        type=int,
-    )
-    parser.add_argument(
         "--heartbeat-interval",
         help="heartbeat interval in seconds. Default: %(default)s",
         metavar="INT",
