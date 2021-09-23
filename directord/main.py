@@ -341,6 +341,16 @@ def _args(exec_args=None):
         action="store_true",
         help="Dump the local cache to stdout.",
     )
+    manage_group.add_argument(
+        "--analyze-parent",
+        help="Analyze a given parent ID.",
+        metavar="STRING",
+    )
+    manage_group.add_argument(
+        "--analyze-job",
+        help="Analyze a given job ID.",
+        metavar="STRING",
+    )
     parser_bootstrap = subparsers.add_parser(
         "bootstrap",
         help=(
@@ -599,9 +609,12 @@ def main():
             return
 
         computed_values = dict()
-        if data and isinstance(data, list):
+        headings = ["KEY", "VALUE"]
+        tabulated_data = None
+        if data and isinstance(data, dict):
+            tabulated_data = _mixin.return_tabulated_info(data=data)
+        elif data and isinstance(data, list):
             if args.job_info:
-                headings = ["KEY", "VALUE"]
                 item = dict(data).get(args.job_info)
                 if not item:
                     print(
@@ -636,6 +649,8 @@ def main():
                 ) = _mixin.return_tabulated_data(
                     data=data, restrict_headings=restrict_headings
                 )
+
+        if tabulated_data:
             utils.print_tabulated_data(
                 data=[i for i in tabulated_data if i], headers=headings
             )
