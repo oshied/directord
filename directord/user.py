@@ -12,7 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-
+import collections
 import json
 import os
 import time
@@ -230,6 +230,85 @@ class Manage(User):
                     else:
                         time.sleep(1)
 
+    def analyze_job(self, job_id):
+        data = directord.send_data(
+            socket_path=self.args.socket_path,
+            data=json.dumps(dict(manage={"job_info": job_id})),
+        )
+
+        item = list(dict(json.loads(data.decode())).values())
+
+        if item and not item[0]:
+            return json.dumps({"job_id_not_found": job_id})
+
+        return self.analyze_data(parent_id=job_id, parent_jobs=item)
+
+    def analyze_parent(self, parent_id):
+        data = directord.send_data(
+            socket_path=self.args.socket_path,
+            data=json.dumps(dict(manage={"list_jobs": None})),
+        )
+        parent_jobs = list()
+        if data:
+            data = dict(json.loads(data.decode()))
+            for value in data.values():
+                if value["PARENT_JOB_ID"] == parent_id:
+                    parent_jobs.append(value)
+
+        if not parent_jobs:
+            return json.dumps({"parent_id_not_found": parent_id})
+
+        return self.analyze_data(parent_id=parent_id, parent_jobs=parent_jobs)
+
+    def analyze_data(self, parent_id, parent_jobs):
+        meta = dict(
+            execution=collections.defaultdict(int),
+            roundtrip=collections.defaultdict(int),
+            nodes=set(),
+            node_successes=collections.defaultdict(int),
+            node_failures=collections.defaultdict(int),
+        )
+        analysis = dict(id=parent_id, total_jobs=len(parent_jobs))
+        for job in parent_jobs:
+            for k, v in job.get("_executiontime", dict()).items():
+                meta["nodes"].add(k)
+                meta["execution"][k] += v
+
+            for k, v in job.get("_roundtripltime", dict()).items():
+                meta["nodes"].add(k)
+                meta["roundtrip"][k] += v
+
+            for item in job.get("SUCCESS", list()):
+                meta["node_successes"][item] += 1
+
+            for item in job.get("FAILED", list()):
+                meta["node_failures"][item] += 1
+
+        analysis["actual_runtime"] = parent_jobs[-1].get(
+            "_lasttime", 0
+        ) - parent_jobs[0].get("_createtime", 0)
+        analysis["slowest_node_execution"] = max(
+            meta["execution"], key=meta["execution"].get
+        )
+        analysis["slowest_node_roundtrip"] = max(
+            meta["roundtrip"], key=meta["roundtrip"].get
+        )
+        analysis["fastest_node_execution"] = min(
+            meta["execution"], key=meta["execution"].get
+        )
+        analysis["fastest_node_roundtrip"] = min(
+            meta["roundtrip"], key=meta["roundtrip"].get
+        )
+        analysis["combined_execution_time"] = sum(meta["execution"].values())
+        analysis["total_successes"] = sum(meta["node_successes"].values())
+        analysis["total_failures"] = sum(meta["node_failures"].values())
+        analysis["total_node_count"] = len(meta["nodes"])
+        analysis["total_avg_execution_time"] = (
+            analysis["combined_execution_time"] / analysis["total_jobs"]
+        )
+
+        return json.dumps(analysis, sort_keys=True)
+
     def run(self, override=None):
         """Send the management command to the server.
 
@@ -259,6 +338,8 @@ class Manage(User):
             "list-nodes": {"list_nodes": None},
             "purge-jobs": {"purge_jobs": None},
             "purge-nodes": {"purge_nodes": None},
+            "analyze-parent": self.analyze_parent,
+            "analyze-job": self.analyze_job,
         }
 
         if override and override in execution_map:
@@ -273,7 +354,12 @@ class Manage(User):
                 k_arg = getattr(self.args, k_obj, False)
                 if k_arg:
                     if callable(v):
-                        return v()
+                        if isinstance(override, str):
+                            return v(override)
+                        elif isinstance(k_arg, str):
+                            return v(k_arg)
+                        else:
+                            return v()
                     else:
                         if isinstance(k_arg, str):
                             v[k_obj] = k_arg

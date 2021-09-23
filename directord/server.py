@@ -198,6 +198,7 @@ class Server(interface.Interface):
         else:
             job_metadata["PROCESSING"] = self.driver.job_end.decode()
 
+        job_metadata["_lasttime"] = time.time()
         self.return_jobs[job_id] = job_metadata
 
     def create_return_jobs(self, task, job_item, targets):

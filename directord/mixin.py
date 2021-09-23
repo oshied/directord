@@ -322,9 +322,14 @@ class Mixin:
         :returns: List
         """
 
-        tabulated_data = [["ID", self.args.job_info]]
+        data_id = data.pop("id", None) or self.args.job_info
+        if data_id:
+            tabulated_data = [["ID", data_id]]
+        else:
+            tabulated_data = list()
+
         for key, value in data.items():
-            if not value:
+            if value is None:
                 continue
 
             if key.startswith("_"):
