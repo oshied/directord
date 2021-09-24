@@ -54,36 +54,6 @@ class BaseDriver:
         self.interface = interface
         self.machine_id = self.get_machine_id()
 
-    def get_machine_id(self):
-        """Return the unique machine ID.
-
-        This property will iterate through list of known unique identifiers
-        and return the first found with a valid value.
-
-        If no valid unique identifier is found, return the identity.
-
-        :returns: String
-        """
-
-        unique_identifiers = [
-            "/run/machine-id",
-            "/etc/machine-id",
-            "/var/lib/dbus/machine-id",
-            "/sys/class/dmi/id/product_uuid",
-            "/proc/sys/kernel/random/boot_id",
-        ]
-        for identifier in unique_identifiers:
-            try:
-                with open(identifier, "r") as f:
-                    machine_id = f.read().strip()
-            except (FileNotFoundError, PermissionError):
-                pass
-            else:
-                if machine_id:
-                    return machine_id
-        else:
-            return self.identity
-
     def __copy__(self):
         """Return a copy of the base class.
 
@@ -91,139 +61,6 @@ class BaseDriver:
         """
 
         return self
-
-    def job_recv(self, nonblocking=False):
-        """Receive a message.
-
-        The message specification for server is as follows.
-
-            [
-                b"Identity"
-                b"ID",
-                b"ASCII Control Characters",
-                b"command",
-                b"data",
-                b"info",
-                b"stderr",
-                b"stdout",
-            ]
-
-        The message specification for client is as follows.
-
-            [
-                b"ID",
-                b"ASCII Control Characters",
-                b"command",
-                b"data",
-                b"info",
-                b"stderr",
-                b"stdout",
-            ]
-
-        All message parts are byte encoded.
-
-        All possible control characters are defined within the Interface class.
-        For more on control characters review the following
-        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
-
-        :param socket: ZeroMQ socket object.
-        :type socket: Object
-        :param nonblocking: Enable non-blocking receve.
-        :type nonblocking: Boolean
-        """
-
-        pass
-
-    def job_check(self, interval=1, constant=1000):
-        """Return True if a job contains work ready.
-
-        :param bind: A given Socket bind to identify.
-        :type bind: Object
-        :param interval: Exponential Interval used to determine the polling
-                         duration for a given socket.
-        :type interval: Integer
-        :param constant: Constant time used to poll for new jobs.
-        :type constant: Integer
-        :returns: Object
-        """
-
-        pass
-
-    def job_close(self):
-        """Close the job socket."""
-
-        pass
-
-    def job_init(self):
-        """Initialize the job socket
-
-        For server mode, this is a bound local socket.
-        For client mode, it is a connection to the server socket.
-
-        :returns: Object
-        """
-
-        pass
-
-    def job_send(self, *args, **kwargs):
-        """Send a message over a ZM0 socket.
-
-        The message specification for server is as follows.
-
-            [
-                b"Identity"
-                b"ID",
-                b"ASCII Control Characters",
-                b"command",
-                b"data",
-                b"info",
-                b"stderr",
-                b"stdout",
-            ]
-
-        The message specification for client is as follows.
-
-            [
-                b"ID",
-                b"ASCII Control Characters",
-                b"command",
-                b"data",
-                b"info",
-                b"stderr",
-                b"stdout",
-            ]
-
-        All message information is assumed to be byte encoded.
-
-        All possible control characters are defined within the Interface class.
-        For more on control characters review the following
-        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
-
-        :param socket: ZeroMQ socket object.
-        :type socket: Object
-        :param identity: Target where message will be sent.
-        :type identity: Bytes
-        :param msg_id: ID information for a given message. If no ID is
-                       provided a UUID will be generated.
-        :type msg_id: Bytes
-        :param control: ASCII control charaters.
-        :type control: Bytes
-        :param command: Command definition for a given message.
-        :type command: Bytes
-        :param data: Encoded data that will be transmitted.
-        :type data: Bytes
-        :param info: Encoded information that will be transmitted.
-        :type info: Bytes
-        :param stderr: Encoded error information from a command.
-        :type stderr: Bytes
-        :param stdout: Encoded output information from a command.
-        :type stdout: Bytes
-        :param nonblocking: Enable non-blocking send.
-        :type nonblocking: Boolean
-        :returns: Object
-        """
-
-        pass
 
     def backend_check(self, interval=1, constant=1000):
         """Return True if the backend contains work ready.
@@ -368,6 +205,36 @@ class BaseDriver:
 
         return time.time() + (heartbeat_interval * interval)
 
+    def get_machine_id(self):
+        """Return the unique machine ID.
+
+        This property will iterate through list of known unique identifiers
+        and return the first found with a valid value.
+
+        If no valid unique identifier is found, return the identity.
+
+        :returns: String
+        """
+
+        unique_identifiers = [
+            "/run/machine-id",
+            "/etc/machine-id",
+            "/var/lib/dbus/machine-id",
+            "/sys/class/dmi/id/product_uuid",
+            "/proc/sys/kernel/random/boot_id",
+        ]
+        for identifier in unique_identifiers:
+            try:
+                with open(identifier, "r") as f:
+                    machine_id = f.read().strip()
+            except (FileNotFoundError, PermissionError):
+                pass
+            else:
+                if machine_id:
+                    return machine_id
+        else:
+            return self.identity
+
     def heartbeat_send(
         self, host_uptime=None, agent_uptime=None, version=None
     ):
@@ -379,6 +246,139 @@ class BaseDriver:
         :type agent_uptime: String
         :param version: Sender directord version
         :type version: String
+        """
+
+        pass
+
+    def job_check(self, interval=1, constant=1000):
+        """Return True if a job contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        pass
+
+    def job_close(self):
+        """Close the job socket."""
+
+        pass
+
+    def job_init(self):
+        """Initialize the job socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        pass
+
+    def job_recv(self, nonblocking=False):
+        """Receive a message.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        All message parts are byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param socket: ZeroMQ socket object.
+        :type socket: Object
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        """
+
+        pass
+
+    def job_send(self, *args, **kwargs):
+        """Send a message over a ZM0 socket.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        All message information is assumed to be byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param socket: ZeroMQ socket object.
+        :type socket: Object
+        :param identity: Target where message will be sent.
+        :type identity: Bytes
+        :param msg_id: ID information for a given message. If no ID is
+                       provided a UUID will be generated.
+        :type msg_id: Bytes
+        :param control: ASCII control charaters.
+        :type control: Bytes
+        :param command: Command definition for a given message.
+        :type command: Bytes
+        :param data: Encoded data that will be transmitted.
+        :type data: Bytes
+        :param info: Encoded information that will be transmitted.
+        :type info: Bytes
+        :param stderr: Encoded error information from a command.
+        :type stderr: Bytes
+        :param stdout: Encoded output information from a command.
+        :type stdout: Bytes
+        :param nonblocking: Enable non-blocking send.
+        :type nonblocking: Boolean
+        :returns: Object
         """
 
         pass

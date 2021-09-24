@@ -885,6 +885,10 @@ class Client(interface.Interface):
 
         threads = [
             (
+                self.thread(name="run_driver", target=self.driver.run),
+                True,
+            ),
+            (
                 self.thread(
                     name="run_job", target=self.run_job, kwargs=dict(lock=lock)
                 ),
