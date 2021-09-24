@@ -88,7 +88,7 @@ class Component(components.ComponentBase):
 
         if stdout_arg and stdout:
             self.block_on_tasks = list()
-            clean_info = stdout.decode().strip()
+            clean_info = stdout.strip()
             arg_job = job.copy()
             arg_job.pop("parent_sha3_224", None)
             arg_job.pop("parent_id", None)

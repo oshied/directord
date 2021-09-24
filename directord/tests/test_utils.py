@@ -107,14 +107,13 @@ class TestUtils(tests.TestConnectionBase):
         ctx = unittest.mock.MagicMock()
         socket = unittest.mock.MagicMock()
         with utils.ClientStatus(
-            socket=socket,
-            job_id=b"test-id",
-            command=b"test",
+            job_id="test-id",
+            command="test",
             ctx=ctx,
         ) as c:
-            assert c.job_id == b"test-id"
+            assert c.job_id == "test-id"
 
-        ctx.driver.socket_send.assert_called_with(
+        ctx.driver._socket_send.assert_called_with(
             socket=socket,
             msg_id=b"test-id",
             command=b"test",

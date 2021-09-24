@@ -94,7 +94,7 @@ class Component(components.ComponentBase):
 
         self.log.debug("client(): job: %s, cache: %s", job, cache)
         # Sets the cache type to "args" or "envs"
-        cache_type = "{}s".format(self.command.decode().lower())
+        cache_type = "{}s".format(self.command.lower())
 
         try:
             cache_value = ast.literal_eval(job[cache_type])

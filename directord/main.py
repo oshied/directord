@@ -541,7 +541,7 @@ def main():
         else:
             return_data = _mixin.run_orchestration()
 
-        job_items = [i.decode() for i in return_data if i]
+        job_items = [i for i in return_data if i]
 
         if args.poll or args.stream:
             failed = list()

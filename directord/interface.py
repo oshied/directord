@@ -14,8 +14,10 @@
 
 import logging
 import os
+
 import directord
-import uuid
+
+from directord import utils
 
 
 class Interface(directord.Processor):
@@ -24,6 +26,8 @@ class Interface(directord.Processor):
     This class defines everything required to connect to or from a given
     server.
     """
+
+    uuid = utils.get_uuid()
 
     def __init__(self, args):
         """Initialize the interface class.
@@ -54,8 +58,6 @@ class Interface(directord.Processor):
         self.connection_string = "{proto}://{addr}".format(
             proto=self.proto, addr=self.bind_address
         )
-
-        self.uuid = str(uuid.uuid4())
 
         try:
             self.heartbeat_interval = self.args.heartbeat_interval

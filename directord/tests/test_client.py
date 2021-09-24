@@ -74,7 +74,7 @@ class TestClient(tests.TestDriverBase):
             "job_id": "XXX",
             "job_sha3_224": "YYY",
         }
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 None,
                 None,
@@ -107,7 +107,7 @@ class TestClient(tests.TestDriverBase):
             "job_id": "XXX",
             "job_sha3_224": "YYY",
         }
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 None,
                 None,
@@ -138,7 +138,7 @@ class TestClient(tests.TestDriverBase):
             "parent_id": "ZZZ",
             "command": "RUN",
         }
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 None,
                 None,
@@ -171,7 +171,7 @@ class TestClient(tests.TestDriverBase):
             "job_id": "XXX",
             "job_sha3_224": "YYY",
         }
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 None,
                 None,
@@ -206,7 +206,7 @@ class TestClient(tests.TestDriverBase):
             "job_id": "XXX",
             "job_sha3_224": "YYY",
         }
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 None,
                 None,
@@ -241,7 +241,7 @@ class TestClient(tests.TestDriverBase):
             "job_id": "XXX",
             "job_sha3_224": "YYY",
         }
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 None,
                 None,

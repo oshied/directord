@@ -236,7 +236,7 @@ class Manage(User):
             data=json.dumps(dict(manage={"job_info": job_id})),
         )
 
-        item = list(dict(json.loads(data.decode())).values())
+        item = list(dict(json.loads(data)).values())
 
         if item and not item[0]:
             return json.dumps({"job_id_not_found": job_id})
@@ -250,7 +250,7 @@ class Manage(User):
         )
         parent_jobs = list()
         if data:
-            data = dict(json.loads(data.decode()))
+            data = dict(json.loads(data))
             for value in data.values():
                 if value["PARENT_JOB_ID"] == parent_id:
                     parent_jobs.append(value)

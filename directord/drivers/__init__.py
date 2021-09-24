@@ -128,16 +128,6 @@ class BaseDriver:
 
         pass
 
-    @staticmethod
-    def socket_recv(socket):
-        """Receive a message over a socket.
-
-        :param socket: socket object.
-        :type socket: Object
-        """
-
-        pass
-
     def job_connect(self):
         """Connect to a job socket and return the socket.
 
@@ -196,6 +186,36 @@ class BaseDriver:
     def backend_bind(self):
         """Bind an address to a transfer socket and return the socket.
 
+        :returns: Object
+        """
+
+        pass
+
+    def job_check(self, interval=1, constant=1000):
+        """Return True if a job contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        pass
+
+    def backend_check(self, interval=1, constant=1000):
+        """Return True if the backend contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
         :returns: Object
         """
 
@@ -260,24 +280,48 @@ class BaseDriver:
 
         pass
 
-    def run(self):
-        """Driver code to run in it's own thread. Will not need to be
-        implemented for all driver types.
-        """
-
-        pass
-
-    @staticmethod
-    def job_recv():
-        """Receive a job message."""
-
-        pass
-
     def job_init(self):
         """Initialize job connection handling. May not need to be implemented
         for each driver.
 
         :returns: Object
+        """
+
+        pass
+
+    def backend_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
+
+        :returns: Object
+        """
+
+        pass
+
+    def job_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
+
+        :returns: Object
+        """
+
+        pass
+
+    def heartbeat_send(
+        self, identity=None, host_uptime=None, agent_uptime=None, version=None
+    ):
+        """Send a heartbeat.
+
+        :param identity: Sender identity (uuid)
+        :type identity: String
+        :param host_uptime: Sender uptime
+        :type host_uptime: String
+        :param agent_uptime: Sender agent uptime
+        :type agent_uptime: String
+        :param version: Sender directord version
+        :type version: String
         """
 
         pass

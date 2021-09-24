@@ -355,7 +355,7 @@ class TestServer(tests.TestDriverBase):
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test_run_backend(self, mock_log_info, mock_isfile):
-        self.mock_driver.socket_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -372,7 +372,7 @@ class TestServer(tests.TestDriverBase):
         m = unittest.mock.mock_open(read_data="test data")
         with patch("builtins.open", m):
             self.server.run_backend(sentinel=True)
-        self.mock_driver.socket_send.assert_called()
+        self.mock_driver._socket_send.assert_called()
         mock_log_info.assert_called()
 
     def test_create_return_jobs(self):
@@ -480,7 +480,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time):
-        self.mock_driver.job_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -507,7 +507,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions_idle(self, mock_time):
-        self.mock_driver.job_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -534,7 +534,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions_ramp(self, mock_time):
-        self.mock_driver.job_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -564,7 +564,7 @@ class TestServer(tests.TestDriverBase):
         self,
         mock_time,
     ):
-        self.mock_driver.job_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -599,7 +599,7 @@ class TestServer(tests.TestDriverBase):
         mock_time,
         mock_set_job_status,
     ):
-        self.mock_driver.job_recv.side_effect = [
+        self.mock_driver.recv.side_effect = [
             (
                 "test-node",
                 "XXX",

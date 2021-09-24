@@ -129,7 +129,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket,
         )
         mock_socket.send_multipart.assert_called_once_with(
@@ -147,7 +147,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_ident(self, mock_socket):
-        self.driver.socket_send(socket=mock_socket, identity=b"test-identity")
+        self.driver._socket_send(socket=mock_socket, identity=b"test-identity")
         mock_socket.send_multipart.assert_called_once_with(
             [
                 b"test-identity",
@@ -164,7 +164,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_msg_id(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket,
             identity=b"test-identity",
             msg_id=b"testing_id",
@@ -185,7 +185,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_control(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket, identity=b"test-identity", control=b"\x01"
         )
         mock_socket.send_multipart.assert_called_once_with(
@@ -204,7 +204,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_command(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket,
             identity=b"test-identity",
             command=b"test-command",
@@ -225,7 +225,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_data(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket,
             identity=b"test-identity",
             data=b'{"test": "json"}',
@@ -246,7 +246,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_info(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket, identity=b"test-identity", info=b"stdout-data"
         )
         mock_socket.send_multipart.assert_called_once_with(
@@ -265,7 +265,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_stderr(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket, identity=b"test-identity", stderr=b"stderr"
         )
         mock_socket.send_multipart.assert_called_once_with(
@@ -284,7 +284,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send_stdout(self, mock_socket):
-        self.driver.socket_send(
+        self.driver._socket_send(
             socket=mock_socket, identity=b"test-identity", stdout=b"stdout"
         )
         mock_socket.send_multipart.assert_called_once_with(

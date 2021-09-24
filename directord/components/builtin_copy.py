@@ -221,12 +221,12 @@ class Component(components.ComponentBase):
             chunk = 131072
             with open(file_to, "wb") as f:
                 while True:
-                    driver.socket_send(
+                    driver.backend_send(
                         socket=bind_transfer,
-                        msg_id=job["job_id"].encode(),
+                        msg_id=job["job_id"],
                         control=driver.transfer_start,
-                        command="{}".format(offset).encode(),
-                        data="{}".format(chunk).encode(),
+                        command="{}".format(offset),
+                        data="{}".format(chunk),
                         info=source_file,
                     )
                     offset += chunk
@@ -238,7 +238,7 @@ class Component(components.ComponentBase):
                         info,
                         _,
                         _,
-                    ) = driver.socket_recv(socket=bind_transfer)
+                    ) = driver.backend_recv(socket=bind_transfer)
                     if control in [driver.job_processing, driver.transfer_end]:
                         chunk_size = len(data)
                         self.log.debug(
