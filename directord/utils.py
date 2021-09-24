@@ -107,6 +107,7 @@ class ClientStatus:
         :returns: Object
         """
 
+        self.ctx.log.debug("Job [ %s ] start context", self.job_id)
         return self
 
     def __exit__(self, *args, **kwargs):
@@ -127,7 +128,7 @@ class ClientStatus:
         except AttributeError:
             pass
 
-        self.ctx.driver.job_send(
+        job_sent = self.ctx.driver.job_send(
             msg_id=self.job_id,
             control=self.job_state,
             command=self.command,
@@ -135,6 +136,9 @@ class ClientStatus:
             info=self.info,
             stderr=self.stderr,
             stdout=self.stdout,
+        )
+        self.ctx.log.debug(
+            "Job [ %s ] message sent on exit, %s", self.job_id, job_sent
         )
 
 

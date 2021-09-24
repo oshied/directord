@@ -189,7 +189,7 @@ class Component(components.ComponentBase):
                                 msg_id=msg_id,
                                 control=driver.coordination_failed,
                                 info=info,
-                                stderr=b"Item was not found in cache",
+                                stderr="Item was not found in cache",
                             )
                 elif control == driver.coordination_ack:
                     self.log.debug(
