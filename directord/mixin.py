@@ -336,7 +336,7 @@ class Mixin:
                 continue
 
             if key == "PROCESSING":
-                if value == b"\026":
+                if value == "\x16":
                     value = "True"
                 else:
                     value = "False"
@@ -397,7 +397,7 @@ class Mixin:
                         report_item = value[item.lower()]
 
                     if item.upper() == "PROCESSING":
-                        if report_item.encode() == b"\026":
+                        if report_item == "\x16":
                             report_item = "True"
                             if result_filter == "processing":
                                 include = True

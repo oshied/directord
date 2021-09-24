@@ -15,7 +15,9 @@
 import hashlib
 import json
 import os
+import pkgutil
 import socket
+import sys
 import time
 import uuid
 
@@ -27,6 +29,7 @@ from ssh.session import Session
 from ssh import key as ssh_key
 
 from directord import logger
+from directord import components
 
 
 def dump_yaml(file_path, data):
@@ -330,3 +333,26 @@ def return_poller_interval(poller_time, poller_interval, log=None):
         poller_interval = 1024
 
     return poller_interval
+
+
+def component_lock_search():
+    """Return a list of available components."""
+
+    paths = [
+        os.path.dirname(components.__file__),
+        os.path.join(sys.base_prefix, "share/directord/components"),
+        "/etc/directord/components",
+    ]
+    if sys.base_prefix != sys.prefix:
+        paths.insert(0, os.path.join(sys.prefix, "share/directord/components"))
+
+    lock_commands = list()
+    for importer, name, _ in pkgutil.iter_modules(paths):
+        component = importer.find_module(name).load_module(name)
+        try:
+            if component.Component().requires_lock:
+                lock_commands.append(name.lstrip("builtin_"))
+        except AttributeError:
+            pass
+    else:
+        return lock_commands

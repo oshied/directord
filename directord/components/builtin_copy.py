@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import base64
 import glob
 import grp
 import os
@@ -21,37 +22,6 @@ import traceback
 
 from directord import components
 from directord import utils
-
-
-class Transfer:
-    """Transfer connection context manager."""
-
-    def __init__(self, driver, log, job_id):
-        """Initialize the transfer context manager class."""
-
-        self.driver = driver
-        self.driver.backend_init()
-        self.log = log
-        self.job_id = job_id
-
-    def __enter__(self):
-        """Enter the transfer class."""
-
-        self.log.debug(
-            "Backend started to %s for job [ %s ]",
-            self.driver.identity,
-            self.job_id,
-        )
-
-    def __exit__(self, *args, **kwargs):
-        """Close the backend."""
-
-        self.driver.backend_close()
-        self.log.debug(
-            "Transfer ended for %s for job [ %s ]",
-            self.driver.identity,
-            self.job_id,
-        )
 
 
 class Component(components.ComponentBase):
@@ -126,9 +96,10 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        driver = self.driver.__copy__()
         self.log.debug("client(): job: %s, cache: %s", job, cache)
-        with Transfer(driver=driver, log=self.log, job_id=job["job_id"]):
+        with components.Backend(
+            driver=self.driver.__copy__(), log=self.log, job_id=job["job_id"]
+        ) as driver:
             return self._client(cache, job, self.info, driver)
 
     def _client(self, cache, job, source_file, driver):
@@ -192,7 +163,7 @@ class Component(components.ComponentBase):
         try:
             offset = 0
             chunk = 131072
-            with open(file_to, "w") as f:
+            with open(file_to, "wb") as f:
                 while True:
                     driver.backend_send(
                         msg_id=job["job_id"],
@@ -212,6 +183,7 @@ class Component(components.ComponentBase):
                         _,
                     ) = driver.backend_recv()
                     if control in [driver.job_processing, driver.transfer_end]:
+                        data = base64.b64decode(data)
                         chunk_size = len(data)
                         self.log.debug(
                             "Job [ %s ] identity [ %s ] received %s",

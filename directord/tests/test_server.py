@@ -369,7 +369,7 @@ class TestServer(tests.TestDriverBase):
         ]
         self.server.bind_backend = MagicMock()
         mock_isfile.return_value = True
-        m = unittest.mock.mock_open(read_data="test data")
+        m = unittest.mock.mock_open(read_data=b"test data")
         with patch("builtins.open", m):
             self.server.run_backend(sentinel=True)
         self.mock_driver.backend_send.assert_called()
@@ -586,7 +586,6 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        self.mock_driver.backend_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
 
@@ -621,13 +620,12 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        self.mock_driver.backend_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
         mock_log_debug.assert_called()
         mock_set_job_status.assert_called_with(
             ANY,
-            job_status=b"\x03",
+            job_status=self.server.driver.transfer_end,
             job_id="XXX",
             identity="test-node",
             job_output="/test/file1",

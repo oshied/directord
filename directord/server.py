@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import base64
 import decimal
 import grp
 import json
@@ -150,17 +151,17 @@ class Server(interface.Interface):
         if not job_metadata:
             return
 
-        if job_output and job_output is not self.driver.nullbyte.decode():
+        if job_output and job_output is not self.driver.nullbyte:
             job_metadata["INFO"][identity] = job_output
 
-        if job_stdout and job_stdout is not self.driver.nullbyte.decode():
+        if job_stdout and job_stdout is not self.driver.nullbyte:
             job_metadata["STDOUT"][identity] = job_stdout
 
-        if job_stderr and job_stderr is not self.driver.nullbyte.decode():
+        if job_stderr and job_stderr is not self.driver.nullbyte:
             job_metadata["STDERR"][identity] = job_stderr
 
         self.log.debug("current job [ %s ] state [ %s ]", job_id, job_status)
-        job_metadata["_processing"][identity] = job_status.decode()
+        job_metadata["_processing"][identity] = job_status
         if job_status == self.driver.job_ack:
             self.log.debug("%s received job %s", identity, job_id)
         elif job_status == self.driver.job_processing:
@@ -172,9 +173,7 @@ class Server(interface.Interface):
                 job_metadata["SUCCESS"].append(identity)
             else:
                 job_metadata["SUCCESS"] = [identity]
-            job_metadata["_processing"][
-                identity
-            ] = self.driver.job_end.decode()
+            job_metadata["_processing"][identity] = self.driver.job_end
         elif job_status == self.driver.job_failed:
             _set_time()
             self.log.debug("%s failed %s", identity, job_id)
@@ -190,13 +189,11 @@ class Server(interface.Interface):
             job_metadata["COMPONENT_TIMESTAMP"] = component_exec_timestamp
 
         for process in job_metadata["_processing"].values():
-            if process == self.driver.job_processing.decode():
-                job_metadata[
-                    "PROCESSING"
-                ] = self.driver.job_processing.decode()
+            if process == self.driver.job_processing:
+                job_metadata["PROCESSING"] = self.driver.job_processing
                 break
         else:
-            job_metadata["PROCESSING"] = self.driver.job_end.decode()
+            job_metadata["PROCESSING"] = self.driver.job_end
 
         job_metadata["_lasttime"] = time.time()
         self.return_jobs[job_id] = job_metadata
@@ -495,7 +492,7 @@ class Server(interface.Interface):
                         )
                         with open(transfer_file_path, "rb") as f:
                             f.seek(offset, os.SEEK_SET)
-                            data = f.read(chunk_size)
+                            data = base64.b64encode(f.read(chunk_size))
                             self.driver.backend_send(
                                 identity=transfer_identity,
                                 control=(

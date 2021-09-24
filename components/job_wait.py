@@ -17,37 +17,6 @@ import queue
 from directord import components
 
 
-class Coordination:
-    """Coordination connection context manager."""
-
-    def __init__(self, driver, log, job_id):
-        """Initialize the coordination context manager class."""
-
-        self.driver = driver
-        self.driver.backend_init()
-        self.log = log
-        self.job_id = job_id
-
-    def __enter__(self):
-        """Enter the job coordination class."""
-
-        self.log.debug(
-            "Coordination started to %s for job [ %s ]",
-            self.driver.identity,
-            self.job_id,
-        )
-
-    def __exit__(self, *args, **kwargs):
-        """Close the bind coordination object."""
-
-        self.driver.backend_close()
-        self.log.debug(
-            "Coordination ended for %s for job [ %s ]",
-            self.driver.identity,
-            self.job_id,
-        )
-
-
 class Component(components.ComponentBase):
     def __init__(self):
         """Initialize the component cache class."""
@@ -104,9 +73,10 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        driver = self.driver.__copy__()
         self.log.debug("client(): job: %s, cache: %s", job, cache)
-        with Coordination(driver=driver, log=self.log, job_id=job["job_id"]):
+        with components.Backend(
+            driver=self.driver.__copy__(), log=self.log, job_id=job["job_id"]
+        ) as driver:
             return self._client(cache, job, driver)
 
     def _client(self, cache, job, driver):
@@ -192,8 +162,8 @@ class Component(components.ComponentBase):
                         )
                         for _ in range(2400):
                             if cache.get(data) in [
-                                driver.job_end.decode(),
-                                driver.job_failed.decode(),
+                                driver.job_end,
+                                driver.job_failed,
                             ]:
                                 self.log.debug(
                                     "Job [ %s ] coordination complete for"
