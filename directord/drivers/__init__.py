@@ -322,6 +322,16 @@ class BaseDriver:
 
         pass
 
+    def backend_close(self):
+        """Close the backend socket."""
+
+        pass
+
+    def job_close(self):
+        """Close the job socket."""
+
+        pass
+
     def backend_send(self, *args, **kwargs):
         """Send a job message.
 

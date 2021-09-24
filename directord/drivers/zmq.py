@@ -15,6 +15,7 @@
 import json
 import logging
 import os
+import time
 
 import tenacity
 import zmq
@@ -523,6 +524,38 @@ class Driver(drivers.BaseDriver):
             self.bind_backend = self.backend_bind()
         else:
             self.bind_backend = self.backend_connect()
+
+    def _close(self, socket):
+        try:
+            socket.close(linger=2)
+            close_time = time.time()
+            while not socket.closed:
+                if time.time() - close_time > 60:
+                    raise TimeoutError(
+                        "Job [ {} ] failed to close transfer socket".format(
+                            self.job_id
+                        )
+                    )
+                else:
+                    socket.close(linger=2)
+                    time.sleep(1)
+        except Exception as e:
+            self.log.error(
+                "Backend ran into an exception while closing the socket %s",
+                str(e),
+            )
+        else:
+            self.log.debug("Backend socket closed")
+
+    def backend_close(self):
+        """Close the backend socket."""
+
+        self._close(socket=self.bind_backend)
+
+    def job_close(self):
+        """Close the job socket."""
+
+        self._close(socket=self.bind_job)
 
     def backend_connect(self):
         """Connect to a backend socket and return the socket.

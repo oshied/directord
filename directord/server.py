@@ -368,7 +368,7 @@ class Server(interface.Interface):
                 break
 
     def run_backend(self, sentinel=False):
-        """Execute the transfer loop.
+        """Execute the backend loop.
 
         Directord's interaction executor will slow down the poll interval
         when no work is present. This means Directord will ramp-up resource

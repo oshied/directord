@@ -17,7 +17,6 @@ import grp
 import os
 import pwd
 import shlex
-import time
 import traceback
 
 from directord import components
@@ -31,52 +30,28 @@ class Transfer:
         """Initialize the transfer context manager class."""
 
         self.driver = driver
-        self.bind_transfer = self.driver.backend_connect()
+        self.driver.backend_init()
         self.log = log
         self.job_id = job_id
 
     def __enter__(self):
-        """Return the bind_transfer object on enter."""
+        """Enter the transfer class."""
 
         self.log.debug(
-            "Transfer started to %s for job [ %s ]",
+            "Backend started to %s for job [ %s ]",
             self.driver.identity,
             self.job_id,
         )
-        return self.bind_transfer
 
     def __exit__(self, *args, **kwargs):
-        """Close the bind transfer object."""
+        """Close the backend."""
 
-        try:
-            self.bind_transfer.close(linger=2)
-            close_time = time.time()
-            while not self.bind_transfer.closed:
-                if time.time() - close_time > 60:
-                    raise TimeoutError(
-                        "Job [ {} ] failed to close transfer socket".format(
-                            self.job_id
-                        )
-                    )
-                else:
-                    self.bind_transfer.close(linger=2)
-                    self.delay(1)
-        except Exception as e:
-            self.log.error(
-                "Job [ %s ] transfer ran into an exception"
-                " while closing the socket %s",
-                str(e),
-                self.job_id,
-            )
-        else:
-            self.log.debug("Job [ %s ] transfer socket closed", self.job_id)
-
+        self.driver.backend_close()
         self.log.debug(
             "Transfer ended for %s for job [ %s ]",
             self.driver.identity,
             self.job_id,
         )
-        time.sleep(0.25)
 
 
 class Component(components.ComponentBase):
@@ -153,12 +128,10 @@ class Component(components.ComponentBase):
 
         driver = self.driver.__copy__()
         self.log.debug("client(): job: %s, cache: %s", job, cache)
-        with Transfer(
-            driver=driver, log=self.log, job_id=job["job_id"]
-        ) as bind_transfer:
-            return self._client(cache, job, self.info, driver, bind_transfer)
+        with Transfer(driver=driver, log=self.log, job_id=job["job_id"]):
+            return self._client(cache, job, self.info, driver)
 
-    def _client(self, cache, job, source_file, driver, bind_transfer):
+    def _client(self, cache, job, source_file, driver):
         """Run file transfer operation.
 
         File transfer operations will look at the cache, then look for an
@@ -219,10 +192,9 @@ class Component(components.ComponentBase):
         try:
             offset = 0
             chunk = 131072
-            with open(file_to, "wb") as f:
+            with open(file_to, "w") as f:
                 while True:
                     driver.backend_send(
-                        socket=bind_transfer,
                         msg_id=job["job_id"],
                         control=driver.transfer_start,
                         command="{}".format(offset),
@@ -266,7 +238,7 @@ class Component(components.ComponentBase):
                     elif control == driver.job_failed:
                         return (
                             None,
-                            "Transfer failed: {}".format(info.decode),
+                            "Transfer failed: {}".format(info),
                             False,
                             None,
                         )
@@ -278,9 +250,9 @@ class Component(components.ComponentBase):
         except Exception as e:
             return (
                 None,
-                "Transfer never started: {}".format(str(e)),
+                traceback.format_exc(),
                 False,
-                None,
+                "Transfer never started: {}".format(str(e)),
             )
         else:
             self.log.debug(

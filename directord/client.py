@@ -148,11 +148,12 @@ class Client(interface.Interface):
             else:
                 sleep_interval = 0.001
                 lower_command = command.lower()
-                if not hasattr(self, "__lock_{}__".format(lower_command)):
-                    self.log.debug("Creating a new lock for %s", lower_command)
+                lock_name = "__lock_{}__".format(lower_command)
+                if not hasattr(self, lock_name):
+                    self.log.debug("Creating a new lock for [ %s ]", lock_name)
                     setattr(
                         self,
-                        "__lock_{}__".format(lower_command),
+                        lock_name,
                         self.get_lock(),
                     )
 
@@ -393,18 +394,19 @@ class Client(interface.Interface):
 
             locked = False
             if component.requires_lock:
+                lock_name = "__lock_{}__".format(command_lower)
                 try:
-                    lock = getattr(self, "__lock_{}__".format(command_lower))
+                    lock = getattr(self, lock_name)
                 except AttributeError:
                     self.log.warning(
                         "No component lock found for [ %s ], falling back"
                         " to global lock",
-                        command_lower,
+                        lock_name,
                     )
                 else:
                     self.log.debug(
                         "Found component lock [ %s ]",
-                        "__lock_{}__".format(command_lower),
+                        lock_name,
                     )
 
                 locked = lock.acquire()
