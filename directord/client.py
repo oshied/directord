@@ -750,15 +750,15 @@ class Client(interface.Interface):
         poller_interval = 1
         cache_check_time = time.time()
         run_q_processor_thread = None
-        q_processes = self.get_queue()
+        self.q_processes = self.get_queue()
         while True:
             if self.terminate_process(process=run_q_processor_thread):
                 run_q_processor_thread = None
 
-            if not q_processes.empty() and not run_q_processor_thread:
+            if not self.q_processes.empty() and not run_q_processor_thread:
                 run_q_processor_thread = self.thread(
                     target=self.job_q_processor,
-                    kwargs=dict(q_processes=q_processes, lock=lock),
+                    kwargs=dict(q_processes=self.q_processes, lock=lock),
                     name="job_q_processor",
                     daemon=False,
                 )
@@ -801,64 +801,7 @@ class Client(interface.Interface):
                     _,
                     _,
                 ) = self.driver.job_recv()
-                job = json.loads(data)
-                job["job_id"] = job_id = job.get("job_id", utils.get_uuid())
-                job["job_sha3_224"] = job_sha3_224 = job.get(
-                    "job_sha3_224", utils.object_sha3_224(job)
-                )
-                self.driver.job_send(
-                    msg_id=job_id,
-                    control=self.driver.job_ack,
-                )
-
-                job_parent_id = job.get("parent_id")
-                job_parent_sha3_224 = job.get("parent_sha3_224")
-                self.log.info(
-                    "Item received: parent job UUID [ %s ],"
-                    " parent job sha3_224 [ %s ], job UUID [ %s ],"
-                    " job sha3_224 [ %s ]",
-                    job_parent_id,
-                    job_parent_sha3_224,
-                    job_id,
-                    job_sha3_224,
-                )
-
-                with utils.ClientStatus(
-                    job_id=job_id,
-                    command=command,
-                    ctx=self,
-                ) as c:
-                    if job_parent_id and not self._parent_check(
-                        conn=c, cache=self.cache, job=job
-                    ):
-                        self.q_return.put(
-                            (
-                                None,
-                                None,
-                                False,
-                                "Job omitted, parent failure",
-                                job,
-                                command,
-                                0,
-                                None,
-                            )
-                        )
-                    else:
-                        c.job_state = self.driver.job_processing
-                        component_kwargs = dict(cache=None, job=job)
-                        self.log.debug(
-                            "Queuing component [ %s ], job_id [ %s ]",
-                            command,
-                            job_id,
-                        )
-                        c.info = "task queued"
-                        q_processes.put(
-                            (
-                                component_kwargs,
-                                command,
-                                info,
-                            )
-                        )
+                self.handle_job(command=command, data=data, info=info)
             else:
                 cache_check_time = self.prune_cache(
                     cache_check_time=cache_check_time
@@ -868,6 +811,96 @@ class Client(interface.Interface):
             if sentinel:
                 self.driver.job_close()
                 break
+
+    def handle_job(
+        self,
+        identity=None,
+        job_id=None,
+        control=None,
+        command=None,
+        data=None,
+        info=None,
+        stderr=None,
+        stdout=None,
+    ):
+        """Handle a job interaction.
+
+        :param identity: Client identity
+        :type identity: String
+        :param job_id: Job Id
+        :type job_id: String
+        :param control: Job control character
+        :type control: String
+        :param command: Command
+        :type command: String
+        :param data: Job data
+        :type data: Dictionary
+        :param info: Job info
+        :type info: Dictionary
+        :param stderr: Job stderr output
+        :type stderr: String
+        :param stdout: Job stdout output
+        :type stdout: String
+        """
+
+        job = json.loads(data)
+        job["job_id"] = job_id = job.get("job_id", utils.get_uuid())
+        job["job_sha3_224"] = job_sha3_224 = job.get(
+            "job_sha3_224", utils.object_sha3_224(job)
+        )
+        self.driver.job_send(
+            msg_id=job_id,
+            control=self.driver.job_ack,
+        )
+
+        job_parent_id = job.get("parent_id")
+        job_parent_sha3_224 = job.get("parent_sha3_224")
+        self.log.info(
+            "Item received: parent job UUID [ %s ],"
+            " parent job sha3_224 [ %s ], job UUID [ %s ],"
+            " job sha3_224 [ %s ]",
+            job_parent_id,
+            job_parent_sha3_224,
+            job_id,
+            job_sha3_224,
+        )
+
+        with utils.ClientStatus(
+            job_id=job_id,
+            command=command,
+            ctx=self,
+        ) as c:
+            if job_parent_id and not self._parent_check(
+                conn=c, cache=self.cache, job=job
+            ):
+                self.q_return.put(
+                    (
+                        None,
+                        None,
+                        False,
+                        "Job omitted, parent failure",
+                        job,
+                        command,
+                        0,
+                        None,
+                    )
+                )
+            else:
+                c.job_state = self.driver.job_processing
+                component_kwargs = dict(cache=None, job=job)
+                self.log.debug(
+                    "Queuing component [ %s ], job_id [ %s ]",
+                    command,
+                    job_id,
+                )
+                c.info = "task queued"
+                self.q_processes.put(
+                    (
+                        component_kwargs,
+                        command,
+                        info,
+                    )
+                )
 
     def worker_run(self):
         """Run all work related threads.

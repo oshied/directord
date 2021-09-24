@@ -94,7 +94,65 @@ class Driver(drivers.BaseDriver):
             data=data,
         )
 
-    def run(self, sentinel=False):
+    def job_send(
+        self,
+        identity=None,
+        msg_id=None,
+        control=None,
+        command=None,
+        data=None,
+        info=None,
+        stderr=None,
+        stdout=None,
+    ):
+        """Send a job message.
+
+        :param identity: Client identity
+        :type identity: String
+        :param job_id: Job Id
+        :type job_id: String
+        :param control: Job control character
+        :type control: String
+        :param command: Command
+        :type command: String
+        :param data: Job data
+        :type data: Dictionary
+        :param info: Job info
+        :type info: Dictionary
+        :param stderr: Job stderr output
+        :type stderr: String
+        :param stdout: Job stdout output
+        :type stdout: String
+        """
+
+        method = "job"
+        topic = "directord"
+
+        if not identity:
+            target = "directord"
+            identity = self.identity
+        else:
+            worker = self.interface.workers.get(identity)
+            target = worker.get("machine_id")
+
+            if not target:
+                self.log.fatal(
+                    "Machine ID for identity {} not found".format(identity)
+                )
+
+        self.send(
+            method,
+            topic,
+            server=target,
+            identity=identity,
+            job_id=msg_id,
+            control=control,
+            command=command,
+            data=data,
+            info=info,
+        )
+
+    def job_init(self, sentinel=False):
         """Run in server mode.
 
         :param sentinel: Breaks the loop
@@ -153,5 +211,54 @@ class Driver(drivers.BaseDriver):
 
     @expose
     def heartbeat(self, context, identity, data):
+        """Handle a heartbeat interaction.
+
+        :param context: RPC Context
+        :type context: Dictionary
+        :param identity: Client identity
+        :type identity: String
+        :param data: Heartbeat data
+        :type data: Dictionary
+        """
+
         self.log.info("Handling heartbeat")
         self.interface.handle_heartbeat(identity, data)
+
+    @expose
+    def job(
+        self,
+        context,
+        identity=None,
+        job_id=None,
+        control=None,
+        command=None,
+        data=None,
+        info=None,
+        stderr=None,
+        stdout=None,
+    ):
+        """Handle a job interaction.
+
+        :param context: RPC Context
+        :type context: Dictionary
+        :param identity: Client identity
+        :type identity: String
+        :param job_id: Job Id
+        :type job_id: String
+        :param control: Job control character
+        :type control: String
+        :param command: Command
+        :type command: String
+        :param data: Job data
+        :type data: Dictionary
+        :param info: Job info
+        :type info: Dictionary
+        :param stderr: Job stderr output
+        :type stderr: String
+        :param stdout: Job stdout output
+        :type stdout: String
+        """
+        self.log.info("Handling job {} for {}".format(job_id, identity))
+        self.interface.handle_job(
+            identity, job_id, control, command, data, info, stderr, stdout
+        )

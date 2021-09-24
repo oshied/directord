@@ -324,7 +324,7 @@ class BaseDriver:
         pass
 
     def job_send(self, *args, **kwargs):
-        """Send a message over a ZM0 socket.
+        """Send a job message.
 
         The message specification for server is as follows.
 
