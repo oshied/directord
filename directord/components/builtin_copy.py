@@ -182,7 +182,7 @@ class Component(components.ComponentBase):
                         _,
                     ) = driver.backend_recv()
                     if control in [driver.job_processing, driver.transfer_end]:
-                        chunk_size = len(data)
+                        chunk_size = len(data.encode())
                         self.log.debug(
                             "Job [ %s ] identity [ %s ] received %s",
                             job["job_id"],

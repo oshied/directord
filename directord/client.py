@@ -376,7 +376,7 @@ class Client(interface.Interface):
                 try:
                     lock = getattr(self, lock_name)
                 except AttributeError:
-                    self.log.warning(
+                    self.log.debug(
                         "No component lock found for [ %s ], falling back"
                         " to global lock",
                         lock_name,
@@ -840,15 +840,6 @@ class Client(interface.Interface):
                             )
                         )
                     else:
-                        lock_name = "__lock_{}__".format(command.lower())
-                        if not hasattr(self, lock_name):
-                            self.log.debug("Creating a new lock for [ %s ]", lock_name)
-                            setattr(
-                                self,
-                                lock_name,
-                                self.get_lock(),
-                            )
-
                         c.job_state = self.driver.job_processing
                         component_kwargs = dict(cache=None, job=job)
                         self.log.debug(
@@ -881,6 +872,16 @@ class Client(interface.Interface):
         """
 
         lock = self.get_lock()
+        for known_component in utils.component_lock_search():
+            lock_name = "__lock_{}__".format(known_component.lower())
+            if not hasattr(self, lock_name):
+                self.log.debug("Creating a new lock for [ %s ]", lock_name)
+                setattr(
+                    self,
+                    lock_name,
+                    self.get_lock(),
+                )
+
         threads = [
             (
                 self.thread(
