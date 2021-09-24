@@ -66,6 +66,7 @@ class Driver(drivers.BaseDriver):
 
         self.ctx = zmq.Context().instance()
         self.poller = zmq.Poller()
+        self.interface = interface
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=self.encrypted_traffic_data,
@@ -74,13 +75,6 @@ class Driver(drivers.BaseDriver):
         )
         self.bind_job = None
         self.bind_backend = None
-
-    def __copy__(self):
-        return Driver(
-            args=self.args,
-            encrypted_traffic_data=self.encrypted_traffic_data,
-            connection_string=self.connection_string,
-        )
 
     def _socket_context(self, socket_type):
         """Create socket context and return a bind object.
@@ -389,7 +383,7 @@ class Driver(drivers.BaseDriver):
         return socket.send_multipart(message_parts, flags=flags)
 
     @staticmethod
-    def socket_recv(socket, nonblocking=False):
+    def _socket_recv(socket, nonblocking=False):
         """Receive a message over a ZM0 socket.
 
         The message specification for server is as follows.
@@ -436,25 +430,21 @@ class Driver(drivers.BaseDriver):
 
         return socket.recv_multipart(flags=flags)
 
-    def backend_recv(self, nonblocking=False):
-        """Receive a transfer message.
+    def _bind_check(self, bind, interval=1, constant=1000):
+        """Return True if a bind type contains work ready.
 
-        :param nonblocking: Enable non-blocking receve.
-        :type nonblocking: Boolean
-        :returns: Tuple
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
         """
 
-        return self._recv(socket=self.bind_backend, nonblocking=nonblocking)
-
-    def job_recv(self, nonblocking=False):
-        """Receive a transfer message.
-
-        :param nonblocking: Enable non-blocking receve.
-        :type nonblocking: Boolean
-        :returns: Tuple
-        """
-
-        return self._recv(socket=self.bind_job, nonblocking=nonblocking)
+        socks = dict(self.poller.poll(interval * constant))
+        return socks.get(bind) == zmq.POLLIN
 
     def _recv(self, socket, nonblocking=False):
         """Receive message.
@@ -467,7 +457,7 @@ class Driver(drivers.BaseDriver):
         """
 
         recv_obj = list(
-            self.socket_recv(socket=socket, nonblocking=nonblocking)
+            self._socket_recv(socket=socket, nonblocking=nonblocking)
         )
         if len(recv_obj) == 8:
             control = recv_obj.pop(2)
@@ -484,7 +474,7 @@ class Driver(drivers.BaseDriver):
                 "Received message out of spec, {}".format(recv_obj)
             )
 
-    def job_connect(self):
+    def _job_connect(self):
         """Connect to a job socket and return the socket.
 
         :returns: Object
@@ -497,33 +487,56 @@ class Driver(drivers.BaseDriver):
             port=self.args.job_port,
         )
 
-    def job_init(self):
-        """Initialize the job socket
-
-        For server mode, this is a bound local socket.
-        For client mode, it is a connection to the server socket.
+    def _backend_connect(self):
+        """Connect to a backend socket and return the socket.
 
         :returns: Object
         """
 
-        if self.args.mode == "server":
-            self.bind_job = self.job_bind()
-        else:
-            self.bind_job = self.job_connect()
+        self.log.debug("Establishing backend connection.")
+        bind = self._socket_connect(
+            socket_type=zmq.DEALER,
+            connection=self.connection_string,
+            port=self.args.backend_port,
+        )
+        bind.set_hwm(16)
+        self.log.debug(
+            "Identity [ %s ] backend connect hwm state [ %s ]",
+            self.identity,
+            bind.get_hwm(),
+        )
+        return bind
 
-    def backend_init(self):
-        """Initialize the backend socket
-
-        For server mode, this is a bound local socket.
-        For client mode, it is a connection to the server socket.
+    def _job_bind(self):
+        """Bind an address to a job socket and return the socket.
 
         :returns: Object
         """
 
-        if self.args.mode == "server":
-            self.bind_backend = self.backend_bind()
-        else:
-            self.bind_backend = self.backend_connect()
+        return self._socket_bind(
+            socket_type=zmq.ROUTER,
+            connection=self.connection_string,
+            port=self.args.job_port,
+        )
+
+    def _backend_bind(self):
+        """Bind an address to a backend socket and return the socket.
+
+        :returns: Object
+        """
+
+        bind = self._socket_bind(
+            socket_type=zmq.ROUTER,
+            connection=self.connection_string,
+            port=self.args.backend_port,
+        )
+        bind.set_hwm(16)
+        self.log.debug(
+            "Identity [ %s ] backend connect hwm state [ %s ]",
+            self.identity,
+            bind.get_hwm(),
+        )
+        return bind
 
     def _close(self, socket):
         try:
@@ -547,6 +560,54 @@ class Driver(drivers.BaseDriver):
         else:
             self.log.debug("Backend socket closed")
 
+    def backend_recv(self, nonblocking=False):
+        """Receive a transfer message.
+
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
+
+        return self._recv(socket=self.bind_backend, nonblocking=nonblocking)
+
+    def job_recv(self, nonblocking=False):
+        """Receive a transfer message.
+
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
+
+        return self._recv(socket=self.bind_job, nonblocking=nonblocking)
+
+    def job_init(self):
+        """Initialize the job socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        if self.args.mode == "server":
+            self.bind_job = self._job_bind()
+        else:
+            self.bind_job = self._job_connect()
+
+    def backend_init(self):
+        """Initialize the backend socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        if self.args.mode == "server":
+            self.bind_backend = self._backend_bind()
+        else:
+            self.bind_backend = self._backend_connect()
+
     def backend_close(self):
         """Close the backend socket."""
 
@@ -556,57 +617,6 @@ class Driver(drivers.BaseDriver):
         """Close the job socket."""
 
         self._close(socket=self.bind_job)
-
-    def backend_connect(self):
-        """Connect to a backend socket and return the socket.
-
-        :returns: Object
-        """
-
-        self.log.debug("Establishing backend connection.")
-        bind = self._socket_connect(
-            socket_type=zmq.DEALER,
-            connection=self.connection_string,
-            port=self.args.backend_port,
-        )
-        bind.set_hwm(16)
-        self.log.debug(
-            "Identity [ %s ] backend connect hwm state [ %s ]",
-            self.identity,
-            bind.get_hwm(),
-        )
-        return bind
-
-    def job_bind(self):
-        """Bind an address to a job socket and return the socket.
-
-        :returns: Object
-        """
-
-        return self._socket_bind(
-            socket_type=zmq.ROUTER,
-            connection=self.connection_string,
-            port=self.args.job_port,
-        )
-
-    def backend_bind(self):
-        """Bind an address to a backend socket and return the socket.
-
-        :returns: Object
-        """
-
-        bind = self._socket_bind(
-            socket_type=zmq.ROUTER,
-            connection=self.connection_string,
-            port=self.args.backend_port,
-        )
-        bind.set_hwm(16)
-        self.log.debug(
-            "Identity [ %s ] backend connect hwm state [ %s ]",
-            self.identity,
-            bind.get_hwm(),
-        )
-        return bind
 
     def job_check(self, interval=1, constant=1000):
         """Return True if a job contains work ready.
@@ -621,7 +631,7 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.bind_check(
+        return self._bind_check(
             bind=self.bind_job, interval=interval, constant=constant
         )
 
@@ -638,25 +648,9 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
-        return self.bind_check(
+        return self._bind_check(
             bind=self.bind_backend, interval=interval, constant=constant
         )
-
-    def bind_check(self, bind, interval=1, constant=1000):
-        """Return True if a bind type contains work ready.
-
-        :param bind: A given Socket bind to identify.
-        :type bind: Object
-        :param interval: Exponential Interval used to determine the polling
-                         duration for a given socket.
-        :type interval: Integer
-        :param constant: Constant time used to poll for new jobs.
-        :type constant: Integer
-        :returns: Object
-        """
-
-        socks = dict(self.poller.poll(interval * constant))
-        return socks.get(bind) == zmq.POLLIN
 
     def key_generate(self, keys_dir, key_type):
         """Generate certificate.
@@ -668,19 +662,6 @@ class Driver(drivers.BaseDriver):
         """
 
         zmq_auth.create_certificates(keys_dir, key_type)
-
-    def create_proxy(front, back):
-        """Create proxy bind.
-
-        Bind two interfaces into a proxy.
-
-        :param front: Frontend interface.
-        :type front: Object
-        :param back: Backend interface.
-        :type back: Object
-        """
-
-        return zmq.proxy(frontend=front, backend=back)
 
     def backend_send(self, *args, **kwargs):
         """Send a job message.

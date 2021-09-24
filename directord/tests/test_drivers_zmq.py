@@ -303,7 +303,7 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
     def test_job_bind(self, mock_socket_bind):
-        self.driver.job_bind()
+        self.driver._job_bind()
         mock_socket_bind.assert_called_with(
             ANY,
             socket_type=zmq.ROUTER,
@@ -313,23 +313,13 @@ class TestDriverZMQ(unittest.TestCase):
 
     @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
     def test_backend_bind(self, mock_socket_bind):
-        self.driver.backend_bind()
+        self.driver._backend_bind()
         mock_socket_bind.assert_called_with(
             ANY,
             socket_type=zmq.ROUTER,
             connection="tcp://localhost",
             port=5556,
         )
-
-    def test_get_heartbeat(self):
-        with patch("time.time") as p:
-            p.return_value = 1000000000.0000001
-            self.assertEqual(
-                self.driver.get_heartbeat(
-                    interval=tests.FakeArgs.heartbeat_interval
-                ),
-                1000000060.0000001,
-            )
 
     def test_get_expiry(self):
         with patch("time.time") as p:
@@ -342,13 +332,13 @@ class TestDriverZMQ(unittest.TestCase):
     @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_job_connect(self, mock_log_debug, mock_socket_connect):
-        self.driver.job_connect()
+        self.driver._job_connect()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()
 
     @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_backend_connect(self, mock_log_debug, mock_socket_connect):
-        self.driver.backend_connect()
+        self.driver._backend_connect()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()

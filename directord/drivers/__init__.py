@@ -16,7 +16,6 @@ import socket
 import time
 
 from directord import logger
-from directord import utils
 
 
 class BaseDriver:
@@ -64,19 +63,106 @@ class BaseDriver:
 
         return self
 
-    def socket_send(
-        self,
-        socket,
-        identity=None,
-        msg_id=None,
-        control=None,
-        command=None,
-        data=None,
-        info=None,
-        stderr=None,
-        stdout=None,
-    ):
-        """Send a message over a socket.
+    def job_recv(self, nonblocking=False):
+        """Receive a message.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        All message parts are byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param socket: ZeroMQ socket object.
+        :type socket: Object
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        """
+
+        pass
+
+    def job_check(self, interval=1, constant=1000):
+        """Return True if a job contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        pass
+
+    def job_close(self):
+        """Close the job socket."""
+
+        pass
+
+    def job_init(self):
+        """Initialize the job socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        pass
+
+    def job_send(self, *args, **kwargs):
+        """Send a message over a ZM0 socket.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
 
         All message information is assumed to be byte encoded.
 
@@ -84,7 +170,7 @@ class BaseDriver:
         For more on control characters review the following
         URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
 
-        :param socket: Socket object.
+        :param socket: ZeroMQ socket object.
         :type socket: Object
         :param identity: Target where message will be sent.
         :type identity: Bytes
@@ -103,124 +189,8 @@ class BaseDriver:
         :type stderr: Bytes
         :param stdout: Encoded output information from a command.
         :type stdout: Bytes
-        """
-
-        if not msg_id:
-            msg_id = utils.get_uuid()
-
-        if not control:
-            control = self.nullbyte
-
-        if not command:
-            command = self.nullbyte
-
-        if not data:
-            data = self.nullbyte
-
-        if not info:
-            info = self.nullbyte
-
-        if not stderr:
-            stderr = self.nullbyte
-
-        if not stdout:
-            stdout = self.nullbyte
-
-        pass
-
-    def backend_recv(self, nonblocking=False):
-        """Receive a transfer message.
-
-        :param nonblocking: Enable non-blocking receve.
+        :param nonblocking: Enable non-blocking send.
         :type nonblocking: Boolean
-        :returns: Tuple
-        """
-
-        pass
-
-    def job_recv(self, nonblocking=False):
-        """Receive a transfer message.
-
-        :param nonblocking: Enable non-blocking receve.
-        :type nonblocking: Boolean
-        :returns: Tuple
-        """
-
-        pass
-
-    def job_connect(self):
-        """Connect to a job socket and return the socket.
-
-        :returns: Object
-        """
-
-        pass
-
-    def backend_connect(self):
-        """Connect to a transfer socket and return the socket.
-
-        :returns: Object
-        """
-
-        pass
-
-    def heartbeat_connect(self):
-        """Connect to a heartbeat socket and return the socket.
-
-        :returns: Object
-        """
-
-        pass
-
-    def heartbeat_bind(self):
-        """Bind an address to a heartbeat socket and return the socket.
-
-        :returns: Object
-        """
-
-        pass
-
-    def heartbeat_reset(self, bind_heatbeat=None):
-        """Reset the connection on the heartbeat socket.
-
-        Returns a new ttl after reconnect.
-
-        :param bind_heatbeat: heart beat bind object.
-        :type bind_heatbeat: Object
-        :returns: Tuple
-        """
-
-        return (
-            self.get_heartbeat(interval=self.args.heartbeat_interval),
-            self.heartbeat_connect(),
-        )
-
-    def job_bind(self):
-        """Bind an address to a job socket and return the socket.
-
-        :returns: Object
-        """
-
-        pass
-
-    def backend_bind(self):
-        """Bind an address to a transfer socket and return the socket.
-
-        :returns: Object
-        """
-
-        pass
-
-    def job_check(self, interval=1, constant=1000):
-        """Return True if a job contains work ready.
-
-        :param bind: A given Socket bind to identify.
-        :type bind: Object
-        :param interval: Exponential Interval used to determine the polling
-                         duration for a given socket.
-        :type interval: Integer
-        :param constant: Constant time used to poll for new jobs.
-        :type constant: Integer
         :returns: Object
         """
 
@@ -241,73 +211,8 @@ class BaseDriver:
 
         pass
 
-    def bind_check(self, bind, interval=1, constant=1000):
-        """Return True if a bind type contains work ready.
-
-        :param bind: A given Socket bind to identify.
-        :type bind: Object
-        :param interval: Exponential Interval used to determine the polling
-                         duration for a given socket.
-        :type interval: Integer
-        :param constant: Constant time used to poll for new jobs.
-        :type constant: Integer
-        :returns: Object
-        """
-
-        pass
-
-    def key_generate(self, keys_dir, key_type):
-        """Generate certificate.
-
-        :param keys_dir: Full Directory path where a given key will be stored.
-        :type keys_dir: String
-        :param key_type: Key type to be generated.
-        :type key_type: String
-        """
-
-        pass
-
-    def get_heartbeat(self, interval=0):
-        """Return a new hearbeat interval time.
-
-        :param interval: Padding for heartbeat interval.
-        :type interval: Integer|Float
-        :returns: Float
-        """
-
-        return time.time() + interval
-
-    def get_expiry(self, heartbeat_interval=60, interval=3):
-        """Return a new expiry time.
-
-        :param interval: Exponential back off for expiration.
-        :type interval: Integer|Float
-        :returns: Float
-        """
-
-        return time.time() + (heartbeat_interval * interval)
-
-    def create_proxy(front, back):
-        """Create proxy bind.
-
-        Bind two interfaces into a proxy.
-
-        :param front: Frontend interface.
-        :type front: Object
-        :param back: Backend interface.
-        :type back: Object
-        """
-
-        pass
-
-    def job_init(self):
-        """Initialize the job socket
-
-        For server mode, this is a bound local socket.
-        For client mode, it is a connection to the server socket.
-
-        :returns: Object
-        """
+    def backend_close(self):
+        """Close the backend socket."""
 
         pass
 
@@ -322,35 +227,117 @@ class BaseDriver:
 
         pass
 
-    def backend_close(self):
-        """Close the backend socket."""
+    def backend_recv(self, nonblocking=False):
+        """Receive a message.
 
-        pass
+        The message specification for server is as follows.
 
-    def job_close(self):
-        """Close the job socket."""
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        All message parts are byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param socket: ZeroMQ socket object.
+        :type socket: Object
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        """
 
         pass
 
     def backend_send(self, *args, **kwargs):
-        """Send a job message.
+        """Send a message over a ZM0 socket.
 
-        * All args and kwargs are passed through to the socket send.
+        The message specification for server is as follows.
 
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        All message information is assumed to be byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param socket: ZeroMQ socket object.
+        :type socket: Object
+        :param identity: Target where message will be sent.
+        :type identity: Bytes
+        :param msg_id: ID information for a given message. If no ID is
+                       provided a UUID will be generated.
+        :type msg_id: Bytes
+        :param control: ASCII control charaters.
+        :type control: Bytes
+        :param command: Command definition for a given message.
+        :type command: Bytes
+        :param data: Encoded data that will be transmitted.
+        :type data: Bytes
+        :param info: Encoded information that will be transmitted.
+        :type info: Bytes
+        :param stderr: Encoded error information from a command.
+        :type stderr: Bytes
+        :param stdout: Encoded output information from a command.
+        :type stdout: Bytes
+        :param nonblocking: Enable non-blocking send.
+        :type nonblocking: Boolean
         :returns: Object
         """
 
         pass
 
-    def job_send(self, *args, **kwargs):
-        """Send a job message.
+    def get_expiry(self, heartbeat_interval=60, interval=3):
+        """Return a new expiry time.
 
-        * All args and kwargs are passed through to the socket send.
-
-        :returns: Object
+        :param interval: Exponential back off for expiration.
+        :type interval: Integer|Float
+        :returns: Float
         """
 
-        pass
+        return time.time() + (heartbeat_interval * interval)
 
     def heartbeat_send(
         self, identity=None, host_uptime=None, agent_uptime=None, version=None
@@ -365,6 +352,17 @@ class BaseDriver:
         :type agent_uptime: String
         :param version: Sender directord version
         :type version: String
+        """
+
+        pass
+
+    def key_generate(self, keys_dir, key_type):
+        """Generate certificate.
+
+        :param keys_dir: Full Directory path where a given key will be stored.
+        :type keys_dir: String
+        :param key_type: Key type to be generated.
+        :type key_type: String
         """
 
         pass

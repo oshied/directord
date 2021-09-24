@@ -49,7 +49,7 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
+        with patch.object(self.mock_driver, "job_check", return_value=False):
             self.client.run_job(sentinel=True)
 
     @patch("time.time", autospec=True)
@@ -73,7 +73,7 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         mock_time.side_effect = [1, 1, 66, 1, 1, 1, 1]
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
+        with patch.object(self.mock_driver, "job_check", return_value=False):
             self.client.run_job(sentinel=True)
 
     @patch("time.time", autospec=True)
@@ -97,7 +97,7 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         mock_time.side_effect = [1, 1, 1, 34, 1, 1, 1]
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
+        with patch.object(self.mock_driver, "job_check", return_value=False):
             self.client.run_job(sentinel=True)
 
     @patch("diskcache.Cache", autospec=True)
@@ -127,7 +127,7 @@ class TestClient(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 1, 1, 1, 5000, 1, 1, 1, 1, 1]
         mock_diskcache.return_value = tests.FakeCache()
-        with patch.object(self.mock_driver, "bind_check", return_value=False):
+        with patch.object(self.mock_driver, "job_check", return_value=False):
             self.client.run_job(sentinel=True)
 
     @patch("diskcache.Cache", autospec=True)

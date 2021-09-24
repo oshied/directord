@@ -586,7 +586,6 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        self.mock_driver.backend_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
 
@@ -621,7 +620,6 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        self.mock_driver.backend_bind.return_value = MagicMock()
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.server.run_interactions(sentinel=True)
         mock_log_debug.assert_called()
