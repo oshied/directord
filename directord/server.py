@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import base64
 import decimal
 import grp
 import json
@@ -491,7 +492,7 @@ class Server(interface.Interface):
                         )
                         with open(transfer_file_path, "rb") as f:
                             f.seek(offset, os.SEEK_SET)
-                            data = f.read(chunk_size)
+                            data = base64.b64encode(f.read(chunk_size))
                             self.driver.backend_send(
                                 identity=transfer_identity,
                                 control=(

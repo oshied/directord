@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import base64
 import glob
 import grp
 import os
@@ -162,7 +163,7 @@ class Component(components.ComponentBase):
         try:
             offset = 0
             chunk = 131072
-            with open(file_to, "w") as f:
+            with open(file_to, "wb") as f:
                 while True:
                     driver.backend_send(
                         msg_id=job["job_id"],
@@ -182,7 +183,8 @@ class Component(components.ComponentBase):
                         _,
                     ) = driver.backend_recv()
                     if control in [driver.job_processing, driver.transfer_end]:
-                        chunk_size = len(data.encode())
+                        data = base64.b64decode(data)
+                        chunk_size = len(data)
                         self.log.debug(
                             "Job [ %s ] identity [ %s ] received %s",
                             job["job_id"],

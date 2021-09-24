@@ -15,6 +15,7 @@
 import argparse
 import os
 import subprocess
+import time
 
 from multiprocessing import Event
 
@@ -432,3 +433,4 @@ class Backend:
             self.driver.identity,
             self.job_id,
         )
+        time.sleep(0.25)

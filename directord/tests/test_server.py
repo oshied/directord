@@ -369,7 +369,7 @@ class TestServer(tests.TestDriverBase):
         ]
         self.server.bind_backend = MagicMock()
         mock_isfile.return_value = True
-        m = unittest.mock.mock_open(read_data="test data")
+        m = unittest.mock.mock_open(read_data=b"test data")
         with patch("builtins.open", m):
             self.server.run_backend(sentinel=True)
         self.mock_driver.backend_send.assert_called()
