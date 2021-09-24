@@ -60,15 +60,10 @@ class Driver(drivers.BaseDriver):
     def run(self, sentinel=False):
         """Run in server mode."""
 
-        if self.mode == "server":
-            server_target = "directord"
-        else:
-            server_target = self.interface.uuid
-
         server = oslo_messaging.get_rpc_server(
             transport=self.transport,
             target=oslo_messaging.Target(
-                topic="directord", server=server_target
+                topic="directord", server="directord"
             ),
             endpoints=[self],
             executor="threading",
@@ -105,12 +100,10 @@ class Driver(drivers.BaseDriver):
         return client.call({}, method, **kwargs)
 
     def heartbeat_send(
-        self, identity=None, host_uptime=None, agent_uptime=None, version=None
+        self, host_uptime=None, agent_uptime=None, version=None
     ):
         """Send a heartbeat.
 
-        :param identity: Sender identity (uuid)
-        :type identity: String
         :param host_uptime: Sender uptime
         :type host_uptime: String
         :param agent_uptime: Sender agent uptime
@@ -130,13 +123,16 @@ class Driver(drivers.BaseDriver):
             }
         )
 
-        if not identity:
-            identity = self.identity
-
-        self.log.info("Sending heartbeat from {} to server".format(identity))
+        self.log.info(
+            "Sending heartbeat from {} to server".format(self.identity)
+        )
 
         self.send(
-            method, topic, server="directord", identity=identity, data=data
+            method,
+            topic,
+            server="directord",
+            identity=self.identity,
+            data=data,
         )
 
     @expose

@@ -338,12 +338,10 @@ class BaseDriver:
         return time.time() + (heartbeat_interval * interval)
 
     def heartbeat_send(
-        self, identity=None, host_uptime=None, agent_uptime=None, version=None
+        self, host_uptime=None, agent_uptime=None, version=None
     ):
         """Send a heartbeat.
 
-        :param identity: Sender identity (uuid)
-        :type identity: String
         :param host_uptime: Sender uptime
         :type host_uptime: String
         :param agent_uptime: Sender agent uptime
