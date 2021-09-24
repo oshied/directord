@@ -47,6 +47,7 @@ Documentation needed to be successful with Directord.
 * [Overview](overview.md)
 * [Installation](installation.md)
 * [Service Setup](service-setup.md)
+* [Drivers](messaging.md)
 * [Containerization](containerization.md)
 * [Authentication](authentication.md)
 * [Management](management.md)

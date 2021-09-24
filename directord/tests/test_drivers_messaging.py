@@ -26,10 +26,11 @@ class TestDriverMessaging(unittest.TestCase):
     def setUp(self):
         self.mock_interface = MagicMock()
         args = tests.FakeArgs
+        args.driver = "messaging"
         args.mode = "server"
         self.driver = messaging.Driver(
             args=args,
-            connection_string="tcp://localhost",
+            connection_string="amqp://localhost",
             interface=self.mock_interface,
         )
 
