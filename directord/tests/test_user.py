@@ -153,7 +153,7 @@ class TestManager(tests.TestDriverBase):
         )
         status, info, _, _, _ = self.manage.poll_job("test-id")
         self.assertEqual(status, False)
-        self.assertEqual(info, "Job Degrated: test-id")
+        self.assertEqual(info, "Job Degraded: test-id")
 
     @patch("directord.send_data", autospec=True)
     def test_poll_job_failed(self, mock_send_data):
