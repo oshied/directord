@@ -569,17 +569,19 @@ class Client(interface.Interface):
         if outcome is False:
             state = conn.job_state = self.driver.job_failed
             self.log.error("Job failed [ %s ]", job["job_id"])
+            conn.info = "task failed"
         elif outcome is True:
             state = conn.job_state = self.driver.job_end
             self.log.info("Job complete [ %s ]", job["job_id"])
+            conn.info = "task finished"
         elif outcome == "skipped":
             self.log.info("Job skipped [ %s ]", job["job_id"])
-            conn.info = b"task skipped"
+            conn.info = "task skipped"
             state = conn.job_state = self.driver.job_end
         else:
             state = conn.job_state = self.driver.job_processing
+            conn.info = "task processing"
 
-        conn.info = b"task finished"
         if return_info:
             conn.info = return_info
 
@@ -847,7 +849,7 @@ class Client(interface.Interface):
                             command,
                             job_id,
                         )
-                        c.info = b"task queued"
+                        c.info = "task queued"
                         q_processes.put(
                             (
                                 component_kwargs,

@@ -190,7 +190,7 @@ class Manage(User):
                         state_timeout = time.time()
                         return (
                             False,
-                            "Job Degraded: {}".format(job_id),
+                            "Job Degrated: {}".format(job_id),
                             stdout,
                             stderr,
                             info,

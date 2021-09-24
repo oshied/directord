@@ -97,7 +97,7 @@ class Driver(drivers.BaseDriver):
             connection=self.connection_string,
             port=self.args.backend_port,
         )
-        bind.set_hwm(16)
+        bind.set_hwm(1024)
         self.log.debug(
             "Identity [ %s ] backend connect hwm state [ %s ]",
             self.identity,
@@ -117,7 +117,7 @@ class Driver(drivers.BaseDriver):
             connection=self.connection_string,
             port=self.args.backend_port,
         )
-        bind.set_hwm(16)
+        bind.set_hwm(1024)
         self.log.debug(
             "Identity [ %s ] backend connect hwm state [ %s ]",
             self.identity,

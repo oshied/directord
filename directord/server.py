@@ -42,6 +42,7 @@ class Server(interface.Interface):
         super(Server, self).__init__(args=args)
         self.job_queue = self.get_queue()
         self.send_queue = self.get_queue()
+        self.lock = self.get_lock()
         datastore = getattr(self.args, "datastore", None)
         if not datastore or datastore == "memory":
             self.log.info("Connecting to internal datastore")
@@ -99,7 +100,7 @@ class Server(interface.Interface):
         user to know what happened within the environment.
 
         :param job_status: ASCII Control Character
-        :type job_status: Bytes
+        :type job_status: String
         :param job_id: UUID for job
         :type job_id: String
         :param identity: Node name
@@ -160,15 +161,20 @@ class Server(interface.Interface):
         if job_stderr and job_stderr is not self.driver.nullbyte:
             job_metadata["STDERR"][identity] = job_stderr
 
-        self.log.debug("current job [ %s ] state [ %s ]", job_id, job_status)
         job_metadata["_processing"][identity] = job_status
         if job_status == self.driver.job_ack:
-            self.log.debug("%s received job %s", identity, job_id)
+            self.log.debug(
+                "Job [ %s ] acknowledged for [ %s ]", job_id, identity
+            )
         elif job_status == self.driver.job_processing:
-            self.log.debug("%s is processing %s", identity, job_id)
+            self.log.debug(
+                "Job [ %s ] processing for [ %s ]", job_id, identity
+            )
         elif job_status == self.driver.job_end:
             _set_time()
-            self.log.debug("%s finished processing %s", identity, job_id)
+            self.log.debug(
+                "Job [ %s ] finished processing for [ %s ]", job_id, identity
+            )
             if "SUCCESS" in job_metadata:
                 job_metadata["SUCCESS"].append(identity)
             else:
@@ -176,7 +182,7 @@ class Server(interface.Interface):
             job_metadata["_processing"][identity] = self.driver.job_end
         elif job_status == self.driver.job_failed:
             _set_time()
-            self.log.debug("%s failed %s", identity, job_id)
+            self.log.debug("Job [ %s ] failed for [ %s ]", job_id, identity)
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
@@ -196,28 +202,36 @@ class Server(interface.Interface):
             job_metadata["PROCESSING"] = self.driver.job_end
 
         job_metadata["_lasttime"] = time.time()
-        self.return_jobs[job_id] = job_metadata
+
+        self.lock.acquire()
+        try:
+            self.return_jobs[job_id] = job_metadata
+        finally:
+            self.lock.release()
 
     def create_return_jobs(self, task, job_item, targets):
-        return self.return_jobs.set(
-            task,
-            {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": targets,
-                "VERB": job_item["verb"],
-                "TRANSFERS": list(),
-                "JOB_SHA3_224": job_item["job_sha3_224"],
-                "JOB_DEFINITION": job_item,
-                "PARENT_JOB_ID": job_item.get("parent_id"),
-                "_createtime": time.time(),
-                "_executiontime": dict(),
-                "_roundtripltime": dict(),
-                "_processing": dict(),
-            },
-        )
+        self.lock.acquire()
+        try:
+            return self.return_jobs.set(
+                task,
+                {
+                    "ACCEPTED": True,
+                    "INFO": dict(),
+                    "STDOUT": dict(),
+                    "STDERR": dict(),
+                    "_nodes": targets,
+                    "VERB": job_item["verb"],
+                    "JOB_SHA3_224": job_item["job_sha3_224"],
+                    "JOB_DEFINITION": job_item,
+                    "PARENT_JOB_ID": job_item.get("parent_id"),
+                    "_createtime": time.time(),
+                    "_executiontime": dict(),
+                    "_roundtripltime": dict(),
+                    "_processing": dict(),
+                },
+            )
+        finally:
+            self.lock.release()
 
     def run_job(self, sentinel=False):
         """Run a job interaction
@@ -304,7 +318,7 @@ class Server(interface.Interface):
                     job_item["targets"] = [targets[0]]
 
                 job_id = job_item.get("job_id", utils.get_uuid())
-                job_info = self.create_return_jobs(
+                self.create_return_jobs(
                     task=job_id, job_item=job_item, targets=targets
                 )
                 self.log.debug("Processing job [ %s ]", job_item)
@@ -321,14 +335,6 @@ class Server(interface.Interface):
                                 )
                             else:
                                 job_item["file_to"] = job_item["to"]
-
-                            if (
-                                job_item["file_to"]
-                                not in job_info["TRANSFERS"]
-                            ):
-                                job_info["TRANSFERS"].append(
-                                    job_item["file_to"]
-                                )
 
                             self.log.debug(
                                 "Queueing file transfer job [ %s ] for"
@@ -358,8 +364,6 @@ class Server(interface.Interface):
                                 data=job_item,
                             )
                         )
-                else:
-                    self.return_jobs[job_id] = job_info
 
             if sentinel:
                 break
@@ -593,7 +597,11 @@ class Server(interface.Interface):
                     self.handle_heartbeat(identity, data)
                 else:
                     poller_interval, poller_time = 1, time.time()
-                    self.log.debug("Execution job received [ %s ]", msg_id)
+                    self.log.debug(
+                        "Job information received [ %s ] from [ %s ]",
+                        msg_id,
+                        identity,
+                    )
                     node = identity
                     node_output = info
                     if stderr:

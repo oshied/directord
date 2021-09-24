@@ -397,8 +397,6 @@ def _args(exec_args=None):
                 else:
                     args.__dict__[key] = value
 
-    # Reparse CLI args so that they override anything from the config file
-    args = parser.parse_args(namespace=args)
     return args, parser
 
 
