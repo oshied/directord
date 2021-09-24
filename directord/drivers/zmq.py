@@ -15,6 +15,7 @@
 import json
 import logging
 import os
+import time
 
 import tenacity
 import zmq
@@ -71,6 +72,8 @@ class Driver(drivers.BaseDriver):
             connection_string=self.connection_string,
             interface=interface,
         )
+        self.bind_job = None
+        self.bind_backend = None
 
     def __copy__(self):
         return Driver(
@@ -274,7 +277,7 @@ class Driver(drivers.BaseDriver):
         self.log.info("Socket connected to [ %s ].", connection)
         return bind
 
-    def socket_send(
+    def _socket_send(
         self,
         socket,
         identity=None,
@@ -341,10 +344,17 @@ class Driver(drivers.BaseDriver):
         :type stdout: Bytes
         :param nonblocking: Enable non-blocking send.
         :type nonblocking: Boolean
+        :returns: Object
         """
 
+        def _encoder(item):
+            try:
+                return item.encode()
+            except AttributeError:
+                return item
+
         if not msg_id:
-            msg_id = utils.get_uuid().encode()
+            msg_id = utils.get_uuid()
 
         if not control:
             control = self.nullbyte
@@ -368,6 +378,8 @@ class Driver(drivers.BaseDriver):
 
         if identity:
             message_parts.insert(0, identity)
+
+        message_parts = [_encoder(i) for i in message_parts]
 
         if nonblocking:
             flags = zmq.NOBLOCK
@@ -424,29 +436,53 @@ class Driver(drivers.BaseDriver):
 
         return socket.recv_multipart(flags=flags)
 
-    def job_recv(self):
-        """Receive a job message."""
+    def backend_recv(self, nonblocking=False):
+        """Receive a transfer message.
 
-        (
-            identity,
-            msg_id,
-            control,
-            _,
-            data,
-            info,
-            stderr,
-            stdout,
-        ) = Driver.socket_recv(socket=self.bind_job)
-        return (
-            identity.decode(),
-            msg_id.decode(),
-            control,
-            _,
-            data.decode(),
-            info.decode(),
-            stderr.decode(),
-            stdout.decode(),
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
+
+        return self._recv(socket=self.bind_backend, nonblocking=nonblocking)
+
+    def job_recv(self, nonblocking=False):
+        """Receive a transfer message.
+
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
+
+        return self._recv(socket=self.bind_job, nonblocking=nonblocking)
+
+    def _recv(self, socket, nonblocking=False):
+        """Receive message.
+
+        :param socket: ZeroMQ socket object.
+        :type socket: Object
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
+
+        recv_obj = list(
+            self.socket_recv(socket=socket, nonblocking=nonblocking)
         )
+        if len(recv_obj) == 8:
+            control = recv_obj.pop(2)
+            recv_obj = [i.decode() for i in recv_obj]
+            recv_obj.insert(2, control)
+            return tuple(recv_obj)
+        elif len(recv_obj) == 7:
+            control = recv_obj.pop(1)
+            recv_obj = [i.decode() for i in recv_obj]
+            recv_obj.insert(1, control)
+            return tuple(recv_obj)
+        else:
+            raise SystemError(
+                "Received message out of spec, {}".format(recv_obj)
+            )
 
     def job_connect(self):
         """Connect to a job socket and return the socket.
@@ -462,18 +498,64 @@ class Driver(drivers.BaseDriver):
         )
 
     def job_init(self):
-        """Initialize the heartbeat socket
+        """Initialize the job socket
 
         For server mode, this is a bound local socket.
         For client mode, it is a connection to the server socket.
 
         :returns: Object
         """
+
         if self.args.mode == "server":
             self.bind_job = self.job_bind()
         else:
             self.bind_job = self.job_connect()
-        return self.bind_job
+
+    def backend_init(self):
+        """Initialize the backend socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        if self.args.mode == "server":
+            self.bind_backend = self.backend_bind()
+        else:
+            self.bind_backend = self.backend_connect()
+
+    def _close(self, socket):
+        try:
+            socket.close(linger=2)
+            close_time = time.time()
+            while not socket.closed:
+                if time.time() - close_time > 60:
+                    raise TimeoutError(
+                        "Job [ {} ] failed to close transfer socket".format(
+                            self.job_id
+                        )
+                    )
+                else:
+                    socket.close(linger=2)
+                    time.sleep(1)
+        except Exception as e:
+            self.log.error(
+                "Backend ran into an exception while closing the socket %s",
+                str(e),
+            )
+        else:
+            self.log.debug("Backend socket closed")
+
+    def backend_close(self):
+        """Close the backend socket."""
+
+        self._close(socket=self.bind_backend)
+
+    def job_close(self):
+        """Close the job socket."""
+
+        self._close(socket=self.bind_job)
 
     def backend_connect(self):
         """Connect to a backend socket and return the socket.
@@ -526,6 +608,40 @@ class Driver(drivers.BaseDriver):
         )
         return bind
 
+    def job_check(self, interval=1, constant=1000):
+        """Return True if a job contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        return self.bind_check(
+            bind=self.bind_job, interval=interval, constant=constant
+        )
+
+    def backend_check(self, interval=1, constant=1000):
+        """Return True if the backend contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        return self.bind_check(
+            bind=self.bind_backend, interval=interval, constant=constant
+        )
+
     def bind_check(self, bind, interval=1, constant=1000):
         """Return True if a bind type contains work ready.
 
@@ -566,6 +682,28 @@ class Driver(drivers.BaseDriver):
 
         return zmq.proxy(frontend=front, backend=back)
 
+    def backend_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
+
+        :returns: Object
+        """
+
+        kwargs["socket"] = self.bind_backend
+        return self._socket_send(*args, **kwargs)
+
+    def job_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
+
+        :returns: Object
+        """
+
+        kwargs["socket"] = self.bind_job
+        return self._socket_send(*args, **kwargs)
+
     def heartbeat_send(
         self, identity=None, host_uptime=None, agent_uptime=None, version=None
     ):
@@ -580,8 +718,8 @@ class Driver(drivers.BaseDriver):
         :param version: Sender directord version
         :type version: String
         """
-        self.socket_send(
-            socket=self.bind_job,
+
+        return self.job_send(
             control=self.heartbeat_notice,
             data=json.dumps(
                 {
@@ -589,5 +727,5 @@ class Driver(drivers.BaseDriver):
                     "host_uptime": host_uptime,
                     "agent_uptime": agent_uptime,
                 }
-            ).encode(),
+            ),
         )

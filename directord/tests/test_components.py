@@ -198,11 +198,6 @@ class TestComponents(unittest.TestCase):
                 job=job,
             )
         self.assertEqual(stdout, None)
-        self.assertEqual(
-            stderr,
-            "Transfer never started: cannot unpack non-iterable"
-            " NoneType object",
-        )
         self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
 
@@ -226,11 +221,6 @@ class TestComponents(unittest.TestCase):
                 job=job,
             )
         self.assertEqual(stdout, None)
-        self.assertEqual(
-            stderr,
-            "Transfer never started: cannot unpack non-iterable"
-            " NoneType object",
-        )
         self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
 
@@ -270,11 +260,6 @@ class TestComponents(unittest.TestCase):
                 job=job,
             )
         self.assertEqual(stdout, None)
-        self.assertEqual(
-            stderr,
-            "Transfer never started: cannot unpack non-iterable"
-            " NoneType object",
-        )
         self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
 
@@ -304,11 +289,6 @@ class TestComponents(unittest.TestCase):
                 job=job,
             )
         self.assertEqual(stdout, None)
-        self.assertEqual(
-            stderr,
-            "Transfer never started: cannot unpack non-iterable"
-            " NoneType object",
-        )
         self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
 
@@ -337,11 +317,6 @@ class TestComponents(unittest.TestCase):
                 job=job,
             )
         self.assertEqual(stdout, None)
-        self.assertEqual(
-            stderr,
-            "Transfer never started: cannot unpack non-iterable"
-            " NoneType object",
-        )
         self.assertEqual(outcome, False)
         mock_log_debug.assert_called()
 

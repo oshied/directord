@@ -15,6 +15,7 @@
 import json
 import subprocess
 import time
+import multiprocessing
 
 from oslo_config import cfg
 import oslo_messaging
@@ -45,6 +46,7 @@ class Driver(drivers.BaseDriver):
         :param interface: The interface instance (client/server)
         :type interface: Object
         """
+
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=encrypted_traffic_data,
@@ -59,11 +61,17 @@ class Driver(drivers.BaseDriver):
         )
         self.transport = oslo_messaging.get_rpc_transport(self.conf)
 
-        # (TODO: slagle)
-        # Remove once interfaces are fully abstracted away from ZMQ specifics
-        self.bind_job = None
+        # TODO(cloudnull): Start the qrouterd process when in server mode.
+        #                  This should be removed once we're confident with
+        #                  the driver capability in favor of requirement docs.
+        self._driver_server = multiprocessing.Process(
+            target=self._run, daemon=True
+        )
+        self._driver_server.start()
 
-    def run(self):
+    def _run(self):
+        """Run in server mode."""
+
         if self.mode == "server":
             self.qdrouterd()
             server_target = "directord"
@@ -85,16 +93,32 @@ class Driver(drivers.BaseDriver):
             time.sleep(1)
 
     def qdrouterd(self):
+        """Start the qdrouterd process as a daemon."""
+
         self.log.info("Starting qdrouterd.")
         subprocess.run(["qdrouterd", "-d"], check=True)
 
-    def send(self, method, topic, server=None, **kwargs):
+    def send(self, method, topic, server="directord", **kwargs):
+        """Send a message.
+
+        :param method: Send method type
+        :type method: String
+        :param topic: Messaging topic
+        :type topic: String
+        :param method: Server name
+        :type method: String
+        :param kwargs: Extra named arguments
+        :type kwargs: Dictionary
+        :returns: Object
+        """
+
         if server:
             target = oslo_messaging.Target(topic=topic, server=server)
         else:
             target = oslo_messaging.Target(topic=topic)
 
         client = oslo_messaging.RPCClient(self.transport, target)
+
         return client.call({}, method, **kwargs)
 
     def heartbeat_send(
@@ -111,6 +135,7 @@ class Driver(drivers.BaseDriver):
         :param version: Sender directord version
         :type version: String
         """
+
         method = "heartbeat"
         topic = "directord"
 
@@ -124,8 +149,10 @@ class Driver(drivers.BaseDriver):
 
         if not identity:
             identity = self.identity
+
         self.log.info("Sending heartbeat from {} to server".format(identity))
-        return self.send(
+
+        self.send(
             method, topic, server="directord", identity=identity, data=data
         )
 

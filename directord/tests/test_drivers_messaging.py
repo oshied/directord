@@ -36,15 +36,6 @@ class TestDriverMessaging(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @patch("time.sleep")
-    @patch("oslo_messaging.get_rpc_server")
-    @patch("subprocess.run")
-    def test_run(self, mock_run, mock_rpc_server, mock_sleep):
-        mock_sleep.side_effect = Exception
-        self.assertRaises(Exception, self.driver.run)
-        mock_run.assert_called()
-        mock_run.assert_called_with(["qdrouterd", "-d"], check=True)
-
     @patch("directord.drivers.messaging.Driver.send")
     def test_heartbeat_send(self, mock_send):
         self.driver.heartbeat_send("foo", 10, 11, 12)

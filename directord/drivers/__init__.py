@@ -106,7 +106,7 @@ class BaseDriver:
         """
 
         if not msg_id:
-            msg_id = utils.get_uuid().encode()
+            msg_id = utils.get_uuid()
 
         if not control:
             control = self.nullbyte
@@ -128,12 +128,22 @@ class BaseDriver:
 
         pass
 
-    @staticmethod
-    def socket_recv(socket):
-        """Receive a message over a socket.
+    def backend_recv(self, nonblocking=False):
+        """Receive a transfer message.
 
-        :param socket: socket object.
-        :type socket: Object
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
+
+        pass
+
+    def job_recv(self, nonblocking=False):
+        """Receive a transfer message.
+
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
         """
 
         pass
@@ -201,6 +211,36 @@ class BaseDriver:
 
         pass
 
+    def job_check(self, interval=1, constant=1000):
+        """Return True if a job contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        pass
+
+    def backend_check(self, interval=1, constant=1000):
+        """Return True if the backend contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        pass
+
     def bind_check(self, bind, interval=1, constant=1000):
         """Return True if a bind type contains work ready.
 
@@ -260,24 +300,71 @@ class BaseDriver:
 
         pass
 
-    def run(self):
-        """Driver code to run in it's own thread. Will not need to be
-        implemented for all driver types.
+    def job_init(self):
+        """Initialize the job socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
         """
 
         pass
 
-    @staticmethod
-    def job_recv():
-        """Receive a job message."""
+    def backend_init(self):
+        """Initialize the backend socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
 
         pass
 
-    def job_init(self):
-        """Initialize job connection handling. May not need to be implemented
-        for each driver.
+    def backend_close(self):
+        """Close the backend socket."""
+
+        pass
+
+    def job_close(self):
+        """Close the job socket."""
+
+        pass
+
+    def backend_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
 
         :returns: Object
+        """
+
+        pass
+
+    def job_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
+
+        :returns: Object
+        """
+
+        pass
+
+    def heartbeat_send(
+        self, identity=None, host_uptime=None, agent_uptime=None, version=None
+    ):
+        """Send a heartbeat.
+
+        :param identity: Sender identity (uuid)
+        :type identity: String
+        :param host_uptime: Sender uptime
+        :type host_uptime: String
+        :param agent_uptime: Sender agent uptime
+        :type agent_uptime: String
+        :param version: Sender directord version
+        :type version: String
         """
 
         pass

@@ -20,6 +20,7 @@ BuildRequires:  python3-pyyaml
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-tabulate
 BuildRequires:  python3-tenacity
+BuildRequires:  python3-oslo-messaging
 
 # Source Build Requirements
 # TODO(cloudnull): This needs to be packaged officially
@@ -52,6 +53,7 @@ Recommends:       python3-ssh-python
 Recommends:       python3-zmq
 Recommends:       python3-redis
 Recommends:       python3-flask
+Recommends:       python3-oslo-messaging
 
 # Source Recommends
 # TODO(cloudnull): This needs to be packaged officially

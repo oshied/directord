@@ -94,7 +94,7 @@ class Component(components.ComponentBase):
 
         self.log.debug("client(): job: %s, cache: %s", job, cache)
         # Sets the cache type to "args" or "envs"
-        cache_type = "{}s".format(self.command.decode().lower())
+        cache_type = "{}s".format(self.command.lower())
 
         try:
             cache_value = ast.literal_eval(job[cache_type])
@@ -129,23 +129,19 @@ class Component(components.ComponentBase):
                     "{} added to cache".format(cache_type),
                     None,
                     True,
-                    "type:{}, value:{}".format(
-                        cache_type, cache_value
-                    ).encode(),
+                    "type:{}, value:{}".format(cache_type, cache_value),
                 )
             else:
                 return (
                     None,
                     "Failed to add {} to cache".format(cache_type),
                     False,
-                    "type:{}, value:{}".format(
-                        cache_type, cache_value
-                    ).encode(),
+                    "type:{}, value:{}".format(cache_type, cache_value),
                 )
         else:
             return (
                 "Nothing added to cache. {} had no value".format(cache_type),
                 None,
                 True,
-                "type:{}, value:{}".format(cache_type, cache_value).encode(),
+                "type:{}, value:{}".format(cache_type, cache_value),
             )

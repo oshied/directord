@@ -147,12 +147,13 @@ class Client(interface.Interface):
                 sleep_interval = 0.1
             else:
                 sleep_interval = 0.001
-                lower_command = command.decode().lower()
-                if not hasattr(self, "__lock_{}__".format(lower_command)):
-                    self.log.debug("Creating a new lock for %s", lower_command)
+                lower_command = command.lower()
+                lock_name = "__lock_{}__".format(lower_command)
+                if not hasattr(self, lock_name):
+                    self.log.debug("Creating a new lock for [ %s ]", lock_name)
                     setattr(
                         self,
-                        "__lock_{}__".format(lower_command),
+                        lock_name,
                         self.get_lock(),
                     )
 
@@ -338,7 +339,7 @@ class Client(interface.Interface):
 
         job = component_kwargs["job"]
         job_id = job["job_id"]
-        command_lower = command.decode().lower()
+        command_lower = command.lower()
         success, _, component = directord.component_import(
             component=command_lower,
             job_id=job_id,
@@ -393,18 +394,19 @@ class Client(interface.Interface):
 
             locked = False
             if component.requires_lock:
+                lock_name = "__lock_{}__".format(command_lower)
                 try:
-                    lock = getattr(self, "__lock_{}__".format(command_lower))
+                    lock = getattr(self, lock_name)
                 except AttributeError:
                     self.log.warning(
                         "No component lock found for [ %s ], falling back"
                         " to global lock",
-                        command_lower,
+                        lock_name,
                     )
                 else:
                     self.log.debug(
                         "Found component lock [ %s ]",
-                        "__lock_{}__".format(command_lower),
+                        lock_name,
                     )
 
                 locked = lock.acquire()
@@ -578,15 +580,11 @@ class Client(interface.Interface):
 
         if stdout:
             stdout = stdout.strip()
-            if not isinstance(stdout, bytes):
-                stdout = stdout.encode()
             conn.stdout = stdout
             self.log.debug("Job [ %s ], stdout: %s", job["job_id"], stdout)
 
         if stderr:
             stderr = stderr.strip()
-            if not isinstance(stderr, bytes):
-                stderr = stderr.encode()
             conn.stderr = stderr
             self.log.warning("Job [ %s ], stderr: %s", job["job_id"], stderr)
 
@@ -615,7 +613,7 @@ class Client(interface.Interface):
         ).strftime("%Y-%m-%d %H:%M:%S")
 
         if "new_tasks" in job:
-            conn.data = json.dumps(job).encode()
+            conn.data = json.dumps(job)
         else:
             minimal_data = {
                 "execution_time": job["execution_time"],
@@ -625,20 +623,20 @@ class Client(interface.Interface):
             if component_timestamp:
                 minimal_data["component_exec_timestamp"] = component_timestamp
 
-            conn.data = json.dumps(minimal_data).encode()
+            conn.data = json.dumps(minimal_data)
 
         if job["parent_id"]:
             self.base_component.set_cache(
                 cache=self.cache,
                 key=job["parent_id"],
-                value=state,
+                value=state.decode(),
                 tag="parents",
             )
 
         self.base_component.set_cache(
             cache=self.cache,
             key=job["job_sha3_224"],
-            value=state,
+            value=state.decode(),
             tag="jobs",
         )
 
@@ -666,8 +664,7 @@ class Client(interface.Interface):
         else:
             self.log.debug("Found task results for [ %s ].", job["job_id"])
             with utils.ClientStatus(
-                socket=self.driver.bind_job,
-                job_id=job["job_id"].encode(),
+                job_id=job["job_id"],
                 command=command,
                 ctx=self,
             ) as c:
@@ -711,7 +708,7 @@ class Client(interface.Interface):
             )
 
             self.log.error(status)
-            conn.info = status.encode()
+            conn.info = status
             conn.job_state = self.driver.job_failed
             return False
         else:
@@ -803,14 +800,15 @@ class Client(interface.Interface):
                     datetime.timedelta(seconds=(time.time() - self.start_time))
                 )
                 self.driver.heartbeat_send(
-                    self.uuid, host_uptime, agent_uptime, version
+                    identity=self.uuid,
+                    host_uptime=host_uptime,
+                    agent_uptime=agent_uptime,
+                    version=version,
                 )
                 heartbeat_time = time.time() + 30
                 self.log.info("Heartbeat sent to server")
 
-            if self.driver.bind_check(
-                bind=self.driver.bind_job, constant=poller_interval
-            ):
+            if self.driver.job_check(constant=poller_interval):
                 poller_interval, poller_time = 1, time.time()
                 (
                     _,
@@ -820,15 +818,14 @@ class Client(interface.Interface):
                     info,
                     _,
                     _,
-                ) = self.driver.socket_recv(socket=self.driver.bind_job)
-                job = json.loads(data.decode())
+                ) = self.driver.job_recv()
+                job = json.loads(data)
                 job["job_id"] = job_id = job.get("job_id", utils.get_uuid())
                 job["job_sha3_224"] = job_sha3_224 = job.get(
                     "job_sha3_224", utils.object_sha3_224(job)
                 )
-                self.driver.socket_send(
-                    socket=self.driver.bind_job,
-                    msg_id=job_id.encode(),
+                self.driver.job_send(
+                    msg_id=job_id,
                     control=self.driver.job_ack,
                 )
 
@@ -845,8 +842,7 @@ class Client(interface.Interface):
                 )
 
                 with utils.ClientStatus(
-                    socket=self.driver.bind_job,
-                    job_id=job_id.encode(),
+                    job_id=job_id,
                     command=command,
                     ctx=self,
                 ) as c:
@@ -858,7 +854,7 @@ class Client(interface.Interface):
                                 None,
                                 None,
                                 False,
-                                b"Job omitted, parent failure",
+                                "Job omitted, parent failure",
                                 job,
                                 command,
                                 0,
@@ -870,7 +866,7 @@ class Client(interface.Interface):
                         component_kwargs = dict(cache=None, job=job)
                         self.log.debug(
                             "Queuing component [ %s ], job_id [ %s ]",
-                            command.decode(),
+                            command,
                             job_id,
                         )
                         c.info = b"task queued"
@@ -904,10 +900,6 @@ class Client(interface.Interface):
                     name="run_job", target=self.run_job, kwargs=dict(lock=lock)
                 ),
                 False,
-            ),
-            (
-                self.thread(name="run_driver", target=self.driver.run),
-                True,
             ),
         ]
         # Ensure that the cache path exists before executing.

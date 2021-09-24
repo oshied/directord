@@ -96,7 +96,7 @@ class BaseDocument:
         :returns: List
         """
 
-        return [i.encode() for i in self.datastore]
+        return [i for i in self.datastore]
 
     def empty(self):
         """Empty all items from the datastore.

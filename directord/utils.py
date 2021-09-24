@@ -86,7 +86,7 @@ def merge_dict(base, new, extend=True):
 class ClientStatus:
     """Context manager for transmitting client status."""
 
-    def __init__(self, socket, job_id, command, ctx):
+    def __init__(self, job_id, command, ctx):
         """Initialize the UNIX socket connect context manager."""
 
         self.ctx = ctx
@@ -94,7 +94,6 @@ class ClientStatus:
         self.command = command
         self.job_state = ctx.driver.nullbyte
         self.info = ctx.driver.nullbyte
-        self.socket = socket
         self.data = None
         self.stderr = ctx.driver.nullbyte
         self.stdout = ctx.driver.nullbyte
@@ -111,22 +110,21 @@ class ClientStatus:
         """Upon exit, send a final status message."""
 
         try:
-            self.stderr = self.stderr.encode()
+            self.stderr = self.stderr
         except AttributeError:
             pass
 
         try:
-            self.stdout = self.stdout.encode()
+            self.stdout = self.stdout
         except AttributeError:
             pass
 
         try:
-            self.info = self.info.encode()
+            self.info = self.info
         except AttributeError:
             pass
 
-        self.ctx.driver.socket_send(
-            socket=self.socket,
+        self.ctx.driver.job_send(
             msg_id=self.job_id,
             control=self.job_state,
             command=self.command,

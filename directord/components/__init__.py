@@ -289,11 +289,6 @@ class ComponentBase:
         if value_update:
             orig = cache.get(key, default=dict())
             value = utils.merge_dict(orig, value, extend=extend)
-        else:
-            try:
-                value = value.decode()
-            except (ValueError, AttributeError):
-                pass
 
         cache_set = cache.set(key, value, tag=tag, expire=expire, retry=True)
         if not cache_set:

@@ -120,11 +120,13 @@ class Component(components.ComponentBase):
                         ),
                     )
                 if missing_identity:
-                    self.log.warning(
-                        "QUERY argument [ %s ] not found in cache for %s",
-                        job["item"],
-                        missing_identity,
-                    )
+                    if time.time() - warning_loops >= 5:
+                        self.log.warning(
+                            "QUERY argument [ %s ] not found in cache for %s",
+                            job["item"],
+                            missing_identity,
+                        )
+                        warning_loops = time.time()
             else:
                 for value in query_args.values():
                     if job["item"] in value:

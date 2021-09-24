@@ -209,7 +209,7 @@ class Server(interface.Interface):
                 "INFO": dict(),
                 "STDOUT": dict(),
                 "STDERR": dict(),
-                "_nodes": [i.decode() for i in targets],
+                "_nodes": targets,
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
                 "JOB_SHA3_224": job_item["job_sha3_224"],
@@ -261,11 +261,6 @@ class Server(interface.Interface):
                 for target in (
                     job_item.pop("targets", None) or self.workers.keys()
                 ):
-                    try:
-                        target = target.encode()
-                    except AttributeError:
-                        pass
-
                     if target in self.workers.keys():
                         self.log.debug("Target identified [ %s ].", target)
                         targets.append(target)
@@ -284,7 +279,7 @@ class Server(interface.Interface):
                         self._set_job_status(
                             job_status=self.driver.job_failed,
                             job_id=job_item["job_id"],
-                            identity=target.decode(),
+                            identity=target,
                             job_output=(
                                 "Target unknown. Available targets {}".format(
                                     list(self.workers.keys())
@@ -304,12 +299,12 @@ class Server(interface.Interface):
                     #                  callback tasks are scoped to only
                     #                  the nodes defined within the job
                     #                  execution.
-                    job_item["targets"] = [i.decode() for i in targets]
+                    job_item["targets"] = [i for i in targets]
                     targets = self.workers.keys()
                 elif job_item.get("run_once", False):
                     self.log.debug("Run once enabled.")
                     targets = [targets[0]]
-                    job_item["targets"] = [targets[0].decode()]
+                    job_item["targets"] = [targets[0]]
 
                 job_id = job_item.get("job_id", utils.get_uuid())
                 job_info = self.create_return_jobs(
@@ -343,26 +338,26 @@ class Server(interface.Interface):
                                 " file_path [ %s ] to identity [ %s ]",
                                 job_item["job_id"],
                                 file_path,
-                                identity.decode(),
+                                identity,
                             )
                             self.send_queue.put(
                                 dict(
                                     identity=identity,
-                                    command=job_item["verb"].encode(),
+                                    command=job_item["verb"],
                                     data=job_item,
-                                    info=file_path.encode(),
+                                    info=file_path,
                                 )
                             )
                     else:
                         self.log.debug(
                             "Queuing job [ %s ] for identity [ %s ]",
                             job_item["job_id"],
-                            identity.decode(),
+                            identity,
                         )
                         self.send_queue.put(
                             dict(
                                 identity=identity,
-                                command=job_item["verb"].encode(),
+                                command=job_item["verb"],
                                 data=job_item,
                             )
                         )
@@ -373,7 +368,7 @@ class Server(interface.Interface):
                 break
 
     def run_backend(self, sentinel=False):
-        """Execute the transfer loop.
+        """Execute the backend loop.
 
         Directord's interaction executor will slow down the poll interval
         when no work is present. This means Directord will ramp-up resource
@@ -387,7 +382,7 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        self.bind_backend = self.driver.backend_bind()
+        self.driver.backend_init()
         poller_time = time.time()
         poller_interval = 128
 
@@ -398,9 +393,7 @@ class Server(interface.Interface):
                 log=self.log,
             )
 
-            if self.driver.bind_check(
-                bind=self.bind_backend, constant=poller_interval
-            ):
+            if self.driver.backend_check(constant=poller_interval):
                 poller_interval, poller_time = 128, time.time()
                 (
                     identity,
@@ -411,7 +404,7 @@ class Server(interface.Interface):
                     info,
                     stderr,
                     stdout,
-                ) = self.driver.socket_recv(socket=self.bind_backend)
+                ) = self.driver.backend_recv()
                 if control in [
                     self.driver.coordination_notice,
                     self.driver.coordination_ack,
@@ -419,8 +412,7 @@ class Server(interface.Interface):
                 ]:
                     for _ in range(120):
                         try:
-                            self.driver.socket_send(
-                                socket=self.bind_backend,
+                            self.driver.backend_send(
                                 identity=info,
                                 control=control,
                                 command=command,
@@ -434,15 +426,14 @@ class Server(interface.Interface):
                             self.log.debug(
                                 "Job [ %s ] connecting to target [ %s ] saw"
                                 " exception %s -- retrying",
-                                msg_id.decode(),
-                                info.decode(),
+                                msg_id,
+                                info,
                                 str(e),
                             )
                             time.sleep(0.01)
                     else:
                         try:
-                            self.driver.socket_send(
-                                socket=self.bind_backend,
+                            self.driver.backend_send(
                                 identity=identity,
                                 control=self.driver.coordination_failed,
                                 command=command,
@@ -451,24 +442,24 @@ class Server(interface.Interface):
                                 stderr=(
                                     "Failed to connect to coordination node"
                                     " [ {} ] after three attempts.".format(
-                                        info.decode()
+                                        info
                                     )
-                                ).encode(),
+                                ),
                                 stdout=stdout,
                             )
                         except Exception as e:
                             self.log.error(
                                 "Job [ %s ] connecting to target [ %s ] saw"
                                 " exception %s",
-                                msg_id.decode(),
-                                info.decode(),
+                                msg_id,
+                                info,
                                 str(e),
                             )
                 elif control == self.driver.transfer_start:
-                    transfer_identity = identity.decode()
-                    transfer_job_id = msg_id.decode()
+                    transfer_identity = identity
+                    transfer_job_id = msg_id
                     transfer_file_path = os.path.abspath(
-                        os.path.expanduser(info.decode())
+                        os.path.expanduser(info)
                     )
                     offset = int(command)
                     chunk_size = int(data)
@@ -487,13 +478,12 @@ class Server(interface.Interface):
                             transfer_job_id,
                             transfer_file_path,
                         )
-                        self.driver.socket_send(
-                            socket=self.bind_backend,
-                            identity=transfer_identity.encode(),
+                        self.driver.backend_send(
+                            identity=transfer_identity,
                             control=self.driver.job_failed,
                             info="File [ {} ] was not found".format(
                                 transfer_file_path
-                            ).encode(),
+                            ),
                         )
                     else:
                         self.log.info(
@@ -506,9 +496,8 @@ class Server(interface.Interface):
                         with open(transfer_file_path, "rb") as f:
                             f.seek(offset, os.SEEK_SET)
                             data = f.read(chunk_size)
-                            self.driver.socket_send(
-                                socket=self.bind_backend,
-                                identity=transfer_identity.encode(),
+                            self.driver.backend_send(
+                                identity=transfer_identity,
                                 control=(
                                     self.driver.transfer_end
                                     if len(data) < chunk_size
@@ -528,10 +517,10 @@ class Server(interface.Interface):
                         "Unknown transfer job [ %s ] connection received from"
                         " [ %s ], control [ %s ] with"
                         " info [ %s ]",
-                        msg_id.decode(),
-                        identity.decode(),
-                        control.decode(),
-                        info.decode(),
+                        msg_id,
+                        identity,
+                        control,
+                        info,
                     )
 
             if sentinel:
@@ -585,17 +574,14 @@ class Server(interface.Interface):
                     self.log.debug(
                         "Sending job [ %s ] sent to [ %s ]",
                         send_item["data"]["job_id"],
-                        send_item["identity"].decode(),
+                        send_item["identity"],
                     )
-                    send_item["data"] = json.dumps(send_item["data"]).encode()
-                    self.driver.socket_send(
-                        socket=self.driver.bind_job,
+                    send_item["data"] = json.dumps(send_item["data"])
+                    self.driver.job_send(
                         **send_item,
                     )
 
-            if self.driver.bind_check(
-                bind=self.driver.bind_job, constant=poller_interval
-            ):
+            if self.driver.job_check(constant=poller_interval):
                 (
                     identity,
                     msg_id,
@@ -641,7 +627,7 @@ class Server(interface.Interface):
                     for new_task in data_item.get("new_tasks", list()):
                         self.log.debug("New task found: %s", new_task)
                         if "targets" in new_task and new_task["targets"]:
-                            targets = [i.encode() for i in new_task["targets"]]
+                            targets = [i for i in new_task["targets"]]
                             self.log.debug(
                                 "Using existing targets from old job"
                                 " specification %s",
@@ -660,7 +646,7 @@ class Server(interface.Interface):
                         if "identity" in new_task and not new_task["identity"]:
                             self.log.debug("identities reset to all workers")
                             new_task["identity"] = [
-                                i.decode() for i in self.workers.keys()
+                                i for i in self.workers.keys()
                             ]
 
                         if "job_id" not in new_task:
@@ -677,12 +663,12 @@ class Server(interface.Interface):
                                 "Queuing callback job [ %s ] for identity"
                                 " [ %s ]",
                                 new_task["job_id"],
-                                target.decode(),
+                                target,
                             )
                             self.send_queue.put(
                                 dict(
                                     identity=target,
-                                    command=new_task["verb"].encode(),
+                                    command=new_task["verb"],
                                     data=new_task,
                                 )
                             )
@@ -748,7 +734,7 @@ class Server(interface.Interface):
                                 expiry = v.pop("time") - time.time()
                                 v["expiry"] = expiry
                                 try:
-                                    data.append((k.decode(), v))
+                                    data.append((k, v))
                                 except AttributeError:
                                     data.append((str(k), v))
                     elif key == "list_jobs":
@@ -789,14 +775,14 @@ class Server(interface.Interface):
                     # will be a standard client return in JSON format under
                     # normal circomstances.
                     if json_data.get("return_raw", False):
-                        msg = json_data["job_id"].encode()
+                        msg = json_data["job_id"]
                     else:
                         msg = "Job received. Task ID: {}".format(
                             json_data["job_id"]
-                        ).encode()
+                        )
 
                     try:
-                        conn.sendall(msg)
+                        conn.sendall(msg.encode())
                     except BrokenPipeError as e:
                         self.log.error(
                             "Encountered a broken pipe while sending job"
@@ -860,10 +846,6 @@ class Server(interface.Interface):
             ),
             (
                 self.thread(name="run_backend", target=self.run_backend),
-                True,
-            ),
-            (
-                self.thread(name="run_driver", target=self.driver.run),
                 True,
             ),
         ]
