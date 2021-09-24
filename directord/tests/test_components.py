@@ -583,7 +583,7 @@ class TestComponents(unittest.TestCase):
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__run_command_stdout_args(self, mock_run_command):
-        mock_run_command.return_value = [b"testing", b"", True]
+        mock_run_command.return_value = ["testing", "", True]
         fake_cache = tests.FakeCache()
         self._run.client(
             cache=fake_cache,

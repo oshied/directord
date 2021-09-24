@@ -66,4 +66,4 @@ class Component(components.ComponentBase):
         stdout, stderr, outcome = self.run_command(
             shell_commands, no_block=True
         )
-        return stdout, stderr, outcome, shell_commands.encode()
+        return stdout, stderr, outcome, shell_commands

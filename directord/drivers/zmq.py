@@ -353,7 +353,7 @@ class Driver(drivers.BaseDriver):
                 return item
 
         if not msg_id:
-            msg_id = utils.get_uuid().encode()
+            msg_id = utils.get_uuid()
 
         if not control:
             control = self.nullbyte
@@ -465,26 +465,23 @@ class Driver(drivers.BaseDriver):
         :returns: Tuple
         """
 
-        (
-            identity,
-            msg_id,
-            control,
-            command,
-            data,
-            info,
-            stderr,
-            stdout,
-        ) = self.socket_recv(socket=socket, nonblocking=nonblocking)
-        return (
-            identity.decode(),
-            msg_id.decode(),
-            control,
-            command.decode(),
-            data.decode(),
-            info.decode(),
-            stderr.decode(),
-            stdout.decode(),
+        recv_obj = list(
+            self.socket_recv(socket=socket, nonblocking=nonblocking)
         )
+        if len(recv_obj) == 8:
+            control = recv_obj.pop(2)
+            recv_obj = [i.decode() for i in recv_obj]
+            recv_obj.insert(2, control)
+            return tuple(recv_obj)
+        elif len(recv_obj) == 7:
+            control = recv_obj.pop(1)
+            recv_obj = [i.decode() for i in recv_obj]
+            recv_obj.insert(1, control)
+            return tuple(recv_obj)
+        else:
+            raise SystemError(
+                "Received message out of spec, {}".format(recv_obj)
+            )
 
     def job_connect(self):
         """Connect to a job socket and return the socket.
@@ -697,5 +694,5 @@ class Driver(drivers.BaseDriver):
                     "host_uptime": host_uptime,
                     "agent_uptime": agent_uptime,
                 }
-            ).encode(),
+            ),
         )

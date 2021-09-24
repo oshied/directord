@@ -578,15 +578,11 @@ class Client(interface.Interface):
 
         if stdout:
             stdout = stdout.strip()
-            if not isinstance(stdout, bytes):
-                stdout = stdout.encode()
             conn.stdout = stdout
             self.log.debug("Job [ %s ], stdout: %s", job["job_id"], stdout)
 
         if stderr:
             stderr = stderr.strip()
-            if not isinstance(stderr, bytes):
-                stderr = stderr.encode()
             conn.stderr = stderr
             self.log.warning("Job [ %s ], stderr: %s", job["job_id"], stderr)
 
@@ -615,7 +611,7 @@ class Client(interface.Interface):
         ).strftime("%Y-%m-%d %H:%M:%S")
 
         if "new_tasks" in job:
-            conn.data = json.dumps(job).encode()
+            conn.data = json.dumps(job)
         else:
             minimal_data = {
                 "execution_time": job["execution_time"],
@@ -625,20 +621,20 @@ class Client(interface.Interface):
             if component_timestamp:
                 minimal_data["component_exec_timestamp"] = component_timestamp
 
-            conn.data = json.dumps(minimal_data).encode()
+            conn.data = json.dumps(minimal_data)
 
         if job["parent_id"]:
             self.base_component.set_cache(
                 cache=self.cache,
                 key=job["parent_id"],
-                value=state,
+                value=state.decode(),
                 tag="parents",
             )
 
         self.base_component.set_cache(
             cache=self.cache,
             key=job["job_sha3_224"],
-            value=state,
+            value=state.decode(),
             tag="jobs",
         )
 
@@ -710,7 +706,7 @@ class Client(interface.Interface):
             )
 
             self.log.error(status)
-            conn.info = status.encode()
+            conn.info = status
             conn.job_state = self.driver.job_failed
             return False
         else:
@@ -856,7 +852,7 @@ class Client(interface.Interface):
                                 None,
                                 None,
                                 False,
-                                b"Job omitted, parent failure",
+                                "Job omitted, parent failure",
                                 job,
                                 command,
                                 0,

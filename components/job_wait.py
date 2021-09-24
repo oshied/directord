@@ -183,7 +183,7 @@ class Component(components.ComponentBase):
                     identity,
                 )
 
-            if driver.bind_check(bind=bind_backend, interval=0.5):
+            if driver.backend_check(interval=0.5):
                 (
                     msg_id,
                     control,

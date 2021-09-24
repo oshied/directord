@@ -105,7 +105,6 @@ class TestUtils(tests.TestConnectionBase):
 
     def test_ctx_mgr_clientstatus_enter_exit(self):
         ctx = unittest.mock.MagicMock()
-        socket = unittest.mock.MagicMock()
         with utils.ClientStatus(
             job_id="test-id",
             command="test",
@@ -113,10 +112,9 @@ class TestUtils(tests.TestConnectionBase):
         ) as c:
             assert c.job_id == "test-id"
 
-        ctx.driver._socket_send.assert_called_with(
-            socket=socket,
-            msg_id=b"test-id",
-            command=b"test",
+        ctx.driver.job_send.assert_called_with(
+            msg_id="test-id",
+            command="test",
             control=unittest.mock.ANY,
             data=unittest.mock.ANY,
             info=unittest.mock.ANY,

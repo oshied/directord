@@ -355,7 +355,7 @@ class TestServer(tests.TestDriverBase):
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test_run_backend(self, mock_log_info, mock_isfile):
-        self.mock_driver.recv.side_effect = [
+        self.mock_driver.backend_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -372,7 +372,7 @@ class TestServer(tests.TestDriverBase):
         m = unittest.mock.mock_open(read_data="test data")
         with patch("builtins.open", m):
             self.server.run_backend(sentinel=True)
-        self.mock_driver._socket_send.assert_called()
+        self.mock_driver.backend_send.assert_called()
         mock_log_info.assert_called()
 
     def test_create_return_jobs(self):
@@ -384,7 +384,7 @@ class TestServer(tests.TestDriverBase):
                 "job_sha3_224": "YYY",
                 "parent_id": "ZZZ",
             },
-            targets=[b"test-node1", b"test-node2"],
+            targets=["test-node1", "test-node2"],
         )
         self.assertDictEqual(
             status,
@@ -480,7 +480,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time):
-        self.mock_driver.recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -507,7 +507,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions_idle(self, mock_time):
-        self.mock_driver.recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -534,7 +534,7 @@ class TestServer(tests.TestDriverBase):
 
     @patch("time.time", autospec=True)
     def test_run_interactions_ramp(self, mock_time):
-        self.mock_driver.recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -564,7 +564,7 @@ class TestServer(tests.TestDriverBase):
         self,
         mock_time,
     ):
-        self.mock_driver.recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 b"test-node",
                 b"XXX",
@@ -599,7 +599,7 @@ class TestServer(tests.TestDriverBase):
         mock_time,
         mock_set_job_status,
     ):
-        self.mock_driver.recv.side_effect = [
+        self.mock_driver.job_recv.side_effect = [
             (
                 "test-node",
                 "XXX",
@@ -672,8 +672,8 @@ class TestServer(tests.TestDriverBase):
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
         self.server.workers = {
-            b"test-node1": {"time": 12345, "version": "x.x.x"},
-            b"test-node2": {"time": 12345, "version": "x.x.x"},
+            "test-node1": {"time": 12345, "version": "x.x.x"},
+            "test-node2": {"time": 12345, "version": "x.x.x"},
         }
         self.server.run_socket_server(sentinel=True)
         mock_unlink.assert_called_with(self.args.socket_path)
@@ -819,7 +819,7 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])
+        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY])
 
     @patch("directord.server.Server.run_threads", autospec=True)
     def test_worker_run_ui(self, mock_run_threads):
@@ -828,6 +828,4 @@ class TestServer(tests.TestDriverBase):
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(
-            ANY, threads=[ANY, ANY, ANY, ANY, ANY]
-        )
+        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])

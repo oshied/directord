@@ -238,7 +238,7 @@ class Component(components.ComponentBase):
                         info,
                         _,
                         _,
-                    ) = driver.backend_recv(socket=bind_transfer)
+                    ) = driver.backend_recv()
                     if control in [driver.job_processing, driver.transfer_end]:
                         chunk_size = len(data)
                         self.log.debug(

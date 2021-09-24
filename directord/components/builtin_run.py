@@ -88,7 +88,7 @@ class Component(components.ComponentBase):
 
         if stdout_arg and stdout:
             self.block_on_tasks = list()
-            clean_info = stdout.strip()
+            clean_info = stdout.decode().strip()
             arg_job = job.copy()
             arg_job.pop("parent_sha3_224", None)
             arg_job.pop("parent_id", None)
@@ -106,6 +106,6 @@ class Component(components.ComponentBase):
             arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
             self.block_on_tasks.append(arg_job)
         elif stdout_arg and not stdout:
-            return stdout, stderr, False, command.encode()
+            return stdout, stderr, False, command
 
-        return stdout, stderr, outcome, command.encode()
+        return stdout, stderr, outcome, command

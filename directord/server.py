@@ -209,7 +209,7 @@ class Server(interface.Interface):
                 "INFO": dict(),
                 "STDOUT": dict(),
                 "STDERR": dict(),
-                "_nodes": [i.decode() for i in targets],
+                "_nodes": targets,
                 "VERB": job_item["verb"],
                 "TRANSFERS": list(),
                 "JOB_SHA3_224": job_item["job_sha3_224"],
@@ -581,7 +581,7 @@ class Server(interface.Interface):
                         **send_item,
                     )
 
-            if self.driver.bind_check(constant=poller_interval):
+            if self.driver.job_check(constant=poller_interval):
                 (
                     identity,
                     msg_id,
@@ -756,7 +756,7 @@ class Server(interface.Interface):
                         data = {"failed": True}
 
                     try:
-                        conn.sendall(json.dumps(data))
+                        conn.sendall(json.dumps(data).encode())
                     except BrokenPipeError as e:
                         self.log.error(
                             "Encountered a broken pipe while sending manage"
@@ -782,7 +782,7 @@ class Server(interface.Interface):
                         )
 
                     try:
-                        conn.sendall(msg)
+                        conn.sendall(msg.encode())
                     except BrokenPipeError as e:
                         self.log.error(
                             "Encountered a broken pipe while sending job"

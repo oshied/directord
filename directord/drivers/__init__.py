@@ -106,7 +106,7 @@ class BaseDriver:
         """
 
         if not msg_id:
-            msg_id = utils.get_uuid().encode()
+            msg_id = utils.get_uuid()
 
         if not control:
             control = self.nullbyte
@@ -125,6 +125,26 @@ class BaseDriver:
 
         if not stdout:
             stdout = self.nullbyte
+
+        pass
+
+    def backend_recv(self, nonblocking=False):
+        """Receive a transfer message.
+
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
+
+        pass
+
+    def job_recv(self, nonblocking=False):
+        """Receive a transfer message.
+
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        :returns: Tuple
+        """
 
         pass
 
@@ -281,8 +301,21 @@ class BaseDriver:
         pass
 
     def job_init(self):
-        """Initialize job connection handling. May not need to be implemented
-        for each driver.
+        """Initialize the job socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        pass
+
+    def backend_init(self):
+        """Initialize the backend socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
 
         :returns: Object
         """
