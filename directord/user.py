@@ -166,7 +166,6 @@ class Manage(User):
                 stdout = data_return.get("STDOUT")
                 stderr = data_return.get("STDERR")
                 job_state = data_return.get("PROCESSING", "unknown")
-                job_state = job_state.encode()
                 if job_state == self.driver.job_processing:
                     time.sleep(job_processing_interval)
                     processing_attempts += 1

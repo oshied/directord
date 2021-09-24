@@ -625,7 +625,7 @@ class TestServer(tests.TestDriverBase):
         mock_log_debug.assert_called()
         mock_set_job_status.assert_called_with(
             ANY,
-            job_status=b"\x03",
+            job_status=self.server.driver.transfer_end,
             job_id="XXX",
             identity="test-node",
             job_output="/test/file1",

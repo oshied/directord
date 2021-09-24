@@ -19,19 +19,17 @@ from directord import logger
 
 
 class BaseDriver:
-    nullbyte = b"\000"  # Signals null
-    coordination_failed = b"\007"  # Signals worker is ready
-    coordination_ack = b"\020"  # Signals worker is ready
-    coordination_notice = b"\021"  # Signals worker is ready
-
-    transfer_start = b"\002"  # Signals start file transfer
-    transfer_end = b"\003"  # Signals start file transfer
-
-    heartbeat_notice = b"\005"  # Signals worker heartbeat
-    job_ack = b"\006"  # Signals job started
-    job_end = b"\004"  # Signals job ended
-    job_failed = b"\025"  # Signals job failed
-    job_processing = b"\026"  # Signals job running
+    coordination_failed = "\x07"  # Signals coordination failed
+    coordination_ack = "\x10"  # Signals coordination acknowledged
+    coordination_notice = "\x11"  # Signals coordination notice
+    job_ack = "\x06"  # Signals job acknowledged
+    job_end = "\x04"  # Signals job ended
+    job_failed = "\x15"  # Signals job failed
+    job_processing = "\x16"  # Signals job processing
+    heartbeat_notice = "\x05"  # Signals heartbeat notice
+    nullbyte = "\x00"  # Signals null
+    transfer_start = "\x02"  # Signals transfer start
+    transfer_end = "\x03"  # Signals transfer end
 
     def __init__(
         self,

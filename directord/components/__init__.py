@@ -400,3 +400,35 @@ class ComponentBase:
         """Exit the context manager and close."""
 
         self.close()
+
+
+class Backend:
+    """Coordination connection context manager."""
+
+    def __init__(self, driver, log, job_id):
+        """Initialize the backend context manager class."""
+
+        self.driver = driver
+        self.driver.backend_init()
+        self.log = log
+        self.job_id = job_id
+
+    def __enter__(self):
+        """Enter the job backend class and return the driver."""
+
+        self.log.debug(
+            "Backend connection started to %s for job [ %s ]",
+            self.driver.identity,
+            self.job_id,
+        )
+        return self.driver
+
+    def __exit__(self, *args, **kwargs):
+        """Close the bind backend object."""
+
+        self.driver.backend_close()
+        self.log.debug(
+            "Backend connection ended for %s for job [ %s ]",
+            self.driver.identity,
+            self.job_id,
+        )

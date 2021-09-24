@@ -148,15 +148,6 @@ class Client(interface.Interface):
             else:
                 sleep_interval = 0.001
                 lower_command = command.lower()
-                lock_name = "__lock_{}__".format(lower_command)
-                if not hasattr(self, lock_name):
-                    self.log.debug("Creating a new lock for [ %s ]", lock_name)
-                    setattr(
-                        self,
-                        lock_name,
-                        self.get_lock(),
-                    )
-
                 job = component_kwargs["job"]
                 self.log.debug("Received job_id [ %s ]", job["job_id"])
                 # NOTE(cloudnull): If the command is queuesentinel purge all
@@ -265,19 +256,6 @@ class Client(interface.Interface):
 
             time.sleep(sleep_interval)
 
-        for component_lock in [
-            i for i in self.__dict__.keys() if i.startswith("__lock_")
-        ]:
-            try:
-                delattr(self, component_lock)
-            except AttributeError:
-                pass
-            else:
-                self.log.debug(
-                    "Cleaned up removed dynamic component lock %s",
-                    component_lock,
-                )
-
     def purge_queue(self, queue, job_id):
         """Purge all jobs from the queue.
 
@@ -347,7 +325,7 @@ class Client(interface.Interface):
 
         cached = self.cache.get(
             job["job_sha3_224"]
-        ) == self.driver.job_end.decode() and not job.get(
+        ) == self.driver.job_end and not job.get(
             "skip_cache", job.get("ignore_cache", False)
         )
 
@@ -494,8 +472,8 @@ class Client(interface.Interface):
                         if self.cache.get(
                             block_on_task_data["job_sha3_224"]
                         ) in [
-                            self.driver.job_end.decode(),
-                            self.driver.job_failed.decode(),
+                            self.driver.job_end,
+                            self.driver.job_failed,
                         ]:
                             block_on_task_success = True
                             break
@@ -629,14 +607,14 @@ class Client(interface.Interface):
             self.base_component.set_cache(
                 cache=self.cache,
                 key=job["parent_id"],
-                value=state.decode(),
+                value=state,
                 tag="parents",
             )
 
         self.base_component.set_cache(
             cache=self.cache,
             key=job["job_sha3_224"],
-            value=state.decode(),
+            value=state,
             tag="jobs",
         )
 
@@ -695,7 +673,7 @@ class Client(interface.Interface):
 
         :returns: Boolean
         """
-        if cache.get(job["parent_id"]) == self.driver.job_failed.decode():
+        if cache.get(job["parent_id"]) == self.driver.job_failed:
             self.log.error(
                 "Parent failure %s skipping %s",
                 job["parent_id"],
@@ -862,6 +840,15 @@ class Client(interface.Interface):
                             )
                         )
                     else:
+                        lock_name = "__lock_{}__".format(command.lower())
+                        if not hasattr(self, lock_name):
+                            self.log.debug("Creating a new lock for [ %s ]", lock_name)
+                            setattr(
+                                self,
+                                lock_name,
+                                self.get_lock(),
+                            )
+
                         c.job_state = self.driver.job_processing
                         component_kwargs = dict(cache=None, job=job)
                         self.log.debug(

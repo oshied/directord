@@ -255,7 +255,7 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
-        cache.set(key="YYY", value=self.mock_driver.job_end.decode())
+        cache.set(key="YYY", value=self.mock_driver.job_end)
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         with patch.object(self.client, "cache", cache):
             self.client.run_job(sentinel=True)
@@ -290,12 +290,12 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
-        cache.set(key="YYY", value=self.mock_driver.job_end.decode())
+        cache.set(key="YYY", value=self.mock_driver.job_end)
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         with patch.object(self.client, "cache", cache):
             self.client.run_job(sentinel=True)
         mock_log_info.assert_called()
-        self.assertEqual(cache.get("YYY"), self.mock_driver.job_end.decode())
+        self.assertEqual(cache.get("YYY"), self.mock_driver.job_end)
 
     @patch("diskcache.Cache", autospec=True)
     @patch("logging.Logger.info", autospec=True)
@@ -325,13 +325,11 @@ class TestClient(tests.TestDriverBase):
             )
         ]
         cache = mock_diskcache.return_value = tests.FakeCache()
-        cache.set(key="YYY", value=self.mock_driver.job_failed.decode())
+        cache.set(key="YYY", value=self.mock_driver.job_failed)
         mock_time.side_effect = [1, 1, 1, 1, 1, 1]
         self.client.run_job(sentinel=True)
         mock_log_info.assert_called()
-        self.assertEqual(
-            cache.get("YYY"), self.mock_driver.job_failed.decode()
-        )
+        self.assertEqual(cache.get("YYY"), self.mock_driver.job_failed)
 
     @patch("os.makedirs", autospec=True)
     @patch("diskcache.Cache", autospec=True)
