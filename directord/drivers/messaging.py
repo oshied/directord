@@ -13,9 +13,7 @@
 #   under the License.
 
 import json
-import subprocess
 import time
-import multiprocessing
 
 from oslo_config import cfg
 import oslo_messaging
@@ -56,47 +54,27 @@ class Driver(drivers.BaseDriver):
         self.mode = getattr(args, "mode", None)
         self.connection_string = connection_string
         self.conf = cfg.CONF
-        self.conf.transport_url = "amqp://{}:5672//".format(
-            self.interface.bind_address
-        )
+        self.conf.transport_url = "{}:5672/".format(self.connection_string)
         self.transport = oslo_messaging.get_rpc_transport(self.conf)
 
-        # TODO(cloudnull): Start the qrouterd process when in server mode.
-        #                  This should be removed once we're confident with
-        #                  the driver capability in favor of requirement docs.
-        self._driver_server = multiprocessing.Process(
-            target=self._run, daemon=True
-        )
-        self._driver_server.start()
-
-    def _run(self):
+    def run(self, sentinel=False):
         """Run in server mode."""
 
-        if self.mode == "server":
-            self.qdrouterd()
-            server_target = "directord"
-        else:
-            server_target = self.interface.uuid
-
-        target = oslo_messaging.Target(topic="directord", server=server_target)
-        endpoints = [self]
         server = oslo_messaging.get_rpc_server(
-            self.transport,
-            target,
-            endpoints,
+            transport=self.transport,
+            target=oslo_messaging.Target(
+                topic="directord", server="directord"
+            ),
+            endpoints=[self],
             executor="threading",
             access_policy=dispatcher.ExplicitRPCAccessPolicy,
         )
-        self.log.info("Starting messaging server.")
+        self.log.info("Starting messaging server")
         server.start()
-        while True:
+        while not sentinel:
             time.sleep(1)
-
-    def qdrouterd(self):
-        """Start the qdrouterd process as a daemon."""
-
-        self.log.info("Starting qdrouterd.")
-        subprocess.run(["qdrouterd", "-d"], check=True)
+        server.stop()
+        server.wait()
 
     def send(self, method, topic, server="directord", **kwargs):
         """Send a message.
@@ -122,12 +100,10 @@ class Driver(drivers.BaseDriver):
         return client.call({}, method, **kwargs)
 
     def heartbeat_send(
-        self, identity=None, host_uptime=None, agent_uptime=None, version=None
+        self, host_uptime=None, agent_uptime=None, version=None
     ):
         """Send a heartbeat.
 
-        :param identity: Sender identity (uuid)
-        :type identity: String
         :param host_uptime: Sender uptime
         :type host_uptime: String
         :param agent_uptime: Sender agent uptime
@@ -147,13 +123,16 @@ class Driver(drivers.BaseDriver):
             }
         )
 
-        if not identity:
-            identity = self.identity
-
-        self.log.info("Sending heartbeat from {} to server".format(identity))
+        self.log.info(
+            "Sending heartbeat from {} to server".format(self.identity)
+        )
 
         self.send(
-            method, topic, server="directord", identity=identity, data=data
+            method,
+            topic,
+            server="directord",
+            identity=self.identity,
+            data=data,
         )
 
     @expose

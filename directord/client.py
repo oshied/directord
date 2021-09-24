@@ -780,7 +780,6 @@ class Client(interface.Interface):
                     datetime.timedelta(seconds=(time.time() - self.start_time))
                 )
                 self.driver.heartbeat_send(
-                    identity=self.uuid,
                     host_uptime=host_uptime,
                     agent_uptime=agent_uptime,
                     version=version,

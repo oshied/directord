@@ -15,5 +15,5 @@
 __version__ = "0.11.0"
 __author__ = "Kevin Carter"
 __email__ = "kevin@cloudnull.com"
-__driver_options__ = ["zmq"]
+__driver_options__ = ["zmq", "messaging"]
 __driver_default__ = "zmq"

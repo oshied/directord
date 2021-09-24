@@ -54,7 +54,14 @@ class Interface(directord.Processor):
         else:
             self.bind_address = "*"
 
-        self.proto = "tcp"
+        if self.args.driver == "messaging":
+            self.proto = "amqp"
+            self.bind_address = (
+                self.bind_address if self.bind_address != "*" else "0.0.0.0"
+            )
+        else:
+            self.proto = "tcp"
+
         self.connection_string = "{proto}://{addr}".format(
             proto=self.proto, addr=self.bind_address
         )

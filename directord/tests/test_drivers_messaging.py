@@ -17,6 +17,7 @@ import unittest
 
 from unittest.mock import MagicMock
 from unittest.mock import patch
+from unittest.mock import ANY
 
 from directord import tests
 from directord.drivers import messaging
@@ -26,10 +27,11 @@ class TestDriverMessaging(unittest.TestCase):
     def setUp(self):
         self.mock_interface = MagicMock()
         args = tests.FakeArgs
+        args.driver = "messaging"
         args.mode = "server"
         self.driver = messaging.Driver(
             args=args,
-            connection_string="tcp://localhost",
+            connection_string="amqp://localhost",
             interface=self.mock_interface,
         )
 
@@ -38,7 +40,7 @@ class TestDriverMessaging(unittest.TestCase):
 
     @patch("directord.drivers.messaging.Driver.send")
     def test_heartbeat_send(self, mock_send):
-        self.driver.heartbeat_send("foo", 10, 11, 12)
+        self.driver.heartbeat_send(10, 11, 12)
 
         data = json.dumps(
             {
@@ -52,17 +54,17 @@ class TestDriverMessaging(unittest.TestCase):
             "heartbeat",
             "directord",
             server="directord",
-            identity="foo",
+            identity=ANY,
             data=data,
         )
 
         self.driver.identity = "foohost"
-        self.driver.heartbeat_send(None, 10, 11, 12)
+        self.driver.heartbeat_send(10, 11, 12)
         mock_send.assert_called()
         mock_send.assert_called_with(
             "heartbeat",
             "directord",
             server="directord",
-            identity="foohost",
+            identity=ANY,
             data=data,
         )

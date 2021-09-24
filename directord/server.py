@@ -44,6 +44,7 @@ class Server(interface.Interface):
         self.send_queue = self.get_queue()
         self.lock = self.get_lock()
         datastore = getattr(self.args, "datastore", None)
+        self.workers = dict()
         if not datastore or datastore == "memory":
             self.log.info("Connecting to internal datastore")
             directord.plugin_import(plugin=".datastores.internal")
@@ -837,6 +838,10 @@ class Server(interface.Interface):
         """
 
         threads = [
+            (
+                self.thread(name="run_driver", target=self.driver.run),
+                True,
+            ),
             (
                 self.thread(
                     name="run_socket_server", target=self.run_socket_server
