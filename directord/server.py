@@ -828,6 +828,23 @@ class Server(interface.Interface):
                 if loaded_data:
                     metadata.update(loaded_data)
 
+        if "machine_id" in metadata:
+            machine_id = metadata.get("machine_id")
+            worker = self.workers.get(identity) or dict()
+            worker_machine_id = worker.get("machine_id")
+            if worker_machine_id and worker_machine_id != machine_id:
+                self.log.fatal(
+                    "Worker [ %s ] not added. Duplicate machines with the"
+                    " same hostname detected. Existing [ %s ] != Incoming"
+                    " [ %s ]. For this node to be added, fix the hostname,"
+                    " reset the machine id, or purge the existing workers"
+                    " and re-enroll the nodes.",
+                    identity,
+                    machine_id,
+                    worker_machine_id,
+                )
+                return
+
         self.workers[identity] = metadata
 
     def worker_run(self):

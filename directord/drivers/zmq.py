@@ -700,6 +700,7 @@ class Driver(drivers.BaseDriver):
                     "version": version,
                     "host_uptime": host_uptime,
                     "agent_uptime": agent_uptime,
+                    "machine_id": self.machine_id,
                 }
             ),
         )

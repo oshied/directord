@@ -52,6 +52,37 @@ class BaseDriver:
         self.log = logger.getLogger(name="directord")
         self.args = args
         self.interface = interface
+        self.machine_id = self.get_machine_id()
+
+    def get_machine_id(self):
+        """Return the unique machine ID.
+
+        This property will iterate through list of known unique identifiers
+        and return the first found with a valid value.
+
+        If no valid unique identifier is found, return the identity.
+
+        :returns: String
+        """
+
+        unique_identifiers = [
+            "/run/machine-id",
+            "/etc/machine-id",
+            "/var/lib/dbus/machine-id",
+            "/sys/class/dmi/id/product_uuid",
+            "/proc/sys/kernel/random/boot_id",
+        ]
+        for identifier in unique_identifiers:
+            try:
+                with open(identifier, "r") as f:
+                    machine_id = f.read().strip()
+            except (FileNotFoundError, PermissionError):
+                pass
+            else:
+                if machine_id:
+                    return machine_id
+        else:
+            return self.identity
 
     def __copy__(self):
         """Return a copy of the base class.
