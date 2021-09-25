@@ -641,6 +641,7 @@ def main():
                         "VERSION",
                         "HOST_UPTIME",
                         "AGENT_UPTIME",
+                        "MACHINE_ID",
                     ]
                 (
                     tabulated_data,

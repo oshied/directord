@@ -29,11 +29,15 @@ class TestDriverMessaging(unittest.TestCase):
         args = tests.FakeArgs
         args.driver = "messaging"
         args.mode = "server"
-        self.driver = messaging.Driver(
-            args=args,
-            connection_string="amqp://localhost",
-            interface=self.mock_interface,
-        )
+        with patch.object(
+            messaging.Driver, "get_machine_id"
+        ) as mock_get_machine_id:
+            mock_get_machine_id.return_value = "XXX123"
+            self.driver = messaging.Driver(
+                args=args,
+                connection_string="amqp://localhost",
+                interface=self.mock_interface,
+            )
 
     def tearDown(self):
         pass
@@ -41,12 +45,12 @@ class TestDriverMessaging(unittest.TestCase):
     @patch("directord.drivers.messaging.Driver.send")
     def test_heartbeat_send(self, mock_send):
         self.driver.heartbeat_send(10, 11, 12)
-
         data = json.dumps(
             {
                 "version": 12,
                 "host_uptime": 10,
                 "agent_uptime": 11,
+                "machine_id": "XXX123",
             }
         )
         mock_send.assert_called()
