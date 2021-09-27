@@ -7,6 +7,13 @@ Directord can be installed and used on systems or in containers. If installing
 on a system, the `tools/dev-setup.sh` script can be used to install Directord
 into a virtual environment.
 
+Directord allows for the user to configure the application using environment
+variables, a configurations file, or command line switches.
+
+> NOTE: Because the user interface communicates with the server over a UNIX
+  socket, the User and Server components are assumed to exist on the same
+  machine.
+
 ### Bootstrap natively
 
 Directord provides a bootstrap method which uses a **catalog** file to run the
