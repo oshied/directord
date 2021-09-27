@@ -18,7 +18,6 @@ import time
 from oslo_config import cfg
 import oslo_messaging
 from oslo_messaging.rpc import dispatcher
-from oslo_messaging.rpc.server import expose
 
 
 from directord import drivers
@@ -57,8 +56,49 @@ class Driver(drivers.BaseDriver):
         self.conf.transport_url = "{}:5672/".format(self.connection_string)
         self.transport = oslo_messaging.get_rpc_transport(self.conf)
 
+    def heartbeat_send(
+        self, host_uptime=None, agent_uptime=None, version=None
+    ):
+        """Send a heartbeat.
+
+        :param host_uptime: Sender uptime
+        :type host_uptime: String
+        :param agent_uptime: Sender agent uptime
+        :type agent_uptime: String
+        :param version: Sender directord version
+        :type version: String
+        """
+
+        method = "heartbeat"
+        topic = "directord"
+
+        data = json.dumps(
+            {
+                "version": version,
+                "host_uptime": host_uptime,
+                "agent_uptime": agent_uptime,
+                "machine_id": self.machine_id,
+            }
+        )
+
+        self.log.info(
+            "Sending heartbeat from {} to server".format(self.identity)
+        )
+
+        self.send(
+            method,
+            topic,
+            server="directord",
+            identity=self.identity,
+            data=data,
+        )
+
     def run(self, sentinel=False):
-        """Run in server mode."""
+        """Run in server mode.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
+        """
 
         server = oslo_messaging.get_rpc_server(
             transport=self.transport,
@@ -98,45 +138,3 @@ class Driver(drivers.BaseDriver):
         client = oslo_messaging.RPCClient(self.transport, target)
 
         return client.call({}, method, **kwargs)
-
-    def heartbeat_send(
-        self, host_uptime=None, agent_uptime=None, version=None
-    ):
-        """Send a heartbeat.
-
-        :param host_uptime: Sender uptime
-        :type host_uptime: String
-        :param agent_uptime: Sender agent uptime
-        :type agent_uptime: String
-        :param version: Sender directord version
-        :type version: String
-        """
-
-        method = "heartbeat"
-        topic = "directord"
-
-        data = json.dumps(
-            {
-                "version": version,
-                "host_uptime": host_uptime,
-                "agent_uptime": agent_uptime,
-                "machine_id": self.machine_id,
-            }
-        )
-
-        self.log.info(
-            "Sending heartbeat from {} to server".format(self.identity)
-        )
-
-        self.send(
-            method,
-            topic,
-            server="directord",
-            identity=self.identity,
-            data=data,
-        )
-
-    @expose
-    def heartbeat(self, context, identity, data):
-        self.log.info("Handling heartbeat")
-        self.interface.handle_heartbeat(identity, data)

@@ -163,6 +163,31 @@ class Driver(drivers.BaseDriver):
         else:
             self.log.debug("Backend socket closed")
 
+    def _job_bind(self):
+        """Bind an address to a job socket and return the socket.
+
+        :returns: Object
+        """
+
+        return self._socket_bind(
+            socket_type=zmq.ROUTER,
+            connection=self.connection_string,
+            port=self.args.job_port,
+        )
+
+    def _job_connect(self):
+        """Connect to a job socket and return the socket.
+
+        :returns: Object
+        """
+
+        self.log.debug("Establishing Job connection.")
+        return self._socket_connect(
+            socket_type=zmq.DEALER,
+            connection=self.connection_string,
+            port=self.args.job_port,
+        )
+
     def _socket_bind(
         self, socket_type, connection, port, poller_type=zmq.POLLIN
     ):
@@ -245,6 +270,88 @@ class Driver(drivers.BaseDriver):
 
         return bind
 
+    def _socket_connect(
+        self, socket_type, connection, port, poller_type=zmq.POLLIN
+    ):
+        """Return a socket object which has been bound to a given address.
+
+        > A connection back to the server will wait 10 seconds for an ack
+          before going into a retry loop. This is done to forcefully cycle
+          the connection object to reset.
+
+        :param socket_type: Set the Socket type, typically defined using a ZMQ
+                            constant.
+        :type socket_type: Integer
+        :param connection: Set the Address information used for the bound
+                           socket.
+        :type connection: String
+        :param port: Define the port which the socket will be bound to.
+        :type port: Integer
+        :param poller_type: Set the Socket type, typically defined using a ZMQ
+                            constant.
+        :type poller_type: Integer
+        :returns: Object
+        """
+
+        bind = self._socket_context(socket_type=socket_type)
+
+        if self.args.shared_key:
+            bind.plain_username = b"admin"  # User is hard coded.
+            bind.plain_password = self.args.shared_key.encode()
+            self.log.info("Shared key authentication enabled.")
+        elif self.args.curve_encryption:
+            client_secret_file = os.path.join(
+                self.secret_keys_dir, "client.key_secret"
+            )
+            server_public_file = os.path.join(
+                self.public_keys_dir, "server.key"
+            )
+            for item in [
+                self.public_keys_dir,
+                self.secret_keys_dir,
+                client_secret_file,
+                server_public_file,
+            ]:
+                if not os.path.exists(item):
+                    raise SystemExit(
+                        "The required path [ {} ] does not exist. Have"
+                        " you generated your keys?".format(item)
+                    )
+            try:
+                client_public, client_secret = zmq_auth.load_certificate(
+                    client_secret_file
+                )
+                server_public, _ = zmq_auth.load_certificate(
+                    server_public_file
+                )
+            except OSError as e:
+                self.log.error(
+                    "Error while loading certificates: %s. Configuration: %s",
+                    str(e),
+                    vars(self.args),
+                )
+                raise SystemExit("Failed to load keys.")
+            else:
+                bind.curve_secretkey = client_secret
+                bind.curve_publickey = client_public
+                bind.curve_serverkey = server_public
+
+        if socket_type == zmq.SUB:
+            bind.setsockopt_string(zmq.SUBSCRIBE, self.identity)
+        else:
+            bind.setsockopt_string(zmq.IDENTITY, self.identity)
+
+        self.poller.register(bind, poller_type)
+        bind.connect(
+            "{connection}:{port}".format(
+                connection=connection,
+                port=port,
+            )
+        )
+
+        self.log.info("Socket connected to [ %s ].", connection)
+        return bind
+
     def _socket_context(self, socket_type):
         """Create socket context and return a bind object.
 
@@ -269,6 +376,61 @@ class Driver(drivers.BaseDriver):
             bind.setsockopt(zmq.ROUTER_MANDATORY, 1)
         return bind
 
+    @staticmethod
+    def _socket_recv(socket, nonblocking=False):
+        """Receive a message over a ZM0 socket.
+
+        The message specification for server is as follows.
+
+            [
+                b"Identity"
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        The message specification for client is as follows.
+
+            [
+                b"ID",
+                b"ASCII Control Characters",
+                b"command",
+                b"data",
+                b"info",
+                b"stderr",
+                b"stdout",
+            ]
+
+        All message parts are byte encoded.
+
+        All possible control characters are defined within the Interface class.
+        For more on control characters review the following
+        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
+
+        :param socket: ZeroMQ socket object.
+        :type socket: Object
+        :param nonblocking: Enable non-blocking receve.
+        :type nonblocking: Boolean
+        """
+
+        if nonblocking:
+            flags = zmq.NOBLOCK
+        else:
+            flags = 0
+
+        return socket.recv_multipart(flags=flags)
+
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(TimeoutError),
+        wait=tenacity.wait_fixed(5),
+        before_sleep=tenacity.before_sleep_log(
+            logger.getLogger(name="directord"), logging.WARN
+        ),
+    )
     def _socket_send(
         self,
         socket,
@@ -380,143 +542,6 @@ class Driver(drivers.BaseDriver):
 
         return socket.send_multipart(message_parts, flags=flags)
 
-    @staticmethod
-    def _socket_recv(socket, nonblocking=False):
-        """Receive a message over a ZM0 socket.
-
-        The message specification for server is as follows.
-
-            [
-                b"Identity"
-                b"ID",
-                b"ASCII Control Characters",
-                b"command",
-                b"data",
-                b"info",
-                b"stderr",
-                b"stdout",
-            ]
-
-        The message specification for client is as follows.
-
-            [
-                b"ID",
-                b"ASCII Control Characters",
-                b"command",
-                b"data",
-                b"info",
-                b"stderr",
-                b"stdout",
-            ]
-
-        All message parts are byte encoded.
-
-        All possible control characters are defined within the Interface class.
-        For more on control characters review the following
-        URL(https://donsnotes.com/tech/charsets/ascii.html#cntrl).
-
-        :param socket: ZeroMQ socket object.
-        :type socket: Object
-        :param nonblocking: Enable non-blocking receve.
-        :type nonblocking: Boolean
-        """
-
-        if nonblocking:
-            flags = zmq.NOBLOCK
-        else:
-            flags = 0
-
-        return socket.recv_multipart(flags=flags)
-
-    @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(TimeoutError),
-        wait=tenacity.wait_fixed(5),
-        before_sleep=tenacity.before_sleep_log(
-            logger.getLogger(name="directord"), logging.WARN
-        ),
-    )
-    def _socket_connect(
-        self, socket_type, connection, port, poller_type=zmq.POLLIN
-    ):
-        """Return a socket object which has been bound to a given address.
-
-        > A connection back to the server will wait 10 seconds for an ack
-          before going into a retry loop. This is done to forcefully cycle
-          the connection object to reset.
-
-        :param socket_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
-        :type socket_type: Integer
-        :param connection: Set the Address information used for the bound
-                           socket.
-        :type connection: String
-        :param port: Define the port which the socket will be bound to.
-        :type port: Integer
-        :param poller_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
-        :type poller_type: Integer
-        :returns: Object
-        """
-
-        bind = self._socket_context(socket_type=socket_type)
-
-        if self.args.shared_key:
-            bind.plain_username = b"admin"  # User is hard coded.
-            bind.plain_password = self.args.shared_key.encode()
-            self.log.info("Shared key authentication enabled.")
-        elif self.args.curve_encryption:
-            client_secret_file = os.path.join(
-                self.secret_keys_dir, "client.key_secret"
-            )
-            server_public_file = os.path.join(
-                self.public_keys_dir, "server.key"
-            )
-            for item in [
-                self.public_keys_dir,
-                self.secret_keys_dir,
-                client_secret_file,
-                server_public_file,
-            ]:
-                if not os.path.exists(item):
-                    raise SystemExit(
-                        "The required path [ {} ] does not exist. Have"
-                        " you generated your keys?".format(item)
-                    )
-            try:
-                client_public, client_secret = zmq_auth.load_certificate(
-                    client_secret_file
-                )
-                server_public, _ = zmq_auth.load_certificate(
-                    server_public_file
-                )
-            except OSError as e:
-                self.log.error(
-                    "Error while loading certificates: %s. Configuration: %s",
-                    str(e),
-                    vars(self.args),
-                )
-                raise SystemExit("Failed to load keys.")
-            else:
-                bind.curve_secretkey = client_secret
-                bind.curve_publickey = client_public
-                bind.curve_serverkey = server_public
-
-        if socket_type == zmq.SUB:
-            bind.setsockopt_string(zmq.SUBSCRIBE, self.identity)
-        else:
-            bind.setsockopt_string(zmq.IDENTITY, self.identity)
-
-        self.poller.register(bind, poller_type)
-        bind.connect(
-            "{connection}:{port}".format(
-                connection=connection,
-                port=port,
-            )
-        )
-
-        self.log.info("Socket connected to [ %s ].", connection)
-        return bind
-
     def _recv(self, socket, nonblocking=False):
         """Receive message.
 
@@ -530,31 +555,6 @@ class Driver(drivers.BaseDriver):
         recv_obj = self._socket_recv(socket=socket, nonblocking=nonblocking)
         return tuple([i.decode() for i in recv_obj])
 
-    def _job_bind(self):
-        """Bind an address to a job socket and return the socket.
-
-        :returns: Object
-        """
-
-        return self._socket_bind(
-            socket_type=zmq.ROUTER,
-            connection=self.connection_string,
-            port=self.args.job_port,
-        )
-
-    def _job_connect(self):
-        """Connect to a job socket and return the socket.
-
-        :returns: Object
-        """
-
-        self.log.debug("Establishing Job connection.")
-        return self._socket_connect(
-            socket_type=zmq.DEALER,
-            connection=self.connection_string,
-            port=self.args.job_port,
-        )
-
     def backend_recv(self, nonblocking=False):
         """Receive a transfer message.
 
@@ -564,6 +564,100 @@ class Driver(drivers.BaseDriver):
         """
 
         return self._recv(socket=self.bind_backend, nonblocking=nonblocking)
+
+    def backend_init(self):
+        """Initialize the backend socket
+
+        For server mode, this is a bound local socket.
+        For client mode, it is a connection to the server socket.
+
+        :returns: Object
+        """
+
+        if self.args.mode == "server":
+            self.bind_backend = self._backend_bind()
+        else:
+            self.bind_backend = self._backend_connect()
+
+    def backend_close(self):
+        """Close the backend socket."""
+
+        self._close(socket=self.bind_backend)
+
+    def backend_check(self, interval=1, constant=1000):
+        """Return True if the backend contains work ready.
+
+        :param bind: A given Socket bind to identify.
+        :type bind: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Object
+        """
+
+        return self._bind_check(
+            bind=self.bind_backend, interval=interval, constant=constant
+        )
+
+    def backend_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
+
+        :returns: Object
+        """
+
+        kwargs["socket"] = self.bind_backend
+        return self._socket_send(*args, **kwargs)
+
+    def key_generate(self, keys_dir, key_type):
+        """Generate certificate.
+
+        :param keys_dir: Full Directory path where a given key will be stored.
+        :type keys_dir: String
+        :param key_type: Key type to be generated.
+        :type key_type: String
+        """
+
+        zmq_auth.create_certificates(keys_dir, key_type)
+
+    def heartbeat_send(
+        self, host_uptime=None, agent_uptime=None, version=None
+    ):
+        """Send a heartbeat.
+
+        :param host_uptime: Sender uptime
+        :type host_uptime: String
+        :param agent_uptime: Sender agent uptime
+        :type agent_uptime: String
+        :param version: Sender directord version
+        :type version: String
+        """
+
+        return self.job_send(
+            control=self.heartbeat_notice,
+            data=json.dumps(
+                {
+                    "version": version,
+                    "host_uptime": host_uptime,
+                    "agent_uptime": agent_uptime,
+                    "machine_id": self.machine_id,
+                }
+            ),
+        )
+
+    def job_send(self, *args, **kwargs):
+        """Send a job message.
+
+        * All args and kwargs are passed through to the socket send.
+
+        :returns: Object
+        """
+
+        kwargs["socket"] = self.bind_job
+        return self._socket_send(*args, **kwargs)
 
     def job_recv(self, nonblocking=False):
         """Receive a transfer message.
@@ -589,25 +683,6 @@ class Driver(drivers.BaseDriver):
         else:
             self.bind_job = self._job_connect()
 
-    def backend_init(self):
-        """Initialize the backend socket
-
-        For server mode, this is a bound local socket.
-        For client mode, it is a connection to the server socket.
-
-        :returns: Object
-        """
-
-        if self.args.mode == "server":
-            self.bind_backend = self._backend_bind()
-        else:
-            self.bind_backend = self._backend_connect()
-
-    def backend_close(self):
-        """Close the backend socket."""
-
-        self._close(socket=self.bind_backend)
-
     def job_close(self):
         """Close the job socket."""
 
@@ -628,79 +703,4 @@ class Driver(drivers.BaseDriver):
 
         return self._bind_check(
             bind=self.bind_job, interval=interval, constant=constant
-        )
-
-    def backend_check(self, interval=1, constant=1000):
-        """Return True if the backend contains work ready.
-
-        :param bind: A given Socket bind to identify.
-        :type bind: Object
-        :param interval: Exponential Interval used to determine the polling
-                         duration for a given socket.
-        :type interval: Integer
-        :param constant: Constant time used to poll for new jobs.
-        :type constant: Integer
-        :returns: Object
-        """
-
-        return self._bind_check(
-            bind=self.bind_backend, interval=interval, constant=constant
-        )
-
-    def key_generate(self, keys_dir, key_type):
-        """Generate certificate.
-
-        :param keys_dir: Full Directory path where a given key will be stored.
-        :type keys_dir: String
-        :param key_type: Key type to be generated.
-        :type key_type: String
-        """
-
-        zmq_auth.create_certificates(keys_dir, key_type)
-
-    def backend_send(self, *args, **kwargs):
-        """Send a job message.
-
-        * All args and kwargs are passed through to the socket send.
-
-        :returns: Object
-        """
-
-        kwargs["socket"] = self.bind_backend
-        return self._socket_send(*args, **kwargs)
-
-    def job_send(self, *args, **kwargs):
-        """Send a job message.
-
-        * All args and kwargs are passed through to the socket send.
-
-        :returns: Object
-        """
-
-        kwargs["socket"] = self.bind_job
-        return self._socket_send(*args, **kwargs)
-
-    def heartbeat_send(
-        self, host_uptime=None, agent_uptime=None, version=None
-    ):
-        """Send a heartbeat.
-
-        :param host_uptime: Sender uptime
-        :type host_uptime: String
-        :param agent_uptime: Sender agent uptime
-        :type agent_uptime: String
-        :param version: Sender directord version
-        :type version: String
-        """
-
-        return self.job_send(
-            control=self.heartbeat_notice,
-            data=json.dumps(
-                {
-                    "version": version,
-                    "host_uptime": host_uptime,
-                    "agent_uptime": agent_uptime,
-                    "machine_id": self.machine_id,
-                }
-            ),
         )
