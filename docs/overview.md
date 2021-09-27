@@ -14,14 +14,7 @@ Directord is a single application which consists of three parts:
 * **User** - CLI utility which interfaces with the server over a local socket
   connect.
 
-Directord allows for the user to configure the application using environment
-variables, a configurations file, or command line switches.
-
-> NOTE: Because the user interface communicates with the server over a UNIX
-  socket, the User and Server components are assumed to exist on the same
-  machine.
-
-![Directord](assets/Directord.png)
+![Directord-Data-flow](assets/highlevel-messaging.png)
 
 ### Cluster Messaging
 
@@ -31,6 +24,18 @@ latency mesh which monitors node health and ensures is highly responsive
 instruction delivery network.
 
 ![Directord-Data-flow](assets/Directord-Data-flow.png)
+
+The application flow has been built to best enable asynchronous operations,
+easily scaling to hundreds of clients without impacting throughput. While the
+User is expected to interact with the system via CLI, Directord does provide
+bindings for programable interfaces.
+
+> The following diagram shows the application flow when using the ZMQ
+  messaging driver. While some items in this diagram may be ZMQ specific,
+  the general process will remain the same no matter the active messaging
+  driver.
+
+![Directord](assets/Directord.png)
 
 ### Data storage and persistance
 
@@ -69,6 +74,11 @@ operators to better understand their deployment workloads.
 
 * EXECUTION_TIME: Time taken to run a particular task. The client will timestamp
   every task before execution and return the delta once the task exits.
+
+To further understand deployment characteristics, Directord also provides an
+*analyze* function which will allow operators do dig deeper into their data.
+The job and parent analyze functions will highlight outliers, node discrepancies,
+failures, and performance for entire orchestrations.
 
 ### Comparative Analysis
 
