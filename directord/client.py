@@ -639,8 +639,9 @@ class Client(interface.Interface):
             ) = self.q_return.get_nowait()
         except ValueError as e:
             self.log.critical("Return object value error [ %s ]", str(e))
+            return False
         except Exception:
-            pass
+            return False
         else:
             self.log.debug("Found task results for [ %s ].", job["job_id"])
             with utils.ClientStatus(
@@ -658,6 +659,7 @@ class Client(interface.Interface):
                     block_on_tasks,
                     c,
                 )
+            return True
 
     def _parent_check(self, conn, cache, job):
         """Check if a parent job has failed.
@@ -762,8 +764,9 @@ class Client(interface.Interface):
                 )
                 run_q_processor_thread.start()
 
-            self.job_q_results()
-            if self.q_return.empty():
+            if self.job_q_results():
+                poller_interval, poller_time = 1, time.time()
+            elif self.q_return.empty():
                 poller_interval = utils.return_poller_interval(
                     poller_time=poller_time,
                     poller_interval=poller_interval,

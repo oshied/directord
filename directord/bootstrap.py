@@ -369,7 +369,9 @@ class Bootstrap(directord.Processor):
                 ):
                     if self.indicator:
                         msg = self.indicator.indicator_msg(
-                            msg="Executing {} to {}".format(key, job_def["host"])
+                            msg="Executing {} to {}".format(
+                                key, job_def["host"]
+                            )
                         )
                         if msg:
                             self.log.info(msg)
