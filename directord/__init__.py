@@ -428,3 +428,71 @@ class DirectordConnect:
         return self._from_json(self.manage.run(override="purge-jobs"))[
             "success"
         ]
+
+
+class Spinner(object):
+    """Creates a visual indicator while normally performing actions."""
+
+    def __init__(self, run=False):
+        """Create an indicator thread while a job is running.
+
+        Context Manager Usage:
+
+        >>> with Spinner():
+        ...     # Your awesome work here...
+        ...     print('hello world')
+        Object Usage:
+        >>> spinner = Spinner()
+        >>> job = spinner.start()
+        >>> # Your amazing work here...
+        >>> print('hello world')
+        >>> job.terminate()
+
+        :param run: Enable | disable debug
+        :type run: Boolean
+        """
+
+        self.job = multiprocessing.Process(target=self.indicator, daemon=True)
+        self.pipe_a, self.pipe_b = multiprocessing.Pipe()
+        self.run = run
+        self.msg = "Please wait..."
+
+    def __enter__(self):
+        if self.run:
+            self.job.start()
+
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        if self.run:
+
+            self.run = False
+            self.pipe_a.close()
+            self.pipe_b.close()
+            self.job.terminate()
+            print("Done.")
+
+    def indicator_msg(self, msg):
+        """Send a message to the indicator.
+
+        If the indicator is running, send a message, otherwise return.
+
+        :param msg: Indicator message.
+        :type msg: String
+        """
+
+        if self.run:
+            self.pipe_b.send(msg)
+        else:
+            return msg
+
+    def indicator(self):
+        """Produce the spinner."""
+
+        while self.run:
+            for item in ["|", "/", "-", "\\"]:
+                if self.pipe_a.poll(timeout=0.1):
+                    self.msg = self.pipe_a.recv()
+
+                sys.stdout.write("\r[ {} ] {} ".format(item, self.msg))
+                sys.stdout.flush()

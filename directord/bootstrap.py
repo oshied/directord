@@ -67,6 +67,7 @@ class Bootstrap(directord.Processor):
         self.log = logger.getLogger(
             name="directord", debug_logging=getattr(args, "debug", False)
         )
+        self.indicator = None
 
     @staticmethod
     def bootstrap_catalog_entry(entry):
@@ -212,7 +213,7 @@ class Bootstrap(directord.Processor):
                 self.log.critical(str(e))
                 raise SystemExit("File [ {} ] ADD failed.".format(remotefile))
         else:
-            self.log.info(
+            self.log.debug(
                 "HOST: [ %s ] SUCCESS: ADD [ %s ] TO [ %s ]",
                 ssh.host,
                 localfile,
@@ -260,7 +261,7 @@ class Bootstrap(directord.Processor):
                 self.log.critical(str(e))
                 raise SystemExit("File [ {} ] GET failed.".format(remotefile))
         else:
-            self.log.info(
+            self.log.debug(
                 "HOST: [ %s ] SUCCESS: GET [ %s ] TO [ %s ]",
                 ssh.host,
                 remotefile,
@@ -319,7 +320,7 @@ class Bootstrap(directord.Processor):
                         "Bootstrap command failed: {}".format(command)
                     )
             else:
-                self.log.info(
+                self.log.debug(
                     "HOST: [ %s ] SUCCESS: [ %s ]", ssh.host, command
                 )
         finally:
@@ -345,7 +346,11 @@ class Bootstrap(directord.Processor):
         :type catalog: Dictionary
         """
 
-        self.log.info("Running bootstrap for %s", job_def["host"])
+        msg = self.indicator.indicator_msg(
+            msg="Connecting to {}".format(job_def["host"])
+        )
+        if msg:
+            self.log.info(msg)
         with utils.SSHConnect(
             host=job_def["host"],
             username=job_def["username"],
@@ -359,6 +364,12 @@ class Bootstrap(directord.Processor):
                 with self.timeout(
                     time=600, job_id=job_def["host"], reraise=True
                 ):
+                    msg = self.indicator.indicator_msg(
+                        msg="Executing {} to {}".format(key, job_def["host"])
+                    )
+                    if msg:
+                        self.log.info(msg)
+
                     if key == "RUN":
                         self.bootstrap_exec(
                             ssh=ssh, command=value, catalog=catalog
@@ -414,29 +425,33 @@ class Bootstrap(directord.Processor):
         for c in self.args.catalog:
             utils.merge_dict(base=catalog, new=yaml.safe_load(c))
 
-        directord_server = catalog.get("directord_server")
-        if directord_server:
-            self.log.info("Loading server information")
-            for s in self.bootstrap_catalog_entry(entry=directord_server):
-                s["key_file"] = self.args.key_file
-                self.bootstrap_run(job_def=s, catalog=catalog)
+        run_indicator = not getattr(self.args, "debug", False)
+        with directord.Spinner(run=run_indicator) as indicator:
+            self.indicator = indicator
+            directord_server = catalog.get("directord_server")
+            if directord_server:
+                self.log.debug("Loading server information")
+                for s in self.bootstrap_catalog_entry(entry=directord_server):
+                    s["key_file"] = self.args.key_file
+                    self.bootstrap_run(job_def=s, catalog=catalog)
 
-        directord_clients = catalog.get("directord_clients")
-        if directord_clients:
-            self.log.info("Loading client information")
-            for c in self.bootstrap_catalog_entry(entry=directord_clients):
-                c["key_file"] = self.args.key_file
-                q.put(c)
+            directord_clients = catalog.get("directord_clients")
+            if directord_clients:
+                self.log.debug("Loading client information")
+                for c in self.bootstrap_catalog_entry(entry=directord_clients):
+                    c["key_file"] = self.args.key_file
+                    q.put(c)
 
-        threads = list()
-        for _ in range(self.args.threads):
-            threads.append(
-                (
-                    self.thread(
-                        target=self.bootstrap_q_processor, args=(q, catalog)
-                    ),
-                    True,
+            threads = list()
+            for _ in range(self.args.threads):
+                threads.append(
+                    (
+                        self.thread(
+                            target=self.bootstrap_q_processor,
+                            args=(q, catalog),
+                        ),
+                        True,
+                    )
                 )
-            )
-        else:
-            self.run_threads(threads=threads)
+            else:
+                self.run_threads(threads=threads)
