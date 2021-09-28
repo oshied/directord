@@ -346,11 +346,14 @@ class Bootstrap(directord.Processor):
         :type catalog: Dictionary
         """
 
-        msg = self.indicator.indicator_msg(
-            msg="Connecting to {}".format(job_def["host"])
-        )
-        if msg:
-            self.log.info(msg)
+        if self.indicator:
+            msg = self.indicator.indicator_msg(
+                msg="Connecting to {}".format(job_def["host"])
+            )
+            if msg:
+                self.log.info(msg)
+        else:
+            self.log.info("Connecting to %s", job_def["host"])
         with utils.SSHConnect(
             host=job_def["host"],
             username=job_def["username"],
@@ -364,12 +367,14 @@ class Bootstrap(directord.Processor):
                 with self.timeout(
                     time=600, job_id=job_def["host"], reraise=True
                 ):
-                    msg = self.indicator.indicator_msg(
-                        msg="Executing {} to {}".format(key, job_def["host"])
-                    )
-                    if msg:
-                        self.log.info(msg)
-
+                    if self.indicator:
+                        msg = self.indicator.indicator_msg(
+                            msg="Executing {} to {}".format(key, job_def["host"])
+                        )
+                        if msg:
+                            self.log.info(msg)
+                    else:
+                        self.log.info("Connecting to %s", job_def["host"])
                     if key == "RUN":
                         self.bootstrap_exec(
                             ssh=ssh, command=value, catalog=catalog

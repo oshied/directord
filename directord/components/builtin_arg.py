@@ -110,7 +110,7 @@ class Component(components.ComponentBase):
         if success:
             cache_value = json.loads(value)
 
-        if cache_type == "envs":
+        if cache_type == "envs" and not isinstance(cache_value, str):
             cache_value = str(cache_value)
 
         if cache_value:
