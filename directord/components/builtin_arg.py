@@ -110,6 +110,9 @@ class Component(components.ComponentBase):
         if success:
             cache_value = json.loads(value)
 
+        if cache_type == "envs":
+            cache_value = str(cache_value)
+
         if cache_value:
             cache_set = self.set_cache(
                 cache=cache,
