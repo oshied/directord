@@ -1,0 +1,17 @@
+# This is a simple orchestration deploys newrelic.
+#
+# Before running this orchestration be sure to set the environment
+# variables NEW_RELIC_ACCOUNT_ID and NEW_RELIC_API_KEY to the
+# particular values within your newrelic account.
+#
+# setting the account and api keys via directord commands.
+# directord exec --verb ENV 'NEW_RELIC_ACCOUNT_ID 00000000'
+# directord exec --verb ENV 'NEW_RELIC_API_KEY YYYYYYYY'
+#
+
+---
+
+- jobs:
+  - RUN: curl -Ls https://download.newrelic.com/install/newrelic-cli/scripts/install.sh -o /opt/install.sh
+  - RUN: bash /opt/install.sh
+  - RUN: /usr/local/bin/newrelic install --assumeYes
