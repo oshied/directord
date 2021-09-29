@@ -866,6 +866,7 @@ class Client(interface.Interface):
                 time.sleep(poller_interval * 0.001)
 
             if sentinel:
+                self.driver.job_close()
                 break
 
     def worker_run(self):
@@ -887,10 +888,6 @@ class Client(interface.Interface):
                 )
 
         threads = [
-            (
-                self.thread(name="run", target=self.driver.run),
-                True,
-            ),
             (
                 self.thread(
                     name="run_job", target=self.run_job, kwargs=dict(lock=lock)

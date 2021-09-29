@@ -13,7 +13,6 @@
 #   under the License.
 
 import json
-import time
 
 from oslo_config import cfg
 import oslo_messaging
@@ -56,6 +55,7 @@ class Driver(drivers.BaseDriver):
         self.conf = cfg.CONF
         self.conf.transport_url = "{}:5672/".format(self.connection_string)
         self.transport = oslo_messaging.get_rpc_transport(self.conf)
+        self.server = None
 
     def heartbeat_send(
         self, host_uptime=None, agent_uptime=None, version=None
@@ -106,7 +106,7 @@ class Driver(drivers.BaseDriver):
         else:
             server_target = self.machine_id
 
-        server = oslo_messaging.get_rpc_server(
+        self.server = oslo_messaging.get_rpc_server(
             transport=self.transport,
             target=oslo_messaging.Target(
                 topic="directord",
@@ -117,11 +117,16 @@ class Driver(drivers.BaseDriver):
             access_policy=dispatcher.ExplicitRPCAccessPolicy,
         )
         self.log.info("Starting messaging server")
-        server.start()
-        while not sentinel:
-            time.sleep(1)
-        server.stop()
-        server.wait()
+        self.server.start()
+
+    def job_close(self):
+        """Stop the server mode."""
+
+        self.log.info("Stopping messaging server")
+        if not self.server:
+            self.log.info("No server to stop")
+        self.server.stop()
+        self.server.wait()
 
     def send(self, method, topic, server="directord", **kwargs):
         """Send a message.

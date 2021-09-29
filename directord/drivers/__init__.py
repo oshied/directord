@@ -393,8 +393,3 @@ class BaseDriver:
         """
 
         pass
-
-    def run(self, *args, **kwargs):
-        """Run the messaging driver process."""
-
-        pass

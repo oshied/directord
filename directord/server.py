@@ -684,6 +684,7 @@ class Server(interface.Interface):
                 prune_time = time.time() + 762
 
             if sentinel:
+                self.driver.job_close()
                 break
 
     def run_socket_server(self, sentinel=False):
@@ -855,10 +856,6 @@ class Server(interface.Interface):
         """
 
         threads = [
-            (
-                self.thread(name="run", target=self.driver.run),
-                True,
-            ),
             (
                 self.thread(
                     name="run_socket_server", target=self.run_socket_server

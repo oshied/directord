@@ -336,6 +336,6 @@ class TestClient(tests.TestDriverBase):
     @patch("directord.client.Client.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads, mock_diskcache, mock_makedirs):
         self.client.worker_run()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY])
+        mock_run_threads.assert_called_with(ANY, threads=[ANY])
         mock_diskcache.assert_called()
         mock_makedirs.assert_called()
