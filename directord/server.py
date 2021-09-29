@@ -856,7 +856,7 @@ class Server(interface.Interface):
 
         threads = [
             (
-                self.thread(name="run_driver", target=self.driver.run),
+                self.thread(name="run", target=self.driver.run),
                 True,
             ),
             (
