@@ -18,6 +18,7 @@ import time
 from oslo_config import cfg
 import oslo_messaging
 from oslo_messaging.rpc import dispatcher
+from oslo_messaging.rpc.server import expose
 
 
 from directord import drivers
@@ -100,10 +101,16 @@ class Driver(drivers.BaseDriver):
         :type sentinel: Boolean
         """
 
+        if self.mode == "server":
+            server_target = "directord"
+        else:
+            server_target = self.machine_id
+
         server = oslo_messaging.get_rpc_server(
             transport=self.transport,
             target=oslo_messaging.Target(
-                topic="directord", server="directord"
+                topic="directord",
+                server=server_target,
             ),
             endpoints=[self],
             executor="threading",
@@ -138,3 +145,8 @@ class Driver(drivers.BaseDriver):
         client = oslo_messaging.RPCClient(self.transport, target)
 
         return client.call({}, method, **kwargs)
+
+    @expose
+    def heartbeat(self, context, identity, data):
+        self.log.info("Handling heartbeat")
+        self.interface.handle_heartbeat(identity, data)
