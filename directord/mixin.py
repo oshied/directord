@@ -282,7 +282,8 @@ class Mixin:
                             "poll",
                             False,
                         )
-                        or getattr(self.args, "stream", False),
+                        or getattr(self.args, "stream", False)
+                        or getattr(self.args, "wait", False),
                     )
                 )
         else:
@@ -302,7 +303,8 @@ class Mixin:
             execute=self.args.exec,
             parent_async=getattr(self.args, "force_async", False),
             return_raw=getattr(self.args, "poll", False)
-            or getattr(self.args, "stream", False),
+            or getattr(self.args, "stream", False)
+            or getattr(self.args, "wait", False),
         )
         if self.args.target:
             format_kwargs["targets"] = list(set(self.args.target))

@@ -194,6 +194,14 @@ def _args(exec_args=None):
         action="store_true",
     )
     orchestrate_group.add_argument(
+        "--wait",
+        help=(
+            "Simplified Block on client return for the completion of"
+            " executed jobs."
+        ),
+        action="store_true",
+    )
+    orchestrate_group.add_argument(
         "--finger-print",
         help="Finger print a set of orchestrations.",
         action="store_true",
@@ -237,12 +245,21 @@ def _args(exec_args=None):
         metavar="STRING",
         nargs="+",
     )
-    parser_exec.add_argument(
+    parser_group = parser_exec.add_mutually_exclusive_group(required=False)
+    parser_group.add_argument(
         "--poll",
         help="Block on client return for the completion of executed jobs.",
         action="store_true",
     )
-    parser_exec.add_argument(
+    parser_group.add_argument(
+        "--wait",
+        help=(
+            "Simplified Block on client return for the completion of"
+            " executed jobs."
+        ),
+        action="store_true",
+    )
+    parser_group.add_argument(
         "--stream",
         help="Stream the STDOUT|STDERR for tasks.",
         action="store_true",
@@ -543,39 +560,48 @@ def main():
 
         job_items = [i.decode() for i in return_data if i]
 
-        if args.poll or args.stream:
-            failed = list()
+        if args.poll or args.stream or args.wait:
+            failed = set()
             manage = user.Manage(args=args)
-            for item in job_items:
-                state, status, stdout, stderr, info = manage.poll_job(
-                    job_id=item
-                )
-                if args.check and state is False:
-                    failed.append(item)
+            run_indicator = args.wait and not args.debug
+            with directord.Spinner(run=run_indicator) as indicator:
+                for item in job_items:
+                    state, status, stdout, stderr, info = manage.poll_job(
+                        job_id=item
+                    )
 
-                if args.stream:
-                    for node in sorted(
-                        set(
-                            i for v in [stdout, stderr, info] for i in v.keys()
-                        )
-                    ):
-                        for k, n, v in [
-                            (node, name, d[node])
-                            for name, d in [
-                                ("STDOUT", stdout),
-                                ("STDERR", stderr),
-                                ("INFO", info),
-                            ]
-                            if node in d
-                        ]:
-                            print("{} -- {} {}".format(k, n, v))
+                    if state is False:
+                        failed.add(item)
 
-                print(status)
+                    if args.stream:
+                        for node in sorted(
+                            set(
+                                i
+                                for v in [stdout, stderr, info]
+                                for i in v.keys()
+                            )
+                        ):
+                            for k, n, v in [
+                                (node, name, d[node])
+                                for name, d in [
+                                    ("STDOUT", stdout),
+                                    ("STDERR", stderr),
+                                ]
+                                if node in d
+                            ]:
+                                print("{} -- {}\n{}".format(k, n, v))
+
+                    if run_indicator:
+                        indicator.pipe_b.send(status)
+                    else:
+                        print(status)
 
             if any(failed):
-                print("FAILED JOBS")
-                for item in failed:
-                    print(item)
+                if args.check:
+                    print("FAILED JOBS")
+                    for item in failed:
+                        print(item)
+
                 raise SystemExit(1)
         else:
             for item in job_items:

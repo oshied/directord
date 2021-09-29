@@ -76,9 +76,30 @@ operators to better understand their deployment workloads.
   every task before execution and return the delta once the task exits.
 
 To further understand deployment characteristics, Directord also provides an
-*analyze* function which will allow operators do dig deeper into their data.
+*analyze* function which will allow operators to dig deeper into their data.
 The job and parent analyze functions will highlight outliers, node discrepancies,
 failures, and performance for entire orchestrations.
+
+``` shell
+# Note the ID used in this command is the "Parent" UUID for a given orchestration
+$ sudo directord manage --analyze-parent 3faac3d1-4c96-41ca-95b1-a4474c99016f
+KEY                       VALUE
+------------------------  ------------------------------------
+ID                        3faac3d1-4c96-41ca-95b1-a4474c99016f
+ACTUAL_RUNTIME            36.39695954322815
+COMBINED_EXECUTION_TIME   125.26471281051636
+FASTEST_NODE_EXECUTION    directord-8
+FASTEST_NODE_ROUNDTRIP    directord-8
+SLOWEST_NODE_EXECUTION    directord-5
+SLOWEST_NODE_ROUNDTRIP    directord-5
+TOTAL_AVG_EXECUTION_TIME  0.12526471281051635
+TOTAL_FAILURES            0
+TOTAL_JOBS                1000
+TOTAL_NODE_COUNT          10
+TOTAL_SUCCESSES           10000
+
+Total Items: 12
+```
 
 ### Comparative Analysis
 

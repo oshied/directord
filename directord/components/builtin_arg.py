@@ -110,6 +110,12 @@ class Component(components.ComponentBase):
         if success:
             cache_value = json.loads(value)
 
+        if cache_type == "envs":
+            env_cache = dict()
+            for key, value in cache_value.items():
+                env_cache[key] = str(value)
+            cache_value = env_cache
+
         if cache_value:
             cache_set = self.set_cache(
                 cache=cache,
@@ -121,7 +127,8 @@ class Component(components.ComponentBase):
             )
             if cache_set:
                 self.log.debug(
-                    "ARG [ %s ] = [ %s ] added to cache",
+                    "%s [ %s ] = [ %s ] added to cache",
+                    cache_type,
                     cache_type,
                     cache_value,
                 )

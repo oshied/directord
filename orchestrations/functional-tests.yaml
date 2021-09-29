@@ -36,6 +36,11 @@
   # Test creating a work directory
   - WORKDIR: /tmp/test
 
+  # Test setting environment integer
+  - ENV: test_runtime_arg_as_int_env 12345
+  - RUN: echo "${test_runtime_arg_as_int_env}" | tee /tmp/test/test-int-env
+  - RUN: grep 12345 /tmp/test/test-int-env
+
   # Test creating a work directory with a ownership and mode
   - WORKDIR: --chown=0:0 --chmod=0777 /tmp/test-mode
   - RUN: stat /tmp/test-mode | grep Uid | grep 0777
