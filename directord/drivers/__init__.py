@@ -324,7 +324,7 @@ class BaseDriver:
         pass
 
     def job_send(self, *args, **kwargs):
-        """Send a message over a ZM0 socket.
+        """Send a job message.
 
         The message specification for server is as follows.
 
@@ -391,10 +391,5 @@ class BaseDriver:
         :param key_type: Key type to be generated.
         :type key_type: String
         """
-
-        pass
-
-    def run(self, *args, **kwargs):
-        """Run the messaging driver process."""
 
         pass
