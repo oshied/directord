@@ -901,7 +901,7 @@ class Server(interface.Interface):
             ),
             (
                 self.thread(name="run_backend", target=self.run_backend),
-                True,
+                False,
             ),
         ]
 

@@ -374,7 +374,7 @@ class TestMain(unittest.TestCase):
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "client",
-                "server_address": "localhost",
+                "server_address": "127.0.0.1",
             },
         )
 

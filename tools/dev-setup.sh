@@ -17,6 +17,7 @@ set -evo
 VENV_PATH="${1:-/opt/directord}"
 CLONE_PATH="${3:-}"
 SETUP="${4:-true}"
+DRIVER=${DRIVER:-zmq}
 
 . /etc/os-release
 
@@ -48,14 +49,21 @@ fi
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   PACKAGES="git python38-devel gcc python3-pyyaml zeromq libsodium"
+  if [ "${DRIVER}" == "messaging" ]; then
+    PACKAGES+=" qpid-dispatch-router"
+  fi
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3.8}
 elif [[ ${ID} == "fedora" ]]; then
   PACKAGES="git python3-devel gcc python3-pyyaml zeromq libsodium"
+  if [ "${DRIVER}" == "messaging" ]; then
+    PACKAGES+=" qpid-dispatch-router"
+  fi
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
 elif [[ ${ID} == "ubuntu" ]]; then
-  PACKAGES="git python3-all python3-venv python3-yaml python3-zmq"
+  add-apt-repository -y ppa:qpid/released
+  PACKAGES="git python3-all python3-venv python3-yaml python3-zmq qdrouterd"
   apt update
   apt -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
@@ -85,6 +93,7 @@ try:
 except FileNotFoundError:
     config = dict()
 config["debug"] = True
+config["driver"] = "${DRIVER}"
 with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC
