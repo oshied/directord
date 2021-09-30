@@ -14,6 +14,8 @@
 #   under the License.
 set -eo
 
+DRIVER=${DRIVER:-zmq}
+
 if [[ $UID != 0 ]]; then
     echo "Please run this script with sudo:"
     echo "sudo $0 $*"
@@ -31,21 +33,27 @@ function get_latest_release() {                                                 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
   PACKAGES="git wget python3 python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium"
+  if [ "${DRIVER}" == "messaging" ]; then
+    PACKAGES+=" qpid-dispatch-router"
+  fi
   COMMAND="dnf -y install"
-  eval "${COMMAND} ${PACKAGES}"
 elif [[ ${ID} == "fedora" ]]; then
   PACKAGES="git wget python3 python3-ssh-python python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-diskcache"
+  if [ "${DRIVER}" == "messaging" ]; then
+    PACKAGES+=" qpid-dispatch-router"
+  fi
   COMMAND="dnf -y install"
-  eval "${COMMAND} ${PACKAGES}"
 elif [[ ${ID} == "ubuntu" ]]; then
-  PACKAGES="git python3-all python3-venv python3-tabulate python3-zmq python3-yaml python3-jinja2"
+  sudo add-apt-repository ppa:qpid/released
+  PACKAGES="git python3-all python3-venv python3-tabulate python3-zmq python3-yaml python3-jinja2 qdrouterd"
   apt update
   COMMAND="apt -y install"
-  eval "${COMMAND} ${PACKAGES}"
 else
   echo -e "Failed unknown OS"
   exit 99
 fi
+
+eval "${COMMAND} ${PACKAGES}"
 
 RELEASE="$(get_latest_release cloudnull/directord)"
 
@@ -91,6 +99,7 @@ try:
 except FileNotFoundError:
     config = dict()
 config["curve_encryption"] = True
+config["driver"] = "${DRIVER}"
 with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC

@@ -305,7 +305,7 @@ def _args(exec_args=None):
             " Default: %(default)s"
         ),
         metavar="STRING",
-        default=os.getenv("DIRECTORD_SERVER_ADDRESS", "localhost"),
+        default=os.getenv("DIRECTORD_SERVER_ADDRESS", "127.0.0.1"),
     )
     parser_manage = subparsers.add_parser(
         "manage", help="Server management mode help"

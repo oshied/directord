@@ -29,7 +29,7 @@ jobs:
     - name: Build new directord container
       run: docker build -t directord -f Containerfile .
 
-  functional_check:
+  functional_defaults_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -77,7 +77,57 @@ jobs:
           name: functional-test-logs
           path: /tmp/directord-*.log
 
-  functional_query_check:
+  functional_messaging_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Start qdrouterd
+        run: sudo systemctl start qdrouterd.service
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Execute functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 240 /opt/directord/bin/directord \
+                                              orchestrate \
+                                              functional-tests.yaml \
+                                              --poll \
+                                              --check
+      - name: Generate log details
+        run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+        if: failure()
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-test-logs
+          path: /tmp/directord-*.log
+
+  functional_defaults_query_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -125,7 +175,7 @@ jobs:
           name: functional-query-test-logs
           path: /tmp/directord-*.log
 
-  functional_queuesentinel_check:
+  functional_defaults_queuesentinel_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -172,7 +222,7 @@ jobs:
           name: functional-queuesentinel-test-logs
           path: /tmp/directord-*.log
 
-  functional_async_check:
+  functional_defaults_async_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -236,7 +286,73 @@ jobs:
           name: functional-async-test-logs
           path: /tmp/directord-*.log
 
-  functional_add_check:
+  functional_messaging_async_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Start qdrouterd
+        run: sudo systemctl start qdrouterd.service
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Execute async-functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 240 /opt/directord/bin/directord \
+                                              orchestrate \
+                                              functional-tests-async.yaml \
+                                              --poll \
+                                              --check
+      - name: Execute functional async-race-condition check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 240 /opt/directord/bin/directord \
+                                              orchestrate \
+                                              functional-tests-async-race.yaml \
+                                              --poll \
+                                              --check
+      - name: Execute functional async-time check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 40 /opt/directord/bin/directord \
+                                             orchestrate \
+                                             functional-tests-async-time.yaml \
+                                             --poll \
+                                             --check
+      - name: Generate log details
+        run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+        if: failure()
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-async-test-logs
+          path: /tmp/directord-*.log
+
+  functional_defaults_add_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -284,7 +400,7 @@ jobs:
           name: functional-add-test-logs
           path: /tmp/directord-*.log
 
-  functional_pod_check:
+  functional_defaults_pod_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -432,7 +548,7 @@ jobs:
           name: functional-bootstrap-test-logs
           path: /tmp/directord-*.log
 
-  functional_realworld_check:
+  functional_defaults_realworld_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
