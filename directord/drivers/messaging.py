@@ -13,6 +13,8 @@
 #   under the License.
 
 import json
+import multiprocessing
+import time
 
 from oslo_config import cfg
 import oslo_messaging
@@ -56,6 +58,29 @@ class Driver(drivers.BaseDriver):
         self.conf.transport_url = "{}:5672/".format(self.connection_string)
         self.transport = oslo_messaging.get_rpc_transport(self.conf)
         self.server = None
+        self.job_q = multiprocessing.Queue()
+        self.backend_q = multiprocessing.Queue()
+        self.timeout = 1
+
+    def _check(self, queue, interval=1, constant=1000):
+        """Return True if a job contains work ready.
+
+        :param queue: Queueing object.
+        :type queue: Object
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Boolean
+        """
+
+        self.timeout = interval * (constant * 0.001)
+        if queue.empty():
+            time.sleep(self.timeout)
+            return False
+        else:
+            return True
 
     @expose
     def _heartbeat(self, context, identity, data):
@@ -70,7 +95,18 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.info("Handling heartbeat")
-        self.interface.handle_heartbeat(identity=identity, data=data)
+        self.job_q.put(
+            [
+                identity,
+                None,
+                self.heartbeat_notice,
+                None,
+                data,
+                None,
+                None,
+                None,
+            ]
+        )
 
     @expose
     def _job(
@@ -108,25 +144,20 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.info("Handling job [ %s ] for [ %s ]", job_id, identity)
+        job = [
+            job_id,
+            control,
+            command,
+            data,
+            info,
+            stderr,
+            stdout,
+        ]
 
         if self.mode == "server":
-            kwargs = dict(
-                identity=identity,
-                job_id=job_id,
-                control=control,
-                data=data,
-                info=info,
-                stderr=stderr,
-                stdout=stdout,
-            )
-        else:
-            kwargs = dict(
-                command=command,
-                data=data,
-                info=info,
-            )
+            job.insert(0, identity)
 
-        self.interface.handle_job(**kwargs)
+        self.job_q.put(job)
 
     def _send(self, method, topic, server="directord", **kwargs):
         """Send a message.
@@ -152,24 +183,40 @@ class Driver(drivers.BaseDriver):
         return client.call({}, method, **kwargs)
 
     def backend_check(self, interval=1, constant=1000):
-        """Return True if the backend contains work ready."""
+        """Return True if the backend contains work ready.
 
-        pass
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Boolean
+        """
+
+        return self._check(
+            queue=self.backend_q, interval=interval, constant=constant
+        )
 
     def backend_close(self):
         """Close the backend."""
 
-        pass
+        self.log.debug(
+            "Nothing closed, the messaging driver does not make use of a"
+            " backend server"
+        )
 
     def backend_init(self):
         """Initialize the backend."""
 
-        pass
+        self.log.debug(
+            "Nothing initialized, the messaging driver does"
+            " not make use of a backend server"
+        )
 
     def backend_recv(self):
         """Receive a message."""
 
-        pass
+        return self.backend_q.get()
 
     def backend_send(self, *args, **kwargs):
         """Send a message over the backend."""
@@ -212,9 +259,19 @@ class Driver(drivers.BaseDriver):
         )
 
     def job_check(self, interval=1, constant=1000):
-        """Return True if a job contains work ready."""
+        """Return True if a job contains work ready.
 
-        pass
+        :param interval: Exponential Interval used to determine the polling
+                         duration for a given socket.
+        :type interval: Integer
+        :param constant: Constant time used to poll for new jobs.
+        :type constant: Integer
+        :returns: Boolean
+        """
+
+        return self._check(
+            queue=self.job_q, interval=interval, constant=constant
+        )
 
     def job_close(self):
         """Stop the server mode."""
@@ -254,7 +311,7 @@ class Driver(drivers.BaseDriver):
     def job_recv(self):
         """Receive a message."""
 
-        pass
+        return self.job_q.get()
 
     def job_send(
         self,
