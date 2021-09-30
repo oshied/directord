@@ -42,7 +42,7 @@ class TestDriverMessaging(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @patch("directord.drivers.messaging.Driver.send")
+    @patch("directord.drivers.messaging.Driver._send")
     def test_heartbeat_send(self, mock_send):
         self.driver.heartbeat_send(10, 11, 12)
         data = json.dumps(
@@ -73,7 +73,7 @@ class TestDriverMessaging(unittest.TestCase):
             data=data,
         )
 
-    @patch("directord.drivers.messaging.Driver.send")
+    @patch("directord.drivers.messaging.Driver._send")
     def test_job_send(self, mock_send):
         self.driver.job_send(
             identity="TEST",

@@ -57,159 +57,6 @@ class Driver(drivers.BaseDriver):
         self.transport = oslo_messaging.get_rpc_transport(self.conf)
         self.server = None
 
-    def heartbeat_send(
-        self, host_uptime=None, agent_uptime=None, version=None
-    ):
-        """Send a heartbeat.
-
-        :param host_uptime: Sender uptime
-        :type host_uptime: String
-        :param agent_uptime: Sender agent uptime
-        :type agent_uptime: String
-        :param version: Sender directord version
-        :type version: String
-        """
-
-        method = "_heartbeat"
-        topic = "directord"
-
-        data = json.dumps(
-            {
-                "version": version,
-                "host_uptime": host_uptime,
-                "agent_uptime": agent_uptime,
-                "machine_id": self.machine_id,
-            }
-        )
-
-        self.log.info("Sending heartbeat from [ %s ] to server", self.identity)
-
-        self.send(
-            method,
-            topic,
-            server="directord",
-            identity=self.identity,
-            data=data,
-        )
-
-    def job_send(
-        self,
-        identity=None,
-        msg_id=None,
-        control=None,
-        command=None,
-        data=None,
-        info=None,
-        stderr=None,
-        stdout=None,
-    ):
-        """Send a job message.
-
-        :param identity: Client identity
-        :type identity: String
-        :param job_id: Job Id
-        :type job_id: String
-        :param control: Job control character
-        :type control: String
-        :param command: Command
-        :type command: String
-        :param data: Job data
-        :type data: Dictionary
-        :param info: Job info
-        :type info: Dictionary
-        :param stderr: Job stderr output
-        :type stderr: String
-        :param stdout: Job stdout output
-        :type stdout: String
-        """
-
-        method = "_job"
-        topic = "directord"
-
-        if not identity:
-            target = "directord"
-            identity = self.identity
-        else:
-            worker = self.interface.workers.get(identity)
-            target = worker.get("machine_id")
-
-            if not target:
-                self.log.fatal(
-                    "Machine ID for identity [ %s ] not found", identity
-                )
-
-        self.send(
-            method,
-            topic,
-            server=target,
-            identity=identity,
-            job_id=msg_id,
-            control=control,
-            command=command,
-            data=data,
-            info=info,
-            stderr=stderr,
-            stdout=stdout,
-        )
-
-    def job_init(self, sentinel=False):
-        """Run in server mode.
-
-        :param sentinel: Breaks the loop
-        :type sentinel: Boolean
-        """
-
-        if self.mode == "server":
-            server_target = "directord"
-        else:
-            server_target = self.machine_id
-
-        self.server = oslo_messaging.get_rpc_server(
-            transport=self.transport,
-            target=oslo_messaging.Target(
-                topic="directord",
-                server=server_target,
-            ),
-            endpoints=[self],
-            executor="threading",
-            access_policy=dispatcher.ExplicitRPCAccessPolicy,
-        )
-        self.log.info("Starting messaging server")
-        self.server.start()
-
-    def job_close(self):
-        """Stop the server mode."""
-
-        self.log.info("Stopping messaging server")
-        if not self.server:
-            self.log.info("No server to stop")
-        else:
-            self.server.stop()
-            self.server.wait()
-
-    def send(self, method, topic, server="directord", **kwargs):
-        """Send a message.
-
-        :param method: Send method type
-        :type method: String
-        :param topic: Messaging topic
-        :type topic: String
-        :param method: Server name
-        :type method: String
-        :param kwargs: Extra named arguments
-        :type kwargs: Dictionary
-        :returns: Object
-        """
-
-        if server:
-            target = oslo_messaging.Target(topic=topic, server=server)
-        else:
-            target = oslo_messaging.Target(topic=topic)
-
-        client = oslo_messaging.RPCClient(self.transport, target)
-
-        return client.call({}, method, **kwargs)
-
     @expose
     def _heartbeat(self, context, identity, data):
         """Handle a heartbeat interaction.
@@ -280,3 +127,196 @@ class Driver(drivers.BaseDriver):
             )
 
         self.interface.handle_job(**kwargs)
+
+    def _send(self, method, topic, server="directord", **kwargs):
+        """Send a message.
+
+        :param method: Send method type
+        :type method: String
+        :param topic: Messaging topic
+        :type topic: String
+        :param method: Server name
+        :type method: String
+        :param kwargs: Extra named arguments
+        :type kwargs: Dictionary
+        :returns: Object
+        """
+
+        if server:
+            target = oslo_messaging.Target(topic=topic, server=server)
+        else:
+            target = oslo_messaging.Target(topic=topic)
+
+        client = oslo_messaging.RPCClient(self.transport, target)
+
+        return client.call({}, method, **kwargs)
+
+    def backend_check(self, interval=1, constant=1000):
+        """Return True if the backend contains work ready."""
+
+        pass
+
+    def backend_close(self):
+        """Close the backend."""
+
+        pass
+
+    def backend_init(self):
+        """Initialize the backend."""
+
+        pass
+
+    def backend_recv(self):
+        """Receive a message."""
+
+        pass
+
+    def backend_send(self, *args, **kwargs):
+        """Send a message over the backend."""
+
+        pass
+
+    def heartbeat_send(
+        self, host_uptime=None, agent_uptime=None, version=None
+    ):
+        """Send a heartbeat.
+
+        :param host_uptime: Sender uptime
+        :type host_uptime: String
+        :param agent_uptime: Sender agent uptime
+        :type agent_uptime: String
+        :param version: Sender directord version
+        :type version: String
+        """
+
+        method = "_heartbeat"
+        topic = "directord"
+
+        data = json.dumps(
+            {
+                "version": version,
+                "host_uptime": host_uptime,
+                "agent_uptime": agent_uptime,
+                "machine_id": self.machine_id,
+            }
+        )
+
+        self.log.info("Sending heartbeat from [ %s ] to server", self.identity)
+
+        self._send(
+            method,
+            topic,
+            server="directord",
+            identity=self.identity,
+            data=data,
+        )
+
+    def job_check(self, interval=1, constant=1000):
+        """Return True if a job contains work ready."""
+
+        pass
+
+    def job_close(self):
+        """Stop the server mode."""
+
+        self.log.info("Stopping messaging server")
+        if not self.server:
+            self.log.info("No server to stop")
+        else:
+            self.server.stop()
+            self.server.wait()
+
+    def job_init(self, sentinel=False):
+        """Run in server mode.
+
+        :param sentinel: Breaks the loop
+        :type sentinel: Boolean
+        """
+
+        if self.mode == "server":
+            server_target = "directord"
+        else:
+            server_target = self.machine_id
+
+        self.server = oslo_messaging.get_rpc_server(
+            transport=self.transport,
+            target=oslo_messaging.Target(
+                topic="directord",
+                server=server_target,
+            ),
+            endpoints=[self],
+            executor="threading",
+            access_policy=dispatcher.ExplicitRPCAccessPolicy,
+        )
+        self.log.info("Starting messaging server")
+        self.server.start()
+
+    def job_recv(self):
+        """Receive a message."""
+
+        pass
+
+    def job_send(
+        self,
+        identity=None,
+        msg_id=None,
+        control=None,
+        command=None,
+        data=None,
+        info=None,
+        stderr=None,
+        stdout=None,
+    ):
+        """Send a job message.
+
+        :param identity: Client identity
+        :type identity: String
+        :param job_id: Job Id
+        :type job_id: String
+        :param control: Job control character
+        :type control: String
+        :param command: Command
+        :type command: String
+        :param data: Job data
+        :type data: Dictionary
+        :param info: Job info
+        :type info: Dictionary
+        :param stderr: Job stderr output
+        :type stderr: String
+        :param stdout: Job stdout output
+        :type stdout: String
+        """
+
+        method = "_job"
+        topic = "directord"
+
+        if not identity:
+            target = "directord"
+            identity = self.identity
+        else:
+            worker = self.interface.workers.get(identity)
+            target = worker.get("machine_id")
+
+            if not target:
+                self.log.fatal(
+                    "Machine ID for identity [ %s ] not found", identity
+                )
+
+        self._send(
+            method,
+            topic,
+            server=target,
+            identity=identity,
+            job_id=msg_id,
+            control=control,
+            command=command,
+            data=data,
+            info=info,
+            stderr=stderr,
+            stdout=stdout,
+        )
+
+    def key_generate(self, keys_dir, key_type):
+        """Generate certificate."""
+
+        pass
