@@ -55,8 +55,8 @@ class TestDriverMessaging(unittest.TestCase):
         )
         mock_send.assert_called()
         mock_send.assert_called_with(
-            "_heartbeat",
-            "directord",
+            method="_heartbeat",
+            topic="directord",
             server="directord",
             identity=ANY,
             data=data,
@@ -66,8 +66,8 @@ class TestDriverMessaging(unittest.TestCase):
         self.driver.heartbeat_send(10, 11, 12)
         mock_send.assert_called()
         mock_send.assert_called_with(
-            "_heartbeat",
-            "directord",
+            method="_heartbeat",
+            topic="directord",
             server="directord",
             identity=ANY,
             data=data,
@@ -87,8 +87,8 @@ class TestDriverMessaging(unittest.TestCase):
         )
         mock_send.assert_called()
         mock_send.assert_called_with(
-            "_job",
-            "directord",
+            method="_job",
+            topic="directord",
             server=ANY,
             identity=ANY,
             job_id="XXX",
