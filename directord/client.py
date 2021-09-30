@@ -814,33 +814,18 @@ class Client(interface.Interface):
 
     def handle_job(
         self,
-        identity=None,
-        job_id=None,
-        control=None,
-        command=None,
-        data=None,
-        info=None,
-        stderr=None,
-        stdout=None,
+        command,
+        data,
+        info,
     ):
         """Handle a job interaction.
 
-        :param identity: Client identity
-        :type identity: String
-        :param job_id: Job Id
-        :type job_id: String
-        :param control: Job control character
-        :type control: String
         :param command: Command
         :type command: String
         :param data: Job data
         :type data: Dictionary
         :param info: Job info
         :type info: Dictionary
-        :param stderr: Job stderr output
-        :type stderr: String
-        :param stdout: Job stdout output
-        :type stdout: String
         """
 
         job = json.loads(data)

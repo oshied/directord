@@ -55,7 +55,7 @@ class TestDriverMessaging(unittest.TestCase):
         )
         mock_send.assert_called()
         mock_send.assert_called_with(
-            "heartbeat",
+            "_heartbeat",
             "directord",
             server="directord",
             identity=ANY,
@@ -66,9 +66,36 @@ class TestDriverMessaging(unittest.TestCase):
         self.driver.heartbeat_send(10, 11, 12)
         mock_send.assert_called()
         mock_send.assert_called_with(
-            "heartbeat",
+            "_heartbeat",
             "directord",
             server="directord",
             identity=ANY,
             data=data,
+        )
+
+    @patch("directord.drivers.messaging.Driver.send")
+    def test_job_send(self, mock_send):
+        self.driver.job_send(
+            identity="TEST",
+            msg_id="XXX",
+            control="TESTcontrol",
+            command="RUN",
+            data='{"JOB": "XXX"}',
+            info="TEST INFO",
+            stderr="TEST STDERR",
+            stdout="TEST STDOUT",
+        )
+        mock_send.assert_called()
+        mock_send.assert_called_with(
+            "_job",
+            "directord",
+            server=ANY,
+            identity=ANY,
+            job_id="XXX",
+            control="TESTcontrol",
+            command="RUN",
+            data='{"JOB": "XXX"}',
+            info="TEST INFO",
+            stderr="TEST STDERR",
+            stdout="TEST STDOUT",
         )

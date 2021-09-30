@@ -566,7 +566,7 @@ class Driver(drivers.BaseDriver):
         return self._recv(socket=self.bind_backend, nonblocking=nonblocking)
 
     def backend_init(self):
-        """Initialize the backend socket
+        """Initialize the backend socket.
 
         For server mode, this is a bound local socket.
         For client mode, it is a connection to the server socket.
@@ -670,7 +670,7 @@ class Driver(drivers.BaseDriver):
         return self._recv(socket=self.bind_job, nonblocking=nonblocking)
 
     def job_init(self):
-        """Initialize the job socket
+        """Initialize the job socket.
 
         For server mode, this is a bound local socket.
         For client mode, it is a connection to the server socket.

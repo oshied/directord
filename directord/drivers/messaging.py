@@ -70,7 +70,7 @@ class Driver(drivers.BaseDriver):
         :type version: String
         """
 
-        method = "heartbeat"
+        method = "_heartbeat"
         topic = "directord"
 
         data = json.dumps(
@@ -82,9 +82,7 @@ class Driver(drivers.BaseDriver):
             }
         )
 
-        self.log.info(
-            "Sending heartbeat from {} to server".format(self.identity)
-        )
+        self.log.info("Sending heartbeat from [ %s ] to server", self.identity)
 
         self.send(
             method,
@@ -125,7 +123,7 @@ class Driver(drivers.BaseDriver):
         :type stdout: String
         """
 
-        method = "job"
+        method = "_job"
         topic = "directord"
 
         if not identity:
@@ -137,7 +135,7 @@ class Driver(drivers.BaseDriver):
 
             if not target:
                 self.log.fatal(
-                    "Machine ID for identity {} not found".format(identity)
+                    "Machine ID for identity [ %s ] not found", identity
                 )
 
         self.send(
@@ -150,6 +148,8 @@ class Driver(drivers.BaseDriver):
             command=command,
             data=data,
             info=info,
+            stderr=stderr,
+            stdout=stdout,
         )
 
     def job_init(self, sentinel=False):
@@ -183,8 +183,9 @@ class Driver(drivers.BaseDriver):
         self.log.info("Stopping messaging server")
         if not self.server:
             self.log.info("No server to stop")
-        self.server.stop()
-        self.server.wait()
+        else:
+            self.server.stop()
+            self.server.wait()
 
     def send(self, method, topic, server="directord", **kwargs):
         """Send a message.
@@ -210,7 +211,7 @@ class Driver(drivers.BaseDriver):
         return client.call({}, method, **kwargs)
 
     @expose
-    def heartbeat(self, context, identity, data):
+    def _heartbeat(self, context, identity, data):
         """Handle a heartbeat interaction.
 
         :param context: RPC Context
@@ -222,10 +223,10 @@ class Driver(drivers.BaseDriver):
         """
 
         self.log.info("Handling heartbeat")
-        self.interface.handle_heartbeat(identity, data)
+        self.interface.handle_heartbeat(identity=identity, data=data)
 
     @expose
-    def job(
+    def _job(
         self,
         context,
         identity=None,
@@ -258,7 +259,24 @@ class Driver(drivers.BaseDriver):
         :param stdout: Job stdout output
         :type stdout: String
         """
-        self.log.info("Handling job {} for {}".format(job_id, identity))
-        self.interface.handle_job(
-            identity, job_id, control, command, data, info, stderr, stdout
-        )
+
+        self.log.info("Handling job [ %s ] for [ %s ]", job_id, identity)
+
+        if self.mode == "server":
+            kwargs = dict(
+                identity=identity,
+                job_id=job_id,
+                control=control,
+                data=data,
+                info=info,
+                stderr=stderr,
+                stdout=stdout,
+            )
+        else:
+            kwargs = dict(
+                command=command,
+                data=data,
+                info=info,
+            )
+
+        self.interface.handle_job(**kwargs)

@@ -78,15 +78,15 @@ class BaseDriver:
         pass
 
     def backend_close(self):
-        """Close the backend socket."""
+        """Close the backend."""
 
         pass
 
     def backend_init(self):
-        """Initialize the backend socket
+        """Initialize the backend.
 
-        For server mode, this is a bound local socket.
-        For client mode, it is a connection to the server socket.
+        For server mode, this is a bound local.
+        For client mode, it is a connection to the server.
 
         :returns: Object
         """
@@ -136,7 +136,7 @@ class BaseDriver:
         pass
 
     def backend_send(self, *args, **kwargs):
-        """Send a message over a ZM0 socket.
+        """Send a message over the backend.
 
         The message specification for server is as follows.
 
@@ -271,7 +271,7 @@ class BaseDriver:
         pass
 
     def job_init(self):
-        """Initialize the job socket
+        """Initialize the job socket.
 
         For server mode, this is a bound local socket.
         For client mode, it is a connection to the server socket.
