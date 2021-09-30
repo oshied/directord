@@ -271,5 +271,5 @@ class TestDriverBase(unittest.TestCase):
         zmq.Driver = self.zmq
         messaging.Driver = self.messaging
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.mock_driver_patched.stop()

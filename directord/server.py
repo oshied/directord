@@ -211,6 +211,16 @@ class Server(interface.Interface):
             self.lock.release()
 
     def create_return_jobs(self, task, job_item, targets):
+        """Create a job return item if needed.
+
+        :param task: Task UUID information
+        :type task: String
+        :param job_item: Dictionary item for the job definition.
+        :type job_item: Dictionary
+        :param targets: List of target identities.
+        :type targets: List
+        """
+
         self.lock.acquire()
         try:
             return self.return_jobs.set(
@@ -235,7 +245,7 @@ class Server(interface.Interface):
             self.lock.release()
 
     def run_job(self, sentinel=False):
-        """Run a job interaction
+        """Run a job interaction.
 
         As the job loop executes it will interrogate the job item as returned
         from the queue. If the item contains a "targets" definition the
@@ -588,7 +598,7 @@ class Server(interface.Interface):
                     identity,
                     msg_id,
                     control,
-                    command,
+                    _,
                     data,
                     info,
                     stderr,
@@ -602,7 +612,6 @@ class Server(interface.Interface):
                         identity=identity,
                         job_id=msg_id,
                         control=control,
-                        command=command,
                         data=data,
                         info=info,
                         stderr=stderr,
@@ -779,7 +788,7 @@ class Server(interface.Interface):
         self.workers[identity] = metadata
 
     def handle_job(
-        self, identity, job_id, control, command, data, info, stderr, stdout
+        self, identity, job_id, control, data, info, stderr, stdout
     ):
         """Handle a job interaction.
 
@@ -789,8 +798,6 @@ class Server(interface.Interface):
         :type job_id: String
         :param control: Job control character
         :type control: String
-        :param command: Command
-        :type command: String
         :param data: Job data
         :type data: Dictionary
         :param info: Job info
@@ -806,12 +813,6 @@ class Server(interface.Interface):
             job_id,
             identity,
         )
-        node = identity
-        node_output = info
-        if stderr:
-            stderr = stderr
-        if stdout:
-            stdout = stdout
 
         try:
             data_item = json.loads(data)
@@ -821,8 +822,8 @@ class Server(interface.Interface):
         self._set_job_status(
             job_status=control,
             job_id=job_id,
-            identity=node,
-            job_output=node_output,
+            identity=identity,
+            job_output=info,
             job_stdout=stdout,
             job_stderr=stderr,
             execution_time=data_item.get("execution_time", 0),

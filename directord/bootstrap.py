@@ -28,7 +28,7 @@ from directord import utils
 
 
 class PrintError:
-    def __init__(self) -> None:
+    def __init__(self):
         self.line_break = "="
         self.line_multiplier = 20
         self.start = "Start Error Information"

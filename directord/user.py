@@ -230,6 +230,13 @@ class Manage(User):
                         time.sleep(1)
 
     def analyze_job(self, job_id):
+        """Run analysis on a given job UUID.
+
+        :param job_id: Job UUID
+        :type job_id: String
+        :returns: String
+        """
+
         data = directord.send_data(
             socket_path=self.args.socket_path,
             data=json.dumps(dict(manage={"job_info": job_id})),
@@ -243,6 +250,13 @@ class Manage(User):
         return self.analyze_data(parent_id=job_id, parent_jobs=item)
 
     def analyze_parent(self, parent_id):
+        """Run analysis on a given parent UUID.
+
+        :param parent_id: Parent UUID
+        :type parent_id: String
+        :returns: String
+        """
+
         data = directord.send_data(
             socket_path=self.args.socket_path,
             data=json.dumps(dict(manage={"list_jobs": None})),
@@ -260,6 +274,15 @@ class Manage(User):
         return self.analyze_data(parent_id=parent_id, parent_jobs=parent_jobs)
 
     def analyze_data(self, parent_id, parent_jobs):
+        """Run Parent analysis.
+
+        :param parent_id: Parent UUID
+        :type parent_id: String
+        :param parent_jobs: List of all jobs for a given parent.
+        :type parent_jobs: List
+        :returns: String
+        """
+
         meta = dict(
             execution=collections.defaultdict(int),
             roundtrip=collections.defaultdict(int),
