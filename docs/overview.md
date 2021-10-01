@@ -128,6 +128,18 @@ The following sections detail what was tested and how.
 
 #### Directord
 
+Directord installation was performed in a virtual environment using Directord
+version 0.11.0.
+
+``` shell
+sudo /opt/directord/bin/pip install --pre directord
+```
+
+> Server setup was performed using the documented
+  [installation](installation.md#installation) process.
+
+##### Directord Defaults
+
 > The Directord defaults were used across the board.
 
 * Run the Directord orchestration command to execute 1000 trivial jobs.
@@ -139,7 +151,7 @@ $ sudo /opt/directord/bin/directord orchestrate ~/directord/tests/comparison-orc
 Running the comparison orchestration file with a six node test environment
 returns an actual run time of **20** seconds.
 
-#### Directord with Async Orchestrations
+##### Directord with Async Orchestrations
 
 * Run the directord orchestration command to execute 1000 trival jobs in 10
   asynchronous orchestrations.
@@ -151,7 +163,7 @@ $ sudo /opt/directord/bin/directord orchestrate ~/directord/tests/comparison-orc
 Running the comparison orchestration file with a six node test environment
 returns an actual run time of **15** seconds.
 
-#### Directord with Bootstrapping
+##### Directord with Bootstrapping
 
 The directord cluster was bootstrapped with the
 [Native Bootstrap](installation.md#bootstrap-natively) process. Before running
@@ -162,7 +174,7 @@ example bootstrap process took **81** seconds (1.5 minutes) to complete.
   seconds (1.69 minutes) using one linear orchestration.
 
 * Total execution time, including bootstrapping the environment was **96**
-  seconds (1.69 minutes) using one linear orchestration.
+  seconds (1.6 minutes) using one linear orchestration.
 
 #### Ansible
 
