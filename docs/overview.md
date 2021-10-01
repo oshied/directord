@@ -30,13 +30,6 @@ easily scaling to hundreds of clients without impacting throughput. While the
 User is expected to interact with the system via CLI, Directord does provide
 bindings for programable interfaces.
 
-> The following diagram shows the application flow when using the ZMQ
-  messaging driver. While some items in this diagram may be ZMQ specific,
-  the general process will remain the same no matter the active messaging
-  driver.
-
-![Directord](assets/Directord.png)
-
 ### Data storage and persistance
 
 Directord has two modes of operation for data-storage and persistence.
