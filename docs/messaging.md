@@ -32,6 +32,21 @@ dispatch router.
 
 ![Directord](assets/driver-messaging.png)
 
+### Configuration
+
+With the Directord needs to be configured to run with the `messaging` driver.
+To do this configuration edit the `/etc/directord/config.yaml` file and add
+the following options.
+
+```yaml
+driver: messaging
+server_address: 127.0.0.1
+```
+
+> NOTE: The server address is the location of the AMQP Server and can be
+  anywhere, so long as Directord and the client targets are able to
+  router to the defined location.
+
 #### Requirements
 
 Before running the `messaging` driver, `qdrouterd` needs to be setup within the
