@@ -488,7 +488,9 @@ class TestServer(tests.TestDriverBase):
             ),
         ]
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1]
-        self.server.run_interactions(sentinel=True)
+        with patch.object(self.mock_driver, "job_check") as mock_job_check:
+            mock_job_check.side_effect = [True, True, False]
+            self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
     def test_run_interactions_idle(self, mock_time):
@@ -515,7 +517,9 @@ class TestServer(tests.TestDriverBase):
             ),
         ]
         mock_time.side_effect = [1, 66, 1, 1, 1, 1, 1, 1]
-        self.server.run_interactions(sentinel=True)
+        with patch.object(self.mock_driver, "job_check") as mock_job_check:
+            mock_job_check.side_effect = [True, True, False]
+            self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
     def test_run_interactions_ramp(self, mock_time):
@@ -542,7 +546,9 @@ class TestServer(tests.TestDriverBase):
             ),
         ]
         mock_time.side_effect = [1, 34, 1, 1, 1, 1, 1, 1]
-        self.server.run_interactions(sentinel=True)
+        with patch.object(self.mock_driver, "job_check") as mock_job_check:
+            mock_job_check.side_effect = [True, True, False]
+            self.server.run_interactions(sentinel=True)
 
     @patch("time.time", autospec=True)
     def test_run_interactions_run_backend(
@@ -571,8 +577,10 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
-        self.server.run_interactions(sentinel=True)
+        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1]
+        with patch.object(self.mock_driver, "job_check") as mock_job_check:
+            mock_job_check.side_effect = [True, True, False]
+            self.server.run_interactions(sentinel=True)
 
     @patch("directord.server.Server._set_job_status", autospec=True)
     @patch("time.time", autospec=True)
@@ -605,8 +613,10 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1]
-        self.server.run_interactions(sentinel=True)
+        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        with patch.object(self.mock_driver, "job_check") as mock_job_check:
+            mock_job_check.side_effect = [True, True, False]
+            self.server.run_interactions(sentinel=True)
         mock_log_debug.assert_called()
         mock_set_job_status.assert_called_with(
             ANY,

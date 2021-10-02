@@ -61,7 +61,7 @@ as a point of correlation.
 
 | Service                                | Actual Runtime (Seconds) |
 | -------------------------------------- | ------------------------ |
-| Directord                              | 20                       |
+| Directord                              | 19                       |
 | Directord (async)                      | 15                       |
 | Ansible (defaults)                     | 1947                     |
 | Ansible (Pipelining)                   | 1556                     |
@@ -90,7 +90,7 @@ $ sudo /opt/directord/bin/directord orchestrate ~/directord/tests/comparison-orc
 ```
 
 Running the comparison orchestration file with a six node test environment
-returns an actual run time of **20** seconds.
+returns an actual run time of **19** seconds.
 
 ##### Directord Defaults with Async Orchestrations
 
@@ -113,7 +113,7 @@ environment returns an actual run time of **15** seconds.
   to complete.
 
 * Total execution time for the linear orchestration, including
-  bootstrapping the environment was **101** seconds (1.69 minutes).
+  bootstrapping the environment was **100** seconds (1.69 minutes).
 
 * Total execution time for the async orchestration, including
   bootstrapping the environment was **96** seconds (1.6 minutes).

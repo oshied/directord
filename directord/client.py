@@ -41,6 +41,7 @@ class Client(interface.Interface):
         super(Client, self).__init__(args=args)
 
         self.q_return = self.get_queue()
+        self.q_processes = self.get_queue()
         self.base_component = components.ComponentBase()
         self.cache = dict()
         self.start_time = time.time()
@@ -624,42 +625,47 @@ class Client(interface.Interface):
         """Job results queue processor.
 
         Results are retrieved from the queue and status is set.
+
+        :returns: Boolean
         """
 
-        try:
-            (
-                stdout,
-                stderr,
-                outcome,
-                return_info,
-                job,
-                command,
-                execution_time,
-                block_on_tasks,
-            ) = self.q_return.get_nowait()
-        except ValueError as e:
-            self.log.critical("Return object value error [ %s ]", str(e))
-            return False
-        except Exception:
-            return False
-        else:
-            self.log.debug("Found task results for [ %s ].", job["job_id"])
-            with utils.ClientStatus(
-                job_id=job["job_id"],
-                command=command,
-                ctx=self,
-            ) as c:
-                job["execution_time"] = execution_time
-                self._set_job_status(
+        processed_results = False
+        while not self.q_return.empty():
+            try:
+                (
                     stdout,
                     stderr,
                     outcome,
                     return_info,
                     job,
+                    command,
+                    execution_time,
                     block_on_tasks,
-                    c,
-                )
-            return True
+                ) = self.q_return.get_nowait()
+            except ValueError as e:
+                self.log.critical("Return object value error [ %s ]", str(e))
+            except Exception:
+                break
+            else:
+                self.log.debug("Found task results for [ %s ].", job["job_id"])
+                with utils.ClientStatus(
+                    job_id=job["job_id"],
+                    command=command,
+                    ctx=self,
+                ) as c:
+                    job["execution_time"] = execution_time
+                    self._set_job_status(
+                        stdout,
+                        stderr,
+                        outcome,
+                        return_info,
+                        job,
+                        block_on_tasks,
+                        c,
+                    )
+                processed_results = True
+
+        return processed_results
 
     def _parent_check(self, conn, cache, job):
         """Check if a parent job has failed.
@@ -750,7 +756,6 @@ class Client(interface.Interface):
         poller_interval = 1
         cache_check_time = time.time()
         run_q_processor_thread = None
-        self.q_processes = self.get_queue()
         while True:
             if self.terminate_process(process=run_q_processor_thread):
                 run_q_processor_thread = None
@@ -766,7 +771,7 @@ class Client(interface.Interface):
 
             if self.job_q_results():
                 poller_interval, poller_time = 1, time.time()
-            elif self.q_return.empty():
+            else:
                 poller_interval = utils.return_poller_interval(
                     poller_time=poller_time,
                     poller_interval=poller_interval,
@@ -790,7 +795,7 @@ class Client(interface.Interface):
                 heartbeat_time = time.time() + 30
                 self.log.info("Heartbeat sent to server")
 
-            if self.driver.job_check(constant=poller_interval):
+            while self.driver.job_check(constant=poller_interval):
                 poller_interval, poller_time = 1, time.time()
                 (
                     _,
@@ -802,11 +807,11 @@ class Client(interface.Interface):
                     _,
                 ) = self.driver.job_recv()
                 self.handle_job(command=command, data=data, info=info)
-            else:
-                cache_check_time = self.prune_cache(
-                    cache_check_time=cache_check_time
-                )
-                time.sleep(poller_interval * 0.001)
+
+            cache_check_time = self.prune_cache(
+                cache_check_time=cache_check_time
+            )
+            time.sleep(poller_interval * 0.001)
 
             if sentinel:
                 self.driver.job_close()
