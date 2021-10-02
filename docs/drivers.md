@@ -158,12 +158,12 @@ server_address: 127.0.0.1
   anywhere, so long as Directord and the client targets are able to
   router to the defined location.
 
-#### Requirements
+### Requirements
 
 Before running the `messaging` driver, `qdrouterd` needs to be setup within the
 environment.
 
-###### Running a local QPID Dispatch Router
+### Running a local QPID Dispatch Router
 
 ``` shell
 $ sudo dnf install qpid-dispatch-router
