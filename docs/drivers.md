@@ -1,11 +1,27 @@
-# Authentication
+# Messaging Drivers
 
 * TOC
 {:toc}
 
-Directord supports two forms of authentication, **Shared Key** and
-**Curve25519**. Both of these authentication methods enhance the security of an
-environment however both methods have some pros and cons.
+Directord is powered by message platforms. As such, to run Directord a
+messaging driver needs to be selected, which may require additional setup
+based on the operating environment.
+
+## ZMQ
+
+Status: `Default`
+
+Used for distributed mesh communication between the server and client nodes.
+No additional setup is required outside of the initial package installation.
+
+> The following diagram shows the application flow when using the ZeroMQ
+  driver.
+
+![Directord](assets/driver-zmq.png)
+
+Directord with the ZMQ driver supports two forms of authentication, **Shared
+Key** and **Curve25519**. Both of these authentication methods enhance the
+security of an environment however both methods have some pros and cons.
 
 | Method      | Overview    |
 | ----------- | ----------- |
@@ -89,7 +105,7 @@ $ directord orchestrate sync-curve-keys.yaml
   defining a restriction on the CLI. Once files are synchronized the client
   will need to be configured and restarted.
 
-#### Key Rotation
+### Key Rotation
 
 When encryption is enabled it is important to be able to rotate keys and
 restart services whenever required. Directord makes this simple using both its
@@ -113,3 +129,49 @@ $ directord manage --list-nodes
 ```
 
 > Learn more about [Orchestrations here](orchestrations.md).
+
+## Messaging
+
+Status: `Development`
+
+Based on OSLO messaging and can make use of many messaging backends. For the
+purpose of this example, the environment will be configured to use the QPID
+dispatch router.
+
+> The following diagram shows the application flow when using the Messaging
+  driver.
+
+![Directord](assets/driver-messaging.png)
+
+### Configuration
+
+With the Directord needs to be configured to run with the `messaging` driver.
+To do this configuration edit the `/etc/directord/config.yaml` file and add
+the following options.
+
+```yaml
+driver: messaging
+server_address: 127.0.0.1
+```
+
+> NOTE: The server address is the location of the AMQP Server and can be
+  anywhere, so long as Directord and the client targets are able to
+  router to the defined location.
+
+#### Requirements
+
+Before running the `messaging` driver, `qdrouterd` needs to be setup within the
+environment.
+
+###### Running a local QPID Dispatch Router
+
+``` shell
+$ sudo dnf install qpid-dispatch-router
+```
+
+Once the dependecies are installed, enable and start the server process.
+
+``` shell
+$ sudo systemctl enable qdrouterd.service
+$ sudo systemctl start qdrouterd.service
+```
