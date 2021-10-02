@@ -593,7 +593,7 @@ class Server(interface.Interface):
                         **send_item,
                     )
 
-            if self.driver.job_check(constant=poller_interval):
+            while self.driver.job_check(constant=poller_interval):
                 (
                     identity,
                     msg_id,
