@@ -54,6 +54,10 @@ Documentation needed to be successful with Directord.
 * [Orchestrations](orchestrations.md)
 * [Testing](testing.md)
 
+Comparative Execution Analysis of Different Tools.
+
+* [Analysis](analysis.md)
+
 ### Have Questions?
 
 Join us on [`libera.chat`](https://libera.chat/guides/connect) at
