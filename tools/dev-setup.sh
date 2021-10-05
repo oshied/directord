@@ -47,26 +47,32 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   fi
 fi
 
+if [[ ${ID} == "rhel" ]] && [[ ${DRIVER} == "messaging" ]]; then
+    echo "messaging driver not yet supported with RHEL."
+    exit 1
+fi
+
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   PACKAGES="git python38-devel gcc python3-pyyaml zeromq libsodium"
-  if [ "${DRIVER}" == "messaging" ]; then
-    PACKAGES+=" qpid-dispatch-router"
+  if [[ ${DRIVER} == "messaging" ]]; then
+    PACKAGES+=" qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
   fi
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3.8}
+  CA_PATH=/etc/pki/ca-trust/source/anchors/cm-local-ca.pem
 elif [[ ${ID} == "fedora" ]]; then
-  PACKAGES="git python3-devel gcc python3-pyyaml zeromq libsodium"
-  if [ "${DRIVER}" == "messaging" ]; then
-    PACKAGES+=" qpid-dispatch-router"
-  fi
+  PACKAGES="git python3-devel gcc python3-pyyaml zeromq libsodium qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
+  CA_PATH=/etc/pki/ca-trust/source/anchors/cm-local-ca.pem
 elif [[ ${ID} == "ubuntu" ]]; then
+  export DEBIAN_FRONTEND=noninteractive
   add-apt-repository -y ppa:qpid/released
-  PACKAGES="git python3-all python3-venv python3-yaml python3-zmq qdrouterd"
-  apt update
+  PACKAGES="git python3-all python3-venv python3-yaml python3-zmq python3-dev qdrouterd openssl libssl-dev certmonger debhelper dh-python gcc g++ cmake swig pkg-config doxygen uuid-dev libssl-dev libsasl2-2 libsasl2-modules libsasl2-dev libjsoncpp-dev cyrus-dev python3-all-dev python3-setuptools python3 python3-dev acl"
+  apt -y update
   apt -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
+  CA_PATH=/usr/local/share/ca-certificates/directord/cm-local-ca.pem
 else
   echo -e "Failed unknown OS"
   exit 99
@@ -84,7 +90,7 @@ else
 fi
 
 # Create basic development configuration
-mkdir -p /etc/directord /etc/directord/private_keys /etc/directord/public_keys
+mkdir -p /etc/directord /etc/directord/private_keys /etc/directord/public_keys /etc/directord/messaging/ssl
 ${VENV_PATH}/bin/python3 <<EOC
 import yaml
 try:
@@ -94,6 +100,8 @@ except FileNotFoundError:
     config = dict()
 config["debug"] = True
 config["driver"] = "${DRIVER}"
+if config["driver"] == "messaging":
+    config["messaging_ssl_ca_path"] = "${CA_PATH}"
 with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC

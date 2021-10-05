@@ -89,8 +89,8 @@ jobs:
           python -m pip install --upgrade pip
       - name: Run install
         run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
-      - name: Start qdrouterd
-        run: sudo systemctl start qdrouterd.service
+      - name: Setup SSL encryption for Qpid
+        run: sudo tools/scripts/messaging/messaging-ssl-setup.sh
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -404,8 +404,30 @@ jobs:
           python -m pip install --upgrade pip
       - name: Run install
         run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
-      - name: Start qdrouterd
-        run: sudo systemctl start qdrouterd.service
+      - name: Setup SSL encryption for Qpid
+        run: |
+          sudo systemctl enable certmonger.service
+          sudo systemctl restart certmonger.service
+          sudo mkdir -p /usr/local/share/ca-certificates/directord
+          sudo openssl pkcs12 -in /var/lib/certmonger/local/creds -out /usr/local/share/ca-certificates/directord/cm-local-ca.pem -nokeys -nodes -passin pass:''
+          sudo chmod 0644 /usr/local/share/ca-certificates/directord/cm-local-ca.pem
+          sudo update-ca-certificates
+          sudo openssl x509 -checkend 0 -noout -in /usr/local/share/ca-certificates/directord/cm-local-ca.pem
+          sudo mkdir -p /etc/directord/messaging/ssl
+          sudo getcert stop-tracking --keyfile /tmp/directord-server.key --certfile /tmp/directord-server.crt || true
+          sudo getcert request --ca local --wait --wait-timeout 60 --keyfile /tmp/directord-server.key --certfile /tmp/directord-server.crt
+          sudo mv /tmp/directord-server.key /etc/directord/messaging/ssl/directord-server.key
+          sudo mv /tmp/directord-server.crt /etc/directord/messaging/ssl/directord-server.crt
+          sudo cp /opt/directord/share/directord/tools/config/messaging/qdrouterd.conf /etc/qpid-dispatch/qdrouterd.conf
+          # Fix path to CA for ubuntu
+          sudo sed -i "s#/etc/pki/ca-trust/source/anchors/cm-local-ca.pem#/usr/local/share/ca-certificates/directord/cm-local-ca.pem#g" /etc/qpid-dispatch/qdrouterd.conf
+          sudo setfacl -m u:qdrouterd:r /etc/directord/messaging/ssl/*
+          sudo systemctl enable qdrouterd
+          sudo systemctl restart qdrouterd
+          sudo getcert stop-tracking --keyfile /tmp/directord-client.key --certfile /tmp/directord-client.crt || true
+          sudo getcert request --ca local --wait --wait-timeout 60 --keyfile /tmp/directord-client.key --certfile /tmp/directord-client.crt
+          sudo mv /tmp/directord-client.key /etc/directord/messaging/ssl/directord-client.key
+          sudo mv /tmp/directord-client.crt /etc/directord/messaging/ssl/directord-client.crt
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd

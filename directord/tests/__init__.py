@@ -135,6 +135,7 @@ class FakeArgs:
     timeout = 600
     curve_encryption = None
     force_async = False
+    messaging_ssl_ca_path = "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem"
 
 
 class MockSocket:

@@ -103,5 +103,21 @@ setuptools.setup(
             "share/directord/tools",
             [i for i in glob.glob("tools/*") if os.path.isfile(i)],
         ),
+        (
+            "share/directord/tools/config/messaging",
+            [
+                i
+                for i in glob.glob("tools/config/messaging/*")
+                if os.path.isfile(i)
+            ],
+        ),
+        (
+            "share/directord/tools/scripts/messaging",
+            [
+                i
+                for i in glob.glob("tools/scripts/messaging/*")
+                if os.path.isfile(i)
+            ],
+        ),
     ],
 )

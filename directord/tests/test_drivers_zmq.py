@@ -26,7 +26,7 @@ from directord.drivers import zmq as zmq_driver
 class TestDriverZMQSharedAuth(unittest.TestCase):
     def setUp(self):
         self.driver = zmq_driver.Driver(
-            args=tests.FakeArgs, connection_string="tcp://localhost"
+            args=tests.FakeArgs, bind_address="localhost"
         )
         self.driver.encrypted_traffic = True
         self.driver.secret_keys_dir = "test/key"
@@ -70,7 +70,7 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
 class TestDriverZMQ(unittest.TestCase):
     def setUp(self):
         self.driver = zmq_driver.Driver(
-            args=tests.FakeArgs, connection_string="tcp://localhost"
+            args=tests.FakeArgs, bind_address="localhost"
         )
 
     def tearDown(self):

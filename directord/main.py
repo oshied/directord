@@ -153,6 +153,18 @@ def _args(exec_args=None):
         default=str(os.getenv("DIRECTORD_CACHE_PATH", "/var/cache/directord")),
         type=str,
     )
+    parser.add_argument(
+        "--messaging-ssl-ca-path",
+        help=("Messaging driver SSL CA path"),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_CA_PATH",
+                "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem",
+            )
+        ),
+        type=str,
+    )
     subparsers = parser.add_subparsers(
         help="Mode sub-command help", dest="mode"
     )
