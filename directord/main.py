@@ -668,6 +668,7 @@ def main():
                         "HOST_UPTIME",
                         "AGENT_UPTIME",
                         "MACHINE_ID",
+                        "DRIVER",
                     ]
                 (
                     tabulated_data,
