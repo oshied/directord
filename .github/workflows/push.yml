@@ -13,7 +13,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
-          repository: Directord/directord/directord
+          repository: directord/directord/directord
           tag_with_ref: true
 
   pypi_push_and_publish_pre:
