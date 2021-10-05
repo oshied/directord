@@ -756,6 +756,7 @@ class Client(interface.Interface):
         poller_interval = 1
         cache_check_time = time.time()
         run_q_processor_thread = None
+        original_credit = self.driver.credit
         while True:
             if self.terminate_process(process=run_q_processor_thread):
                 run_q_processor_thread = None
@@ -791,11 +792,16 @@ class Client(interface.Interface):
                     host_uptime=host_uptime,
                     agent_uptime=agent_uptime,
                     version=version,
+                    driver=self.args.driver,
                 )
                 heartbeat_time = time.time() + 30
                 self.log.info("Heartbeat sent to server")
 
-            while self.driver.job_check(constant=poller_interval):
+            while (
+                self.driver.job_check(constant=poller_interval)
+                and self.driver.credit > 0
+            ):
+                self.driver.credit -= 1
                 poller_interval, poller_time = 1, time.time()
                 (
                     _,
@@ -812,6 +818,8 @@ class Client(interface.Interface):
                 cache_check_time=cache_check_time
             )
             time.sleep(poller_interval * 0.001)
+
+            self.driver.credit = original_credit
 
             if sentinel:
                 self.driver.job_close()

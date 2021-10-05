@@ -64,6 +64,8 @@ class Driver(drivers.BaseDriver):
         self.backend_server = None
         self.job_q = multiprocessing.Queue()
         self.backend_q = multiprocessing.Queue()
+        self.send_q = multiprocessing.Queue()
+        self.process_send_q = None
         self.timeout = 1
 
     def _check(self, queue, interval=1, constant=1000):
@@ -84,6 +86,7 @@ class Driver(drivers.BaseDriver):
             time.sleep(self.timeout)
             return False
         else:
+            self.log.debug("Current transport credit [ %s ]", self.credit)
             return True
 
     @expose
@@ -234,22 +237,24 @@ class Driver(drivers.BaseDriver):
 
         if self.mode == "server":
             server_target = "directord"
+            pool_size = 16
         else:
             server_target = self.machine_id
+            pool_size = 1
 
         if not self.backend_server:
             self.backend_server = self._rpc_server(
                 server_target=server_target, topic="directord-backend"
             )
             self.log.info("Starting messaging backend server")
-            self.backend_server.start(override_pool_size=1)
+            self.backend_server.start(override_pool_size=pool_size)
 
         if not self.server:
             self.server = self._rpc_server(
                 server_target=server_target, topic="directord"
             )
             self.log.info("Starting messaging server")
-            self.server.start(override_pool_size=1)
+            self.server.start(override_pool_size=pool_size)
 
     def _process_send(
         self,
@@ -363,9 +368,10 @@ class Driver(drivers.BaseDriver):
         else:
             target = oslo_messaging.Target(topic=topic)
 
-        client = oslo_messaging.RPCClient(self.transport, target, timeout=2)
-
-        return client.call({}, method, **kwargs)
+        client = oslo_messaging.RPCClient(
+            self.transport, target, timeout=2, retry=3
+        )
+        client.call({}, method, **kwargs)
 
     def backend_check(self, interval=1, constant=1000):
         """Return True if the backend contains work ready.
@@ -452,7 +458,7 @@ class Driver(drivers.BaseDriver):
         )
 
     def heartbeat_send(
-        self, host_uptime=None, agent_uptime=None, version=None
+        self, host_uptime=None, agent_uptime=None, version=None, driver=None
     ):
         """Send a heartbeat.
 
@@ -462,6 +468,8 @@ class Driver(drivers.BaseDriver):
         :type agent_uptime: String
         :param version: Sender directord version
         :type version: String
+        :param version: Driver information
+        :type version: String
         """
 
         data = json.dumps(
@@ -470,6 +478,7 @@ class Driver(drivers.BaseDriver):
                 "host_uptime": host_uptime,
                 "agent_uptime": agent_uptime,
                 "machine_id": self.machine_id,
+                "driver": driver,
             }
         )
 
@@ -478,7 +487,6 @@ class Driver(drivers.BaseDriver):
         self._send(
             method="_heartbeat",
             topic="directord",
-            server="directord",
             identity=self.identity,
             data=data,
         )
@@ -565,4 +573,8 @@ class Driver(drivers.BaseDriver):
     def key_generate(self, keys_dir, key_type):
         """Generate certificate."""
 
-        pass
+        self.log.error(
+            "NotImplemented Key generation is not supported from within"
+            " the messaging driver. Certificates will need to be"
+            " generated outside of Directord."
+        )

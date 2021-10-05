@@ -51,13 +51,13 @@ class TestDriverMessaging(unittest.TestCase):
                 "host_uptime": 10,
                 "agent_uptime": 11,
                 "machine_id": "XXX123",
+                "driver": None,
             }
         )
         mock_send.assert_called()
         mock_send.assert_called_with(
             method="_heartbeat",
             topic="directord",
-            server="directord",
             identity=ANY,
             data=data,
         )
@@ -68,7 +68,6 @@ class TestDriverMessaging(unittest.TestCase):
         mock_send.assert_called_with(
             method="_heartbeat",
             topic="directord",
-            server="directord",
             identity=ANY,
             data=data,
         )

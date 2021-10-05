@@ -397,7 +397,7 @@ class Server(interface.Interface):
         self.driver.backend_init()
         poller_time = time.time()
         poller_interval = 128
-
+        original_credit = self.driver.credit
         while True:
             poller_interval = utils.return_poller_interval(
                 poller_time=poller_time,
@@ -405,7 +405,11 @@ class Server(interface.Interface):
                 log=self.log,
             )
 
-            if self.driver.backend_check(constant=poller_interval):
+            while (
+                self.driver.backend_check(constant=poller_interval)
+                and self.driver.credit > 0
+            ):
+                self.driver.credit -= 1
                 poller_interval, poller_time = 128, time.time()
                 (
                     identity,
@@ -535,6 +539,8 @@ class Server(interface.Interface):
                         info,
                     )
 
+            self.driver.credit = original_credit
+
             if sentinel:
                 break
 
@@ -558,6 +564,7 @@ class Server(interface.Interface):
         prune_time = time.time()
         poller_interval = 1
         run_jobs_thread = None
+        original_credit = self.driver.credit
         while True:
             if self.terminate_process(process=run_jobs_thread):
                 run_jobs_thread = None
@@ -577,7 +584,8 @@ class Server(interface.Interface):
                     log=self.log,
                 )
 
-            while not self.send_queue.empty():
+            while not self.send_queue.empty() and self.driver.credit > 0:
+                self.driver.credit -= 1
                 try:
                     send_item = self.send_queue.get_nowait()
                 except Exception:
@@ -593,7 +601,15 @@ class Server(interface.Interface):
                         **send_item,
                     )
 
-            while self.driver.job_check(constant=poller_interval):
+            # NOTE(cloudnull): Credit is restored after jobs are sent. This
+            #                  is done to balance ingress/egress.
+            self.driver.credit = original_credit
+
+            while (
+                self.driver.job_check(constant=poller_interval)
+                and self.driver.credit > 0
+            ):
+                self.driver.credit -= 1
                 (
                     identity,
                     msg_id,

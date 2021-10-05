@@ -75,6 +75,8 @@ class Driver(drivers.BaseDriver):
         )
         self.bind_job = None
         self.bind_backend = None
+        self.hwm = 1024
+        self.credit = int(self.hwm * 0.75)
 
     def __copy__(self):
         """Return a new copy of the driver."""
@@ -97,7 +99,7 @@ class Driver(drivers.BaseDriver):
             connection=self.connection_string,
             port=self.args.backend_port,
         )
-        bind.set_hwm(1024)
+        bind.set_hwm(self.hwm)
         self.log.debug(
             "Identity [ %s ] backend connect hwm state [ %s ]",
             self.identity,
@@ -117,7 +119,7 @@ class Driver(drivers.BaseDriver):
             connection=self.connection_string,
             port=self.args.backend_port,
         )
-        bind.set_hwm(1024)
+        bind.set_hwm(self.hwm)
         self.log.debug(
             "Identity [ %s ] backend connect hwm state [ %s ]",
             self.identity,
@@ -139,7 +141,11 @@ class Driver(drivers.BaseDriver):
         """
 
         socks = dict(self.poller.poll(interval * constant))
-        return socks.get(bind) == zmq.POLLIN
+        if socks.get(bind) == zmq.POLLIN:
+            self.log.debug("Current transport credit [ %s ]", self.credit)
+            return True
+        else:
+            return False
 
     def _close(self, socket):
         try:
@@ -362,18 +368,19 @@ class Driver(drivers.BaseDriver):
         """
 
         bind = self.ctx.socket(socket_type)
-        # NOTE(cloudnull): STUPID SOLUTION. We should have
-        #                  a more intelligent HWM solution.
-        try:
-            bind.sndhwm = bind.rcvhwm = 0
-        except AttributeError:
-            bind.hwm = 0
 
-        bind.set_hwm(0)
-        bind.setsockopt(zmq.SNDHWM, 0)
-        bind.setsockopt(zmq.RCVHWM, 0)
+        hwm = int(self.hwm * 4)
+        try:
+            bind.sndhwm = bind.rcvhwm = hwm
+        except AttributeError:
+            bind.hwm = hwm
+
+        bind.set_hwm(hwm)
+        bind.setsockopt(zmq.SNDHWM, hwm)
+        bind.setsockopt(zmq.RCVHWM, hwm)
         if socket_type == zmq.ROUTER:
             bind.setsockopt(zmq.ROUTER_MANDATORY, 1)
+
         return bind
 
     @staticmethod
@@ -624,7 +631,7 @@ class Driver(drivers.BaseDriver):
         zmq_auth.create_certificates(keys_dir, key_type)
 
     def heartbeat_send(
-        self, host_uptime=None, agent_uptime=None, version=None
+        self, host_uptime=None, agent_uptime=None, version=None, driver=None
     ):
         """Send a heartbeat.
 
@@ -633,6 +640,8 @@ class Driver(drivers.BaseDriver):
         :param agent_uptime: Sender agent uptime
         :type agent_uptime: String
         :param version: Sender directord version
+        :type version: String
+        :param version: Driver information
         :type version: String
         """
 
@@ -644,6 +653,7 @@ class Driver(drivers.BaseDriver):
                     "host_uptime": host_uptime,
                     "agent_uptime": agent_uptime,
                     "machine_id": self.machine_id,
+                    "driver": driver,
                 }
             ),
         )

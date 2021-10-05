@@ -128,7 +128,8 @@ class Component(components.ComponentBase):
                     identity,
                 )
 
-            if driver.backend_check(interval=0.5):
+            if driver.backend_check(interval=0.5) and driver.credit > 0:
+                driver.credit -= 1
                 (
                     msg_id,
                     control,
@@ -221,6 +222,7 @@ class Component(components.ComponentBase):
                         control,
                         info,
                     )
+
             elif (
                 sorted(confirmed_identities) == sorted(job["identity"])
                 and all_identities_sent
