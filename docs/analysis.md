@@ -59,13 +59,18 @@ until they ran to completion. The results were then collected using each tools
 built-in profiling apparatus; results were further verified using system time
 as a point of correlation.
 
-| Service                                | Actual Runtime (Seconds) |
-| -------------------------------------- | ------------------------ |
-| Directord                              | 19                       |
-| Directord (async)                      | 15                       |
-| Ansible (defaults)                     | 1947                     |
-| Ansible (Pipelining)                   | 1556                     |
-| Ansible (Pipelining and Free strategy) | 949                      |
+| Service                 | Configuration    | Actual Runtime (Seconds) |
+| ----------------------- | ---------------- | ------------------------ |
+| Directord               | ZMQ Driver       | 19                       |
+| Directord (async)       | ZMQ Driver       | 15                       |
+| Directord               | Messaging Driver | 101                      |
+| Directord (async)       | Messaging Driver | 99                       |
+| Ansible                 | Defaults         | 1947                     |
+| Ansible                 | Pipelining       | 1556                     |
+| Ansible (free strategy) | Pipelining       | 949                      |
+
+> The configuration and installation process for each of these test
+  environments is within the following subsections.
 
 #### Directord
 
@@ -86,7 +91,7 @@ sudo /opt/directord/bin/pip install --pre directord
 * Run the Directord orchestration command to execute 1000 trivial jobs.
 
 ``` shell
-$ sudo /opt/directord/bin/directord orchestrate ~/directord/tests/comparison-orchestration.yaml --target directord-{0..5}
+$ sudo /opt/directord/bin/directord orchestrate tests/comparison-orchestration.yaml --target directord-{0..5}
 ```
 
 Running the comparison orchestration file with a six node test environment
@@ -98,11 +103,41 @@ returns an actual run time of **19** seconds.
   asynchronous orchestrations.
 
 ``` shell
-$ sudo /opt/directord/bin/directord orchestrate ~/directord/tests/comparison-orchestration-async.yaml --target directord-{0..5}
+$ sudo /opt/directord/bin/directord orchestrate tests/comparison-orchestration-async.yaml --target directord-{0..5}
 ```
 
 Running the comparison async orchestration file with a six node test
 environment returns an actual run time of **15** seconds.
+
+##### Directord Messaging Driver
+
+> The Messaging driver was deployed following the
+  [installation](installation.md#installation) process using the
+  `directord-dev-bootstrap-messaging-catalog.yaml` catalog.
+
+* Run the Directord orchestration command to execute 1000 trivial jobs.
+
+``` shell
+$ sudo /opt/directord/bin/directord orchestrate tests/comparison-orchestration.yaml --target directord-{0..5}
+```
+
+Running the comparison orchestration file with a six node test environment
+returns an actual run time of **101** seconds (1.68 minutes).
+
+##### Directord Messaging Driver with Async Orchestrations
+
+> The Messaging driver was deployed following the
+  [installation](installation.md#installation) process using the
+  `directord-dev-bootstrap-messaging-catalog.yaml` catalog.
+
+* Run the Directord orchestration command to execute 1000 trivial jobs.
+
+``` shell
+$ sudo /opt/directord/bin/directord orchestrate tests/comparison-orchestration-async.yaml --target directord-{0..5}
+```
+
+Running the comparison orchestration file with a six node test environment
+returns an actual run time of **99** seconds (1.65 minutes).
 
 ##### Directord with Bootstrapping
 
@@ -112,11 +147,18 @@ environment returns an actual run time of **15** seconds.
   time. The example bootstrap process took **81** seconds (1.5 minutes)
   to complete.
 
-* Total execution time for the linear orchestration, including
-  bootstrapping the environment was **100** seconds (1.69 minutes).
+* Total execution time for the ZMQ driver with an linear orchestration,
+  including bootstrapping the environment was **100** seconds
+  (1.69 minutes).
 
-* Total execution time for the async orchestration, including
-  bootstrapping the environment was **96** seconds (1.6 minutes).
+* Total execution time for the ZMQ driver with an async orchestration,
+  including bootstrapping the environment was **96** seconds (1.6 minutes).
+
+* Total execution time for the Messaging driver with an linear orchestration,
+  including bootstrapping the environment was **182** seconds (3.03 minutes).
+
+* Total execution time for the Messaging driver with an async orchestration,
+  including bootstrapping the environment was **180** seconds (3 minutes).
 
 #### Ansible
 
