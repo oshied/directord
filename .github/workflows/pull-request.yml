@@ -127,6 +127,112 @@ jobs:
           name: functional-test-logs
           path: /tmp/directord-*.log
 
+  functional_memory_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Configure memory backend
+        run: >-
+          echo 'datastore: memory' | sudo tee -a /etc/directord/config.yaml
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Execute functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 240 /opt/directord/bin/directord \
+                                              orchestrate \
+                                              functional-tests.yaml \
+                                              --poll \
+                                              --check
+      - name: Generate log details
+        run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+        if: failure()
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-memory-test-logs
+          path: /tmp/directord-*.log
+
+  functional_redis_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Install Redis
+        run: sudo apt install -y redis
+      - name: Start Redis
+        run: sudo systemctl restart redis
+      - name: Configure redis backend
+        run: >-
+          echo 'datastore: redis://127.0.0.1:6379/2' | sudo tee -a /etc/directord/config.yaml
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Execute functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 240 /opt/directord/bin/directord \
+                                              orchestrate \
+                                              functional-tests.yaml \
+                                              --poll \
+                                              --check
+      - name: Generate log details
+        run: |
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+        if: failure()
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-redis-test-logs
+          path: /tmp/directord-*.log
+
   functional_defaults_query_check:
     runs-on: ubuntu-latest
     steps:

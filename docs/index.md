@@ -1,10 +1,16 @@
 # Welcome to Directord
 
-Directord was created to solve several deployment specific problems which are
-unique to heterogeneous large scale environments. While this application was
-built for scale, easily scaling to thousands of targets, it is also perfectly
-suited for single system environments which can gain the benifits of a simple,
-fast, stable, and unique deployment engine.
+Directord is a powerful automation platform and protocol built to drive
+infrastructure and applications across the physical, edge, IoT, and cloud
+boundaries; efficient, pseudo-real-time, at scale, made simple.
+
+Directord was created to solve several deployment-specific problems unique to
+large-scale heterogeneous environments; however, this power doesn't require
+elaborate operations teams or huge hardware commitments. Directord has been
+built to be efficient at any scale. The application flexibility created by
+Directord allows operators to scale as needed using a simple, fast, stable, and
+unique deployment engine with an easy-to-understand DSL. From one node to
+thousands, Directord has it covered.
 
 > Direct your deployment instead of being driven insane by elements,
   ingredients, and attestations.

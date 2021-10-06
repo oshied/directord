@@ -1,22 +1,20 @@
 # Directord
 
-A deployment framework built to manage the data center life cycle.
-
-> Task driven deployment, simplified, directed by you.
-
-Directord is an asynchronous deployment and operations platform with the aim to
-better enable simplicity, faster time to delivery, and consistency.
+Directord is a powerful automation platform and protocol built to drive
+infrastructure and applications across the physical, edge, IoT, and cloud
+boundaries; [efficient, pseudo-real-time, at scale](https://directord.com/analysis.html),
+made simple.
 
 ## Design Principles
 
 The Directord design principles can be
-[found here](https://cloudnull.github.io/directord#first-principles).
+[found here](https://directord.com#first-principles).
 
 ## Documentation
 
 Additional documentation covering everything from application design, wire
 diagrams, installation, usage, and more can all be
-[found here](https://cloudnull.github.io/directord).
+[found here](https://directord.com).
 
 ## Welcome Contributors
 
@@ -26,7 +24,7 @@ diagrams, installation, usage, and more can all be
   welcomed. Directord is an open platform built for operators. If you see
   something broken, please feel free to raise a but and/or fix it.
 
-* Information on running tests can be [found here](https://cloudnull.github.io/directord/testing).
+* Information on running tests can be [found here](https://directord.com/testing).
 
 ### Have Questions?
 
