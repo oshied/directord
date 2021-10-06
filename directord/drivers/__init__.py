@@ -18,6 +18,16 @@ import time
 from directord import logger
 
 
+def parse_args(parser):
+    """Add arguments for this driver to the parser.
+
+    :param parser: Parser
+    :type parser: Object
+    """
+
+    pass
+
+
 class BaseDriver:
     coordination_failed = "\x07"  # Signals coordination failed
     coordination_ack = "\x10"  # Signals coordination acknowledged

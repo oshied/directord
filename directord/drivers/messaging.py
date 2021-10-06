@@ -15,6 +15,7 @@
 import json
 import logging
 import multiprocessing
+import os
 import pkg_resources
 import time
 
@@ -28,6 +29,100 @@ import tenacity
 
 from directord import drivers
 from directord import logger
+
+
+def parse_args(parser):
+    """Add arguments for this driver to the parser.
+
+    :param parser: Parser
+    :type parser: Object
+    """
+
+    messaging_group = parser.add_argument_group("messaging driver options")
+    messaging_group.add_argument(
+        "--messaging-ssl",
+        help=("Enable messaging driver SSL encryption. Default: %(default)s"),
+        metavar="BOOLEAN",
+        default=bool(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL",
+                "True",
+            )
+        ),
+        type=bool,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-ca",
+        help=("Messaging driver SSL CA file path. Default: %(default)s"),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_CA",
+                "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem",
+            )
+        ),
+        type=str,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-server-cert",
+        help=(
+            "Messaging driver SSL server certificate file path. "
+            "Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_SERVER_CERT",
+                "/etc/directord/messaging/ssl/directord-server.crt",
+            )
+        ),
+        type=str,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-server-key",
+        help=(
+            "Messaging driver SSL server key file path. Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_SERVER_KEY",
+                "/etc/directord/messaging/ssl/directord-server.key",
+            )
+        ),
+        type=str,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-client-cert",
+        help=(
+            "Messaging driver SSL client certificate file path. "
+            "Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_CLIENT_CERT",
+                "/etc/directord/messaging/ssl/directord-client.crt",
+            )
+        ),
+        type=str,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-client-key",
+        help=(
+            "Messaging driver SSL client key file path. Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_CLIENT_KEY",
+                "/etc/directord/messaging/ssl/directord-client.key",
+            )
+        ),
+        type=str,
+    )
+
+    return parser
 
 
 class Driver(drivers.BaseDriver):
@@ -64,7 +159,6 @@ class Driver(drivers.BaseDriver):
             proto=self.proto, addr=self.identity
         )
 
-        self.ssl_ca_path = args.messaging_ssl_ca_path
         self.conf = self._rpc_conf()
         self.transport = self._rpc_transport()
         self.server = None
@@ -97,30 +191,34 @@ class Driver(drivers.BaseDriver):
         if self.mode == "server":
             conf.set_default(
                 "ssl_cert_file",
-                "/etc/directord/messaging/ssl/directord-server.crt",
+                self.args.messaging_ssl_server_cert,
                 "oslo_messaging_amqp",
             )
             conf.set_default(
                 "ssl_key_file",
-                "/etc/directord/messaging/ssl/directord-server.key",
+                self.args.messaging_ssl_server_key,
                 "oslo_messaging_amqp",
             )
         else:
             conf.set_default(
                 "ssl_cert_file",
-                "/etc/directord/messaging/ssl/directord-client.crt",
+                self.args.messaging_ssl_client_cert,
                 "oslo_messaging_amqp",
             )
             conf.set_default(
                 "ssl_key_file",
-                "/etc/directord/messaging/ssl/directord-client.key",
+                self.args.messaging_ssl_client_key,
                 "oslo_messaging_amqp",
             )
 
-        conf.set_default("ssl", True, "oslo_messaging_amqp")
+        conf.set_default(
+            "ssl",
+            self.args.messaging_ssl,
+            "oslo_messaging_amqp",
+        )
         conf.set_default(
             "ssl_ca_file",
-            self.ssl_ca_path,
+            self.args.messaging_ssl_ca,
             "oslo_messaging_amqp",
         )
 

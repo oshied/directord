@@ -101,7 +101,7 @@ except FileNotFoundError:
 config["debug"] = True
 config["driver"] = "${DRIVER}"
 if config["driver"] == "messaging":
-    config["messaging_ssl_ca_path"] = "${CA_PATH}"
+    config["messaging_ssl_ca"] = "${CA_PATH}"
 with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC

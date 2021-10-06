@@ -76,7 +76,10 @@ setuptools.setup(
             "directord = directord.main:main",
             "directord-server-systemd = directord.main:_systemd_server",
             "directord-client-systemd = directord.main:_systemd_client",
-        ]
+        ],
+        "directord.drivers": [
+            "messaging = directord.drivers.messaging",
+        ],
     },
     data_files=[
         (
