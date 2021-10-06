@@ -62,7 +62,6 @@ class Server(interface.Interface):
                 self.workers = disc.BaseDocument(
                     url=os.path.join(path, "workers")
                 )
-                self.workers.empty()
                 self.return_jobs = disc.BaseDocument(
                     url=os.path.join(path, "jobs")
                 )
@@ -72,15 +71,20 @@ class Server(interface.Interface):
                     db = int(url.path.lstrip("/"))
                 except ValueError:
                     db = 0
-                self.log.debug("Redis keyspace base is %s", db)
                 redis = directord.plugin_import(plugin=".datastores.redis")
-
+                self.log.debug("Redis worker keyspace is %s", db)
                 self.workers = redis.BaseDocument(
-                    url=url._replace(path="").geturl(), database=(db + 1)
+                    url=url._replace(path="").geturl(), database=(db)
                 )
+                jdb = db + 1
+                self.log.debug("Redis job keyspace base is %s", jdb)
                 self.return_jobs = redis.BaseDocument(
-                    url=url._replace(path="").geturl(), database=(db + 2)
+                    url=url._replace(path="").geturl(), database=(jdb)
                 )
+
+        # NOTE(cloudnull): Once the datastore is initialized, ensure that the
+        #                  worker pool is refreshed immediately.
+        self.workers.empty()
 
     def _set_job_status(
         self,
@@ -221,6 +225,14 @@ class Server(interface.Interface):
         :type targets: List
         """
 
+        _nodes = set()
+        for target in targets:
+            try:
+                target = target.decode()
+            except AttributeError:
+                pass
+            _nodes.add(target)
+
         self.lock.acquire()
         try:
             return self.return_jobs.set(
@@ -230,7 +242,7 @@ class Server(interface.Interface):
                     "INFO": dict(),
                     "STDOUT": dict(),
                     "STDERR": dict(),
-                    "_nodes": targets,
+                    "_nodes": list(sorted(_nodes)),
                     "VERB": job_item["verb"],
                     "JOB_SHA3_224": job_item["job_sha3_224"],
                     "JOB_DEFINITION": job_item,

@@ -12,7 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import json
+import pickle
 import time
 
 import redis
@@ -45,9 +45,8 @@ class BaseDocument:
 
         value = self.datastore.get(key)
         if value:
-            value = value.decode()
             try:
-                value = json.loads(value)
+                value = pickle.loads(value)
             except Exception:
                 return value
             else:
@@ -64,7 +63,23 @@ class BaseDocument:
         :type value: Object
         """
 
-        self.datastore.set(key, json.dumps(value))
+        try:
+            key = key.decode()
+        except AttributeError:
+            pass
+
+        if isinstance(value, dict):
+            try:
+                expire = int(value.get("time") - time.time())
+            except TypeError:
+                expire = None
+            else:
+                if expire < 1:
+                    expire = 1
+        else:
+            expire = None
+
+        self.datastore.set(key, pickle.dumps(value), ex=expire)
 
     def __delitem__(self, key):
         """Delete an item from the datastore.
@@ -89,7 +104,7 @@ class BaseDocument:
         :returns: List
         """
 
-        return self.datastore.keys("*")
+        return [i.decode() for i in self.datastore.keys("*")]
 
     def empty(self):
         """Empty all items from the datastore.
@@ -113,15 +128,7 @@ class BaseDocument:
     def prune(self):
         """Prune items that have a time based expiry."""
 
-        for item in self.datastore.keys("*"):
-            value = self.__getitem__(item)
-            try:
-                if time.time() >= value["time"]:
-                    self.datastore.delete(item)
-            except (KeyError, TypeError):
-                pass
-
-        return len(self.datastore.keys("*"))
+        return len(self.keys())
 
     def get(self, key):
         """Return the value of a given key.

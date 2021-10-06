@@ -37,6 +37,9 @@ Directord has two modes of operation for data-storage and persistence.
 * Ephemeral mode, only retain cluster and job information so long as the server
   process is running.
 
+> If the datastore option is set to **memory**, the server will spawn a manager
+  thread to facilitate the document store.
+
 * Persistent mode, datastore using external datastore; supported datastores
   are: Redis and File. The datastore option available in both config, or on the
   CLI and uses a standard RFC-1738 compatible string. This allows operators to
@@ -52,8 +55,11 @@ Directord has two modes of operation for data-storage and persistence.
 > The `datastore` option has three potential drivers, **memory**, **file**,
   or **redis**.
 
-> If the datastore option is set to **memory**, the server will spawn a manager
-  thread to facilitate the document store.
+| Datastore               | Configuration (/etc/directord/config.yaml) |
+| ----------------------- | ------------------------------------------ |
+| disc (default)          | file:///var/cache/directord                |
+| redis                   | redis://127.0.0.1:6379/4                   |
+| memory                  | memory                                     |
 
 #### Profiling
 
