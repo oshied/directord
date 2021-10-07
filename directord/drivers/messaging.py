@@ -64,59 +64,28 @@ def parse_args(parser):
         type=str,
     )
     messaging_group.add_argument(
-        "--messaging-ssl-server-cert",
+        "--messaging-ssl-cert",
         help=(
-            "Messaging driver SSL server certificate file path. "
+            "Messaging driver SSL certificate file path. "
             "Default: %(default)s"
         ),
         metavar="STRING",
         default=str(
             os.getenv(
-                "DIRECTORD_MESSAGING_SSL_SERVER_CERT",
-                "/etc/directord/messaging/ssl/directord-server.crt",
+                "DIRECTORD_MESSAGING_SSL_CERT",
+                "/etc/directord/messaging/ssl/directord.crt",
             )
         ),
         type=str,
     )
     messaging_group.add_argument(
-        "--messaging-ssl-server-key",
-        help=(
-            "Messaging driver SSL server key file path. Default: %(default)s"
-        ),
+        "--messaging-ssl-key",
+        help=("Messaging driver SSL key file path. Default: %(default)s"),
         metavar="STRING",
         default=str(
             os.getenv(
-                "DIRECTORD_MESSAGING_SSL_SERVER_KEY",
-                "/etc/directord/messaging/ssl/directord-server.key",
-            )
-        ),
-        type=str,
-    )
-    messaging_group.add_argument(
-        "--messaging-ssl-client-cert",
-        help=(
-            "Messaging driver SSL client certificate file path. "
-            "Default: %(default)s"
-        ),
-        metavar="STRING",
-        default=str(
-            os.getenv(
-                "DIRECTORD_MESSAGING_SSL_CLIENT_CERT",
-                "/etc/directord/messaging/ssl/directord-client.crt",
-            )
-        ),
-        type=str,
-    )
-    messaging_group.add_argument(
-        "--messaging-ssl-client-key",
-        help=(
-            "Messaging driver SSL client key file path. Default: %(default)s"
-        ),
-        metavar="STRING",
-        default=str(
-            os.getenv(
-                "DIRECTORD_MESSAGING_SSL_CLIENT_KEY",
-                "/etc/directord/messaging/ssl/directord-client.key",
+                "DIRECTORD_MESSAGING_SSL_KEY",
+                "/etc/directord/messaging/ssl/directord.key",
             )
         ),
         type=str,
@@ -188,29 +157,16 @@ class Driver(drivers.BaseDriver):
                 proton_driver(conf, transport.TransportURL(conf))
                 break
 
-        if self.mode == "server":
-            conf.set_default(
-                "ssl_cert_file",
-                self.args.messaging_ssl_server_cert,
-                "oslo_messaging_amqp",
-            )
-            conf.set_default(
-                "ssl_key_file",
-                self.args.messaging_ssl_server_key,
-                "oslo_messaging_amqp",
-            )
-        else:
-            conf.set_default(
-                "ssl_cert_file",
-                self.args.messaging_ssl_client_cert,
-                "oslo_messaging_amqp",
-            )
-            conf.set_default(
-                "ssl_key_file",
-                self.args.messaging_ssl_client_key,
-                "oslo_messaging_amqp",
-            )
-
+        conf.set_default(
+            "ssl_cert_file",
+            self.args.messaging_ssl_cert,
+            "oslo_messaging_amqp",
+        )
+        conf.set_default(
+            "ssl_key_file",
+            self.args.messaging_ssl_key,
+            "oslo_messaging_amqp",
+        )
         conf.set_default(
             "ssl",
             self.args.messaging_ssl,

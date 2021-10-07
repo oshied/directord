@@ -137,18 +137,8 @@ class FakeArgs:
     force_async = False
     messaging_ssl = True
     messaging_ssl_ca = "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem"
-    messaging_ssl_server_cert = (
-        "/etc/directord/messaging/ssl/directord-server.crt"
-    )
-    messaging_ssl_server_key = (
-        "/etc/directord/messaging/ssl/directord-server.key"
-    )
-    messaging_ssl_client_cert = (
-        "/etc/directord/messaging/ssl/directord-client.crt"
-    )
-    messaging_ssl_client_key = (
-        "/etc/directord/messaging/ssl/directord-client.key"
-    )
+    messaging_ssl_cert = "/etc/directord/messaging/ssl/directord.crt"
+    messaging_ssl_key = "/etc/directord/messaging/ssl/directord.key"
 
 
 class MockSocket:

@@ -5,7 +5,13 @@ directord_server:
   - ADD: dev-setup.sh dev-setup.sh
   - RUN: sudo DRIVER=messaging bash dev-setup.sh
   - ADD: scripts/messaging/messaging-ssl-setup.sh messaging-ssl-setup.sh
+  - ADD: scripts/messaging/getcert.sh getcert.sh
   - RUN: sudo ./messaging-ssl-setup.sh
+  - ADD: scripts/messaging/getcert.sh getcert.sh
+  - RUN: |-
+      {% for client in directord_clients['targets'] %}
+        sudo ./getcert.sh {{ client['host'] }} /tmp/ {{ client['host'] }}
+      {% endfor %}
   - RUN: sudo /opt/directord/bin/directord-server-systemd
   - RUN: sudo systemctl daemon-reload
   - RUN: sudo systemctl enable directord-server.service
@@ -15,8 +21,8 @@ directord_clients:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
   - RUN: sudo DRIVER=messaging bash dev-setup.sh
-  - ADD: scripts/messaging/messaging-ssl-setup.sh messaging-ssl-setup.sh
-  - RUN: sudo ./messaging-ssl-setup.sh
+  - ADD: /tmp/{{ directord_bootstrap['host'] }}.crt /etc/directord/messaging/ssl/{{ directord_bootstrap["host"] }}.crt
+  - ADD: /tmp/{{ directord_bootstrap['host'] }}.key /etc/directord/messaging/ssl/{{ directord_bootstrap["host"] }}.key
   - RUN: sudo /opt/directord/bin/directord-client-systemd
   - RUN: |-
       sudo python3 <<EOC
