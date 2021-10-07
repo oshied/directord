@@ -9,4 +9,5 @@ directord_clients:
     port: 22
     # username: centos  # If undefined the username is the same as the executing user.
   targets:
-  - host: 127.0.0.1
+  - name: client1  # This is an optional name.
+    host: 127.0.0.1

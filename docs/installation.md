@@ -61,6 +61,25 @@ $ directord bootstrap --catalog ${CATALOG_FILE_NAME} --catalog tools/directord-p
   clients; blueprinting is basic jinja and for the purpose of the bootstrap
   example is used like so `"{{ directord_server['targets'][0]['host'] }}"`.
 
+The bootstrap process within directord exposes a **magic** variable with all of
+the job definitions in it for a given execution. This allows operators to make
+runtime decisions when bootstrapping clients using all available information.
+The **magic** variable `directord_bootstrap` contains options specific to a
+single client.
+
+Example options from the `directord_bootstrap` key.
+
+``` json
+  {
+      "name": "String",
+      "host": "String",
+      "port": 22,
+      "username": "String",
+      "key_file": "String",
+      "jobs": [],
+  }
+```
+
 > In a [touchless](containerization.md#touchless-operations) operations
   scenario only the `directord_clients` would need to be defined for a bootstrap
   operation as the server would be provided for using the container image.
