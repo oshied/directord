@@ -100,6 +100,9 @@ class Bootstrap(directord.Processor):
                 port=target.get("port", args.get("port", 22)),
                 jobs=entry["jobs"],
             )
+            name = target.get("name")
+            if name:
+                item["name"] = name
             ordered_entries.append(item)
         return ordered_entries
 
@@ -268,6 +271,18 @@ class Bootstrap(directord.Processor):
                 localfile,
             )
 
+    def _blueprinter(self, string, catalog):
+        """Return a blueprinted string.
+
+        :param string: Plain-text execution string.
+        :type string: String
+        :param catalog: The job catalog definition.
+        :type catalog: Dictionary
+        :returns: String
+        """
+
+        return self.blueprint.from_string(string).render(**catalog)
+
     def bootstrap_exec(self, ssh, command, catalog):
         """Run a remote command.
 
@@ -295,8 +310,7 @@ class Bootstrap(directord.Processor):
             chan.open_session()
             if chan.request_pty() == 0:
                 self.log.debug("using PTY")
-            t_command = self.blueprint.from_string(command)
-            command = t_command.render(**catalog)
+            command = self._blueprinter(string=command, catalog=catalog)
             self.log.debug(
                 "channel: %s, command: %s",
                 chan,
@@ -382,12 +396,18 @@ class Bootstrap(directord.Processor):
                             ssh=ssh, command=value, catalog=catalog
                         )
                     elif key == "ADD":
+                        value = self._blueprinter(
+                            string=value, catalog=catalog
+                        )
                         localfile, remotefile = value.split(" ", 1)
                         localfile = self.bootstrap_localfile_padding(localfile)
                         self.bootstrap_file_send(
                             ssh=ssh, localfile=localfile, remotefile=remotefile
                         )
                     elif key == "GET":
+                        value = self._blueprinter(
+                            string=value, catalog=catalog
+                        )
                         remotefile, localfile = value.split(" ", 1)
                         self.bootstrap_file_get(
                             ssh=ssh, localfile=localfile, remotefile=remotefile
@@ -410,6 +430,7 @@ class Bootstrap(directord.Processor):
             except Exception:
                 break
             else:
+                catalog["directord_bootstrap"] = job_def
                 self.bootstrap_run(
                     job_def=job_def,
                     catalog=catalog,
