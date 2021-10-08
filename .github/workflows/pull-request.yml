@@ -89,8 +89,8 @@ jobs:
           python -m pip install --upgrade pip
       - name: Run install
         run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
-      - name: Start qdrouterd
-        run: sudo systemctl start qdrouterd.service
+      - name: Setup SSL encryption for Qpid
+        run: sudo tools/scripts/messaging/messaging-ssl-setup.sh
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -404,8 +404,8 @@ jobs:
           python -m pip install --upgrade pip
       - name: Run install
         run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
-      - name: Start qdrouterd
-        run: sudo systemctl start qdrouterd.service
+      - name: Setup SSL encryption for Qpid
+        run: sudo tools/scripts/messaging/messaging-ssl-setup.sh
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd

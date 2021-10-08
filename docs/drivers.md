@@ -175,3 +175,81 @@ Once the dependecies are installed, enable and start the server process.
 $ sudo systemctl enable qdrouterd.service
 $ sudo systemctl start qdrouterd.service
 ```
+### Encryption with SSL
+
+Encryption with SSL can be used to encrypt messages when using the `messaging`
+driver.
+
+#### Automatic configuration with bootstrap
+
+A script is included with Directord at
+`tools/scripts/messaging/messaging-ssl-setup.sh` that can be used to
+automatically configure SSL. The script is used if the
+`tools/directord-dev-bootstrap-messaging-catalog.yaml` bootstrap catalog is
+used.
+
+The script uses `certmonger` and the locally configured CA on the Directord
+server to issue certificates. The script is for development use only and not
+intended for production.
+
+#### Manual configuration
+
+SSL configured can be configured manually with the following steps.
+
+1. Configure a CA
+
+    Obtain a CA certifcate and key that can be used to sign other certificates
+    needed by Directord. Configure the path to the CA with the
+    `--messaging-ssl-ca` argument or configuration file option.
+
+2. Configure Directord certificate and key
+
+    Generate a certificate and private key pair for the Directord server and
+    sign it with the configured CA. The Subject CN of the certificate should
+    match the hostname of the server, or the value of the `--server-address`
+    configuration used by the clients to connect to the server.
+
+    Specify the path to the server certificate and key with the
+    `--messaging-ssl-cert` and `--messaging-ssl-key` arguments or
+    configuration file options when starting the Directord server.
+
+3. Configure Directord client certificates and keys
+
+    Generate a certificate and private key pair for each Directord client and
+    sign them with the configured CA. The Subject CN should match the client
+    hostname.
+
+    Copy the client certificate and key to each respective Directord client
+    and specify the path to them with the `--messaging-ssl-cert` and
+    `--messaging-ssl-key` arguments or configuration file options when starting
+    the Directord client.
+
+4. Configure qdrouterd for SSL
+
+    Generate a certificate and private key pair for use with qdrouterd. The
+    Subject CN should match that of the host running qdrouterd. Sign the
+    certificate with the CA.
+
+    Configure `/etc/qpid-dispatch/qdrouterd.conf` for SSL. See [qdrouterd
+    configuration](https://qpid.apache.org/releases/qpid-dispatch-1.17.0/man/qdrouterd.conf.html)
+    for complete details on configuring qdrouterd. An `sslProfile` section
+    needs to be configured, and the `sslProfile` attribute in the `listener`
+    section needs to reference the `sslProfile` section.
+
+    An example, which uses the default values for Directord is shown below:
+
+		sslProfile {
+			name: my-ssl
+			caCertFile: /etc/pki/ca-trust/source/anchors/cm-local-ca.pem
+			certFile: /etc/qpid-dispatch/qdrouterd.conf
+			privateKeyFile: /etc/qpid-dispatch/qdrouterd.conf
+		}
+
+		listener {
+			sslProfile: my-ssl
+			host: 0.0.0.0
+			port: 20102
+            authenticatePeer: false
+            requireSSL: true
+			saslMechanisms: ANONYMOUS
+		}

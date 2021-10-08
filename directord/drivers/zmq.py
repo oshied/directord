@@ -32,7 +32,7 @@ class Driver(drivers.BaseDriver):
         self,
         args,
         encrypted_traffic_data=None,
-        connection_string=None,
+        bind_address=None,
         interface=None,
     ):
         """Initialize the Driver.
@@ -41,16 +41,19 @@ class Driver(drivers.BaseDriver):
         :type args: Object
         :param encrypted_traffic: Enable|Disable encrypted traffic.
         :type encrypted_traffic: Boolean
-        :param connection_string: Connection string used to provide connection
-                                  instructions to the driver.
-        :type connection_string: String.
+        :param bind_address: Bind address
+        :type bind_address: String.
         :param interface: The interface instance (client/server)
         :type interface: Object
         """
 
         self.args = args
         self.encrypted_traffic_data = encrypted_traffic_data
-        self.connection_string = connection_string
+        self.proto = "tcp"
+        self.bind_address = bind_address
+        self.connection_string = "{proto}://{addr}".format(
+            proto=self.proto, addr=self.bind_address
+        )
         if self.encrypted_traffic_data:
             self.encrypted_traffic = self.encrypted_traffic_data.get("enabled")
             self.secret_keys_dir = self.encrypted_traffic_data.get(
@@ -70,7 +73,7 @@ class Driver(drivers.BaseDriver):
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=self.encrypted_traffic_data,
-            connection_string=self.connection_string,
+            bind_address=self.bind_address,
             interface=interface,
         )
         self.bind_job = None
@@ -84,7 +87,7 @@ class Driver(drivers.BaseDriver):
         return Driver(
             args=self.args,
             encrypted_traffic_data=self.encrypted_traffic_data,
-            connection_string=self.connection_string,
+            bind_address=self.bind_address,
             interface=self.interface,
         )
 

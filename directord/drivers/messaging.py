@@ -15,12 +15,15 @@
 import json
 import logging
 import multiprocessing
+import os
+import pkg_resources
 import time
 
 from oslo_config import cfg
 import oslo_messaging
 from oslo_messaging.rpc import dispatcher
 from oslo_messaging.rpc.server import expose
+from oslo_messaging import transport
 
 import tenacity
 
@@ -28,12 +31,75 @@ from directord import drivers
 from directord import logger
 
 
+def parse_args(parser):
+    """Add arguments for this driver to the parser.
+
+    :param parser: Parser
+    :type parser: Object
+    """
+
+    messaging_group = parser.add_argument_group("messaging driver options")
+    messaging_group.add_argument(
+        "--messaging-ssl",
+        help=("Enable messaging driver SSL encryption. Default: %(default)s"),
+        metavar="BOOLEAN",
+        default=bool(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL",
+                "True",
+            )
+        ),
+        type=bool,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-ca",
+        help=("Messaging driver SSL CA file path. Default: %(default)s"),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_CA",
+                "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem",
+            )
+        ),
+        type=str,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-cert",
+        help=(
+            "Messaging driver SSL certificate file path. "
+            "Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_CERT",
+                "/etc/directord/messaging/ssl/directord.crt",
+            )
+        ),
+        type=str,
+    )
+    messaging_group.add_argument(
+        "--messaging-ssl-key",
+        help=("Messaging driver SSL key file path. Default: %(default)s"),
+        metavar="STRING",
+        default=str(
+            os.getenv(
+                "DIRECTORD_MESSAGING_SSL_KEY",
+                "/etc/directord/messaging/ssl/directord.key",
+            )
+        ),
+        type=str,
+    )
+
+    return parser
+
+
 class Driver(drivers.BaseDriver):
     def __init__(
         self,
         args,
         encrypted_traffic_data=None,
-        connection_string=None,
+        bind_address=None,
         interface=None,
     ):
         """Initialize the Driver.
@@ -42,9 +108,8 @@ class Driver(drivers.BaseDriver):
         :type args: Object
         :param encrypted_traffic: Enable|Disable encrypted traffic.
         :type encrypted_traffic: Boolean
-        :param connection_string: Connection string used to provide connection
-                                  instructions to the driver.
-        :type connection_string: String.
+        :param bind_address: Bind address
+        :type bind_address: String.
         :param interface: The interface instance (client/server)
         :type interface: Object
         """
@@ -52,14 +117,19 @@ class Driver(drivers.BaseDriver):
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=encrypted_traffic_data,
-            connection_string=connection_string,
+            bind_address=bind_address,
             interface=interface,
         )
         self.mode = getattr(args, "mode", None)
-        self.connection_string = connection_string
-        self.conf = cfg.CONF
-        self.conf.transport_url = "{}:5672/".format(self.connection_string)
-        self.transport = oslo_messaging.get_rpc_transport(self.conf)
+        self.proto = "amqp"
+        self.bind_address = bind_address if bind_address != "*" else "0.0.0.0"
+
+        self.connection_string = "{proto}://{addr}".format(
+            proto=self.proto, addr=self.identity
+        )
+
+        self.conf = self._rpc_conf()
+        self.transport = self._rpc_transport()
         self.server = None
         self.backend_server = None
         self.job_q = multiprocessing.Queue()
@@ -67,6 +137,50 @@ class Driver(drivers.BaseDriver):
         self.send_q = multiprocessing.Queue()
         self.process_send_q = None
         self.timeout = 1
+
+    def _rpc_conf(self):
+        """Initialize the RPC configuration.
+
+        :returns: Object
+        """
+
+        conf = cfg.CONF
+
+        # Load the amqp driver from the oslo.messaging.drivers entrypoint and
+        # instantiate an instance. This is just so that we can get the options
+        # registered in the conf object.
+        for oslo_driver in pkg_resources.iter_entry_points(
+            "oslo.messaging.drivers"
+        ):
+            if oslo_driver.name == "amqp":
+                proton_driver = oslo_driver.load()
+                proton_driver(conf, transport.TransportURL(conf))
+                break
+
+        conf.set_default(
+            "ssl_cert_file",
+            self.args.messaging_ssl_cert,
+            "oslo_messaging_amqp",
+        )
+        conf.set_default(
+            "ssl_key_file",
+            self.args.messaging_ssl_key,
+            "oslo_messaging_amqp",
+        )
+        conf.set_default(
+            "ssl",
+            self.args.messaging_ssl,
+            "oslo_messaging_amqp",
+        )
+        conf.set_default(
+            "ssl_ca_file",
+            self.args.messaging_ssl_ca,
+            "oslo_messaging_amqp",
+        )
+
+        conf.transport_url = "{}:5672/".format(self.connection_string)
+
+        return conf
 
     def _check(self, queue, interval=1, constant=1000):
         """Return True if a job contains work ready.
@@ -318,6 +432,14 @@ class Driver(drivers.BaseDriver):
             stderr=stderr,
             stdout=stdout,
         )
+
+    def _rpc_transport(self):
+        """Returns an rpc transport.
+
+        :returns: Object
+        """
+
+        return oslo_messaging.get_rpc_transport(self.conf)
 
     def _rpc_server(self, server_target, topic):
         """Returns an rpc server object.

@@ -28,6 +28,10 @@ class TestMain(unittest.TestCase):
         self.maxDiff = 20000
         self.args = tests.FakeArgs()
         self.systemdinstall = main.SystemdInstall()
+        parse_driver_args_se = lambda X: X
+        mock_parse_driver_args = mock.Mock()
+        mock_parse_driver_args.side_effect = parse_driver_args_se
+        main._parse_driver_args = mock_parse_driver_args
 
     def tearDown(self):
         pass

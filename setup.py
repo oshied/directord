@@ -76,7 +76,10 @@ setuptools.setup(
             "directord = directord.main:main",
             "directord-server-systemd = directord.main:_systemd_server",
             "directord-client-systemd = directord.main:_systemd_client",
-        ]
+        ],
+        "directord.drivers": [
+            "messaging = directord.drivers.messaging",
+        ],
     },
     data_files=[
         (
@@ -102,6 +105,22 @@ setuptools.setup(
         (
             "share/directord/tools",
             [i for i in glob.glob("tools/*") if os.path.isfile(i)],
+        ),
+        (
+            "share/directord/tools/config/messaging",
+            [
+                i
+                for i in glob.glob("tools/config/messaging/*")
+                if os.path.isfile(i)
+            ],
+        ),
+        (
+            "share/directord/tools/scripts/messaging",
+            [
+                i
+                for i in glob.glob("tools/scripts/messaging/*")
+                if os.path.isfile(i)
+            ],
         ),
     ],
 )

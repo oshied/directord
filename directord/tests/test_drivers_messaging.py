@@ -35,7 +35,7 @@ class TestDriverMessaging(unittest.TestCase):
             mock_get_machine_id.return_value = "XXX123"
             self.driver = messaging.Driver(
                 args=args,
-                connection_string="amqp://localhost",
+                bind_address="localhost",
                 interface=self.mock_interface,
             )
 

@@ -15,6 +15,7 @@
 import argparse
 import json
 import os
+import pkg_resources
 import sys
 
 import jinja2
@@ -402,6 +403,9 @@ def _args(exec_args=None):
         default=int(os.getenv("DIRECTORD_BOOTSTRAP_THREADS", 10)),
         type=int,
     )
+
+    parser = _parse_driver_args(parser)
+
     if exec_args:
         args = parser.parse_args(args=exec_args)
     else:
@@ -417,6 +421,17 @@ def _args(exec_args=None):
                     args.__dict__[key] = value
 
     return args, parser
+
+
+def _parse_driver_args(parser):
+    for director_driver in pkg_resources.iter_entry_points(
+        "directord.drivers"
+    ):
+        driver_mod = director_driver.load()
+        if hasattr(driver_mod, "parse_args"):
+            parser = driver_mod.parse_args(parser)
+
+    return parser
 
 
 class SystemdInstall:

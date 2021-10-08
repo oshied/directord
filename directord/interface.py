@@ -54,18 +54,6 @@ class Interface(directord.Processor):
         else:
             self.bind_address = "*"
 
-        if self.args.driver == "messaging":
-            self.proto = "amqp"
-            self.bind_address = (
-                self.bind_address if self.bind_address != "*" else "0.0.0.0"
-            )
-        else:
-            self.proto = "tcp"
-
-        self.connection_string = "{proto}://{addr}".format(
-            proto=self.proto, addr=self.bind_address
-        )
-
         try:
             self.heartbeat_interval = self.args.heartbeat_interval
         except AttributeError:
@@ -96,6 +84,6 @@ class Interface(directord.Processor):
                     "public_keys_dir": self.public_keys_dir,
                     "secret_keys_dir": self.secret_keys_dir,
                 },
-                connection_string=self.connection_string,
+                bind_address=self.bind_address,
                 interface=self,
             )
