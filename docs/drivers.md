@@ -42,13 +42,13 @@ configuration file or on the CLI.
 Server setup
 
 ``` shell
-$ directord --shared-key ${SECRET_TOKEN} server
+$ directord --zmq-shared-key ${SECRET_TOKEN} server
 ```
 
 Client Setup
 
 ``` shell
-$ directord --shared-key ${SECRET_TOKEN} client
+$ directord --zmq-shared-key ${SECRET_TOKEN} client
 ```
 
 ### Curve
@@ -89,7 +89,7 @@ $ rsync -avz /etc/directord/public_keys/*.key root@${REMOTE_NODE}:/etc/directord
 Once the keys are all in place the server can be started using the following command.
 
 ``` shell
-$ directord --curve-encryption server
+$ directord --zmq-curve-encryption server
 ```
 
 It is also possible to upgrade an existing, un-encrypted, deployment to an

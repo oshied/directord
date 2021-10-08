@@ -15,7 +15,7 @@
 import argparse
 import json
 import os
-import pkg_resources
+import pkgutil
 import sys
 
 import jinja2
@@ -57,6 +57,33 @@ def _args(exec_args=None):
         type=argparse.FileType(mode="r"),
     )
     parser.add_argument(
+        "--driver",
+        help="Messaging driver used for workload transport.",
+        default=os.getenv("DIRECTORD_DRIVER", meta.__driver_default__),
+        choices=meta.__driver_options__,
+        type=str,
+    )
+    parser.add_argument(
+        "--debug",
+        help="Enable debug mode. Default: %(default)s",
+        action="store_true",
+    )
+    server_group = parser.add_argument_group("Server options")
+    server_group.add_argument(
+        "--job-port",
+        help="Job port to bind. Default: %(default)s",
+        metavar="INT",
+        default=int(os.getenv("DIRECTORD_MSG_PORT", 5555)),
+        type=int,
+    )
+    server_group.add_argument(
+        "--backend-port",
+        help="Backend port to bind. Default: %(default)s",
+        metavar="INT",
+        default=int(os.getenv("DIRECTORD_BACKEND_PORT", 5556)),
+        type=int,
+    )
+    server_group.add_argument(
         "--datastore",
         help=(
             "Connect to an external datastore for job and worker tracking. The"
@@ -77,56 +104,14 @@ def _args(exec_args=None):
         ),
         type=str,
     )
-    parser.add_argument(
-        "--driver",
-        help="Messaging driver used for workload transport.",
-        default=os.getenv("DIRECTORD_DRIVER", meta.__driver_default__),
-        choices=meta.__driver_options__,
-        type=str,
-    )
-    auth_group = parser.add_mutually_exclusive_group()
-    auth_group.add_argument(
-        "--shared-key",
-        help="Shared key used for server client authentication.",
-        metavar="STRING",
-        default=os.getenv("DIRECTORD_SHARED_KEY", None),
-    )
-    auth_group.add_argument(
-        "--curve-encryption",
-        action="store_true",
-        help=(
-            "Server and client will connect using Curve authentication"
-            " and encryption. Enabling this option assumes keys have been"
-            " generated. see `manage --generate-keys` for more."
-        ),
-    )
-    parser.add_argument(
-        "--debug",
-        help="Enable debug mode. Default: %(default)s",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--job-port",
-        help="Job port to bind. Default: %(default)s",
-        metavar="INT",
-        default=int(os.getenv("DIRECTORD_MSG_PORT", 5555)),
-        type=int,
-    )
-    parser.add_argument(
-        "--backend-port",
-        help="Backend port to bind. Default: %(default)s",
-        metavar="INT",
-        default=int(os.getenv("DIRECTORD_BACKEND_PORT", 5556)),
-        type=int,
-    )
-    parser.add_argument(
+    server_group.add_argument(
         "--heartbeat-interval",
         help="heartbeat interval in seconds. Default: %(default)s",
         metavar="INT",
         default=int(os.getenv("DIRECTORD_HEARTBEAT_INTERVAL", 60)),
         type=int,
     )
-    parser.add_argument(
+    server_group.add_argument(
         "--socket-path",
         help=(
             "Server file socket path for user interactions."
@@ -138,7 +123,7 @@ def _args(exec_args=None):
         ),
         type=str,
     )
-    parser.add_argument(
+    server_group.add_argument(
         "--socket-group",
         help=(
             "Server file socket group ownership for user interactions."
@@ -147,7 +132,7 @@ def _args(exec_args=None):
         metavar="STRING",
         default=str(os.getenv("DIRECTORD_SOCKET_GROUP", 0)),
     )
-    parser.add_argument(
+    server_group.add_argument(
         "--cache-path",
         help=("Client cache path. Default: %(default)s"),
         metavar="STRING",
@@ -405,7 +390,6 @@ def _args(exec_args=None):
     )
 
     parser = _parse_driver_args(parser)
-
     if exec_args:
         args = parser.parse_args(args=exec_args)
     else:
@@ -424,12 +408,28 @@ def _args(exec_args=None):
 
 
 def _parse_driver_args(parser):
-    for director_driver in pkg_resources.iter_entry_points(
-        "directord.drivers"
-    ):
-        driver_mod = director_driver.load()
-        if hasattr(driver_mod, "parse_args"):
-            parser = driver_mod.parse_args(parser)
+    """Return a driver parser.
+
+    Any driver found not to be importable will be considered un-available for
+    use and ommitted.
+
+    :param parser: Parser object
+    :type parser: Object
+    :returns: Object
+    """
+
+    for importer, name, _ in pkgutil.iter_modules([os.path.dirname(__file__)]):
+        if name in ["datastore", "drivers"]:
+            module_loader = importer.find_module(name)
+            for driver_importer, driver_name, _ in pkgutil.iter_modules(
+                [os.path.dirname(module_loader.path)]
+            ):
+                driver = driver_importer.find_module(driver_name).load_module(
+                    driver_name
+                )
+                if hasattr(driver, "parse_args"):
+                    parser = driver.parse_args(parser)
+                sys.modules.pop(driver_name, None)
 
     return parser
 

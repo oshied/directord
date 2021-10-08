@@ -119,7 +119,7 @@
             directord_config | combine(
               {
                 'server_address': hostvars[groups['directord_server'][0]]['ansible_host'],
-                'curve_encryption': true
+                'zmq_curve_encryption': true
               }
             ) | to_nice_yaml
           }}

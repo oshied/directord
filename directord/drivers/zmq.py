@@ -18,13 +18,52 @@ import os
 import time
 
 import tenacity
-import zmq
-import zmq.auth as zmq_auth
-from zmq.auth.thread import ThreadAuthenticator
+
+try:
+    import zmq
+    import zmq.auth as zmq_auth
+    from zmq.auth.thread import ThreadAuthenticator
+except (ImportError, ModuleNotFoundError):
+    pass
 
 from directord import drivers
 from directord import logger
 from directord import utils
+
+
+def parse_args(parser):
+    """Add arguments for this driver to the parser.
+
+    :param parser: Parser
+    :type parser: Object
+    """
+
+    group = parser.add_argument_group("ZMQ driver options")
+    group.add_argument(
+        "--zmq-highwater-mark",
+        type=int,
+        default=os.getenv("DIRECTORD_ZMQ_HIGHWATER_MARK", 1024),
+        metavar="INTEGER",
+        help=("Set the ZMQ highwater mark. Default %(default)s."),
+    )
+    auth_group = group.add_mutually_exclusive_group()
+    auth_group.add_argument(
+        "--zmq-shared-key",
+        help="Shared key used for server client authentication.",
+        metavar="STRING",
+        default=os.getenv("DIRECTORD_ZMQ_SHARED_KEY", None),
+    )
+    auth_group.add_argument(
+        "--zmq-curve-encryption",
+        action="store_true",
+        help=(
+            "Server and client will connect using Curve authentication"
+            " and encryption. Enabling this option assumes keys have been"
+            " generated. see `manage --generate-keys` for more."
+        ),
+    )
+
+    return parser
 
 
 class Driver(drivers.BaseDriver):
@@ -78,7 +117,7 @@ class Driver(drivers.BaseDriver):
         )
         self.bind_job = None
         self.bind_backend = None
-        self.hwm = 1024
+        self.hwm = getattr(self.args, "zmq_highwater_mark", 1024)
         self.credit = int(self.hwm * 0.75)
 
     def __copy__(self):
@@ -197,9 +236,7 @@ class Driver(drivers.BaseDriver):
             port=self.args.job_port,
         )
 
-    def _socket_bind(
-        self, socket_type, connection, port, poller_type=zmq.POLLIN
-    ):
+    def _socket_bind(self, socket_type, connection, port, poller_type=None):
         """Return a socket object which has been bound to a given address.
 
         When the socket_type is not PUB or PUSH, the bound socket will also be
@@ -220,22 +257,27 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
+        if poller_type is None:
+            poller_type = zmq.POLLIN
+
         bind = self._socket_context(socket_type=socket_type)
-        auth_enabled = self.args.shared_key or self.args.curve_encryption
+        auth_enabled = (
+            self.args.zmq_shared_key or self.args.zmq_curve_encryption
+        )
 
         if auth_enabled:
             self.auth = ThreadAuthenticator(self.ctx, log=self.log)
             self.auth.start()
             self.auth.allow()
 
-            if self.args.shared_key:
+            if self.args.zmq_shared_key:
                 # Enables basic auth
                 self.auth.configure_plain(
-                    domain="*", passwords={"admin": self.args.shared_key}
+                    domain="*", passwords={"admin": self.args.zmq_shared_key}
                 )
                 bind.plain_server = True  # Enable shared key authentication
                 self.log.info("Shared key authentication enabled.")
-            elif self.args.curve_encryption:
+            elif self.args.zmq_curve_encryption:
                 server_secret_file = os.path.join(
                     self.secret_keys_dir, "server.key_secret"
                 )
@@ -279,9 +321,7 @@ class Driver(drivers.BaseDriver):
 
         return bind
 
-    def _socket_connect(
-        self, socket_type, connection, port, poller_type=zmq.POLLIN
-    ):
+    def _socket_connect(self, socket_type, connection, port, poller_type=None):
         """Return a socket object which has been bound to a given address.
 
         > A connection back to the server will wait 10 seconds for an ack
@@ -302,13 +342,16 @@ class Driver(drivers.BaseDriver):
         :returns: Object
         """
 
+        if poller_type is None:
+            poller_type = zmq.POLLIN
+
         bind = self._socket_context(socket_type=socket_type)
 
-        if self.args.shared_key:
+        if self.args.zmq_shared_key:
             bind.plain_username = b"admin"  # User is hard coded.
-            bind.plain_password = self.args.shared_key.encode()
+            bind.plain_password = self.args.zmq_shared_key.encode()
             self.log.info("Shared key authentication enabled.")
-        elif self.args.curve_encryption:
+        elif self.args.zmq_curve_encryption:
             client_secret_file = os.path.join(
                 self.secret_keys_dir, "client.key_secret"
             )

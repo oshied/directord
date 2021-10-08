@@ -98,7 +98,7 @@ try:
         config = yaml.safe_load(f)
 except FileNotFoundError:
     config = dict()
-config["curve_encryption"] = True
+config["zmq_curve_encryption"] = True
 config["driver"] = "${DRIVER}"
 with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))

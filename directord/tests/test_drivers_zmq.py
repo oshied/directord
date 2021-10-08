@@ -54,8 +54,8 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
     ):
         m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
         with patch("builtins.open", m):
-            setattr(self.driver.args, "curve_encryption", True)
-            setattr(self.driver.args, "shared_key", None)
+            setattr(self.driver.args, "zmq_curve_encryption", True)
+            setattr(self.driver.args, "zmq_shared_key", None)
             with patch("os.path.exists") as mock_exists:
                 mock_exists.return_value = True
                 bind = self.driver._socket_bind(
@@ -93,7 +93,7 @@ class TestDriverZMQ(unittest.TestCase):
     def test_socket_bind_shared_auth(
         self, mock_auth, mock_poller, mock_socket, mock_info_logging
     ):
-        setattr(self.driver.args, "shared_key", "test")
+        setattr(self.driver.args, "zmq_shared_key", "test")
         bind = self.driver._socket_bind(
             socket_type=zmq.ROUTER,
             connection="tcp://127.0.0.1",
@@ -106,7 +106,7 @@ class TestDriverZMQ(unittest.TestCase):
     @patch("logging.Logger.info", autospec=True)
     def test_socket_connect_shared_key(self, mock_info_logging):
         self.driver.encrypted_traffic = False
-        setattr(self.driver.args, "shared_key", "test-key")
+        setattr(self.driver.args, "zmq_shared_key", "test-key")
         bind = self.driver._socket_connect(
             socket_type=zmq.PULL,
             connection="tcp://test",

@@ -19,11 +19,19 @@ import os
 import pkg_resources
 import time
 
-from oslo_config import cfg
-import oslo_messaging
-from oslo_messaging.rpc import dispatcher
-from oslo_messaging.rpc.server import expose
-from oslo_messaging import transport
+try:
+    from oslo_config import cfg
+    import oslo_messaging
+    from oslo_messaging.rpc import dispatcher
+    from oslo_messaging.rpc.server import expose
+    from oslo_messaging import transport
+except (ImportError, ModuleNotFoundError):
+
+    def expose(*args, **kwargs):
+        """Mock expose."""
+
+        pass
+
 
 import tenacity
 
@@ -38,7 +46,7 @@ def parse_args(parser):
     :type parser: Object
     """
 
-    messaging_group = parser.add_argument_group("messaging driver options")
+    messaging_group = parser.add_argument_group("Messaging driver options")
     messaging_group.add_argument(
         "--messaging-ssl",
         help=("Enable messaging driver SSL encryption. Default: %(default)s"),
@@ -463,9 +471,7 @@ class Driver(drivers.BaseDriver):
         )
 
     @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(
-            oslo_messaging.exceptions.MessagingTimeout
-        ),
+        retry=tenacity.retry_if_exception_type(TimeoutError),
         wait=tenacity.wait_fixed(1),
         before_sleep=tenacity.before_sleep_log(
             logger.getLogger(name="directord"), logging.WARN

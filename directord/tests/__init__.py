@@ -126,14 +126,15 @@ class FakeArgs:
     mode = "client"
     server_address = "localhost"
     bind_address = "10.1.10.1"
-    shared_key = None
     socket_path = "/var/run/directord.sock"
     stream = False
     socket_group = "root"
     cache_path = "/var/cache/directord"
     backend_port = 5556
     timeout = 600
-    curve_encryption = None
+    zmq_shared_key = None
+    zmq_curve_encryption = None
+    zmq_highwater_mark = 1
     force_async = False
     messaging_ssl = True
     messaging_ssl_ca = "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem"
