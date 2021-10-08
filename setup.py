@@ -28,6 +28,7 @@ REQUIREMENTS = {
     "test": ["flake8", "coverage"],
     "redis": ["redis"],
     "oslo_messaging": ["oslo_messaging[amqp1]"],
+    "zmq": ["pyzmq"],
 }
 REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 
@@ -48,16 +49,15 @@ setuptools.setup(
         "diskcache",
         "jinja2",
         "pyyaml",
-        "pyzmq",
         "ssh-python",
         "tabulate",
         "tenacity",
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/cloudnull/directord",
+    url="https://github.com/directord/directord",
     project_urls={
-        "Bug Tracker": "https://github.com/cloudnull/directord/issues",
+        "Bug Tracker": "https://github.com/directord/directord/issues",
     },
     python_requires=">=3.6",
     extras_require=REQUIREMENTS,

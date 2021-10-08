@@ -50,8 +50,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -81,8 +79,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -110,8 +106,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -139,8 +133,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -168,8 +160,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -197,8 +187,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -221,14 +209,12 @@ class TestMain(unittest.TestCase):
 
     def test__args_workdir(self):
         args, _ = main._args(["exec", "--verb", "WORKDIR", "/path"])
+        print(vars(args))
         self.assertDictEqual(
             vars(args),
             {
                 "config_file": None,
                 "check": False,
-                "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -256,8 +242,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -285,8 +269,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -314,8 +296,6 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -342,8 +322,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -366,8 +344,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -388,8 +364,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -421,8 +395,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -454,8 +426,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -487,8 +457,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -520,8 +488,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -553,8 +519,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -586,8 +550,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -619,8 +581,6 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -655,8 +615,6 @@ class TestMain(unittest.TestCase):
             {
                 "catalog": mock.ANY,
                 "config_file": None,
-                "shared_key": None,
-                "curve_encryption": False,
                 "datastore": "file:///var/cache/directord",
                 "debug": False,
                 "driver": "zmq",
@@ -762,8 +720,8 @@ class TestMain(unittest.TestCase):
     def test_main_server(self, mock__args):
         _args = {
             "config_file": None,
-            "shared_key": None,
-            "curve_encryption": False,
+            "zmq_shared_key": None,
+            "zmq_curve_encryption": False,
             "debug": False,
             "driver": "zmq",
             "job_port": 5555,
@@ -786,8 +744,8 @@ class TestMain(unittest.TestCase):
     def test_main_client(self, mock__args):
         _args = {
             "config_file": None,
-            "shared_key": None,
-            "curve_encryption": False,
+            "zmq_shared_key": None,
+            "zmq_curve_encryption": False,
             "debug": False,
             "driver": "zmq",
             "job_port": 5555,
@@ -808,8 +766,8 @@ class TestMain(unittest.TestCase):
     def test_main_exec(self, mock__args):
         _args = {
             "config_file": None,
-            "shared_key": None,
-            "curve_encryption": False,
+            "zmq_shared_key": None,
+            "zmq_curve_encryption": False,
             "debug": False,
             "driver": "zmq",
             "job_port": 5555,
@@ -834,8 +792,8 @@ class TestMain(unittest.TestCase):
     def test_main_orchestrate(self, mock__args):
         _args = {
             "config_file": None,
-            "shared_key": None,
-            "curve_encryption": False,
+            "zmq_shared_key": None,
+            "zmq_curve_encryption": False,
             "debug": False,
             "driver": "zmq",
             "finger_print": False,
@@ -862,8 +820,8 @@ class TestMain(unittest.TestCase):
     def test_main_manage(self, mock__args):
         _args = {
             "config_file": None,
-            "shared_key": None,
-            "curve_encryption": False,
+            "zmq_shared_key": None,
+            "zmq_curve_encryption": False,
             "debug": False,
             "driver": "zmq",
             "export_jobs": None,
@@ -893,8 +851,8 @@ class TestMain(unittest.TestCase):
         _args = {
             "catalog": mock.ANY,
             "config_file": None,
-            "shared_key": None,
-            "curve_encryption": False,
+            "zmq_shared_key": None,
+            "zmq_curve_encryption": False,
             "debug": False,
             "driver": "zmq",
             "job_port": 5555,
@@ -919,8 +877,8 @@ class TestMain(unittest.TestCase):
         _args = {
             "catalog": mock.ANY,
             "config_file": None,
-            "shared_key": None,
-            "curve_encryption": False,
+            "zmq_shared_key": None,
+            "zmq_curve_encryption": False,
             "debug": False,
             "driver": "zmq",
             "job_port": 5555,

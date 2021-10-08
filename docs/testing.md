@@ -11,7 +11,7 @@ simple example shows how that could be done on a single machine.
 $ podman pull quay.io/cloudnull/directord
 
 # Start the server
-$ directord --debug --shared-key secrete server --bind-address 127.0.0.1 &
+$ directord --debug --zmq-shared-key secrete server --bind-address 127.0.0.1 &
 
 # Run 40 client containers
 $ for i in {1..40}; do
@@ -19,7 +19,7 @@ $ for i in {1..40}; do
              --name $(hostname)-client-${i} \
              --net=host \
              --env DIRECTORD_SERVER_ADDRESS=127.0.0.1 \
-             --env DIRECTORD_SHARED_KEY=secrete \
+             --env DIRECTORD_ZMQ_SHARED_KEY=secrete \
              --user 0 \
              --detach \
              directord directord
