@@ -808,17 +808,7 @@ class TestServer(tests.TestDriverBase):
     @patch("directord.server.Server.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads):
         try:
-            setattr(self.args, "run_ui", False)
             self.server.worker_run()
         finally:
             self.args = tests.FakeArgs()
         mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY])
-
-    @patch("directord.server.Server.run_threads", autospec=True)
-    def test_worker_run_ui(self, mock_run_threads):
-        try:
-            setattr(self.args, "run_ui", True)
-            self.server.worker_run()
-        finally:
-            self.args = tests.FakeArgs()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY, ANY, ANY, ANY])

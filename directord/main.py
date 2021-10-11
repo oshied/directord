@@ -322,18 +322,6 @@ def _args(exec_args=None):
         metavar="STRING",
         default=os.getenv("DIRECTORD_BIND_ADDRESS", "*"),
     )
-    parser_server.add_argument(
-        "--run-ui",
-        help="Enable the Directord UI. Default: %(default)s",
-        action="store_true",
-    )
-    parser_server.add_argument(
-        "--ui-port",
-        help="UI server bind port. Default: %(default)s",
-        metavar="INT",
-        default=int(os.getenv("DIRECTORD_UI_PORT", 9000)),
-        type=int,
-    )
     parser_client = subparsers.add_parser("client", help="Client mode help")
     parser_client.add_argument(
         "--server-address",

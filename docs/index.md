@@ -55,7 +55,6 @@ Documentation needed to be successful with Directord.
 * [Service Setup](service-setup.md)
 * [Drivers](drivers.md)
 * [Containerization](containerization.md)
-* [Management](management.md)
 * [Syntax](syntax.md)
 * [Orchestrations](orchestrations.md)
 * [Testing](testing.md)
