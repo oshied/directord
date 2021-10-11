@@ -34,6 +34,54 @@ from directord import user
 from directord import utils
 
 
+def _find_drivers(limit_modules=None):
+    """Find all drivers.
+
+    :param limit_modules: List of strings.
+    :type limit_modules: List
+    :returns: List
+    """
+
+    if not limit_modules:
+        limit_modules = ["datastore", "drivers"]
+
+    drivers = list()
+    for importer, name, _ in pkgutil.iter_modules([os.path.dirname(__file__)]):
+        if name in limit_modules:
+            module_loader = importer.find_module(name)
+            for driver_importer, driver_name, _ in pkgutil.iter_modules(
+                [os.path.dirname(module_loader.path)]
+            ):
+                drivers.append((driver_importer, driver_name))
+
+    return drivers
+
+
+def _parse_driver_args(parser, limit_modules=None):
+    """Return a driver parser.
+
+    Any driver found not to be importable will be considered un-available for
+    use and ommitted.
+
+    :param parser: Parser object
+    :type parser: Object
+    :returns: Object
+    """
+
+    for driver_importer, driver_name in _find_drivers(
+        limit_modules=limit_modules
+    ):
+        driver = driver_importer.find_module(driver_name).load_module(
+            driver_name
+        )
+        if hasattr(driver, "parse_args"):
+            parser = driver.parse_args(parser)
+
+        sys.modules.pop(driver_name, None)
+
+    return parser
+
+
 def _args(exec_args=None):
     """Setup client arguments."""
 
@@ -58,9 +106,12 @@ def _args(exec_args=None):
     )
     parser.add_argument(
         "--driver",
-        help="Messaging driver used for workload transport.",
+        help=(
+            "Messaging driver used for workload transport. Default:"
+            " %(default)s"
+        ),
         default=os.getenv("DIRECTORD_DRIVER", meta.__driver_default__),
-        choices=meta.__driver_options__,
+        choices=[i for _, i in _find_drivers(limit_modules=["drivers"])],
         type=str,
     )
     parser.add_argument(
@@ -98,10 +149,10 @@ def _args(exec_args=None):
             " fully ephemeral and will not save anything across process"
             " restarts."
         ),
-        metavar="STRING",
         default=os.getenv(
             "DIRECTORD_DATASTORE", "file:///var/cache/directord"
         ),
+        choices=[i for _, i in _find_drivers(limit_modules=["datastores"])],
         type=str,
     )
     server_group.add_argument(
@@ -405,33 +456,6 @@ def _args(exec_args=None):
                     args.__dict__[key] = value
 
     return args, parser
-
-
-def _parse_driver_args(parser):
-    """Return a driver parser.
-
-    Any driver found not to be importable will be considered un-available for
-    use and ommitted.
-
-    :param parser: Parser object
-    :type parser: Object
-    :returns: Object
-    """
-
-    for importer, name, _ in pkgutil.iter_modules([os.path.dirname(__file__)]):
-        if name in ["datastore", "drivers"]:
-            module_loader = importer.find_module(name)
-            for driver_importer, driver_name, _ in pkgutil.iter_modules(
-                [os.path.dirname(module_loader.path)]
-            ):
-                driver = driver_importer.find_module(driver_name).load_module(
-                    driver_name
-                )
-                if hasattr(driver, "parse_args"):
-                    parser = driver.parse_args(parser)
-                sys.modules.pop(driver_name, None)
-
-    return parser
 
 
 class SystemdInstall:
