@@ -47,7 +47,7 @@ class Server(interface.Interface):
         self.workers = dict()
         if not datastore or datastore == "memory":
             self.log.info("Connecting to internal datastore")
-            directord.plugin_import(plugin=".datastores.internal")
+            directord.plugin_import(plugin=".datastores.memory")
             manager = self.get_manager()
             self.workers = manager.document()
             self.return_jobs = manager.document()
