@@ -333,8 +333,6 @@ class TestMain(unittest.TestCase):
                 "cache_path": "/var/cache/directord",
                 "mode": "server",
                 "bind_address": "*",
-                "run_ui": False,
-                "ui_port": 9000,
             },
         )
 
@@ -732,8 +730,6 @@ class TestMain(unittest.TestCase):
             "cache_path": "/var/cache/directord",
             "mode": "server",
             "bind_address": "*",
-            "run_ui": False,
-            "ui_port": 9000,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]

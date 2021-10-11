@@ -30,6 +30,12 @@ easily scaling to hundreds of clients without impacting throughput. While the
 User is expected to interact with the system via CLI, Directord does provide
 bindings for programable interfaces.
 
+## Management
+
+The **User** CLI provides for cluster management and insight into operations.
+These functions allow operators to see and manipulate job and node status within
+the cluster.
+
 ### Data storage and persistance
 
 Directord has two modes of operation for data-storage and persistence.

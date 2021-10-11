@@ -57,7 +57,7 @@ def _find_drivers(limit_modules=None):
     return drivers
 
 
-def _parse_driver_args(parser, limit_modules=None):
+def _parse_driver_args(parser):
     """Return a driver parser.
 
     Any driver found not to be importable will be considered un-available for
@@ -68,9 +68,7 @@ def _parse_driver_args(parser, limit_modules=None):
     :returns: Object
     """
 
-    for driver_importer, driver_name in _find_drivers(
-        limit_modules=limit_modules
-    ):
+    for driver_importer, driver_name in _find_drivers():
         driver = driver_importer.find_module(driver_name).load_module(
             driver_name
         )
@@ -152,7 +150,7 @@ def _args(exec_args=None):
         default=os.getenv(
             "DIRECTORD_DATASTORE", "file:///var/cache/directord"
         ),
-        choices=[i for _, i in _find_drivers(limit_modules=["datastores"])],
+        metavar="STRING",
         type=str,
     )
     server_group.add_argument(
@@ -323,18 +321,6 @@ def _args(exec_args=None):
         help="IP Address to bind a Directord Server. Default: %(default)s",
         metavar="STRING",
         default=os.getenv("DIRECTORD_BIND_ADDRESS", "*"),
-    )
-    parser_server.add_argument(
-        "--run-ui",
-        help="Enable the Directord UI. Default: %(default)s",
-        action="store_true",
-    )
-    parser_server.add_argument(
-        "--ui-port",
-        help="UI server bind port. Default: %(default)s",
-        metavar="INT",
-        default=int(os.getenv("DIRECTORD_UI_PORT", 9000)),
-        type=int,
     )
     parser_client = subparsers.add_parser("client", help="Client mode help")
     parser_client.add_argument(
