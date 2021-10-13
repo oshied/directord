@@ -61,12 +61,12 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
     PYTHON_BIN=${2:-python3}
   fi
   dnf -y install ${PACKAGES}
-  CA_PATH=/etc/pki/ca-trust/source/anchors/cm-local-ca.pem
+  CA_PATH=/etc/pki/ca-trust/source/anchors/directord-ca.crt
 elif [[ ${ID} == "fedora" ]]; then
   PACKAGES="git python3-devel gcc python3-pyyaml zeromq libsodium qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
-  CA_PATH=/etc/pki/ca-trust/source/anchors/cm-local-ca.pem
+  CA_PATH=/etc/pki/ca-trust/source/anchors/directord-ca.crt
 elif [[ ${ID} == "ubuntu" ]]; then
   export DEBIAN_FRONTEND=noninteractive
   add-apt-repository -y ppa:qpid/released
@@ -74,7 +74,7 @@ elif [[ ${ID} == "ubuntu" ]]; then
   apt -y update
   apt -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
-  CA_PATH=/usr/local/share/ca-certificates/directord/cm-local-ca.pem
+  CA_PATH=/usr/local/share/ca-certificates/directord/directord-ca.crt
 else
   echo -e "Failed unknown OS"
   exit 99
@@ -94,6 +94,7 @@ fi
 # Create basic development configuration
 mkdir -p /etc/directord /etc/directord/private_keys /etc/directord/public_keys /etc/directord/messaging/ssl
 ${VENV_PATH}/bin/python3 <<EOC
+import socket
 import yaml
 try:
     with open('/etc/directord/config.yaml') as f:
@@ -104,6 +105,7 @@ config["debug"] = True
 config["driver"] = "${DRIVER}"
 if config["driver"] == "messaging":
     config["messaging_ssl_ca"] = "${CA_PATH}"
+    config["server_address"] = socket.gethostname()
 with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC

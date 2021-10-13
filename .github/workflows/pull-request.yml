@@ -114,11 +114,15 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo mkdir -p /tmp/directord
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp /etc/directord/messaging/ssl/directord* /tmp/directord
+          sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord
+          sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -445,11 +449,15 @@ jobs:
                                              --check
       - name: Generate log details
         run: |
+          sudo mkdir -p /tmp/directord
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp /etc/directord/messaging/ssl/directord* /tmp/directord
+          sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord
+          sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
