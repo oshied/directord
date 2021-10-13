@@ -52,7 +52,7 @@ $ ~/directord/bin/pip install directord
 
 We need to create a catalog for bootstrapping. Let's assume we are installing directord in two machines:
 
-* directord-1 192.168.1.100 : dicectord server, a client
+* directord-1 192.168.1.100 : directord server, a client
 
 * directord-2 192.168.1.101 : Only a client
 
