@@ -29,6 +29,7 @@ from directord.components import builtin_service
 from directord.components import builtin_run
 from directord.components import builtin_workdir
 from directord.components import builtin_queuesentinel
+from directord.components import builtin_wait
 
 
 class TestComponents(unittest.TestCase):
@@ -50,6 +51,7 @@ class TestComponents(unittest.TestCase):
         self._run = builtin_run.Component()
         self._workdir = builtin_workdir.Component()
         self._queuesentinal = builtin_queuesentinel.Component()
+        self._wait = builtin_wait.Component()
         for item in [
             self._dnf,
             self._service,
@@ -636,3 +638,88 @@ class TestComponents(unittest.TestCase):
             blueprinted_content, "Can't compile non template nodes"
         )
         mock_log_debug.assert_called()
+
+    @patch("time.sleep")
+    def test_wait_seconds(self, mock_sleep):
+        stdout, stderr, outcome, return_info = self._wait.client(
+            cache=tests.FakeCache(), job={"seconds": 5}
+        )
+        self.assertTrue(outcome)
+
+        mock_sleep.assert_called_once_with(5)
+
+    @patch("requests.get")
+    @patch("time.sleep")
+    def test_wait_url(self, mock_sleep, mock_get):
+        r_500 = MagicMock()
+        r_500.response_code = 500
+        r_400 = MagicMock()
+        r_400.response_code = 400
+        r_200 = MagicMock()
+        r_200.response_code = 200
+        mock_get.side_effect = [r_500, r_400, r_200]
+
+        stdout, stderr, outcome, return_info = self._wait.client(
+            cache=tests.FakeCache(),
+            job={"url": "http://localhost", "retry": 5, "retry_wait": 5},
+        )
+        self.assertTrue(outcome)
+
+        sleep_calls = [call(5), call(5)]
+        self.assertEqual(mock_sleep.mock_calls, sleep_calls)
+        get_calls = [
+            call("http://localhost", verify=True),
+            call("http://localhost", verify=True),
+            call("http://localhost", verify=True),
+        ]
+        self.assertEqual(mock_get.mock_calls, get_calls)
+
+    @patch("requests.get")
+    @patch("time.sleep")
+    def test_wait_url_fail(self, mock_sleep, mock_get):
+        r_500 = MagicMock()
+        r_500.response_code = 500
+        mock_get.return_value = r_500
+        stdout, stderr, outcome, return_info = self._wait.client(
+            cache=tests.FakeCache(),
+            job={"url": "http://localhost", "insecure": True},
+        )
+        self.assertFalse(outcome)
+        mock_get.assert_called_once_with("http://localhost", verify=False)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("time.sleep")
+    def test_wait_cmd(self, mock_sleep, mock_run_command):
+        mock_run_command.side_effect = [
+            (b"", b"", False),
+            (b"", b"", True),
+        ]
+        stdout, stderr, outcome, return_info = self._wait.client(
+            cache=tests.FakeCache(),
+            job={
+                "command": "curl -k http://google.com",
+                "retry": 5,
+                "retry_wait": 5,
+            },
+        )
+        self.assertTrue(outcome)
+
+        mock_sleep.assert_called_once_with(5)
+        run_calls = [
+            call(command="curl -k http://google.com", env=None),
+            call(command="curl -k http://google.com", env=None),
+        ]
+        self.assertEqual(mock_run_command.mock_calls, run_calls)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("time.sleep")
+    def test_wait_cmd_fail(self, mock_sleep, mock_run_command):
+        mock_run_command.return_value = (b"", b"", False)
+
+        stdout, stderr, outcome, return_info = self._wait.client(
+            cache=tests.FakeCache(), job={"command": "foo"}
+        )
+        self.assertFalse(outcome)
+
+        mock_sleep.assert_not_called()
+        mock_run_command.assert_called_once_with(command="foo", env=None)
