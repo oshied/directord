@@ -280,6 +280,24 @@ Block client task execution until a specific job has entered a completed state.
 > `JOB_WAIT` requires the job SHA to block. This is most useful for component developers
   using callback jobs.
 
+##### `WAIT`
+
+Syntax: `[CMD ...]`
+
+Conditional wait based on time, url, or command
+
+* `--seconds` **INTEGER** Wait for the provided seconds.
+* `--url` **STRING** URL to fetch and check for a 2xx or 3xx response.
+* `--cmd` **STRING** Run the provided command string and check success.
+* `--retry` **INTEGER** Number of retries on failure. Default: 0
+* `--retry-wait` **INTEGER** Number of seconds to wait before retrying. Default: 0
+* `--insecure` **BOOLEAN** Allow insecure service connections when using SSL (works only with --url).
+
+> The options `--seconds`, `--url`, and `--cmd` are mutually exclusive and one of
+  the options must be provided.  When `--cmd` is specified any additional that are
+  not specifically parameters are assumes to be a command to run similar to the RUN
+  component.
+
 ### User defined Components
 
 User defined components are expected to be in the
