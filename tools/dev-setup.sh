@@ -14,9 +14,10 @@
 #   under the License.
 set -evo
 
-VENV_PATH="${1:-/opt/directord}"
-CLONE_PATH="${3:-}"
-SETUP="${4:-true}"
+VENV_PATH="${1:-${VENV_PATH:-/opt/directord}}"
+PYTHON_BIN="${2:-${PYTHON_BIN:-python3.8}}"
+CLONE_PATH="${3:-${CLONE_PATH-}}"
+SETUP="${4:-${SETUP:-true}}"
 DRIVER=${DRIVER:-zmq}
 
 . /etc/os-release
