@@ -131,10 +131,17 @@ class Driver(drivers.BaseDriver):
         )
         self.mode = getattr(args, "mode", None)
         self.proto = "amqp"
-        self.bind_address = bind_address if bind_address != "*" else "0.0.0.0"
+
+        if self.mode == "server":
+            # In server mode, assume qdrouterd is running on the same node.
+            # This will need to be made configurable.
+            self.bind_address = self.identity
+        else:
+            # In client mode, use server_address
+            self.bind_address = args.server_address
 
         self.connection_string = "{proto}://{addr}".format(
-            proto=self.proto, addr=self.identity
+            proto=self.proto, addr=self.bind_address
         )
 
         self.conf = self._rpc_conf()
