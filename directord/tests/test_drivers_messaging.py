@@ -42,11 +42,14 @@ class TestDriverMessaging(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @patch("directord.utils.get_uuid", autospec=True)
     @patch("directord.drivers.messaging.Driver._send")
-    def test_heartbeat_send(self, mock_send):
+    def test_heartbeat_send(self, mock_send, mock_get_uuid):
+        mock_get_uuid.return_value = "XXX"
         self.driver.heartbeat_send(10, 11, 12)
         data = json.dumps(
             {
+                "job_id": "XXX",
                 "version": 12,
                 "host_uptime": 10,
                 "agent_uptime": 11,
@@ -58,8 +61,15 @@ class TestDriverMessaging(unittest.TestCase):
         mock_send.assert_called_with(
             method="_heartbeat",
             topic="directord",
+            server=ANY,
             identity=ANY,
+            job_id="XXX",
+            control="\x05",
+            command=None,
             data=data,
+            info=None,
+            stderr=None,
+            stdout=None,
         )
 
         self.driver.identity = "foohost"
@@ -68,8 +78,15 @@ class TestDriverMessaging(unittest.TestCase):
         mock_send.assert_called_with(
             method="_heartbeat",
             topic="directord",
-            identity=ANY,
+            server=ANY,
+            identity="foohost",
+            job_id="XXX",
+            control="\x05",
+            command=None,
             data=data,
+            info=None,
+            stderr=None,
+            stdout=None,
         )
 
     @patch("directord.drivers.messaging.Driver._send")
