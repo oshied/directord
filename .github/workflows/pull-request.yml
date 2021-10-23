@@ -64,11 +64,11 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -114,11 +114,11 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -165,11 +165,11 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -220,11 +220,11 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -268,11 +268,11 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -315,11 +315,11 @@ jobs:
                                                              --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -379,11 +379,11 @@ jobs:
                                              --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -445,11 +445,11 @@ jobs:
                                              --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -493,11 +493,11 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -578,11 +578,11 @@ jobs:
           fi
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -689,11 +689,11 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
-          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
-          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()

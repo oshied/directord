@@ -37,6 +37,7 @@ import tenacity
 
 from directord import drivers
 from directord import logger
+from directord import utils
 
 
 def parse_args(parser):
@@ -212,25 +213,31 @@ class Driver(drivers.BaseDriver):
             return True
 
     @expose
-    def _heartbeat(self, context, identity, data):
+    def _heartbeat(self, *args, **kwargs):
         """Handle a heartbeat interaction.
 
-        :param context: RPC Context
-        :type context: Dictionary
+        Because this method is exposed to the RPC server, some named objects
+        may be passed through which are unused. To support these extra args
+        and kwargs, *args, is accepted but dumped.
+
         :param identity: Client identity
         :type identity: String
+        :param job_id: Job Id
+        :type job_id: String
+        :param control: Job control character
+        :type control: String
         :param data: Heartbeat data
         :type data: Dictionary
         """
 
-        self.log.debug("Handling heartbeat for [ %s ]", identity)
+        self.log.debug("Handling heartbeat for [ %s ]", kwargs.get("identity"))
         self.job_q.put(
             [
-                identity,
+                kwargs.get("identity"),
+                kwargs.get("job_id"),
+                kwargs.get("control"),
                 None,
-                self.heartbeat_notice,
-                None,
-                data,
+                kwargs.get("data"),
                 None,
                 None,
                 None,
@@ -240,20 +247,15 @@ class Driver(drivers.BaseDriver):
     @expose
     def _job(
         self,
-        context,
-        identity=None,
-        job_id=None,
-        control=None,
-        command=None,
-        data=None,
-        info=None,
-        stderr=None,
-        stdout=None,
+        *args,
+        **kwargs,
     ):
         """Handle a job interaction.
 
-        :param context: RPC Context
-        :type context: Dictionary
+        Because this method is exposed to the RPC server, some named objects
+        may be passed through which are unused. To support these extra args
+        and kwargs, *args, is accepted but dumped.
+
         :param identity: Client identity
         :type identity: String
         :param job_id: Job Id
@@ -272,39 +274,38 @@ class Driver(drivers.BaseDriver):
         :type stdout: String
         """
 
-        self.log.debug("Handling job [ %s ] for [ %s ]", job_id, identity)
+        self.log.debug(
+            "Handling job [ %s ] for [ %s ]",
+            kwargs.get("job_id"),
+            kwargs.get("identity"),
+        )
         job = [
-            job_id,
-            control,
-            command,
-            data,
-            info,
-            stderr,
-            stdout,
+            kwargs.get("job_id"),
+            kwargs.get("control"),
+            kwargs.get("command"),
+            kwargs.get("data"),
+            kwargs.get("info"),
+            kwargs.get("stderr"),
+            kwargs.get("stdout"),
         ]
 
         if self.mode == "server":
-            job.insert(0, identity)
+            job.insert(0, kwargs.get("identity"))
 
         self.job_q.put(job)
 
     @expose
     def _backend(
         self,
-        context,
-        identity=None,
-        job_id=None,
-        control=None,
-        command=None,
-        data=None,
-        info=None,
-        stderr=None,
-        stdout=None,
+        *args,
+        **kwargs,
     ):
         """Handle a backend interaction.
 
-        :param context: RPC Context
-        :type context: Dictionary
+        Because this method is exposed to the RPC server, some named objects
+        may be passed through which are unused. To support these extra args
+        and kwargs, *args, is accepted but dumped.
+
         :param identity: Client identity
         :type identity: String
         :param job_id: Job Id
@@ -323,19 +324,23 @@ class Driver(drivers.BaseDriver):
         :type stdout: String
         """
 
-        self.log.debug("Handling backend [ %s ] for [ %s ]", job_id, identity)
+        self.log.debug(
+            "Handling backend [ %s ] for [ %s ]",
+            kwargs.get("job_id"),
+            kwargs.get("identity"),
+        )
         job = [
-            job_id,
-            control,
-            command,
-            data,
-            info,
-            stderr,
-            stdout,
+            kwargs.get("job_id"),
+            kwargs.get("control"),
+            kwargs.get("command"),
+            kwargs.get("data"),
+            kwargs.get("info"),
+            kwargs.get("stderr"),
+            kwargs.get("stdout"),
         ]
 
         if self.mode == "server":
-            job.insert(0, identity)
+            job.insert(0, kwargs.get("identity"))
 
         self.backend_q.put(job)
 
@@ -600,23 +605,27 @@ class Driver(drivers.BaseDriver):
         :type version: String
         """
 
-        data = json.dumps(
-            {
-                "version": version,
-                "host_uptime": host_uptime,
-                "agent_uptime": agent_uptime,
-                "machine_id": self.machine_id,
-                "driver": driver,
-            }
+        job_id = utils.get_uuid()
+        self.log.debug(
+            "Job [ %s ] sending heartbeat from [ %s ] to server",
+            job_id,
+            self.identity,
         )
-
-        self.log.info("Sending heartbeat from [ %s ] to server", self.identity)
-
-        self._send(
+        return self._process_send(
             method="_heartbeat",
             topic="directord",
-            identity=self.identity,
-            data=data,
+            msg_id=job_id,
+            control=self.heartbeat_notice,
+            data=json.dumps(
+                {
+                    "job_id": job_id,
+                    "version": version,
+                    "host_uptime": host_uptime,
+                    "agent_uptime": agent_uptime,
+                    "machine_id": self.machine_id,
+                    "driver": driver,
+                }
+            ),
         )
 
     def job_check(self, interval=1, constant=1000):

@@ -691,10 +691,19 @@ class Driver(drivers.BaseDriver):
         :type version: String
         """
 
+        job_id = utils.get_uuid()
+        self.log.debug(
+            "Job [ %s ] sending heartbeat from [ %s ] to server",
+            job_id,
+            self.identity,
+        )
+
         return self.job_send(
             control=self.heartbeat_notice,
+            msg_id=job_id,
             data=json.dumps(
                 {
+                    "job_id": job_id,
                     "version": version,
                     "host_uptime": host_uptime,
                     "agent_uptime": agent_uptime,

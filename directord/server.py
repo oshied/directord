@@ -779,10 +779,6 @@ class Server(interface.Interface):
         :type data: Dict
         """
 
-        self.log.debug(
-            "Received Heartbeat from [ %s ]",
-            identity,
-        )
         expire = self.driver.get_expiry(
             heartbeat_interval=self.heartbeat_interval,
         )
@@ -795,6 +791,12 @@ class Server(interface.Interface):
             else:
                 if loaded_data:
                     metadata.update(loaded_data)
+
+        self.log.debug(
+            "Job [ %s ] received Heartbeat from [ %s ]",
+            loaded_data["job_id"],
+            identity,
+        )
 
         if "machine_id" in metadata:
             machine_id = metadata.get("machine_id")
