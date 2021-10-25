@@ -23,7 +23,7 @@ DRIVER=${DRIVER:-zmq}
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   dnf install -y 'dnf-command(repoquery)'
-  TRIPLEO_REPOS=$(dnf --repofrompath tripleo-repo-dd,https://trunk.rdoproject.org/centos${VERSION_ID%.*}/component/tripleo/current --repo tripleo-repo-dd repoquery --location python3-tripleo-repos)
+  TRIPLEO_REPOS=$(dnf --repofrompath tripleo-repo-dd,https://trunk.rdoproject.org/centos${VERSION_ID%.*}/component/tripleo/current --repo tripleo-repo-dd repoquery --location python3-tripleo-repos | grep python3-tripleo-repos)
   echo "tripleo-repos=${TRIPLEO_REPOS}"
   VERSION_INFO="${VERSION_ID%%"."*}"
   if [[ ${ID} == "rhel" ]]; then
