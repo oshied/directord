@@ -22,14 +22,9 @@ DRIVER=${DRIVER:-zmq}
 . /etc/os-release
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
-  # Install lynx from the powertools repo
-  if ! which lynx; then
-    if ! dnf -y install lynx; then
-      dnf -y install http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/lynx-2.8.9-2.el8.x86_64.rpm \
-                     http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/centos-indexhtml-8.0-0.el8.noarch.rpm
-    fi
-  fi
-  TRIPLEO_REPOS=$(lynx -dump -hiddenlinks=listonly https://trunk.rdoproject.org/centos8/component/tripleo/current/ | awk '/python3-tripleo-repos.*rpm$/ {print $2}')
+  dnf install -y 'dnf-command(repoquery)'
+  TRIPLEO_REPOS=$(dnf --repofrompath tripleo-repo-dd,https://trunk.rdoproject.org/centos${VERSION_ID%.*}/component/tripleo/current --repo tripleo-repo-dd repoquery --location python3-tripleo-repos | grep python3-tripleo-repos)
+  echo "tripleo-repos=${TRIPLEO_REPOS}"
   VERSION_INFO="${VERSION_ID%%"."*}"
   if [[ ${ID} == "rhel" ]]; then
     dnf install -y python3 ${TRIPLEO_REPOS}
@@ -53,12 +48,18 @@ if [[ ${ID} == "rhel" ]] && [[ ${DRIVER} == "messaging" ]]; then
 fi
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
-  PACKAGES="git python38-devel gcc python3-pyyaml zeromq libsodium"
+  PACKAGES="git gcc python3-pyyaml zeromq libsodium"
   if [[ ${DRIVER} == "messaging" ]]; then
     PACKAGES+=" qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
   fi
+  if [[ ${ID} == "rhel" ]]; then
+    PACKAGES+=" python38-devel"
+    PYTHON_BIN=${2:-python3.8}
+  else
+    PACKAGES+=" python3-devel"
+    PYTHON_BIN=${2:-python3}
+  fi
   dnf -y install ${PACKAGES}
-  PYTHON_BIN=${2:-python3.8}
   CA_PATH=/etc/pki/ca-trust/source/anchors/cm-local-ca.pem
 elif [[ ${ID} == "fedora" ]]; then
   PACKAGES="git python3-devel gcc python3-pyyaml zeromq libsodium qpid-dispatch-router certmonger openssl openssl-devel python3-devel"

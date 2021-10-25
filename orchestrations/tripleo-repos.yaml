@@ -3,12 +3,10 @@
 ---
 
 - jobs:
-  - RUN: >-
-      --skip-cache dnf install -y lynx ||
-      dnf -y install http://mirror.centos.org/centos/8/PowerTools/x86_64/os/Packages/lynx-2.8.9-2.el8.x86_64.rpm
-                     http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/centos-indexhtml-8.0-0.el8.noarch.rpm
+  - RUN: --stdout-arg os_version source /etc/os-release && echo ${VERSION_ID%.*}
   - RUN: >-
       --skip-cache --stdout-arg tripleo_repo_rpm
-      lynx -dump -hiddenlinks=listonly https://trunk.rdoproject.org/centos8/component/tripleo/current/ | awk '/python3-tripleo-repos.*rpm$/ {print $2}'
+      dnf --repofrompath tripleo-repo-dd,https://trunk.rdoproject.org/centos{{ os_version }}/component/tripleo/current
+      --repo tripleo-repo-dd repoquery --location python3-tripleo-repos | grep python3-tripleo-repos
   - RUN: --skip-cache dnf install -y {{ tripleo_repo_rpm }}
   - RUN: --skip-cache tripleo-repos --stream -b master current-tripleo ceph
