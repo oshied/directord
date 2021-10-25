@@ -3,7 +3,7 @@
 ---
 
 - jobs:
-  - RUN: --stdout-arg os_version source /etc/os-release && echo $VERSION_ID
+  - RUN: --stdout-arg os_version source /etc/os-release && echo ${VERSION_ID%.*}
   - RUN: >-
       --skip-cache --stdout-arg tripleo_repo_rpm
       dnf --repofrompath tripleo-repo-dd,https://trunk.rdoproject.org/centos{{ os_version }}/component/tripleo/current --repo tripleo-repo-dd repoquery --location python3-tripleo-repos

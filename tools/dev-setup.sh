@@ -48,12 +48,18 @@ if [[ ${ID} == "rhel" ]] && [[ ${DRIVER} == "messaging" ]]; then
 fi
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
-  PACKAGES="git python3*-devel gcc python3-pyyaml zeromq libsodium"
+  PACKAGES="git gcc python3-pyyaml zeromq libsodium"
   if [[ ${DRIVER} == "messaging" ]]; then
     PACKAGES+=" qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
   fi
+  if [[ ${ID} == "rhel" ]]; then
+    PACKAGES+=" python38-devel"
+    PYTHON_BIN=${2:-python3.8}
+  else
+    PACKAGES+=" python3-devel"
+    PYTHON_BIN=${2:-python3}
+  fi
   dnf -y install ${PACKAGES}
-  PYTHON_BIN=${2:-python3}
   CA_PATH=/etc/pki/ca-trust/source/anchors/cm-local-ca.pem
 elif [[ ${ID} == "fedora" ]]; then
   PACKAGES="git python3-devel gcc python3-pyyaml zeromq libsodium qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
