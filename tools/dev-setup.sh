@@ -106,7 +106,7 @@ with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC
 
-if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
+if [ "${DRIVER}" == "zmq" ] && [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
   ${VENV_PATH}/bin/directord manage --generate-keys
 fi
 

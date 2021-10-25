@@ -32,6 +32,7 @@ directord_clients:
       except FileNotFoundError:
           config = dict()
       config['server_address'] = "{{ directord_server['targets'][0]['host'] }}"
+      config['zmq_curve_encryption'] = True
       with open('/etc/directord/config.yaml', 'w') as f:
           f.write(yaml.safe_dump(config, default_flow_style=False))
       EOC
