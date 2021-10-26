@@ -26,7 +26,7 @@ EXPOSE 5556
 EXPOSE 5557
 COPY --from=BUILD /etc/yum.repos.d /etc/yum.repos.d
 COPY --from=BUILD /etc/pki /etc/pki
-RUN microdnf install -y openssh-clients python3.8 zeromq libsodium && rm -rf /var/cache/{dnf,yum}
+RUN microdnf install -y openssh-clients python3.8 zeromq libsodium hostname && rm -rf /var/cache/{dnf,yum}
 RUN /bin/python3.8 -m venv --upgrade /directord
 COPY --from=BUILD /directord /directord
 ADD assets/entrypoint /bin/entrypoint
