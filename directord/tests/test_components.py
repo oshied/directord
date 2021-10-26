@@ -573,6 +573,22 @@ class TestComponents(unittest.TestCase):
             command="command 1 test", env=None, no_block=None
         )
 
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__run_command_stderr_args(self, mock_run_command):
+        mock_run_command.return_value = [b"testing", b"errors", True]
+        fake_cache = tests.FakeCache()
+        self._run.client(
+            cache=fake_cache,
+            job={
+                "command": "command {{ test }} test",
+                "stdout_arg": "VALUE1",
+                "stderr_arg": "VALUE2",
+            },
+        )
+        mock_run_command.assert_called_with(
+            command="command 1 test", env=None, no_block=None
+        )
+
     @patch("os.makedirs", autospec=True)
     def test__run_workdir(self, mock_makedirs):
         fake_cache = tests.FakeCache()
