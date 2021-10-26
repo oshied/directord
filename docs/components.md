@@ -35,6 +35,9 @@ Extra arguments available to the `RUN` component.
 * `--stdout-arg` **STRING** Sets the stdout of a given command to defined cached
   argument.
 
+* `--stderr-arg` **STRING** Sets the stderr of a given command to defined cached
+  argument.
+
 * `--no-block` When enabled commands are run in a "fire and forget" mode.
 
 ##### `ARG`
