@@ -59,6 +59,7 @@ class TestMain(unittest.TestCase):
                 "backend_port": 5556,
                 "ignore_cache": False,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -85,6 +86,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -112,6 +114,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -139,6 +142,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -166,6 +170,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -193,6 +198,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -221,6 +227,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -248,6 +255,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -275,6 +283,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -302,6 +311,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "stream": False,
@@ -328,6 +338,7 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -348,11 +359,13 @@ class TestMain(unittest.TestCase):
                 "job_port": 5555,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "client",
                 "server_address": "127.0.0.1",
+                "identity": None,
             },
         )
 
@@ -376,6 +389,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -407,6 +421,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -438,6 +453,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -469,6 +485,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -500,6 +517,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -531,6 +549,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -562,6 +581,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -593,6 +613,7 @@ class TestMain(unittest.TestCase):
                 "analyze_parent": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
@@ -620,6 +641,7 @@ class TestMain(unittest.TestCase):
                 "key_file": None,
                 "backend_port": 5556,
                 "heartbeat_interval": 60,
+                "identity": None,
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "threads": 10,
@@ -730,14 +752,16 @@ class TestMain(unittest.TestCase):
             "cache_path": "/var/cache/directord",
             "mode": "server",
             "bind_address": "*",
+            "identity": None,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]
         with patch("directord.server.Server", autospec=True):
             main.main()
 
+    @patch("directord.client.Client", autospec=True)
     @patch("directord.main._args", autospec=True)
-    def test_main_client(self, mock__args):
+    def test_main_client(self, mock__args, mock__client):
         _args = {
             "config_file": None,
             "zmq_shared_key": None,
@@ -752,11 +776,12 @@ class TestMain(unittest.TestCase):
             "cache_path": "/var/cache/directord",
             "mode": "client",
             "server_address": "localhost",
+            "identity": "client1",
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]
-        with patch("directord.client.Client", autospec=True):
-            main.main()
+        main.main()
+        mock__client.assert_called_once_with(args=parsed_args)
 
     @patch("directord.main._args", autospec=True)
     def test_main_exec(self, mock__args):
@@ -778,6 +803,7 @@ class TestMain(unittest.TestCase):
             "wait": False,
             "exec": ["command1"],
             "poll": False,
+            "identity": None,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]
@@ -806,6 +832,7 @@ class TestMain(unittest.TestCase):
             "orchestrate_files": ["file1 file2"],
             "poll": False,
             "restrict": None,
+            "identity": None,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]
@@ -835,6 +862,7 @@ class TestMain(unittest.TestCase):
             "mode": "manage",
             "purge_jobs": False,
             "purge_nodes": False,
+            "identity": None,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]
@@ -860,6 +888,7 @@ class TestMain(unittest.TestCase):
             "threads": 10,
             "cache_path": "/var/cache/directord",
             "mode": "bootstrap",
+            "identity": None,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         mock__args.return_value = [parsed_args, mock.MagicMock()]
@@ -886,6 +915,7 @@ class TestMain(unittest.TestCase):
             "threads": 10,
             "cache_path": "/var/cache/directord",
             "mode": "UNDEFINED",
+            "identity": None,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
         parser = mock.MagicMock()

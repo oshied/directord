@@ -62,7 +62,7 @@ class TestDriverMessaging(unittest.TestCase):
             method="_heartbeat",
             topic="directord",
             server=ANY,
-            identity=ANY,
+            identity="test-node",
             job_id="XXX",
             control="\x05",
             command=None,

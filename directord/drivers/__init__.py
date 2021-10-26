@@ -59,9 +59,12 @@ class BaseDriver:
 
         self.encrypted_traffic_data = encrypted_traffic_data
         self.bind_address = bind_address
-        self.identity = socket.gethostname()
         self.log = logger.getLogger(name="directord")
         self.args = args
+        if args.identity:
+            self.identity = args.identity
+        else:
+            self.identity = socket.gethostname()
         self.interface = interface
         self.machine_id = self.get_machine_id()
 

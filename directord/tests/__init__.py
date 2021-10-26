@@ -126,6 +126,7 @@ class FakeArgs:
     mode = "client"
     server_address = "localhost"
     bind_address = "10.1.10.1"
+    identity = "test-node"
     socket_path = "/var/run/directord.sock"
     stream = False
     socket_group = "root"
