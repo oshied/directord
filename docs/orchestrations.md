@@ -11,20 +11,24 @@ file is loaded as an array and can contain many jobs.
 
 The values available within an orchestration file are `targets` and `jobs`.
 
-* `targets` is an array of strings.
-
-* `jobs` is an array of hashes.
-
 * `async` **Optional** is a boolean. Enabling this option allows all tasks
   within a given orchestration to run asynchronously.
 
 > Asynchronous orchestrations allow operators to run many orchestrations at
   the same time while following the defined task ordering.
 
-Optionally, an orchestration can be named. This is done through the use of
-the `name` key. When orchestrations are named, both the job list and
-fingerprint output will use the defined `name` in the returned
-information.
+* `jobs` is an array of hashes.
+
+* `name` is a String. An orchestration can be named. This is done through
+  the use of the `name` key. When orchestrations are named, both the job
+  list and fingerprint output will use the defined `name` in the returned
+  information.
+
+* `targets` is an array of strings.
+
+  * `assign` is an array which allows operators to define given set of
+    targets. This is useful when defining node assignments outside of
+    the typical targets consruct.
 
 ##### Example Orchestrations
 
@@ -109,13 +113,16 @@ Each **job** within the `jobs` list is a dictionary item with the fist key
 ALWAYS representing the verb used within the given job. This verb corresponds
 to a known component.
 
-All jobs can make use of the `vars` key and `name` keys. Both of those
+All jobs can make use extra options to enhance the user experience. This
 options are useful when defining complex variables, which may be difficult
 to express inline or within a "string" format.
 
-* `vars` is a dictionary of arguments that will be passed back into the
-  execution options for a given job
+* `assign` is a list object which allows operators to override the
+  given set of targets for a particular job.
 
 * `name` is a string object which provides a human friendly name
   for a job definition. This name can be used for an improved UX when
   looking into job debug information.
+
+* `vars` is a dictionary of arguments that will be passed back into the
+  execution options for a given job
