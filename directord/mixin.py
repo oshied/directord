@@ -48,6 +48,8 @@ class Mixin:
         restrict=None,
         parent_id=None,
         parent_sha3_224=None,
+        parent_name=None,
+        job_name=None,
         return_raw=False,
         parent_async=False,
     ):
@@ -75,7 +77,11 @@ class Mixin:
         :param parent_id: Set the parent UUID for execution jobs.
         :type parent_id: String
         :param parent_sha3_224: Set the parent sha3_224 for execution jobs.
-        :type parent_id: String
+        :type parent_sha3_224: String
+        :param parent_name: Set the parent name for execution jobs.
+        :type parent_name: String
+        :param job_name: Set the job name.
+        :type job_name: String
         :param return_raw: Enable a raw return from the server.
         :type return_raw: Boolean
         :param parent_async: Enable a parent job to run asynchronously.
@@ -117,6 +123,12 @@ class Mixin:
 
         if parent_sha3_224:
             data["parent_sha3_224"] = parent_sha3_224
+
+        if parent_name:
+            data["parent_name"] = parent_name
+
+        if job_name:
+            data["job_name"] = job_name
 
         if restrict:
             data["restrict"] = restrict
@@ -174,6 +186,7 @@ class Mixin:
         job_to_run = list()
         for orchestrate in orchestrations:
             parent_sha3_224 = utils.object_sha3_224(obj=orchestrate)
+            parent_name = orchestrate.get("name")
             parent_id = utils.get_uuid()
             targets = defined_targets or orchestrate.get("targets", list())
 
@@ -190,6 +203,7 @@ class Mixin:
 
             for job in orchestrate["jobs"]:
                 arg_vars = job.pop("vars", None)
+                job_name = job.pop("name", None)
                 key, value = next(iter(job.items()))
                 job_to_run.append(
                     dict(
@@ -201,6 +215,8 @@ class Mixin:
                         ignore_cache=ignore_cache,
                         parent_id=parent_id,
                         parent_sha3_224=parent_sha3_224,
+                        parent_name=parent_name,
+                        job_name=job_name,
                         return_raw=return_raw,
                         parent_async=parent_async,
                     )
@@ -219,17 +235,17 @@ class Mixin:
                 tabulated_data.extend(
                     [
                         count,
-                        job["parent_sha3_224"],
+                        job["parent_name"] or job["parent_sha3_224"],
                         item["verb"],
                         exec_str,
-                        item["job_sha3_224"],
+                        job["job_name"] or item["job_sha3_224"],
                     ]
                 )
                 return_data.append(tabulated_data)
                 count += 1
             utils.print_tabulated_data(
                 data=return_data,
-                headers=["count", "parent_sha", "verb", "exec", "job_sha"],
+                headers=["count", "parent", "verb", "exec", "job"],
             )
             return []
         else:

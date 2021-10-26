@@ -384,8 +384,51 @@ class TestServer(tests.TestDriverBase):
                 },
                 "_nodes": ["test-node1", "test-node2"],
                 "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
                 "STDERR": {},
                 "STDOUT": {},
+                "JOB_NAME": "YYY",
+                "JOB_SHA3_224": "YYY",
+                "VERB": "TEST",
+                "_createtime": ANY,
+                "_processing": ANY,
+                "_executiontime": ANY,
+                "_roundtripltime": ANY,
+            },
+        )
+
+    def test_create_return_jobs_named(self):
+        self.maxDiff = 1024
+        self.server.return_jobs = datastores.BaseDocument()
+        status = self.server.create_return_jobs(
+            task="XXX",
+            job_item={
+                "verb": "TEST",
+                "job_sha3_224": "YYY",
+                "job_name": "test job name",
+                "parent_id": "ZZZ",
+                "parent_name": "test parent name",
+            },
+            targets=["test-node1", "test-node2"],
+        )
+        self.assertDictEqual(
+            status,
+            {
+                "ACCEPTED": True,
+                "INFO": {},
+                "JOB_DEFINITION": {
+                    "verb": "TEST",
+                    "job_sha3_224": "YYY",
+                    "job_name": "test job name",
+                    "parent_id": "ZZZ",
+                    "parent_name": "test parent name",
+                },
+                "_nodes": ["test-node1", "test-node2"],
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "test parent name",
+                "STDERR": {},
+                "STDOUT": {},
+                "JOB_NAME": "test job name",
                 "JOB_SHA3_224": "YYY",
                 "VERB": "TEST",
                 "_createtime": ANY,

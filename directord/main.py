@@ -689,7 +689,7 @@ def main():
             else:
                 if args.list_jobs:
                     restrict_headings = [
-                        "PARENT_JOB_ID",
+                        "PARENT_JOB_NAME",
                         "VERB",
                         "EXECUTION_TIME",
                         "PROCESSING",

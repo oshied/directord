@@ -245,8 +245,14 @@ class Server(interface.Interface):
                     "_nodes": list(sorted(_nodes)),
                     "VERB": job_item["verb"],
                     "JOB_SHA3_224": job_item["job_sha3_224"],
+                    "JOB_NAME": job_item.get(
+                        "job_name", job_item["job_sha3_224"]
+                    ),
                     "JOB_DEFINITION": job_item,
                     "PARENT_JOB_ID": job_item.get("parent_id"),
+                    "PARENT_JOB_NAME": job_item.get(
+                        "parent_name", job_item.get("parent_id")
+                    ),
                     "_createtime": time.time(),
                     "_executiontime": dict(),
                     "_roundtripltime": dict(),
