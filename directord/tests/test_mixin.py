@@ -21,7 +21,7 @@ from directord import mixin
 from directord import tests
 
 
-TEST_FINGER_PRINTS = """count    parent_sha                                                verb    exec      job_sha
+TEST_FINGER_PRINTS = """count    parent                                                    verb    exec      job
 -------  --------------------------------------------------------  ------  --------  --------------------------------------------------------
 0        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
 1        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767

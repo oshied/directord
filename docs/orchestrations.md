@@ -21,6 +21,10 @@ The values available within an orchestration file are `targets` and `jobs`.
 > Asynchronous orchestrations allow operators to run many orchestrations at
   the same time while following the defined task ordering.
 
+Optionally, an orchestration can be named. This is done through the use of
+the `name` key. When orchestrations are named, both the job list and
+fingerprint output will use the defined `name` in the returned
+information.
 
 ##### Example Orchestrations
 
@@ -98,3 +102,20 @@ adhoc execution.
 ``` shell
 $ directord orchestrate ${ORCHESTRATION_FILE_NAME} [<switches> ...]
 ```
+
+#### Jobs breakdown
+
+Each **job** within the `jobs` list is a dictionary item with the fist key
+ALWAYS representing the verb used within the given job. This verb corresponds
+to a known component.
+
+All jobs can make use of the `vars` key and `name` keys. Both of those
+options are useful when defining complex variables, which may be difficult
+to express inline or within a "string" format.
+
+* `vars` is a dictionary of arguments that will be passed back into the
+  execution options for a given job
+
+* `name` is a string object which provides a human friendly name
+  for a job definition. This name can be used for an improved UX when
+  looking into job debug information.

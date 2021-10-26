@@ -2,6 +2,12 @@
 #
 ---
 
+- name: Functional test parent
+  jobs:
+  - RUN: echo named job
+    name: Job name test
+
+
 - jobs:
   # Test run
   - RUN: echo hello world
