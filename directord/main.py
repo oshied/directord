@@ -113,6 +113,14 @@ def _args(exec_args=None):
         type=str,
     )
     parser.add_argument(
+        "--identity",
+        help=(
+            "Identity string used. If not set the hostname will be used. The "
+            "hostname is resolved at runtime with socket.gethostname()."
+        ),
+        metavar="STRING",
+    )
+    parser.add_argument(
         "--debug",
         help="Enable debug mode. Default: %(default)s",
         action="store_true",

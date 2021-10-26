@@ -325,6 +325,7 @@ class DirectordConnect:
                 "socket_path": socket_path,
                 "driver": driver,
                 "force_async": force_async,
+                "identity": None,
             }
         )
         _mixin = plugin_import(plugin=".mixin")
