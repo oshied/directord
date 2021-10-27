@@ -95,7 +95,7 @@ class ComponentBase:
         :param execute: String
         :param return_codes: Integer|List
         :param no_block: Boolean
-        :returns: Truple
+        :returns: Tuple
         """
 
         if env:
