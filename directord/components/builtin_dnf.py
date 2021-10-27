@@ -115,19 +115,11 @@ class Component(components.ComponentBase):
 
         to_remove = []
         to_install = []
-        to_update = []
+        to_update_or_install = []
         if state == "absent":
             to_remove = packages
         elif state == "latest":
-            for package in packages:
-                cmd = "dnf list --installed {}".format(package)
-                stdout, stderr, outcome = self.run_command(
-                    command=cmd, env=cache.get("envs")
-                )
-                if outcome:
-                    to_update.append(package)
-                else:
-                    to_install.append(package)
+            to_update_or_install = packages
         else:
             to_install = packages
 
@@ -149,8 +141,10 @@ class Component(components.ComponentBase):
             job_stdout.append(stdout)
             job_stderr.append(stderr)
 
-        if to_update:
-            cmd = "dnf -q -y update {}".format(" ".join(to_update))
+        if to_update_or_install:
+            cmd = "dnf -q -y --best install {}".format(
+                " ".join(to_update_or_install)
+            )
             job_stdout.append(b"=== dnf update ===\n")
             stdout, stderr, outcome = self.run_command(
                 command=cmd, env=cache.get("envs")
