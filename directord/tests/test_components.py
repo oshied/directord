@@ -367,9 +367,7 @@ class TestComponents(unittest.TestCase):
             job={"packages": ["kernel", "gcc"], "state": "latest"},
         )
         calls = [
-            call(command="dnf list --installed kernel", env=None),
-            call(command="dnf list --installed gcc", env=None),
-            call(command="dnf -q -y update kernel gcc", env=None),
+            call(command="dnf -q -y --best install kernel gcc", env=None),
         ]
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
