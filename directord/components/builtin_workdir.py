@@ -93,7 +93,7 @@ class Component(components.ComponentBase):
             os.makedirs(workdir, exist_ok=True)
         except (FileExistsError, PermissionError) as e:
             self.log.critical(str(e))
-            return None, traceback.format_exc(), False
+            return None, traceback.format_exc(), False, None
         else:
             update_info = "Directory {} OK".format(workdir)
             outcome = True
