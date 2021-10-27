@@ -123,6 +123,7 @@ def _args(exec_args=None):
     parser.add_argument(
         "--debug",
         help="Enable debug mode. Default: %(default)s",
+        default=os.getenv("DIRECTORD_DEBUG", False),
         action="store_true",
     )
     server_group = parser.add_argument_group("Server options")
