@@ -143,7 +143,8 @@ class Component(components.ComponentBase):
 
         if to_update_or_install:
             cmd = "dnf -q -y --best install {}".format(
-                " ".join(to_update_or_install))
+                " ".join(to_update_or_install)
+            )
             job_stdout.append(b"=== dnf update ===\n")
             stdout, stderr, outcome = self.run_command(
                 command=cmd, env=cache.get("envs")
