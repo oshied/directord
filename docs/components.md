@@ -301,6 +301,21 @@ Conditional wait based on time, url, or command
   not specifically parameters are assumes to be a command to run similar to the RUN
   component.
 
+##### `CONTAINER_IMAGE`
+
+Syntax: `STRING`
+
+Executes basic container image commands - pull, push, list, inspect, tag.
+
+* `--push` **STRING** Image or list of images to push.
+* `--pull` **STRING** Image or list of images to pull.
+* `--list` **BOOLEAN** List all images on the host.
+* `--tag` **STRING** Retag image from/to, requires two images as input.
+* `--inspect` **STRING** Image or list of images to inspect.
+
+> The options `--push`, `--pull`, `--list`, `--inspect` and `--tag` are
+  mutually exclusive and one of the options must be provided.
+
 ### User defined Components
 
 User defined components are expected to be in the
