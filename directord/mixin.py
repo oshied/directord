@@ -188,7 +188,11 @@ class Mixin:
             parent_sha3_224 = utils.object_sha3_224(obj=orchestrate)
             parent_name = orchestrate.get("name")
             parent_id = utils.get_uuid()
-            targets = defined_targets or orchestrate.get("targets", list())
+            targets = (
+                defined_targets
+                or orchestrate.pop("assign", list())
+                or orchestrate.get("targets", list())
+            )
 
             force_async = getattr(self.args, "force_async", False)
             if force_async:
@@ -204,13 +208,21 @@ class Mixin:
             for job in orchestrate["jobs"]:
                 arg_vars = job.pop("vars", None)
                 job_name = job.pop("name", None)
+                assign = job.pop("assign", None)
+                if assign and not isinstance(assign, list):
+                    raise SyntaxError(
+                        "Job contained an invalid assignment: {} = {}."
+                        " Assignments must be in list format.".format(
+                            assign, type(assign)
+                        )
+                    )
                 key, value = next(iter(job.items()))
                 job_to_run.append(
                     dict(
                         verb=key,
                         execute=[value],
                         arg_vars=arg_vars,
-                        targets=targets,
+                        targets=assign or targets,
                         restrict=restrict,
                         ignore_cache=ignore_cache,
                         parent_id=parent_id,
