@@ -91,6 +91,20 @@ jobs:
         run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
       - name: Setup SSL encryption for Qpid
         run: sudo tools/scripts/messaging/messaging-ssl-setup.sh
+      - name: Configure messaging_address
+        run: |
+          sudo /opt/directord/bin/python <<EOC
+          import socket
+          import yaml
+          try:
+              with open('/etc/directord/config.yaml') as f:
+                  config = yaml.safe_load(f)
+          except FileNotFoundError:
+              config = dict()
+          config["messaging_address"] = socket.gethostname()
+          with open('/etc/directord/config.yaml', 'w') as f:
+              f.write(yaml.safe_dump(config, default_flow_style=False))
+          EOC
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -114,18 +128,22 @@ jobs:
                                               --check
       - name: Generate log details
         run: |
+          sudo mkdir -p /tmp/directord
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp /etc/directord/messaging/ssl/directord* /tmp/directord
+          sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord
+          sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_memory_check:
     runs-on: ubuntu-latest
@@ -406,6 +424,20 @@ jobs:
         run: sudo DRIVER=messaging bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
       - name: Setup SSL encryption for Qpid
         run: sudo tools/scripts/messaging/messaging-ssl-setup.sh
+      - name: Configure messaging_address
+        run: |
+          sudo /opt/directord/bin/python <<EOC
+          import socket
+          import yaml
+          try:
+              with open('/etc/directord/config.yaml') as f:
+                  config = yaml.safe_load(f)
+          except FileNotFoundError:
+              config = dict()
+          config["messaging_address"] = socket.gethostname()
+          with open('/etc/directord/config.yaml', 'w') as f:
+              f.write(yaml.safe_dump(config, default_flow_style=False))
+          EOC
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -445,18 +477,22 @@ jobs:
                                              --check
       - name: Generate log details
         run: |
+          sudo mkdir -p /tmp/directord
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp /etc/directord/messaging/ssl/directord* /tmp/directord
+          sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord
+          sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-async-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_defaults_add_check:
     runs-on: ubuntu-latest

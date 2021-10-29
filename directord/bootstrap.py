@@ -461,6 +461,7 @@ class Bootstrap(directord.Processor):
                 self.log.debug("Loading server information")
                 for s in self.bootstrap_catalog_entry(entry=directord_server):
                     s["key_file"] = self.args.key_file
+                    catalog["directord_bootstrap"] = s
                     self.bootstrap_run(job_def=s, catalog=catalog)
 
             directord_clients = catalog.get("directord_clients")

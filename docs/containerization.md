@@ -89,14 +89,14 @@ $ directord --socket-path /tmp/directord.sock manage --list-nodes
 $ podman run --hostname $(hostname)-client \
              --name directord-client \
              --net=host \
-             --env DIRECTORD_SERVER_ADDRESS=172.16.27.120 \
+             --env DIRECTORD_ZMQ_SERVER_ADDRESS=172.16.27.120 \
              --env DIRECTORD_ZMQ_SHARED_KEY=secrete \
              --user 0 \
              --detach \
              directord directord
 ```
 
-> NOTE: the DIRECTORD_SERVER_ADDRESS environment variable needs to point to the
+> NOTE: the DIRECTORD_ZMQ_SERVER_ADDRESS environment variable needs to point to the
   IP address or Domain name of the Directord server.
 
 #### Running pods

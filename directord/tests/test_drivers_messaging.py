@@ -26,7 +26,7 @@ from directord.drivers import messaging
 class TestDriverMessaging(unittest.TestCase):
     def setUp(self):
         self.mock_interface = MagicMock()
-        args = tests.FakeArgs
+        args = tests.FakeArgs()
         args.driver = "messaging"
         args.mode = "server"
         with patch.object(
@@ -35,7 +35,6 @@ class TestDriverMessaging(unittest.TestCase):
             mock_get_machine_id.return_value = "XXX123"
             self.driver = messaging.Driver(
                 args=args,
-                bind_address="localhost",
                 interface=self.mock_interface,
             )
 

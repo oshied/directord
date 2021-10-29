@@ -28,7 +28,7 @@ class TestMain(unittest.TestCase):
         self.maxDiff = 20000
         self.args = tests.FakeArgs()
         self.systemdinstall = main.SystemdInstall()
-        parse_driver_args_se = lambda X: X
+        parse_driver_args_se = lambda x, y, z: x
         mock_parse_driver_args = mock.Mock()
         mock_parse_driver_args.side_effect = parse_driver_args_se
         main._parse_driver_args = mock_parse_driver_args
@@ -343,7 +343,6 @@ class TestMain(unittest.TestCase):
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "server",
-                "bind_address": "*",
             },
         )
 
@@ -364,7 +363,6 @@ class TestMain(unittest.TestCase):
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
                 "mode": "client",
-                "server_address": "127.0.0.1",
                 "identity": None,
             },
         )
@@ -751,7 +749,6 @@ class TestMain(unittest.TestCase):
             "stream": False,
             "cache_path": "/var/cache/directord",
             "mode": "server",
-            "bind_address": "*",
             "identity": None,
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())
@@ -775,7 +772,6 @@ class TestMain(unittest.TestCase):
             "stream": False,
             "cache_path": "/var/cache/directord",
             "mode": "client",
-            "server_address": "localhost",
             "identity": "client1",
         }
         parsed_args = namedtuple("NameSpace", _args.keys())(*_args.values())

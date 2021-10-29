@@ -46,7 +46,6 @@ class BaseDriver:
         self,
         args,
         encrypted_traffic_data=None,
-        bind_address=None,
         interface=None,
     ):
         """Initialize the Driver.
@@ -58,7 +57,6 @@ class BaseDriver:
         """
 
         self.encrypted_traffic_data = encrypted_traffic_data
-        self.bind_address = bind_address
         self.log = logger.getLogger(name="directord")
         self.args = args
         if args.identity:
