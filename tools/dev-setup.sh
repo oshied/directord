@@ -105,7 +105,6 @@ config["debug"] = True
 config["driver"] = "${DRIVER}"
 if config["driver"] == "messaging":
     config["messaging_ssl_ca"] = "${CA_PATH}"
-    config["server_address"] = socket.gethostname()
 with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC

@@ -151,7 +151,7 @@ the following options.
 
 ```yaml
 driver: messaging
-server_address: 127.0.0.1
+zmq_server_address: 127.0.0.1
 ```
 
 > NOTE: The server address is the location of the AMQP Server and can be

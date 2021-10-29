@@ -57,7 +57,7 @@ def _find_drivers(limit_modules=None):
     return drivers
 
 
-def _parse_driver_args(parser):
+def _parse_driver_args(parser, parser_server, parser_client):
     """Return a driver parser.
 
     Any driver found not to be importable will be considered un-available for
@@ -65,6 +65,10 @@ def _parse_driver_args(parser):
 
     :param parser: Parser object
     :type parser: Object
+    :param parser_server: SubParser object
+    :type parser_server: Object
+    :param parser_client: SubParser object
+    :type parser_client: Object
     :returns: Object
     """
 
@@ -73,7 +77,7 @@ def _parse_driver_args(parser):
             driver_name
         )
         if hasattr(driver, "parse_args"):
-            parser = driver.parse_args(parser)
+            parser = driver.parse_args(parser, parser_server, parser_client)
 
         sys.modules.pop(driver_name, None)
 
@@ -200,6 +204,8 @@ def _args(exec_args=None):
     subparsers = parser.add_subparsers(
         help="Mode sub-command help", dest="mode"
     )
+    parser_server = subparsers.add_parser("server", help="Server mode help")
+    parser_client = subparsers.add_parser("client", help="Client mode help")
     parser_orchestrate = subparsers.add_parser(
         "orchestrate", help="Orchestration mode help"
     )
@@ -324,23 +330,6 @@ def _args(exec_args=None):
         help=("Instruct the execution engine to run asynchronously."),
         action="store_true",
     )
-    parser_server = subparsers.add_parser("server", help="Server mode help")
-    parser_server.add_argument(
-        "--bind-address",
-        help="IP Address to bind a Directord Server. Default: %(default)s",
-        metavar="STRING",
-        default=os.getenv("DIRECTORD_BIND_ADDRESS", "*"),
-    )
-    parser_client = subparsers.add_parser("client", help="Client mode help")
-    parser_client.add_argument(
-        "--server-address",
-        help=(
-            "Domain or IP address of the Directord server."
-            " Default: %(default)s"
-        ),
-        metavar="STRING",
-        default=os.getenv("DIRECTORD_SERVER_ADDRESS", "127.0.0.1"),
-    )
     parser_manage = subparsers.add_parser(
         "manage", help="Server management mode help"
     )
@@ -435,7 +424,7 @@ def _args(exec_args=None):
         type=int,
     )
 
-    parser = _parse_driver_args(parser)
+    parser = _parse_driver_args(parser, parser_server, parser_client)
     if exec_args:
         args = parser.parse_args(args=exec_args)
     else:

@@ -40,11 +40,16 @@ from directord import logger
 from directord import utils
 
 
-def parse_args(parser):
+def parse_args(parser, parser_server, parser_client):
     """Add arguments for this driver to the parser.
 
     :param parser: Parser
     :type parser: Object
+    :param parser_server: SubParser object
+    :type parser_server: Object
+    :param parser_client: SubParser object
+    :type parser_client: Object
+    :returns: Object
     """
 
     messaging_group = parser.add_argument_group("Messaging driver options")
@@ -99,6 +104,16 @@ def parse_args(parser):
         ),
         type=str,
     )
+    messaging_group.add_argument(
+        "--messaging-address",
+        help=(
+            "IP address or hostname of messaging server (router/broker)."
+            " Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=str(os.getenv("DIRECTORD_MESSAGING_ADDRESS", "127.0.0.1")),
+        type=str,
+    )
 
     return parser
 
@@ -108,7 +123,6 @@ class Driver(drivers.BaseDriver):
         self,
         args,
         encrypted_traffic_data=None,
-        bind_address=None,
         interface=None,
     ):
         """Initialize the Driver.
@@ -117,8 +131,6 @@ class Driver(drivers.BaseDriver):
         :type args: Object
         :param encrypted_traffic: Enable|Disable encrypted traffic.
         :type encrypted_traffic: Boolean
-        :param bind_address: Bind address
-        :type bind_address: String.
         :param interface: The interface instance (client/server)
         :type interface: Object
         """
@@ -126,22 +138,13 @@ class Driver(drivers.BaseDriver):
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=encrypted_traffic_data,
-            bind_address=bind_address,
             interface=interface,
         )
         self.mode = getattr(args, "mode", None)
+
         self.proto = "amqp"
-
-        if self.mode == "server":
-            # In server mode, assume qdrouterd is running on the same node.
-            # This will need to be made configurable.
-            self.bind_address = self.identity
-        else:
-            # In client mode, use server_address
-            self.bind_address = args.server_address
-
         self.connection_string = "{proto}://{addr}".format(
-            proto=self.proto, addr=self.bind_address
+            proto=self.proto, addr=self.args.messaging_address
         )
 
         self.conf = self._rpc_conf()

@@ -33,7 +33,7 @@ directord_clients:
               config = yaml.safe_load(f)
       except FileNotFoundError:
           config = dict()
-      config['server_address'] = "{{ directord_server['targets'][0]['host'] }}"
+      config['zmq_server_address'] = "{{ directord_server['targets'][0]['host'] }}"
       with open('/etc/directord/config.yaml', 'w') as f:
           f.write(yaml.safe_dump(config, default_flow_style=False))
       EOC

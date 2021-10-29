@@ -31,11 +31,16 @@ from directord import logger
 from directord import utils
 
 
-def parse_args(parser):
+def parse_args(parser, parser_server, parser_client):
     """Add arguments for this driver to the parser.
 
     :param parser: Parser
     :type parser: Object
+    :param parser_server: SubParser object
+    :type parser_server: Object
+    :param parser_client: SubParser object
+    :type parser_client: Object
+    :returns: Object
     """
 
     group = parser.add_argument_group("ZMQ driver options")
@@ -45,6 +50,30 @@ def parse_args(parser):
         default=os.getenv("DIRECTORD_ZMQ_HIGHWATER_MARK", 1024),
         metavar="INTEGER",
         help=("Set the ZMQ highwater mark. Default %(default)s."),
+    )
+    server_group = parser_server.add_argument_group(
+        "ZMQ Server driver options"
+    )
+    server_group.add_argument(
+        "--zmq-bind-address",
+        help=(
+            "ZMQ IP Address to bind a Directord Server."
+            " Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=os.getenv("DIRECTORD_ZMQ_BIND_ADDRESS", "*"),
+    )
+    client_group = parser_client.add_argument_group(
+        "ZMQ Client driver options"
+    )
+    client_group.add_argument(
+        "--zmq-server-address",
+        help=(
+            "ZMQ Domain or IP address of the Directord server."
+            " Default: %(default)s"
+        ),
+        metavar="STRING",
+        default=os.getenv("DIRECTORD_ZMQ_SERVER_ADDRESS", "127.0.0.1"),
     )
     auth_group = group.add_mutually_exclusive_group()
     auth_group.add_argument(
@@ -71,7 +100,6 @@ class Driver(drivers.BaseDriver):
         self,
         args,
         encrypted_traffic_data=None,
-        bind_address=None,
         interface=None,
     ):
         """Initialize the Driver.
@@ -80,19 +108,25 @@ class Driver(drivers.BaseDriver):
         :type args: Object
         :param encrypted_traffic: Enable|Disable encrypted traffic.
         :type encrypted_traffic: Boolean
-        :param bind_address: Bind address
-        :type bind_address: String.
         :param interface: The interface instance (client/server)
         :type interface: Object
         """
 
         self.args = args
         self.encrypted_traffic_data = encrypted_traffic_data
+
+        mode = getattr(self.args, "mode", None)
+        if mode == "client":
+            self.bind_address = self.args.zmq_server_address
+        elif mode == "server":
+            self.bind_address = self.args.zmq_bind_address
+        else:
+            self.bind_address = "*"
         self.proto = "tcp"
-        self.bind_address = bind_address
         self.connection_string = "{proto}://{addr}".format(
             proto=self.proto, addr=self.bind_address
         )
+
         if self.encrypted_traffic_data:
             self.encrypted_traffic = self.encrypted_traffic_data.get("enabled")
             self.secret_keys_dir = self.encrypted_traffic_data.get(
@@ -112,7 +146,6 @@ class Driver(drivers.BaseDriver):
         super(Driver, self).__init__(
             args=args,
             encrypted_traffic_data=self.encrypted_traffic_data,
-            bind_address=self.bind_address,
             interface=interface,
         )
         self.bind_job = None
@@ -126,7 +159,6 @@ class Driver(drivers.BaseDriver):
         return Driver(
             args=self.args,
             encrypted_traffic_data=self.encrypted_traffic_data,
-            bind_address=self.bind_address,
             interface=self.interface,
         )
 

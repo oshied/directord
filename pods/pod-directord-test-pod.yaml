@@ -51,7 +51,7 @@ spec:
         value: oci
       - name: DIRECTORD_DEBUG
         value: true
-      - name: DIRECTORD_SERVER_ADDRESS
+      - name: DIRECTORD_ZMQ_SERVER_ADDRESS
         value: directord-test-pod
       - name: DIRECTORD_ZMQ_SHARED_KEY
         value: secrete

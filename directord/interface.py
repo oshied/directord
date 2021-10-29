@@ -46,14 +46,6 @@ class Interface(directord.Processor):
             for handler in self.log.handlers:
                 handler.setLevel(logging.DEBUG)
 
-        mode = getattr(self.args, "mode", None)
-        if mode == "client":
-            self.bind_address = self.args.server_address
-        elif mode == "server":
-            self.bind_address = self.args.bind_address
-        else:
-            self.bind_address = "*"
-
         try:
             self.heartbeat_interval = self.args.heartbeat_interval
         except AttributeError:
@@ -84,6 +76,5 @@ class Interface(directord.Processor):
                     "public_keys_dir": self.public_keys_dir,
                     "secret_keys_dir": self.secret_keys_dir,
                 },
-                bind_address=self.bind_address,
                 interface=self,
             )

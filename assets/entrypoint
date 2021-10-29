@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-export DIRECTORD_SERVER_ADDRESS=${DIRECTORD_SERVER_ADDRESS:-localhost}
+export DIRECTORD_ZMQ_SERVER_ADDRESS=${DIRECTORD_ZMQ_SERVER_ADDRESS:-localhost}
 export DIRECTORD_MODE=${DIRECTORD_MODE:-client}
 
 if [ "${DIRECTORD_MODE}" = "server" ]; then
     /directord/bin/directord --socket-path /tmp/directord.sock server
 else
-    /directord/bin/directord client --server-address ${DIRECTORD_SERVER_ADDRESS}
+    /directord/bin/directord client --server-address ${DIRECTORD_ZMQ_SERVER_ADDRESS}
 fi

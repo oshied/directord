@@ -25,9 +25,7 @@ from directord.drivers import zmq as zmq_driver
 
 class TestDriverZMQSharedAuth(unittest.TestCase):
     def setUp(self):
-        self.driver = zmq_driver.Driver(
-            args=tests.FakeArgs, bind_address="localhost"
-        )
+        self.driver = zmq_driver.Driver(args=tests.FakeArgs)
         self.driver.encrypted_traffic = True
         self.driver.secret_keys_dir = "test/key"
         self.driver.public_keys_dir = "test/key"
@@ -69,9 +67,7 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
 
 class TestDriverZMQ(unittest.TestCase):
     def setUp(self):
-        self.driver = zmq_driver.Driver(
-            args=tests.FakeArgs, bind_address="localhost"
-        )
+        self.driver = zmq_driver.Driver(args=tests.FakeArgs)
 
     def tearDown(self):
         pass
@@ -342,3 +338,15 @@ class TestDriverZMQ(unittest.TestCase):
         self.driver._backend_connect()
         mock_socket_connect.assert_called()
         mock_log_debug.assert_called()
+
+    def test_zmq_mode_client(self):
+        client_args = tests.FakeArgs()
+        client_args.mode = "client"
+        driver = zmq_driver.Driver(args=client_args)
+        self.assertEqual(driver.bind_address, "localhost")
+
+    def test_zmq_mode_server(self):
+        server_args = tests.FakeArgs()
+        server_args.mode = "server"
+        driver = zmq_driver.Driver(args=server_args)
+        self.assertEqual(driver.bind_address, "10.1.10.1")

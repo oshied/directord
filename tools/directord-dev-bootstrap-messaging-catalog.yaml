@@ -16,7 +16,7 @@ directord_server:
         sudo ./getcert.sh {{ client['host'] }} /opt/directord/messaging-ssl ${hostname}
       {% endfor %}
   - RUN: |-
-      echo $(hostname) | sudo tee /opt/directord/messaging-ssl/server-address
+      echo $(hostname) | sudo tee /opt/directord/messaging-ssl/messaging-address
   - RUN: sudo /bin/bash -c 'setfacl -m u:${SUDO_USER}:r /opt/directord/messaging-ssl/*'
   - RUN: sudo /opt/directord/bin/directord-server-systemd
   - RUN: sudo systemctl daemon-reload
@@ -37,10 +37,10 @@ directord_clients:
   - ADD: scripts/messaging/set-ca.sh set-ca.sh
   - RUN: sudo /bin/bash -c '. set-ca.sh; cp /opt/directord/messaging-ssl/directord-ca.crt $CA_DIR; $CA_UPDATE'
   - RUN: sudo /opt/directord/bin/directord-client-systemd
-  - ADD: /opt/directord/messaging-ssl/server-address server-address
+  - ADD: /opt/directord/messaging-ssl/messaging-address messaging-address
   - RUN: |-
-      sudo cp server-address /opt/directord/messaging-ssl/server-address
-      rm -f server-address
+      sudo cp messaging-address /opt/directord/messaging-ssl/messaging-address
+      rm -f messaging-address
   - RUN: |-
       sudo python3 <<EOC
       import os
@@ -50,9 +50,9 @@ directord_clients:
               config = yaml.safe_load(f)
       except FileNotFoundError:
           config = dict()
-      with open('/opt/directord/messaging-ssl/server-address') as addr:
-        server_address = addr.read().strip()
-      config['server_address'] = server_address
+      with open('/opt/directord/messaging-ssl/messaging-address') as addr:
+        messaging_address = addr.read().strip()
+      config['messaging_address'] = messaging_address
       config['messaging_ssl_cert'] = "{}.crt".format(os.path.join(
           "/etc/directord/messaging/ssl/",
           "{{ directord_bootstrap['host'] }}"))

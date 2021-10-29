@@ -124,8 +124,8 @@ class FakeArgs:
     heartbeat_interval = 60
     job_port = 5555
     mode = "client"
-    server_address = "localhost"
-    bind_address = "10.1.10.1"
+    zmq_server_address = "localhost"
+    zmq_bind_address = "10.1.10.1"
     identity = "test-node"
     socket_path = "/var/run/directord.sock"
     stream = False
@@ -137,6 +137,7 @@ class FakeArgs:
     zmq_curve_encryption = None
     zmq_highwater_mark = 1
     force_async = False
+    messaging_address = "localhost"
     messaging_ssl = True
     messaging_ssl_ca = "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem"
     messaging_ssl_cert = "/etc/directord/messaging/ssl/directord.crt"

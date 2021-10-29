@@ -30,16 +30,6 @@ class TestInterface(unittest.TestCase):
             iface = interface.Interface(args=self.args)
         self.assertEqual(iface.log.level, logging.DEBUG)
 
-    def test_interface_mode_client(self):
-        with patch.object(self.args, "mode", "client"):
-            iface = interface.Interface(args=self.args)
-        self.assertEqual(iface.bind_address, "localhost")
-
-    def test_interface_mode_server(self):
-        with patch.object(self.args, "mode", "server"):
-            iface = interface.Interface(args=self.args)
-        self.assertEqual(iface.bind_address, "10.1.10.1")
-
     def test_interface_no_driver(self):
         with patch(
             "directord.plugin_import", autospec=True
