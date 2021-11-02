@@ -11,7 +11,14 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
+try:
+    from directord.components.lib.podman import PodmanImage
+    AVAILABLE_PODMAN = True
+except ImportError:
+    AVAILABLE_PODMAN = False
 
+import json
+import traceback
 from directord import components
 
 
@@ -23,6 +30,17 @@ class Component(components.ComponentBase):
         """Set default arguments for a component."""
 
         super().args()
+        self.parser.add_argument(
+            "--socket-path",
+            default="/var/run/podman/podman.sock",
+            help="Path to the podman socket. Default: %(default)s",
+        )
+        self.parser.add_argument(
+            "--tlsverify",
+            default=True,
+            type=bool,
+            help="Whether to use TLS verify for registry Default: %(default)s",
+        )
         action_group = self.parser.add_mutually_exclusive_group()
         action_group.add_argument(
             "--pull",
@@ -70,6 +88,7 @@ class Component(components.ComponentBase):
 
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         data["images"] = self.known_args.images
+        data["socket_path"] = self.known_args.socket_path
         if self.known_args.pull:
             data["action"] = "pull"
         elif self.known_args.push:
@@ -111,15 +130,37 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
         self.log.debug("client(): job: %s, cache: %s", job, cache)
-        podman_bin, error, _ = self.run_command("command -v podman")
-        podman = podman_bin.decode().strip()
-        if not podman:
-            self.log.error("Unable to find podman binary.")
-            return None, error, False, "Unable to find podman binary."
-        command = " ".join(
-            [podman, "image", job["action"], " ".join(job["images"])]
-        )
-        self.log.debug("Command: %s", command)
-        out, err, result = self.run_command(command, shell=True)
+        if not AVAILABLE_PODMAN:
+            return (
+                None,
+                "The required podman-py library is not installed",
+                False,
+                None,
+            )
 
-        return out, err, result, command
+        try:
+            with PodmanImage(socket=job["socket_path"]) as p:
+                action = getattr(p, job["action"], None)
+                if action:
+                    status, data = action(**job)
+                    if data and not isinstance(data, str):
+                        data = json.dumps(data)
+                    if status:
+                        return data, None, status, None
+
+                    return None, data, status, None
+
+                return (
+                    None,
+                    (
+                        "The action [ {action} ] failed to return"
+                        "  a function".format(action=job["pod_action"])
+                    ),
+                    False,
+                    None,
+                )
+        except Exception as e:
+            self.log.critical(
+                "Job [ %s ] critical error %s", job["job_id"], str(e)
+            )
+            return None, traceback.format_exc(), False, None
