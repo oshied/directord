@@ -6,7 +6,7 @@ Release:        1%{?dist}
 Summary:        A deployment framework built to manage the data center life cycle
 
 License:        None
-URL:            https://github.com/cloudnull/directord
+URL:            https://github.com/directord/directord
 Version:        %{released_version}
 Source0:        directord.tar.gz
 BuildArch:      noarch
