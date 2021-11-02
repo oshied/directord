@@ -14,8 +14,10 @@
 
 import json
 import traceback
+
 try:
     from directord.components.lib.podman import PodmanPod
+
     AVAILABLE_PODMAN = True
 except ImportError:
     AVAILABLE_PODMAN = False
@@ -194,4 +196,3 @@ class Component(components.ComponentBase):
                 "Job [ %s ] critical error %s", job["job_id"], str(e)
             )
             return None, traceback.format_exc(), False, None
-

@@ -239,9 +239,7 @@ class PodmanImage(PodmanConnect):
 
             resp = self.api.post(
                 path="/images/pull",
-                params={
-                    "reference": image,
-                    "tlsVerify": tlsverify},
+                params={"reference": image, "tlsVerify": tlsverify},
             )
             text = self._decode(resp.content)
             content.append(text)

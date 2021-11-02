@@ -13,6 +13,7 @@
 #   under the License.
 try:
     from directord.components.lib.podman import PodmanImage
+
     AVAILABLE_PODMAN = True
 except ImportError:
     AVAILABLE_PODMAN = False
