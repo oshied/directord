@@ -1,4 +1,3 @@
-import contextlib
 import json
 import os
 import yaml
@@ -271,7 +270,7 @@ class PodmanImage(PodmanConnect):
         return ok, "\n".join(content)
 
     def tag(self, images=None, **kwargs):
-        """Tag image with a new tag
+        """Tag image with a new tag.
 
         :param images: Image and it's new image name plus tag.
         :type images: List
@@ -292,7 +291,7 @@ class PodmanImage(PodmanConnect):
         return resp.ok, self._decode(resp.content)
 
     def list(self, **kwargs):
-        """List all images on the host
+        """List all images on the host.
 
         :returns: Tuple
         """
@@ -303,7 +302,7 @@ class PodmanImage(PodmanConnect):
         return resp.ok, self._decode(resp.content)
 
     def inspect(self, images=None, **kwargs):
-        """Inspect given images
+        """Inspect given images.
 
         :param images: Image names to inspect
         :type images: List
