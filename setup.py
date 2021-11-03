@@ -45,7 +45,6 @@ setuptools.setup(
     zip_safe=False,
     test_suite="tests",
     install_requires=[
-        "diskcache",
         "jinja2",
         "pyyaml",
         "ssh-python",

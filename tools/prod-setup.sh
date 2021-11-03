@@ -38,7 +38,7 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   fi
   COMMAND="dnf -y install"
 elif [[ ${ID} == "fedora" ]]; then
-  PACKAGES="git wget python3 python3-ssh-python python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-diskcache"
+  PACKAGES="git wget python3 python3-ssh-python python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium"
   if [ "${DRIVER}" == "messaging" ]; then
     PACKAGES+=" qpid-dispatch-router"
   fi

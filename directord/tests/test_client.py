@@ -100,7 +100,7 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.mock_driver, "job_check", return_value=False):
             self.client.run_job(sentinel=True)
 
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_cache_check(
         self,
@@ -130,7 +130,7 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.mock_driver, "job_check", return_value=False):
             self.client.run_job(sentinel=True)
 
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_skip_skip_cache_run(
@@ -164,7 +164,7 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job(sentinel=True)
         mock_log_info.assert_called()
 
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_skip_ignore_cache_run(
@@ -199,7 +199,7 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job(sentinel=True)
         mock_log_info.assert_called()
 
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_parent_failed_run(
@@ -233,7 +233,7 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job(sentinel=True)
         mock_log_info.assert_called()
 
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_cache_hit_run(
@@ -269,7 +269,7 @@ class TestClient(tests.TestDriverBase):
                 self.client.run_job(sentinel=True)
         mock_log_info.assert_called()
 
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_run(
@@ -307,7 +307,7 @@ class TestClient(tests.TestDriverBase):
         mock_log_info.assert_called()
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_end)
 
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_run_outcome_false(
@@ -344,7 +344,7 @@ class TestClient(tests.TestDriverBase):
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_failed)
 
     @patch("os.makedirs", autospec=True)
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     @patch("directord.client.Client.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads, mock_diskcache, mock_makedirs):
         self.client.worker_run()

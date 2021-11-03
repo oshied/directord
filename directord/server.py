@@ -58,13 +58,12 @@ class Server(interface.Interface):
                 self.log.debug("Disc base document store initialized")
                 path = os.path.abspath(os.path.expanduser(url.path))
                 # Ensure that the cache path exists before executing.
-                os.makedirs(path, exist_ok=True)
-                self.workers = disc.BaseDocument(
-                    url=os.path.join(path, "workers")
-                )
-                self.return_jobs = disc.BaseDocument(
-                    url=os.path.join(path, "jobs")
-                )
+                workers_path = os.path.join(path, "workers")
+                os.makedirs(workers_path, exist_ok=True)
+                self.workers = disc.BaseDocument(url=workers_path)
+                jobs_path = os.path.join(path, "jobs")
+                os.makedirs(jobs_path, exist_ok=True)
+                self.return_jobs = disc.BaseDocument(url=jobs_path)
             if url.scheme in ["redis", "rediss"]:
                 self.log.info("Connecting to redis datastore")
                 try:

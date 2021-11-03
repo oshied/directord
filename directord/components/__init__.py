@@ -263,8 +263,6 @@ class ComponentBase:
         key,
         value,
         value_update=False,
-        expire=259200,
-        tag=None,
         extend=False,
     ):
         """Set a cached item.
@@ -278,10 +276,6 @@ class ComponentBase:
         :param value_update: Instructs the method to update a Dictionary with
                              another dictionary.
         :type value_update: Boolean
-        :param expire: Sets the expire time, defaults to 12 hours.
-        :type expire: Integer
-        :param tag: Sets the index for a given cached item.
-        :type tag: String
         :param extend: Enable|Disable Extend a map
         :type extend: Boolean
         :returns" Boolean
@@ -291,9 +285,9 @@ class ComponentBase:
             orig = cache.get(key, default=dict())
             value = utils.merge_dict(orig, value, extend=extend)
 
-        cache_set = cache.set(key, value, tag=tag, expire=expire, retry=True)
+        cache_set = cache.set(key, value)
         if not cache_set:
-            return cache.set(key, value, tag=tag, expire=expire, retry=True)
+            return cache.set(key, value)
         return cache_set
 
     def file_blueprinter(self, cache, file_to):

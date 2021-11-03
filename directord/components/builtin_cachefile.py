@@ -78,7 +78,6 @@ class Component(components.ComponentBase):
                 key="args",
                 value=cachefile_args,
                 value_update=True,
-                tag="args",
                 extend=True,
             )
             return "Cache file loaded", None, True, None
