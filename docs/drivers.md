@@ -206,7 +206,7 @@ SSL configured can be configured manually with the following steps.
 
     Generate a certificate and private key pair for the Directord server and
     sign it with the configured CA. The Subject CN of the certificate should
-    match the hostname of the server, or the value of the `--server-address`
+    match the hostname of the server, or the value of the `--zmq-server-address`
     configuration used by the clients to connect to the server.
 
     Specify the path to the server certificate and key with the
