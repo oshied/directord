@@ -362,6 +362,7 @@ class TestMain(unittest.TestCase):
                 "socket_group": "0",
                 "socket_path": "/var/run/directord.sock",
                 "cache_path": "/var/cache/directord",
+                "machine_id": None,
                 "mode": "client",
                 "identity": None,
             },

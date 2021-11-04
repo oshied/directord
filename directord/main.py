@@ -206,6 +206,13 @@ def _args(exec_args=None):
     )
     parser_server = subparsers.add_parser("server", help="Server mode help")
     parser_client = subparsers.add_parser("client", help="Client mode help")
+    parser_client.add_argument(
+        "--machine-id",
+        help="Set a machine id override",
+        metavar="STRING",
+        default=os.getenv("DIRECTORD_MACHINE_ID", None),
+        type=str,
+    )
     parser_orchestrate = subparsers.add_parser(
         "orchestrate", help="Orchestration mode help"
     )
