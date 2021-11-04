@@ -24,7 +24,6 @@ BuildRequires:  python3-oslo-messaging
 
 # Source Build Requirements
 # TODO(cloudnull): This needs to be packaged officially
-BuildRequires:  python3-diskcache
 BuildRequires:  python3-ssh-python
 
 %description
@@ -43,10 +42,6 @@ Requires:       python3-jinja2
 Requires:       python3-pyyaml
 Requires:       python3-tabulate
 Requires:       python3-tenacity
-
-# Source Requirements
-# TODO(cloudnull): This needs to be packaged officially
-Requires:       python3-diskcache
 
 # Recommends
 Recommends:       python3-ssh-python

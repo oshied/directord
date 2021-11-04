@@ -199,7 +199,6 @@ class TestUnixSocket(unittest.TestCase):
             conn.side_effect = PermissionError()
             with self.assertRaises(PermissionError):
                 directord.send_data("/test.sock", "test")
-        mock_log_error.assert_called()
 
 
 class TestDirectordConnect(unittest.TestCase):

@@ -359,7 +359,6 @@ class TestServer(tests.TestDriverBase):
         with patch("builtins.open", m):
             self.server.run_backend(sentinel=True)
         self.mock_driver.backend_send.assert_called()
-        mock_log_info.assert_called()
 
     def test_create_return_jobs(self):
         self.server.return_jobs = datastores.BaseDocument()
@@ -660,7 +659,6 @@ class TestServer(tests.TestDriverBase):
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, True, False]
             self.server.run_interactions(sentinel=True)
-        mock_log_debug.assert_called()
         mock_set_job_status.assert_called_with(
             ANY,
             job_status=self.server.driver.transfer_end,

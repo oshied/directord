@@ -17,11 +17,10 @@ import json
 import os
 import time
 
-import diskcache
-
 import directord
 
 from directord import interface
+from directord import utils
 
 
 class User(interface.Interface):
@@ -340,15 +339,13 @@ class Manage(User):
         """
 
         def _cache_dump():
-            with diskcache.Cache(
-                self.args.cache_path,
-                tag_index=True,
-                disk=diskcache.JSONDisk,
-            ) as cache:
-                cache_dict = {}
-                for item in cache.iterkeys():
-                    cache_dict[item] = cache.get(item)
-                print(json.dumps(cache_dict, indent=4))
+            try:
+                with utils.Cache(
+                    path=self.args.cache_path, filename="client.db", flags="r"
+                ) as cache:
+                    print(json.dumps(dict(cache.items()), indent=4))
+            except KeyError:
+                pass
 
         execution_map = {
             "dump-cache": _cache_dump,

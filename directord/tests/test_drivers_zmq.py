@@ -42,7 +42,6 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
                     port=1234,
                 )
             self.assertEqual(bind.linger, -1)
-        mock_info_logging.assert_called()
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
@@ -97,7 +96,6 @@ class TestDriverZMQ(unittest.TestCase):
         )
         self.assertIsNotNone(bind.bind)
         self.assertEqual(bind.plain_server, True)
-        mock_info_logging.assert_called()
 
     @patch("logging.Logger.info", autospec=True)
     def test_socket_connect_shared_key(self, mock_info_logging):
@@ -111,7 +109,6 @@ class TestDriverZMQ(unittest.TestCase):
         self.assertEqual(bind.plain_username, b"admin")
         self.assertEqual(bind.plain_password, b"test-key")
         self.assertEqual(bind.linger, -1)
-        mock_info_logging.assert_called()
 
     @patch("logging.Logger.info", autospec=True)
     def test_socket_connect(self, mock_info_logging):
@@ -121,7 +118,6 @@ class TestDriverZMQ(unittest.TestCase):
             port=1234,
         )
         self.assertEqual(bind.linger, -1)
-        mock_info_logging.assert_called()
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send(self, mock_socket):
@@ -330,14 +326,12 @@ class TestDriverZMQ(unittest.TestCase):
     def test_job_connect(self, mock_log_debug, mock_socket_connect):
         self.driver._job_connect()
         mock_socket_connect.assert_called()
-        mock_log_debug.assert_called()
 
     @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
     def test_backend_connect(self, mock_log_debug, mock_socket_connect):
         self.driver._backend_connect()
         mock_socket_connect.assert_called()
-        mock_log_debug.assert_called()
 
     def test_zmq_mode_client(self):
         client_args = tests.FakeArgs()

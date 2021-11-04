@@ -128,15 +128,7 @@ class TestUtils(tests.TestConnectionBase):
         with utils.SSHConnect(
             host="test", username="testuser", port=22, key_file="/test/key"
         ):
-            mock_log_debug.assert_called()
             mock_import_key.assert_called()
-
-    @patch("logging.Logger.debug", autospec=True)
-    def test_sshconnect_agent_default(self, mock_log_debug):
-        with patch("os.path.exists") as mock_path:
-            mock_path.return_value = True
-            with utils.SSHConnect(host="test", username="testuser", port=22):
-                mock_log_debug.assert_called()
 
     @patch("ssh.key.import_privkey_file", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -153,8 +145,6 @@ class TestUtils(tests.TestConnectionBase):
                 mock_path.return_value = True
                 ssh.set_auth()
 
-        mock_log_debug.assert_called()
-        mock_log_warning.assert_called()
         mock_import_key.assert_called()
 
     def test_file_sha3_224(self):

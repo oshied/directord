@@ -14,7 +14,7 @@
 
 import time
 
-import diskcache
+from directord import utils
 
 
 class BaseDocument:
@@ -23,15 +23,11 @@ class BaseDocument:
     def __init__(self, url):
         """Initialize the redis datastore.
 
-        :param url: Connection string to the redis deployment.
+        :param url: Connection string to the file backend.
         :type url: String
         """
 
-        self.datastore = diskcache.Cache(
-            url,
-            tag_index=True,
-            disk=diskcache.JSONDisk,
-        )
+        self.datastore = utils.Cache(path=url, filename="server.db")
 
     def __getitem__(self, key):
         """Return the value of a given key.
@@ -62,18 +58,7 @@ class BaseDocument:
         except AttributeError:
             pass
 
-        if isinstance(value, dict):
-            try:
-                expire = int(value.get("time") - time.time())
-            except TypeError:
-                expire = None
-            else:
-                if expire < 1:
-                    expire = 1
-        else:
-            expire = None
-
-        self.datastore.set(key, value, expire=expire)
+        self.datastore.set(key, value)
 
     def __delitem__(self, key):
         """Delete an item from the datastore.
@@ -82,13 +67,18 @@ class BaseDocument:
         :type key: Object
         """
 
-        self.datastore.pop(key)
+        try:
+            del self.datastore[key]
+        except KeyError:
+            pass
 
     def items(self):
-        """Yield a tuple for key and value."""
+        """Returns a generator, for key and value.
 
-        for item in list(self.datastore):
-            yield item, self.__getitem__(item)
+        :returns: Object
+        """
+
+        return self.datastore.items()
 
     def keys(self):
         """Return an array of all keys.
@@ -96,7 +86,7 @@ class BaseDocument:
         :returns: List
         """
 
-        return [i for i in self.datastore]
+        return self.datastore.keys()
 
     def empty(self):
         """Empty all items from the datastore.
@@ -106,21 +96,30 @@ class BaseDocument:
         method will pop all items from the object.
         """
 
-        self.datastore.clear(retry=True)
+        self.datastore.clear()
 
     def pop(self, key):
         """Delete the value of a given key.
 
         :param key: Named object.
         :type key: Object
+        :returns: Object
         """
 
+        value = self.__getitem__(key)
         self.__delitem__(key)
+        return value
 
     def prune(self):
         """Prune items that have a time based expiry."""
 
-        self.datastore.expire()
+        for (key, value) in list(self.items()):
+            try:
+                if time.time() >= value["time"]:
+                    self.pop(key)
+            except (KeyError, TypeError):
+                pass
+
         return len(self.keys())
 
     def get(self, key):

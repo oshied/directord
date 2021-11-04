@@ -252,7 +252,7 @@ class TestManager(tests.TestDriverBase):
         )
 
     @patch("builtins.print")
-    @patch("diskcache.Cache", autospec=True)
+    @patch("directord.utils.Cache", autospec=True)
     def test_run_override_dump_cache(self, mock_diskcache, mock_print):
         cache = mock_diskcache.return_value = tests.FakeCache()
         cache.set(key="test", value="value")
@@ -262,9 +262,7 @@ class TestManager(tests.TestDriverBase):
         )
 
     @patch("builtins.print")
-    @patch("diskcache.Cache", autospec=True)
+    @patch("shelve.open", autospec=True)
     def test_run_override_dump_cache_empty(self, mock_diskcache, mock_print):
-        cache = mock_diskcache.return_value = tests.FakeCache()
-        cache.clear()
         self.manage.run(override="dump-cache")
         mock_print.assert_called_with("{}")

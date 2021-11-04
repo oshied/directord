@@ -18,8 +18,6 @@ import json
 import os
 import time
 
-import diskcache
-
 import directord
 from directord import components
 from directord import interface
@@ -611,14 +609,12 @@ class Client(interface.Interface):
                 cache=self.cache,
                 key=job["parent_id"],
                 value=state,
-                tag="parents",
             )
 
         self.base_component.set_cache(
             cache=self.cache,
             key=job["job_sha3_224"],
             value=state,
-            tag="jobs",
         )
 
     def job_q_results(self):
@@ -702,38 +698,6 @@ class Client(interface.Interface):
         else:
             return True
 
-    def prune_cache(self, cache_check_time):
-        """Prune the local cache to ensure a tidy environment.
-
-        If there are any warnings when pruning, they will be logged.
-
-        :param cache_check_time: Timestamp from last prune.
-        :type cache_check_time: Float
-        :returns: Float
-        """
-
-        if time.time() > cache_check_time + 4096:
-            self.log.info(
-                "Current estimated cache size: %s KiB",
-                self.cache.volume() / 1024,
-            )
-
-            warnings = self.cache.check()
-            if warnings:
-                self.log.warning(
-                    "Client cache noticed %s warnings.", len(warnings)
-                )
-                for item in warnings:
-                    self.log.warning(
-                        "Client Cache Warning: [ %s ].",
-                        str(item.message),
-                    )
-
-            self.cache.expire()
-            return time.time()
-
-        return cache_check_time
-
     def run_job(self, lock=None, sentinel=False):
         """Job entry point.
 
@@ -754,7 +718,6 @@ class Client(interface.Interface):
         poller_time = time.time()
         heartbeat_time = time.time()
         poller_interval = 1
-        cache_check_time = time.time()
         run_q_processor_thread = None
         original_credit = self.driver.credit
         while True:
@@ -814,9 +777,6 @@ class Client(interface.Interface):
                 ) = self.driver.job_recv()
                 self.handle_job(command=command, data=data, info=info)
 
-            cache_check_time = self.prune_cache(
-                cache_check_time=cache_check_time
-            )
             time.sleep(poller_interval * 0.001)
 
             self.driver.credit = original_credit
@@ -928,10 +888,8 @@ class Client(interface.Interface):
         ]
         # Ensure that the cache path exists before executing.
         os.makedirs(self.args.cache_path, exist_ok=True)
-        with diskcache.Cache(
-            self.args.cache_path,
-            tag_index=True,
-            disk=diskcache.JSONDisk,
+        with utils.Cache(
+            path=self.args.cache_path, filename="client.db"
         ) as cache:
             self.cache = cache
             self.run_threads(threads=threads)

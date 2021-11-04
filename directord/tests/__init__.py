@@ -164,21 +164,8 @@ class MockSocket:
 
 
 class FakeCache:
-    class transact:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def __enter__(self):
-            pass
-
-        def __exit__(self, *args, **kwargs):
-            pass
-
     def __init__(self):
         self.cache = {"args": {"test": 1}}
-
-    def iterkeys(self):
-        return list(self.cache.keys())
 
     def get(self, key, **kwargs):
         if key not in self.cache:
@@ -206,14 +193,17 @@ class FakeCache:
         self.cache = dict()
         return current
 
-    def volume(self):
-        return len(self.cache)
+    def sync(self):
+        pass
 
-    def check(self):
-        return [namedtuple("check", ["message"])("warning")]
+    def close(self):
+        pass
 
     def expire(self):
         pass
+
+    def items(self):
+        return list(self.cache.items())
 
     def __enter__(self):
         return self

@@ -16,10 +16,13 @@ import hashlib
 import json
 import os
 import pkgutil
+import shelve
 import socket
 import sys
 import time
 import uuid
+
+import multiprocessing
 
 import tabulate
 import yaml
@@ -360,3 +363,187 @@ def component_lock_search():
             pass
     else:
         return lock_commands
+
+
+class Cache:
+    class Locker:
+        """Context manager for multiprocessing lock object."""
+
+        def __init__(self, lock) -> None:
+            """Initialize the lock context manager.
+
+            :param lock: Multiprocessing lock object
+            :type lock: Object
+            """
+
+            self.lock = lock
+
+        def __enter__(self):
+            """Enter the lock context manager.
+
+            :returns: Object
+            """
+
+            self.lock.acquire()
+            return self.lock
+
+        def __exit__(self, *args, **kwargs):
+            """Exit the lock context manager."""
+
+            self.lock.release()
+
+    class DB:
+        """Context manager for DB object."""
+
+        def __init__(self, flags, db) -> None:
+            """Initialize the DB context manager.
+
+            :param flags: Shelve flags.
+            :type flags: String
+            :param db: DB filename path.
+            :type db: String
+            """
+
+            self.db_open = None
+            self.db_path = db
+            self.db_flags = flags
+            self.db = None
+
+        def open(self):
+            """Return the open DB object.
+
+            :returns: Object
+            """
+
+            self.db = shelve.open(
+                filename=self.db_path,
+                flag="{}u".format(self.db_flags),
+                writeback=False,
+            )
+            self.db_open = True
+            return self.db
+
+        def close(self):
+            """Close the open DB."""
+
+            if self.db_open:
+                self.db.close()
+                self.db_open = False
+
+        def __enter__(self):
+            """Enter the DB context manager.
+
+            :returns: Object
+            """
+
+            return self.open()
+
+        def __exit__(self, *args, **kwargs):
+            """Exit the DB context manager."""
+
+            self.close()
+
+    def __init__(self, path, filename="directord.dbm", flags="c"):
+        """Initalize the cache class."""
+
+        self.lock = multiprocessing.Lock()
+        self.flags = flags
+        self.db_path = os.path.join(path, filename)
+        with self.Locker(lock=self.lock):
+            with self.DB(flags="c", db=self.db_path) as cache:
+                if not cache.get("__key_order__"):
+                    cache["__key_order__"] = list()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def __getitem__(self, key):
+        with self.Locker(lock=self.lock):
+            with self.DB(flags="r", db=self.db_path) as cache:
+                return cache[key]
+
+    def __setitem__(self, key, value):
+        with self.Locker(lock=self.lock):
+            with self.DB(flags=self.flags, db=self.db_path) as cache:
+                cache[key] = value
+                items = cache["__key_order__"]
+                if key not in items:
+                    items.append(key)
+                    cache["__key_order__"] = items
+
+    def __delitem__(self, key):
+        with self.Locker(lock=self.lock):
+            with self.DB(flags=self.flags, db=self.db_path) as cache:
+                cache.__delitem__(key)
+                items = cache["__key_order__"]
+                if key in items:
+                    items.remove(key)
+                    cache["__key_order__"] = items
+
+    def set(self, key, value):
+        """Set key and value.
+
+        :param key: Named object to set.
+        :type key: Object
+        :param value: Object to set.
+        :type value: Object
+        :returns: Object
+        """
+
+        self.__setitem__(key, value)
+        return value
+
+    def get(self, key, default=None):
+        """Return the value of a given key.
+
+        :param key: Named object.
+        :type key: Object
+        :param default: Default return.
+        :type default: Object
+        :returns: Object
+        """
+
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            return default
+
+    def keys(self):
+        """Return an array of all keys.
+
+        :returns: List
+        """
+
+        return self.__getitem__("__key_order__")
+
+    def items(self):
+        """Iterate through all items and yield a tuples, for key and value.
+
+        :yields: Tuple
+        """
+
+        for item in self.__getitem__("__key_order__"):
+            yield item, self.get(item)
+
+    def evict(self, key):
+        """Remove a given key from the cache.
+
+        :param key: Named object.
+        :type key: Object
+        """
+
+        try:
+            self.__delitem__(key=key)
+        except KeyError:
+            pass
+
+    def clear(self):
+        """Remove all cache."""
+
+        with self.Locker(lock=self.lock):
+            with self.DB(flags="n", db=self.db_path) as cache:
+                if not cache.get("__key_order__"):
+                    cache["__key_order__"] = list()

@@ -126,8 +126,6 @@ class TestComponents(unittest.TestCase):
             cache=self.fake_cache,
             key="key1",
             value="value1",
-            expire=12345,
-            tag="test",
         )
 
     @patch("directord.utils.file_sha3_224", autospec=True)

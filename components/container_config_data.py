@@ -128,7 +128,6 @@ class Component(components.ComponentBase):
                 key="configs",
                 value=configs,
                 value_update=False,
-                tag="component",
             )
         else:
             self.log.debug(

@@ -122,7 +122,6 @@ class Component(components.ComponentBase):
                 key=cache_type,
                 value=cache_value,
                 value_update=True,
-                tag=cache_type,
                 extend=job.get("extend_args", False),
             )
             if cache_set:
