@@ -59,12 +59,16 @@ class BaseDriver:
         self.encrypted_traffic_data = encrypted_traffic_data
         self.log = logger.getLogger(name="directord")
         self.args = args
-        if args.identity:
-            self.identity = args.identity
-        else:
+
+        self.identity = getattr(args, "identity", socket.gethostname())
+        if not self.identity:
             self.identity = socket.gethostname()
+
+        self.machine_id = getattr(args, "machine_id", self.get_machine_id())
+        if not self.machine_id:
+            self.machine_id = self.get_machine_id()
+
         self.interface = interface
-        self.machine_id = self.get_machine_id()
 
     def __copy__(self):
         """Return a copy of the base class.

@@ -142,6 +142,7 @@ class FakeArgs:
     messaging_ssl_ca = "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem"
     messaging_ssl_cert = "/etc/directord/messaging/ssl/directord.crt"
     messaging_ssl_key = "/etc/directord/messaging/ssl/directord.key"
+    machine_id = None
 
 
 class MockSocket:

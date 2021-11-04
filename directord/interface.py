@@ -58,8 +58,6 @@ class Interface(directord.Processor):
             self.public_keys_dir
         ) and os.path.exists(self.secret_keys_dir)
 
-        self.log.debug("Loading messaging driver")
-
         try:
             _driver = directord.plugin_import(
                 plugin=".drivers.{}".format(self.args.driver)
@@ -69,6 +67,7 @@ class Interface(directord.Processor):
                 "Driver was not able to be loaded: {}".format(str(e))
             )
         else:
+            self.log.info("Loading messaging driver: [ %s ]", self.args.driver)
             self.driver = _driver.Driver(
                 args=self.args,
                 encrypted_traffic_data={
