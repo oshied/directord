@@ -7,15 +7,15 @@
 ---
 
 - jobs:
-  - RUN: dnf install -y podman
-  - RUN: podman pull quay.io/cloudnull/directord:stable
-  - RUN: podman tag quay.io/cloudnull/directord:stable directord
+  - RUN: podman pull quay.io/cloudnull/directord:latest
+  - RUN: podman tag quay.io/cloudnull/directord:latest directord
   - RUN: >-
-      for i in {0..49}; do
+      for i in {0..24}; do
       podman run --hostname $(hostname)-client-${i}
                  --name directord-client-${i}
                  --net=host
                  --env DIRECTORD_CONFIG_FILE=/etc/directord/config.yaml
+                 --env DIRECTORD_MACHINE_ID=$(hostname)-client-${i}
                  --volume /etc/directord:/etc/directord:z
                  --user 0
                  --detach

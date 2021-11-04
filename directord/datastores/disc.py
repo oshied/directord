@@ -113,10 +113,10 @@ class BaseDocument:
     def prune(self):
         """Prune items that have a time based expiry."""
 
-        for (key, value) in list(self.items()):
+        for key, value in list(self.items()):
             try:
                 if time.time() >= value["time"]:
-                    self.pop(key)
+                    self.__delitem__(key)
             except (KeyError, TypeError):
                 pass
 

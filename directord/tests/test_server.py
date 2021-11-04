@@ -341,6 +341,7 @@ class TestServer(tests.TestDriverBase):
     @patch("os.path.isfile", autospec=True)
     @patch("logging.Logger.info", autospec=True)
     def test_run_backend(self, mock_log_info, mock_isfile):
+        self.mock_driver.backend_check.side_effect = [True, True, False]
         self.mock_driver.backend_recv.side_effect = [
             (
                 b"test-node",
@@ -351,7 +352,17 @@ class TestServer(tests.TestDriverBase):
                 b"/fake/file",
                 None,
                 None,
-            )
+            ),
+            (
+                b"test-node",
+                b"XXX",
+                self.server.driver.transfer_end,
+                b"1",
+                b"1",
+                b"/fake/file",
+                None,
+                None,
+            ),
         ]
         self.server.bind_backend = MagicMock()
         mock_isfile.return_value = True
@@ -509,21 +520,21 @@ class TestServer(tests.TestDriverBase):
     def test_run_interactions(self, mock_time):
         self.mock_driver.job_recv.side_effect = [
             (
-                b"test-node",
-                b"XXX",
+                "test-node",
+                "XXX",
                 None,
                 None,
                 None,
-                b"info",
+                "info",
                 None,
                 None,
             ),
             (
-                b"test-node",
-                None,
+                "test-node",
+                "YYY",
                 self.mock_driver.heartbeat_notice,
                 None,
-                b"{}",
+                json.dumps({"job_id": "YYY"}),
                 None,
                 None,
                 None,
@@ -538,21 +549,21 @@ class TestServer(tests.TestDriverBase):
     def test_run_interactions_idle(self, mock_time):
         self.mock_driver.job_recv.side_effect = [
             (
-                b"test-node",
-                b"XXX",
+                "test-node",
+                "XXX",
                 None,
                 None,
                 None,
-                b"info",
+                "info",
                 None,
                 None,
             ),
             (
-                b"test-node",
-                None,
+                "test-node",
+                "YYY",
                 self.mock_driver.heartbeat_notice,
                 None,
-                b"{}",
+                json.dumps({"job_id": "YYY"}),
                 None,
                 None,
                 None,
@@ -567,21 +578,21 @@ class TestServer(tests.TestDriverBase):
     def test_run_interactions_ramp(self, mock_time):
         self.mock_driver.job_recv.side_effect = [
             (
-                b"test-node",
-                b"XXX",
+                "test-node",
+                "XXX",
                 None,
                 None,
                 None,
-                b"info",
+                "info",
                 None,
                 None,
             ),
             (
-                b"test-node",
-                None,
+                "test-node",
+                "YYY",
                 self.mock_driver.heartbeat_notice,
                 None,
-                b"{}",
+                json.dumps({"job_id": "YYY"}),
                 None,
                 None,
                 None,
@@ -599,21 +610,21 @@ class TestServer(tests.TestDriverBase):
     ):
         self.mock_driver.job_recv.side_effect = [
             (
-                b"test-node",
-                b"XXX",
+                "test-node",
+                "XXX",
                 self.server.driver.transfer_start,
-                b"transfer",
+                "transfer",
                 None,
-                b"/test/file1",
+                "/test/file1",
                 None,
                 None,
             ),
             (
-                b"test-node",
-                None,
+                "test-node",
+                "YYY",
                 self.mock_driver.heartbeat_notice,
                 None,
-                b"{}",
+                json.dumps({"job_id": "YYY"}),
                 None,
                 None,
                 None,
@@ -646,10 +657,10 @@ class TestServer(tests.TestDriverBase):
             ),
             (
                 "test-node",
-                None,
+                "YYY",
                 self.mock_driver.heartbeat_notice,
                 None,
-                "{}",
+                json.dumps({"job_id": "YYY"}),
                 None,
                 None,
                 None,

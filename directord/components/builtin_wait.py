@@ -161,8 +161,10 @@ class Component(components.ComponentBase):
                 if r.response_code >= 200 and r.response_code < 400:
                     outcome = True
             except Exception as e:
-                stderr = f"Exception occured while fetching url {e}"
-                self.log.error(e)
+                stderr = "Exception occured while fetching url {}".format(
+                    str(e)
+                )
+                self.log.error(stderr)
             if not outcome and retry_wait > 0:
                 self.log.debug("Url fetch failed, retrying with wait...")
                 time.sleep(retry_wait)
