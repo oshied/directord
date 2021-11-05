@@ -414,7 +414,6 @@ class Server(interface.Interface):
         self.driver.backend_init()
         poller_time = time.time()
         poller_interval = 128
-        original_credit = self.driver.credit
         while True:
             poller_interval = utils.return_poller_interval(
                 poller_time=poller_time,
@@ -422,11 +421,7 @@ class Server(interface.Interface):
                 log=self.log,
             )
 
-            while (
-                self.driver.backend_check(constant=poller_interval)
-                and self.driver.credit > 0
-            ):
-                self.driver.credit -= 1
+            while self.driver.backend_check(constant=poller_interval):
                 poller_interval, poller_time = 128, time.time()
                 (
                     identity,
@@ -556,8 +551,6 @@ class Server(interface.Interface):
                         info,
                     )
 
-            self.driver.credit = original_credit
-
             if sentinel:
                 break
 
@@ -581,7 +574,6 @@ class Server(interface.Interface):
         prune_time = time.time()
         poller_interval = 1
         run_jobs_thread = None
-        original_credit = self.driver.credit
         while True:
             if self.terminate_process(process=run_jobs_thread):
                 run_jobs_thread = None
@@ -601,8 +593,7 @@ class Server(interface.Interface):
                     log=self.log,
                 )
 
-            while not self.send_queue.empty() and self.driver.credit > 0:
-                self.driver.credit -= 1
+            while not self.send_queue.empty():
                 try:
                     send_item = self.send_queue.get_nowait()
                 except Exception:
@@ -618,15 +609,7 @@ class Server(interface.Interface):
                         **send_item,
                     )
 
-            # NOTE(cloudnull): Credit is restored after jobs are sent. This
-            #                  is done to balance ingress/egress.
-            self.driver.credit = original_credit
-
-            while (
-                self.driver.job_check(constant=poller_interval)
-                and self.driver.credit > 0
-            ):
-                self.driver.credit -= 1
+            while self.driver.job_check(constant=poller_interval):
                 (
                     identity,
                     msg_id,
@@ -739,8 +722,9 @@ class Server(interface.Interface):
                     except BrokenPipeError as e:
                         self.log.error(
                             "Encountered a broken pipe while sending manage"
-                            " data. Error:%s",
+                            " data. Error:%s, data:%s",
                             str(e),
+                            data,
                         )
                 else:
                     json_data["job_id"] = json_data.get(
@@ -797,9 +781,10 @@ class Server(interface.Interface):
                 if loaded_data:
                     metadata.update(loaded_data)
 
+        print(metadata)
         self.log.debug(
             "Job [ %s ] received Heartbeat from [ %s ]",
-            loaded_data["job_id"],
+            metadata["job_id"],
             identity,
         )
 
