@@ -30,6 +30,10 @@ from directord.components import builtin_run
 from directord.components import builtin_workdir
 from directord.components import builtin_queuesentinel
 from directord.components import builtin_wait
+from directord.components.lib.podman import PodmanConnect
+from directord.components.lib.podman import PodmanPod
+from directord.components.lib.podman import PodmanImage
+from directord.components.lib.podman import PodmanClient
 
 
 class TestComponents(unittest.TestCase):
@@ -52,6 +56,12 @@ class TestComponents(unittest.TestCase):
         self._workdir = builtin_workdir.Component()
         self._queuesentinal = builtin_queuesentinel.Component()
         self._wait = builtin_wait.Component()
+        self.podman_connect = PodmanConnect
+        self.podman_image = PodmanImage
+        self.podman_pod = PodmanPod
+        self.podman_client = PodmanClient
+        self.p_image = self.podman_image("/tmp/socket")
+        self.pod = self.podman_pod("/tmp/socket")
         for item in [
             self._dnf,
             self._service,
@@ -735,3 +745,457 @@ class TestComponents(unittest.TestCase):
 
         mock_sleep.assert_not_called()
         mock_run_command.assert_called_once_with(command="foo", env=None)
+
+    @patch("directord.components.lib.podman.PodmanClient", autospec=True)
+    def test_podman_connect_call(self, mock_podman_client):
+        mock_podman_client.return_value.api = MagicMock()
+        self.podman_connect()
+        mock_podman_client.assert_called_with(
+            base_url="unix:///var/run/podman/podman.sock"
+        )
+        self.podman_connect("/path/to/file")
+        mock_podman_client.assert_called_with(base_url="unix:///path/to/file")
+
+    @patch("directord.components.lib.podman.PodmanClient", autospec=True)
+    def test_podman_pod(self, mock_podman_client):
+        mock_podman_client.return_value.api = MagicMock()
+        self.podman_pod("/var/run/podman/podman.sock")
+        mock_podman_client.assert_called_with(
+            base_url="unix:///var/run/podman/podman.sock"
+        )
+        self.podman_pod("/path/to/file")
+        mock_podman_client.assert_called_with(base_url="unix:///path/to/file")
+
+    @patch("directord.components.lib.podman.PodmanClient", autospec=True)
+    def test_podman_image(self, mock_podman_client):
+        mock_podman_client.return_value.api = MagicMock()
+        self.podman_image("/var/run/podman/podman.sock")
+        mock_podman_client.assert_called_with(
+            base_url="unix:///var/run/podman/podman.sock"
+        )
+        self.podman_image("/path/to/file")
+        mock_podman_client.assert_called_with(base_url="unix:///path/to/file")
+
+    def test_podman_pod_decode(self):
+        data = b"test data"
+        decoded = self.podman_pod._decode(data)
+        self.assertEqual(decoded, data.decode())
+        data = b'{"test data": "111"}'
+        decoded = self.podman_pod._decode(data)
+        self.assertEqual(decoded, {"test data": "111"})
+
+    def test_podman_image_decode(self):
+        data = b"test data"
+        decoded = self.podman_image._decode(data)
+        self.assertEqual(decoded, data.decode())
+        data = b'{"test data": "111"}'
+        decoded = self.podman_image._decode(data)
+        self.assertEqual(decoded, {"test data": "111"})
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_pod_start(self, mock_client_post):
+        test_data = (
+            {
+                "mock": MagicMock(ok=True, content=b"sha256"),
+                "name": "test_pod",
+                "kwargs": {"name": "test_pod"},
+                "post_dict": {
+                    "path": "/pods/test_pod/start",
+                    "params": {"t": 120},
+                },
+                "result": (True, "sha256"),
+            },
+            {
+                "mock": MagicMock(ok=False, content=b""),
+                "name": "test_pod2",
+                "kwargs": {"name": "test_pod2", "timeout": 60},
+                "post_dict": {
+                    "path": "/pods/test_pod2/start",
+                    "params": {"t": 60},
+                },
+                "result": (False, None),
+            },
+        )
+        for data in test_data:
+            mock_client_post.return_value = data["mock"]
+            pod_start = self.pod.start(**data["kwargs"])
+            mock_client_post.assert_called_with(
+                self.pod.api, **data["post_dict"]
+            )
+            self.assertEqual(pod_start, data["result"])
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_pod_stop(self, mock_client_post):
+        test_data = (
+            {
+                "mock": MagicMock(ok=True, content=b"sha256"),
+                "name": "test_pod",
+                "kwargs": {"name": "test_pod"},
+                "post_dict": {
+                    "path": "/pods/test_pod/stop",
+                    "params": {"t": 120},
+                },
+                "result": (True, "sha256"),
+            },
+            {
+                "mock": MagicMock(ok=False, content=b""),
+                "name": "test_pod2",
+                "kwargs": {"name": "test_pod2", "timeout": 60},
+                "post_dict": {
+                    "path": "/pods/test_pod2/stop",
+                    "params": {"t": 60},
+                },
+                "result": (False, None),
+            },
+        )
+        for data in test_data:
+            mock_client_post.return_value = data["mock"]
+            pod_stop = self.pod.stop(**data["kwargs"])
+            mock_client_post.assert_called_with(
+                self.pod.api, **data["post_dict"]
+            )
+            self.assertEqual(pod_stop, data["result"])
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_pod_kill(self, mock_client_post):
+        test_data = (
+            {
+                "mock": MagicMock(ok=True, content=b"sha256"),
+                "name": "test_pod",
+                "kwargs": {"name": "test_pod"},
+                "post_dict": {
+                    "path": "/pods/test_pod/kill",
+                    "params": {"signal": "SIGKILL"},
+                },
+                "result": (True, "sha256"),
+            },
+            {
+                "mock": MagicMock(ok=False, content=b""),
+                "name": "test_pod2",
+                "kwargs": {"name": "test_pod2", "signal": "SIGTERM"},
+                "post_dict": {
+                    "path": "/pods/test_pod2/kill",
+                    "params": {"signal": "SIGTERM"},
+                },
+                "result": (False, None),
+            },
+        )
+        for data in test_data:
+            mock_client_post.return_value = data["mock"]
+            pod_stop = self.pod.kill(**data["kwargs"])
+            mock_client_post.assert_called_with(
+                self.pod.api, **data["post_dict"]
+            )
+            self.assertEqual(pod_stop, data["result"])
+
+    @patch("podman.api.client.APIClient.delete", autospec=True)
+    def test_podman_pod_rm(self, mock_client_del):
+        test_data = (
+            {
+                "mock": MagicMock(ok=True, content=b"sha256"),
+                "name": "test_pod",
+                "kwargs": {"name": "test_pod"},
+                "delete_dict": {
+                    "path": "/pods/test_pod",
+                    "params": {"force": False},
+                },
+                "result": (True, "sha256"),
+            },
+            {
+                "mock": MagicMock(ok=False, content=b""),
+                "name": "test_pod2",
+                "kwargs": {"name": "test_pod2", "force": True},
+                "delete_dict": {
+                    "path": "/pods/test_pod2",
+                    "params": {"force": True},
+                },
+                "result": (False, None),
+            },
+        )
+        for data in test_data:
+            mock_client_del.return_value = data["mock"]
+            pod_rm = self.pod.rm(**data["kwargs"])
+            mock_client_del.assert_called_with(
+                self.pod.api, **data["delete_dict"]
+            )
+            self.assertEqual(pod_rm, data["result"])
+
+    @patch("podman.api.client.APIClient.get", autospec=True)
+    def test_podman_pod_inspect(self, mock_client_get):
+        test_data = (
+            {
+                "mock": MagicMock(ok=True, content=b'{"test": "data"}'),
+                "name": "test_pod",
+                "kwargs": {"name": "test_pod"},
+                "get_dict": {"path": "/pods/test_pod/json"},
+                "result": (True, {"test": "data"}),
+            },
+            {
+                "mock": MagicMock(ok=False, content=None),
+                "name": "test_pod2",
+                "kwargs": {"name": "test_pod2"},
+                "get_dict": {"path": "/pods/test_pod2/json"},
+                "result": (False, None),
+            },
+        )
+        for data in test_data:
+            mock_client_get.return_value = data["mock"]
+            pod_rm = self.pod.inspect(**data["kwargs"])
+            mock_client_get.assert_called_with(
+                self.pod.api, **data["get_dict"]
+            )
+            self.assertEqual(pod_rm, data["result"])
+
+    @patch("yaml.safe_load", autospec=True)
+    @patch("builtins.open")
+    @patch("os.path.exists", autospec=True)
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_pod_play(
+        self, mock_client_post, mock_file_exists, mopen, myaml
+    ):
+        test_data = (
+            {
+                "mock": MagicMock(ok=True, content=b"sha256"),
+                "kwargs": {"pod_file": "/path/to/file"},
+                "post_dict": {
+                    "path": "/play/kube",
+                    "params": {"tlsVerify": True, "start": True},
+                    "data": '{"pod": "kube_pod"}',
+                },
+                "result": (True, "sha256"),
+            },
+            {
+                "mock": MagicMock(ok=False, content=None),
+                "kwargs": {"pod_file": "/path/to/file", "tls_verify": False},
+                "post_dict": {
+                    "path": "/play/kube",
+                    "params": {"tlsVerify": False, "start": True},
+                    "data": '{"pod": "kube_pod"}',
+                },
+                "result": (False, None),
+            },
+        )
+        for data in test_data:
+            mock_client_post.return_value = data["mock"]
+            mock_file_exists.return_value = True
+            myaml.return_value = {"pod": "kube_pod"}
+            pod_play = self.pod.play(**data["kwargs"])
+            mock_client_post.assert_called_with(
+                self.pod.api, **data["post_dict"]
+            )
+            self.assertEqual(pod_play, data["result"])
+        mock_client_post.return_value = data["mock"]
+        mock_file_exists.return_value = False
+        pod_play = self.pod.play(**data["kwargs"])
+        self.assertEqual(pod_play, (False, "Pod YAML did not exist"))
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_pod_exec_run(self, mock_client_post):
+        test_data = {
+            "mock": MagicMock(ok=True, content=b'{"Id": "sha256"}'),
+            "name": "test_pod",
+            "kwargs": {"name": "test_pod", "command": "ls /", "env": {}},
+            "post_dict": {
+                "path": "/pods/test_pod/kill",
+                "params": {"signal": "SIGKILL"},
+            },
+            "result": (True, "sha256"),
+        }
+        mock_client_post.return_value = test_data["mock"]
+        self.pod.exec_run(**test_data["kwargs"])
+        calls = [
+            call(
+                self.pod.api,
+                path="/containers/test_pod/exec",
+                data=(
+                    '{"AttachStderr": true, "AttachStdin": true, '
+                    '"AttachStdout": true, "Cmd": "ls /", "Env": {}, '
+                    '"Privileged": false, "Tty": true}'
+                ),
+            ),
+            call(
+                self.pod.api,
+                path="/exec/sha256/start",
+                data=('{"Detach": false, "Tty": true}'),
+            ),
+        ]
+        self.assertEqual(mock_client_post.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_image_pull(self, mock_client_post):
+        test_data = (
+            {
+                "mock": MagicMock(ok=True, content=b"image_pull_sha"),
+                "kwargs": {"images": ["image1"]},
+                "post_dict": {
+                    "path": "/images/pull",
+                    "params": {"reference": "image1", "tlsVerify": True},
+                },
+                "result": (True, "image_pull_sha"),
+            },
+            {
+                "mock": MagicMock(ok=True, content=b'r{"error": "some err"}'),
+                "kwargs": {"images": ["image2"], "tlsverify": False},
+                "post_dict": {
+                    "path": "/images/pull",
+                    "params": {"reference": "image2", "tlsVerify": False},
+                },
+                "result": (False, 'r{"error": "some err"}'),
+            },
+        )
+        for data in test_data:
+            mock_client_post.return_value = data["mock"]
+            img = self.p_image.pull(**data["kwargs"])
+            mock_client_post.assert_called_with(
+                self.p_image.api, **data["post_dict"]
+            )
+            self.assertEqual(img, data["result"])
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_image_pull_multi(self, mock_client_post):
+        mock_client_post.side_effect = (
+            MagicMock(ok=True, content=b"image_pull_sha"),
+            MagicMock(ok=True, content=b"image_pull_sha2"),
+        )
+        img = self.p_image.pull(
+            **{"images": ["image1", "image2"], "tlsverify": False}
+        )
+        calls = [
+            call(
+                self.p_image.api,
+                path="/images/pull",
+                params=({"reference": im, "tlsVerify": False}),
+            )
+            for im in ["image1", "image2"]
+        ]
+        self.assertEqual(img, (True, "image_pull_sha\nimage_pull_sha2"))
+        self.assertEqual(mock_client_post.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_image_pull_multi_fail(self, mock_client_post):
+        mock_client_post.side_effect = (
+            MagicMock(ok=True, content=b'r{"error": "some err"}'),
+            MagicMock(ok=True, content=b"image_pull_sha2"),
+        )
+        img = self.p_image.pull(
+            **{"images": ["image1", "image2"], "tlsverify": False}
+        )
+        calls = [
+            call(
+                self.p_image.api,
+                path="/images/pull",
+                params=({"reference": im, "tlsVerify": False}),
+            )
+            for im in ["image1", "image2"]
+        ]
+        self.assertEqual(
+            img, (False, 'r{"error": "some err"}\nimage_pull_sha2')
+        )
+        self.assertEqual(mock_client_post.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_image_push_multi(self, mock_client_post):
+        mock_client_post.side_effect = (
+            MagicMock(ok=True, content=b"pushed"),
+            MagicMock(ok=True, content=b"pushed2"),
+        )
+        img = self.p_image.push(
+            **{"images": ["image1", "image2"], "tlsverify": False}
+        )
+        calls = [
+            call(
+                self.p_image.api,
+                path="/images/%s/push" % im,
+                params=({"tlsVerify": False}),
+            )
+            for im in ["image1", "image2"]
+        ]
+        self.assertEqual(img, (True, "pushed\npushed2"))
+        self.assertEqual(mock_client_post.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_image_push_multi_fail(self, mock_client_post):
+        mock_client_post.side_effect = (
+            MagicMock(ok=True, content=b"pushed"),
+            MagicMock(ok=False, content=b"not_pushed"),
+        )
+        img = self.p_image.push(**{"images": ["image1", "image2"]})
+        calls = [
+            call(
+                self.p_image.api,
+                path="/images/%s/push" % im,
+                params={"tlsVerify": True},
+            )
+            for im in ["image1", "image2"]
+        ]
+        self.assertEqual(img, (False, "pushed\nnot_pushed"))
+        self.assertEqual(mock_client_post.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.post", autospec=True)
+    def test_podman_image_tag(self, mock_client_post):
+        mock_client_post.return_value = MagicMock(ok=True, content=b"tagged")
+        img = self.p_image.tag(**{"images": ["image1", "quay.io/image2"]})
+        img = self.p_image.tag(
+            **{"images": ["image3:montag", "quay.io/image4:new"]}
+        )
+        calls = [
+            call(
+                self.p_image.api,
+                path="/images/image1/tag",
+                params={"repo": "quay.io/image2", "tag": "latest"},
+            ),
+            call(
+                self.p_image.api,
+                path="/images/image3:montag/tag",
+                params={"repo": "quay.io/image4", "tag": "new"},
+            ),
+        ]
+        self.assertEqual(img, (True, "tagged"))
+        self.assertEqual(mock_client_post.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.get", autospec=True)
+    def test_podman_image_list(self, mock_client_get):
+        mock_client_get.side_effect = (
+            MagicMock(ok=True, content=b'["image1", "image2"]'),
+            MagicMock(ok=False, content=b""),
+        )
+        img = self.p_image.list()
+        img2 = self.p_image.list()
+        calls = [call(self.p_image.api, path="/images/json")] * 2
+        self.assertEqual(img, (True, ["image1", "image2"]))
+        self.assertEqual(img2, (False, None))
+        self.assertEqual(mock_client_get.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.get", autospec=True)
+    def test_podman_image_inspect(self, mock_client_get):
+        mock_client_get.side_effect = (
+            MagicMock(ok=True, content=b'{"image1": "some_data"}'),
+            MagicMock(ok=False, content=b""),
+        )
+        img = self.p_image.inspect(["image1"])
+        img2 = self.p_image.inspect(["image2"])
+        calls = [
+            call(self.p_image.api, path="/images/image1/json"),
+            call(self.p_image.api, path="/images/image2/json"),
+        ]
+        self.assertEqual(img, (True, {"image1": "some_data"}))
+        self.assertEqual(img2, (False, []))
+        self.assertEqual(mock_client_get.mock_calls, calls)
+
+    @patch("podman.api.client.APIClient.get", autospec=True)
+    def test_podman_image_inspect_multi(self, mock_client_get):
+        mock_client_get.side_effect = (
+            MagicMock(ok=True, content=b'[{"image1": "some_data"}]'),
+            MagicMock(ok=True, content=b'[{"image2": "some_data2"}]'),
+            MagicMock(ok=False, content=b""),
+        )
+        img = self.p_image.inspect(["image1", "image2", "image3"])
+        calls = [
+            call(self.p_image.api, path="/images/image1/json"),
+            call(self.p_image.api, path="/images/image2/json"),
+            call(self.p_image.api, path="/images/image3/json"),
+        ]
+        self.assertEqual(
+            img, (False, [{"image1": "some_data"}, {"image2": "some_data2"}])
+        )
+        self.assertEqual(mock_client_get.mock_calls, calls)

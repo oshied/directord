@@ -58,12 +58,13 @@ class PodmanPod(PodmanConnect):
         be a JSON string.
         """
 
-        data = data.decode()
         if data:
-            try:
-                return json.loads(data)
-            except Exception:
-                return data
+            data = data.decode()
+            if data:
+                try:
+                    return json.loads(data)
+                except Exception:
+                    return data
 
     def start(self, name, timeout=120):
         """Start a given pod and return the action status.
@@ -183,7 +184,7 @@ class PodmanPod(PodmanConnect):
             "Tty": True,
         }
         resp = self.api.post(
-            path="containers/{name}/exec".format(name=name),
+            path="/containers/{name}/exec".format(name=name),
             data=json.dumps(_command),
         )
         if resp.ok:
@@ -262,7 +263,7 @@ class PodmanImage(PodmanConnect):
         ok = True
         for image in images:
             resp = self.api.post(
-                path="images/{name}/push".format(name=image),
+                path="/images/{name}/push".format(name=image),
                 params={"tlsVerify": tlsverify},
             )
             content.append(str(self._decode(resp.content)))
@@ -276,13 +277,12 @@ class PodmanImage(PodmanConnect):
         :type images: List
         :returns: Tuple
         """
-        print(images)
         repo, _, tag = images[1].partition(":")
         if not tag:
             tag = "latest"
 
         resp = self.api.post(
-            path="images/{name}/tag".format(name=images[0]),
+            path="/images/{name}/tag".format(name=images[0]),
             params={
                 "repo": repo,
                 "tag": tag,
@@ -311,9 +311,16 @@ class PodmanImage(PodmanConnect):
         content = []
         ok = True
         for image in images:
-            resp = self.api.get(path="images/{name}/json".format(name=image))
-            content.append(self._decode(resp.content))
+            resp = self.api.get(path="/images/{name}/json".format(name=image))
+            inspect_data = self._decode(resp.content)
+            if isinstance(inspect_data, dict):
+                content.append(inspect_data)
+            elif isinstance(inspect_data, list):
+                content += inspect_data
+            else:
+                # Inspection data is not dict or list, so it is an error
+                ok = False
             ok = resp.ok and ok
-        if len(images) == 1:
+        if len(images) == 1 and ok:
             return ok, content[0]
         return ok, content
