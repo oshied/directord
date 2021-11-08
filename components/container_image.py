@@ -37,10 +37,10 @@ class Component(components.ComponentBase):
             help="Path to the podman socket. Default: %(default)s",
         )
         self.parser.add_argument(
-            "--tlsverify",
-            default=True,
-            type=bool,
-            help="Whether to use TLS verify for registry Default: %(default)s",
+            "--no-tlsverify",
+            default=False,
+            action="store_true",
+            help="Skip using TLS verify for registry Default: %(default)s",
         )
         action_group = self.parser.add_mutually_exclusive_group(required=True)
         action_group.add_argument(
@@ -90,6 +90,7 @@ class Component(components.ComponentBase):
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         data["images"] = self.known_args.images
         data["socket_path"] = self.known_args.socket_path
+        data["tlsverify"] = not self.known_args.no_tlsverify
         if self.known_args.pull:
             data["action"] = "pull"
         elif self.known_args.push:

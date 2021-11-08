@@ -56,9 +56,10 @@ class Component(components.ComponentBase):
             help="Access a container with privleges.",
         )
         self.parser.add_argument(
-            "--tls-verify",
+            "--no-tlsverify",
+            default=False,
             action="store_true",
-            help="Verify certificates when pulling container images.",
+            help="Skip using TLS verify for registry Default: %(default)s",
         )
         self.parser.add_argument(
             "--force",
@@ -138,7 +139,7 @@ class Component(components.ComponentBase):
             data["pod_action"] = "play"
             data["kwargs"] = dict(
                 pod_file=self.known_args.play,
-                tls_verify=self.known_args.tls_verify,
+                tlsverify=(not self.known_args.no_tlsverify),
             )
         elif self.known_args.exec_run:
             data["pod_action"] = "exec_run"
