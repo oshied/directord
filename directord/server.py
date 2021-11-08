@@ -781,7 +781,6 @@ class Server(interface.Interface):
                 if loaded_data:
                     metadata.update(loaded_data)
 
-        print(metadata)
         self.log.debug(
             "Job [ %s ] received Heartbeat from [ %s ]",
             metadata["job_id"],
