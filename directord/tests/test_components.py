@@ -966,7 +966,7 @@ class TestComponents(unittest.TestCase):
             },
             {
                 "mock": MagicMock(ok=False, content=None),
-                "kwargs": {"pod_file": "/path/to/file", "tls_verify": False},
+                "kwargs": {"pod_file": "/path/to/file", "tlsverify": False},
                 "post_dict": {
                     "path": "/play/kube",
                     "params": {"tlsVerify": False, "start": True},

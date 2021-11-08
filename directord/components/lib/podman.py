@@ -157,11 +157,13 @@ class PodmanPod(PodmanConnect):
         resp = self.api.get(path="/pods/{name}/json".format(name=name))
         return resp.ok, self._decode(resp.content)
 
-    def play(self, pod_file, tls_verify=True):
+    def play(self, pod_file, tlsverify=True):
         """Instantiate a given pod and return the action status.
 
         :param pod_file: Full path to a pod YAML file.
         :type pod_file: String
+        :param tlsverify: Enable TLS verification
+        :type tlsverify: Boolean
         :returns: Tuple
         """
 
@@ -170,7 +172,7 @@ class PodmanPod(PodmanConnect):
                 resp = self.api.post(
                     path="/play/kube",
                     data=json.dumps(yaml.safe_load(f)),
-                    params={"tlsVerify": tls_verify, "start": True},
+                    params={"tlsVerify": tlsverify, "start": True},
                 )
             return resp.ok, self._decode(resp.content)
 
@@ -245,7 +247,7 @@ class PodmanImage(PodmanConnect):
 
         :param images: Image names to pull
         :type images: List
-        :param tlsverify: TLS verification
+        :param tlsverify: Enable TLS verification
         :type tlsverify: Boolean
         :returns: Tuple
         """
@@ -271,7 +273,7 @@ class PodmanImage(PodmanConnect):
 
         :param images: Image names to push
         :type images: List
-        :param tlsverify: TLS verification
+        :param tlsverify: Enable TLS verification
         :type tlsverify: Boolean
         :returns: Tuple
         """
