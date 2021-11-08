@@ -42,7 +42,7 @@ class Component(components.ComponentBase):
             type=bool,
             help="Whether to use TLS verify for registry Default: %(default)s",
         )
-        action_group = self.parser.add_mutually_exclusive_group()
+        action_group = self.parser.add_mutually_exclusive_group(required=True)
         action_group.add_argument(
             "--pull",
             action="store_true",
@@ -146,22 +146,23 @@ class Component(components.ComponentBase):
                     status, data = action(**job)
                     if data and not isinstance(data, str):
                         data = json.dumps(data)
-                    if status:
-                        return data, None, status, None
-
-                    return None, data, status, None
-
-                return (
-                    None,
-                    (
-                        "The action [ {action} ] failed to return"
-                        "  a function".format(action=job["pod_action"])
-                    ),
-                    False,
-                    None,
-                )
+                else:
+                    return (
+                        None,
+                        (
+                            "The action [ {action} ] failed to return"
+                            "  a function".format(action=job["pod_action"])
+                        ),
+                        False,
+                        None,
+                    )
         except Exception as e:
             self.log.critical(
                 "Job [ %s ] critical error %s", job["job_id"], str(e)
             )
             return None, traceback.format_exc(), False, None
+        else:
+            if status:
+                return data, None, status, None
+
+            return None, data, status, None
