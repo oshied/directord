@@ -15,6 +15,7 @@
 import queue
 
 from directord import components
+from directord.components.lib import cacheargs
 
 
 class Component(components.ComponentBase):
@@ -64,6 +65,7 @@ class Component(components.ComponentBase):
         data["identity"] = self.known_args.identity
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run file transfer operation.
 

@@ -22,6 +22,7 @@ import traceback
 
 from directord import components
 from directord import utils
+from directord.components.lib import cacheargs
 
 
 class Component(components.ComponentBase):
@@ -86,6 +87,7 @@ class Component(components.ComponentBase):
 
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run file transfer operation.
 

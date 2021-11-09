@@ -13,7 +13,7 @@
 #   under the License.
 
 from directord import components
-from directord import utils
+from directord.components.lib import cacheargs
 
 
 class Component(components.ComponentBase):
@@ -26,14 +26,6 @@ class Component(components.ComponentBase):
         """Set default arguments for a component."""
 
         super().args()
-        self.parser.add_argument(
-            "--stdout-arg",
-            help="Stores the stdout of a given command as a cached argument.",
-        )
-        self.parser.add_argument(
-            "--stderr-arg",
-            help="Stores the stderr of a given command as a cached argument.",
-        )
         self.parser.add_argument(
             "--no-block",
             action="store_true",
@@ -62,6 +54,7 @@ class Component(components.ComponentBase):
 
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run file command operation.
 
@@ -75,8 +68,6 @@ class Component(components.ComponentBase):
         """
 
         self.log.debug("client(): job: %s, cache: %s", job, cache)
-        stdout_arg = job.get("stdout_arg")
-        stderr_arg = job.get("stderr_arg")
         success, command = self.blueprinter(
             content=job["command"],
             values=cache.get("args"),
@@ -92,32 +83,5 @@ class Component(components.ComponentBase):
             env=cache.get("envs"),
             no_block=job.get("no_block"),
         )
-
-        if (stdout_arg and stdout) or (stderr_arg and stderr):
-            self.block_on_tasks = list()
-            clean_info = stdout.decode().strip()
-            clean_info_err = stderr.decode().strip()
-            arg_job = job.copy()
-            arg_job.pop("parent_sha3_224", None)
-            arg_job.pop("parent_id", None)
-            arg_job.pop("job_sha3_224", None)
-            arg_job.pop("job_id", None)
-            arg_job["skip_cache"] = True
-            arg_job["extend_args"] = True
-            arg_job["verb"] = "ARG"
-            arg_job["args"] = {}
-            if stdout_arg and stdout:
-                arg_job["args"].update({stdout_arg: clean_info})
-            if stderr_arg and stderr:
-                arg_job["args"].update({stderr_arg: clean_info_err})
-            arg_job["parent_async_bypass"] = True
-            arg_job["targets"] = [self.driver.identity]
-            arg_job["job_id"] = utils.get_uuid()
-            arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
-            arg_job["parent_id"] = utils.get_uuid()
-            arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
-            self.block_on_tasks.append(arg_job)
-        elif (stdout_arg and not stdout) or (stderr_arg and not stderr):
-            return stdout, stderr, False, command
 
         return stdout, stderr, outcome, command

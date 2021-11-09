@@ -13,6 +13,7 @@
 #   under the License.
 try:
     from directord.components.lib.podman import PodmanImage
+    from directord.components.lib import cacheargs
 
     AVAILABLE_PODMAN = True
 except ImportError:
@@ -122,6 +123,7 @@ class Component(components.ComponentBase):
             raise AttributeError(msg)
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run cache echo command operation.
 

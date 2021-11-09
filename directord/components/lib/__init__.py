@@ -11,3 +11,52 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
+from directord import utils
+
+
+def cacheargs(func):
+    """Cache stdout and stderr."""
+
+    def wrapper_func(*args, **kwargs):
+        self = args[0]
+        job = kwargs["job"]
+        stdout_arg = job.get("stdout_arg")
+        stderr_arg = job.get("stderr_arg")
+        stdout, stderr, outcome, command = func(*args, **kwargs)
+
+        if stdout_arg or stderr_arg:
+            self.block_on_tasks = list()
+            clean_info = (
+                stdout.decode().strip()
+                if stdout and isinstance(stdout, bytes)
+                else stdout or ""
+            )
+            clean_info_err = (
+                stderr.decode().strip()
+                if stderr and isinstance(stderr, bytes)
+                else stderr or ""
+            )
+            arg_job = job.copy()
+            arg_job.pop("parent_sha3_224", None)
+            arg_job.pop("parent_id", None)
+            arg_job.pop("job_sha3_224", None)
+            arg_job.pop("job_id", None)
+            arg_job["skip_cache"] = True
+            arg_job["extend_args"] = True
+            arg_job["verb"] = "ARG"
+            arg_job["args"] = {}
+            if stdout_arg:
+                arg_job["args"].update({stdout_arg: clean_info})
+            if stderr_arg:
+                arg_job["args"].update({stderr_arg: clean_info_err})
+            arg_job["parent_async_bypass"] = True
+            arg_job["targets"] = [self.driver.identity]
+            arg_job["job_id"] = utils.get_uuid()
+            arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
+            arg_job["parent_id"] = utils.get_uuid()
+            arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
+            self.block_on_tasks.append(arg_job)
+
+        return stdout, stderr, outcome, command
+
+    return wrapper_func
