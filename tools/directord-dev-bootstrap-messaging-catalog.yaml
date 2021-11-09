@@ -12,7 +12,7 @@ directord_server:
   - ADD: scripts/messaging/getcert.sh getcert.sh
   - RUN: |-
       {% for client in directord_clients['targets'] %}
-        hostname=$(ssh -i {{ directord_bootstrap['key_file']|default("~/.ssh/id_rsa") }} {{ directord_bootstrap['username'] }}@{{ directord_bootstrap['host'] }} hostname)
+        hostname=$(ssh -o StrictHostKeyChecking=no -i {{ directord_bootstrap['key_file']|default("~/.ssh/id_rsa") }} {{ directord_bootstrap['username'] }}@{{ client['host'] }} hostname)
         sudo ./getcert.sh {{ client['host'] }} /opt/directord/messaging-ssl ${hostname}
       {% endfor %}
   - RUN: |-
