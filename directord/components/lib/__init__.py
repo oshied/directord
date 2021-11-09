@@ -27,12 +27,12 @@ def cacheargs(func):
         if stdout_arg or stderr_arg:
             self.block_on_tasks = list()
             clean_info = (
-                stdout.decode().strip()
+                stdout.decode()
                 if stdout and isinstance(stdout, bytes)
                 else stdout or ""
             )
             clean_info_err = (
-                stderr.decode().strip()
+                stderr.decode()
                 if stderr and isinstance(stderr, bytes)
                 else stderr or ""
             )
@@ -41,6 +41,8 @@ def cacheargs(func):
             arg_job.pop("parent_id", None)
             arg_job.pop("job_sha3_224", None)
             arg_job.pop("job_id", None)
+            arg_job.pop("stdout_arg", None)
+            arg_job.pop("stderr_arg", None)
             arg_job["skip_cache"] = True
             arg_job["extend_args"] = True
             arg_job["verb"] = "ARG"
