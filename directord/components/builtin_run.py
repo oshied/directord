@@ -13,6 +13,7 @@
 #   under the License.
 
 from directord import components
+
 from directord.components.lib import cacheargs
 
 
@@ -45,10 +46,6 @@ class Component(components.ComponentBase):
         """
 
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
-        if self.known_args.stdout_arg:
-            data["stdout_arg"] = self.known_args.stdout_arg
-        if self.known_args.stderr_arg:
-            data["stderr_arg"] = self.known_args.stderr_arg
         data["no_block"] = self.known_args.no_block
         data["command"] = " ".join(self.unknown_args)
 

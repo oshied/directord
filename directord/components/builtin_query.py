@@ -17,6 +17,8 @@ import json
 from directord import components
 from directord import utils
 
+from directord.components.lib import cacheargs
+
 
 class Component(components.ComponentBase):
     def __init__(self):
@@ -67,6 +69,7 @@ class Component(components.ComponentBase):
         data["no_wait"] = self.known_args.no_wait
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run query command operation.
 

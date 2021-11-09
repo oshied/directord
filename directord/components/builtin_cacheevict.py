@@ -14,6 +14,8 @@
 
 from directord import components
 
+from directord.components.lib import cacheargs
+
 
 class Component(components.ComponentBase):
     def __init__(self):
@@ -56,6 +58,7 @@ class Component(components.ComponentBase):
         data["cacheevict"] = self.known_args.cacheevict
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run cache evict command operation.
 

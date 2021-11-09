@@ -19,6 +19,8 @@ import os
 from directord import components
 from directord import utils
 
+from directord.components.lib import cacheargs
+
 
 # This component was adapted from here:
 # https://github.com/openstack/tripleo-ansible/blob/master/tripleo_ansible/ansible_plugins/modules/container_config_data.py  # noqa
@@ -89,6 +91,7 @@ class Component(components.ComponentBase):
         data.update(vars(self.known_args))
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run cache echo command operation.
 
