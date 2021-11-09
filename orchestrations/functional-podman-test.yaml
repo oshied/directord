@@ -1,0 +1,15 @@
+---
+# This item lists a limited set of nodes which will run a given set of jobs.
+- jobs:
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --pull alpine:3.12
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --no-tlsverify --pull alpine:3.13 alpine:3.12
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --inspect alpine:3.13
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --inspect alpine:3.12 alpine:3.13
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --tag alpine:3.12 quay.io/test/alpine
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --tag alpine:3.13 quay.io/test/alpine:special
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --inspect quay.io/test/alpine quay.io/test/alpine:special
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --list
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --tag alpine:3.13 127.0.0.1:5000/myimage:spec
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --no-tlsverify --push 127.0.0.1:5000/myimage:spec
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --no-tlsverify --pull 127.0.0.1:5000/myimage:spec
+  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --inspect 127.0.0.1:5000/myimage:spec
