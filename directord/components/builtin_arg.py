@@ -148,7 +148,9 @@ class Component(components.ComponentBase):
                 )
         else:
             return (
-                "Nothing added to cache. {} had no value".format(self.cache_type),
+                "Nothing added to cache. {} had no value".format(
+                    self.cache_type
+                ),
                 None,
                 True,
                 "type:{}, value:{}".format(self.cache_type, cache_value),

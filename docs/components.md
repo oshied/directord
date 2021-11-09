@@ -336,6 +336,8 @@ directory of Directord; [echo component](https://github.com/directord/directord/
 ``` python
 from directord import components
 
+from directord.components.lib import cacheargs
+
 
 class Component(components.ComponentBase):
     def __init__(self):
@@ -353,6 +355,7 @@ class Component(components.ComponentBase):
         data["echo"] = self.known_args.echo
         return data
 
+    @cacheargs
     def client(self, cache, job):
         print(job["echo"])
         return job["echo"], None, True, None
