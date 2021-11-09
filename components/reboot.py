@@ -13,6 +13,7 @@
 #   under the License.
 
 from directord import components
+from directord.components.lib import cacheargs
 
 
 class Component(components.ComponentBase):
@@ -48,6 +49,7 @@ class Component(components.ComponentBase):
         data["time"] = self.known_args.time
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run cache restart command operation.
 

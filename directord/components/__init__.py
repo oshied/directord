@@ -256,6 +256,14 @@ class ComponentBase:
             action="store_true",
             help="Force a given task to run with a lock.",
         )
+        self.parser.add_argument(
+            "--stdout-arg",
+            help="Stores the stdout of a given command as a cached argument.",
+        )
+        self.parser.add_argument(
+            "--stderr-arg",
+            help="Stores the stderr of a given command as a cached argument.",
+        )
 
     @staticmethod
     def set_cache(
@@ -367,6 +375,10 @@ class ComponentBase:
         self.exec_parser(
             parser=self.parser, exec_array=exec_array, arg_vars=arg_vars
         )
+        if self.known_args.stdout_arg:
+            data["stdout_arg"] = self.known_args.stdout_arg
+        if self.known_args.stderr_arg:
+            data["stderr_arg"] = self.known_args.stderr_arg
 
     def client(self, cache, job):
         """Client operation.

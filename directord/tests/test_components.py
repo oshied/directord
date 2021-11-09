@@ -94,6 +94,8 @@ class TestComponents(unittest.TestCase):
                 "opt0": "*.json",
                 "opt1": None,
                 "opt2": False,
+                "stdout_arg": None,
+                "stderr_arg": None,
             },
         )
         self.assertEqual(unknown_args, list())

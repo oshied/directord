@@ -12,4 +12,5 @@
   - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --tag alpine:3.13 127.0.0.1:5000/myimage:spec
   - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --no-tlsverify --push 127.0.0.1:5000/myimage:spec
   - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --no-tlsverify --pull 127.0.0.1:5000/myimage:spec
-  - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --inspect 127.0.0.1:5000/myimage:spec
+  - CONTAINER_IMAGE: --skip-cache --stdout-arg inspection --socket-path /tmp/podman.sock --inspect 127.0.0.1:5000/myimage:spec
+  - RUN: --skip-cache echo {{ inspection }}
