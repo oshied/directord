@@ -1,7 +1,7 @@
 ---
 # This item lists a limited set of nodes which will run a given set of jobs.
 - targets:
-  - container-client
+  - directord-client
   jobs:
   - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --pull alpine:3.12
   - CONTAINER_IMAGE: --skip-cache --socket-path /tmp/podman.sock --no-tlsverify --pull alpine:3.13 alpine:3.12

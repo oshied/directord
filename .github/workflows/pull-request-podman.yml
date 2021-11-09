@@ -25,19 +25,20 @@ jobs:
           sudo /opt/directord/bin/directord-server-systemd
           sudo systemctl daemon-reload
           sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
       - name: Build current container and run client
         run: |
-          sudo mkdir /tmp/containers
           sudo apt-get install -y podman
           sudo podman build -t test-image .
-          sudo podman run --hostname container-client \
-          --name directord-client --net=host \
-          --env DIRECTORD_ZMQ_SERVER_ADDRESS=127.0.0.1 \
-          --env DIRECTORD_DEBUG=True --user 0 --detach  \
-          -v /tmp/containers:/var/lib/containers:Z  \
-          --privileged test-image directord --debug
-          sudo podman exec directord-client microdnf install -y podman
-          sudo podman exec directord-client podman system service --log-level debug -t 0 unix:///tmp/podman.sock &
+          sudo apt-get install install -y podman
+          sudo podman system service --log-level debug -t 0 unix:///tmp/podman.sock &>/tmp/directord-podman-api.log &
           sudo podman run --rm --name registry -d -p 5000:5000 registry:2
 
       - name: Wait for client online
@@ -65,5 +66,5 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: functional-realworld-test-logs
+          name: functional-podman-test-logs
           path: /tmp/directord-*.log
