@@ -37,7 +37,6 @@ jobs:
         run: |
           sudo apt-get install -y podman
           sudo podman build -t test-image .
-          sudo apt-get install install -y podman
           sudo podman system service --log-level debug -t 0 unix:///tmp/podman.sock &>/tmp/directord-podman-api.log &
           sudo podman run --rm --name registry -d -p 5000:5000 registry:2
 
@@ -55,7 +54,6 @@ jobs:
 
       - name: Generate log details
         run: |
-          sudo podman logs directord-client &> /tmp/directord-client-podman.log || true
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
