@@ -32,7 +32,6 @@ class BaseDriver:
     coordination_failed = "\x07"  # Signals coordination failed
     coordination_ack = "\x10"  # Signals coordination acknowledged
     coordination_notice = "\x11"  # Signals coordination notice
-    job_ack = "\x06"  # Signals job acknowledged
     job_end = "\x04"  # Signals job ended
     job_failed = "\x15"  # Signals job failed
     job_processing = "\x16"  # Signals job processing

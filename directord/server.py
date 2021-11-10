@@ -166,11 +166,7 @@ class Server(interface.Interface):
             job_metadata["STDERR"][identity] = job_stderr
 
         job_metadata["_processing"][identity] = job_status
-        if job_status == self.driver.job_ack:
-            self.log.debug(
-                "Job [ %s ] acknowledged for [ %s ]", job_id, identity
-            )
-        elif job_status == self.driver.job_processing:
+        if job_status == self.driver.job_processing:
             self.log.debug(
                 "Job [ %s ] processing for [ %s ]", job_id, identity
             )
@@ -186,7 +182,7 @@ class Server(interface.Interface):
             job_metadata["_processing"][identity] = self.driver.job_end
         elif job_status == self.driver.job_failed:
             _set_time()
-            self.log.debug("Job [ %s ] failed for [ %s ]", job_id, identity)
+            self.log.warning("Job [ %s ] failed for [ %s ]", job_id, identity)
             if "FAILED" in job_metadata:
                 job_metadata["FAILED"].append(identity)
             else:
@@ -569,6 +565,42 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
+        def _job_interaction(interval, interval_time):
+            """Run job handling in a uniform way.
+
+            :param interval: The current process interval
+            :paran interval: Integer
+            :param interval_time: The curent timestamp since the last interval
+            :paran interval_time: Float
+            :returns: Tuple
+            """
+
+            (
+                identity,
+                msg_id,
+                control,
+                _,
+                data,
+                info,
+                stderr,
+                stdout,
+            ) = self.driver.job_recv()
+            if control == self.driver.heartbeat_notice:
+                self.handle_heartbeat(identity, data)
+            else:
+                self.handle_job(
+                    identity=identity,
+                    job_id=msg_id,
+                    control=control,
+                    data=data,
+                    info=info,
+                    stderr=stderr,
+                    stdout=stdout,
+                )
+                interval, interval_time = 1, time.time()
+
+            return interval, interval_time
+
         self.driver.job_init()
         poller_time = time.time()
         prune_time = time.time() + 10
@@ -608,31 +640,15 @@ class Server(interface.Interface):
                     self.driver.job_send(
                         **send_item,
                     )
+                    if self.driver.job_check(constant=0.1):
+                        poller_interval, poller_time = _job_interaction(
+                            interval=poller_interval, interval_time=poller_time
+                        )
 
             while self.driver.job_check(constant=poller_interval):
-                (
-                    identity,
-                    msg_id,
-                    control,
-                    _,
-                    data,
-                    info,
-                    stderr,
-                    stdout,
-                ) = self.driver.job_recv()
-                if control == self.driver.heartbeat_notice:
-                    self.handle_heartbeat(identity, data)
-                else:
-                    poller_interval, poller_time = 1, time.time()
-                    self.handle_job(
-                        identity=identity,
-                        job_id=msg_id,
-                        control=control,
-                        data=data,
-                        info=info,
-                        stderr=stderr,
-                        stdout=stdout,
-                    )
+                poller_interval, poller_time = _job_interaction(
+                    interval=poller_interval, interval_time=poller_time
+                )
 
             if time.time() > prune_time:
                 self.log.debug(

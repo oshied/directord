@@ -724,7 +724,7 @@ class Driver(drivers.BaseDriver):
         """
 
         job_id = utils.get_uuid()
-        self.log.debug(
+        self.log.info(
             "Job [ %s ] sending heartbeat from [ %s ] to server",
             job_id,
             self.identity,

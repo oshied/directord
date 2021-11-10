@@ -226,9 +226,9 @@ class Client(interface.Interface):
                                 )
                                 parent_tracker[key]["timeout"] = timestamp
                     else:
-                        self.log.info(
-                            "Parent [ %s ] had items left in the queue,"
-                            " respawning",
+                        self.log.warning(
+                            "Parent thread was terminated but the queue [ %s ]"
+                            " had items in it, respawning",
                             key,
                         )
                         parent_tracker[key].pop("timeout", None)
@@ -719,7 +719,6 @@ class Client(interface.Interface):
         heartbeat_time = time.time()
         poller_interval = 1
         run_q_processor_thread = None
-        original_credit = self.driver.credit
         while True:
             if self.terminate_process(process=run_q_processor_thread):
                 run_q_processor_thread = None
@@ -758,13 +757,8 @@ class Client(interface.Interface):
                     driver=self.args.driver,
                 )
                 heartbeat_time = time.time() + 30
-                self.log.info("Heartbeat sent to server")
 
-            while (
-                self.driver.job_check(constant=poller_interval)
-                and self.driver.credit > 0
-            ):
-                self.driver.credit -= 1
+            while self.driver.job_check(constant=poller_interval):
                 poller_interval, poller_time = 1, time.time()
                 (
                     _,
@@ -778,8 +772,6 @@ class Client(interface.Interface):
                 self.handle_job(command=command, data=data, info=info)
 
             time.sleep(poller_interval * 0.001)
-
-            self.driver.credit = original_credit
 
             if sentinel:
                 self.driver.job_close()
@@ -806,14 +798,9 @@ class Client(interface.Interface):
         job["job_sha3_224"] = job_sha3_224 = job.get(
             "job_sha3_224", utils.object_sha3_224(job)
         )
-        self.driver.job_send(
-            msg_id=job_id,
-            control=self.driver.job_ack,
-        )
-
         job_parent_id = job.get("parent_id")
         job_parent_sha3_224 = job.get("parent_sha3_224")
-        self.log.info(
+        self.log.debug(
             "Item received: parent job UUID [ %s ],"
             " parent job sha3_224 [ %s ], job UUID [ %s ],"
             " job sha3_224 [ %s ]",
