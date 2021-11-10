@@ -47,11 +47,11 @@ class TestServer(tests.TestDriverBase):
                 "PARENT_JOB_ID": "ZZZ",
                 "_createtime": 1,
                 "_lasttime": ANY,
-                "_processing": {"test-node": "\x06"},
+                "_processing": {"test-node": "\x16"},
             }
         }
         self.server._set_job_status(
-            job_status=self.server.driver.job_ack,
+            job_status=self.server.driver.job_processing,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -65,14 +65,14 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x04",
+                "PROCESSING": "\x16",
                 "STDERR": {},
                 "STDOUT": {},
                 "JOB_SHA3_224": "YYY",
                 "VERB": "RUN",
                 "_createtime": 1,
                 "_lasttime": ANY,
-                "_processing": {"test-node": "\x06"},
+                "_processing": {"test-node": "\x16"},
             },
         )
 
@@ -94,7 +94,7 @@ class TestServer(tests.TestDriverBase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.driver.job_ack,
+            job_status=self.server.driver.job_processing,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -109,14 +109,14 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x04",
+                "PROCESSING": "\x16",
                 "STDERR": {},
                 "STDOUT": {"test-node": "stdout"},
                 "JOB_SHA3_224": "YYY",
                 "VERB": "RUN",
                 "_createtime": 1,
                 "_lasttime": ANY,
-                "_processing": {"test-node": "\x06"},
+                "_processing": {"test-node": "\x16"},
             },
         )
 
@@ -138,7 +138,7 @@ class TestServer(tests.TestDriverBase):
             }
         }
         self.server._set_job_status(
-            job_status=self.server.driver.job_ack,
+            job_status=self.server.driver.job_processing,
             job_id="XXX",
             identity="test-node",
             job_output="output",
@@ -153,14 +153,14 @@ class TestServer(tests.TestDriverBase):
                 "JOB_DEFINITION": {},
                 "_nodes": ["test-node"],
                 "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x04",
+                "PROCESSING": "\x16",
                 "STDERR": {"test-node": "stderr"},
                 "STDOUT": {},
                 "JOB_SHA3_224": "YYY",
                 "VERB": "RUN",
                 "_createtime": 1,
                 "_lasttime": ANY,
-                "_processing": {"test-node": "\x06"},
+                "_processing": {"test-node": "\x16"},
             },
         )
 

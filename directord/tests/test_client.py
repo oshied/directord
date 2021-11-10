@@ -131,7 +131,7 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job(sentinel=True)
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_skip_skip_cache_run(
         self,
@@ -165,7 +165,7 @@ class TestClient(tests.TestDriverBase):
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_skip_ignore_cache_run(
         self,
@@ -200,7 +200,7 @@ class TestClient(tests.TestDriverBase):
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_parent_failed_run(
         self,
@@ -234,7 +234,7 @@ class TestClient(tests.TestDriverBase):
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_cache_hit_run(
         self,
@@ -270,7 +270,7 @@ class TestClient(tests.TestDriverBase):
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_run(
         self,
@@ -308,7 +308,7 @@ class TestClient(tests.TestDriverBase):
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_end)
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
+    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_run_outcome_false(
         self,
