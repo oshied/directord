@@ -14,6 +14,8 @@
 
 from directord import components
 
+from directord.components.lib import cacheargs
+
 
 try:
     import selinux
@@ -127,6 +129,7 @@ class Component(components.ComponentBase):
 
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run cache echo command operation.
 

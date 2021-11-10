@@ -14,6 +14,8 @@
 
 from directord import components
 
+from directord.components.lib import cacheargs
+
 
 class Component(components.ComponentBase):
     command = "arg"
@@ -53,6 +55,7 @@ class Component(components.ComponentBase):
         data["parent_async_bypass"] = True
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run cache command operation.
 

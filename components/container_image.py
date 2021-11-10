@@ -11,17 +11,20 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
+
+import json
+import traceback
+
 try:
     from directord.components.lib.podman import PodmanImage
-    from directord.components.lib import cacheargs
 
     AVAILABLE_PODMAN = True
 except ImportError:
     AVAILABLE_PODMAN = False
 
-import json
-import traceback
 from directord import components
+
+from directord.components.lib import cacheargs
 
 
 class Component(components.ComponentBase):

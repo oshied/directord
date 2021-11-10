@@ -18,6 +18,8 @@ import yaml
 
 from directord import components
 
+from directord.components.lib import cacheargs
+
 
 class Component(components.ComponentBase):
     def __init__(self):
@@ -55,6 +57,7 @@ class Component(components.ComponentBase):
         data["cachefile"] = self.known_args.cachefile
         return data
 
+    @cacheargs
     def client(self, cache, job):
         """Run cache file operation.
 

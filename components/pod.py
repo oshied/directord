@@ -17,13 +17,14 @@ import traceback
 
 try:
     from directord.components.lib.podman import PodmanPod
-    from directord.components.lib import cacheargs
 
     AVAILABLE_PODMAN = True
 except ImportError:
     AVAILABLE_PODMAN = False
 
 from directord import components
+
+from directord.components.lib import cacheargs
 
 
 class Component(components.ComponentBase):

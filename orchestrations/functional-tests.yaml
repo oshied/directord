@@ -55,7 +55,7 @@
 
   # Test creating a work directory
   - WORKDIR: --stdout-arg wrkdir /tmp/test
-  - RUN: echo {{ wrkdir }}
+  - RUN: echo {{ wrkdir }} | grep /tmp/test
 
   # Test setting environment integer
   - ENV: test_runtime_arg_as_int_env 12345
