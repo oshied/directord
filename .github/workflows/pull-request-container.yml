@@ -1,0 +1,9 @@
+name: Run pull-request container workflows
+on: [pull_request]
+jobs:
+  container_build_check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build new directord container
+      run: docker build -t directord -f Containerfile .

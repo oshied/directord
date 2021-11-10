@@ -1,4 +1,4 @@
-name: Podman - run pull-request workflow
+name: Run pull-request podman workflows
 on:
   pull_request:
     paths:
@@ -6,6 +6,7 @@ on:
       - 'components/container_image.py'
       - 'directord/components/lib/podman.py'
       - 'orchestrations/functional-podman-test.yaml'
+      - 'pods/pod-directord-test-pod.yaml'
 
 jobs:
   functional_podman_check:
