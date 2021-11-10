@@ -571,7 +571,7 @@ class Server(interface.Interface):
 
         self.driver.job_init()
         poller_time = time.time()
-        prune_time = time.time()
+        prune_time = time.time() + 10
         poller_interval = 1
         run_jobs_thread = None
         while True:
@@ -635,8 +635,10 @@ class Server(interface.Interface):
                     )
 
             if time.time() > prune_time:
-                self.workers.prune()
-                prune_time = time.time() + 762
+                self.log.debug(
+                    "Post prune workers [ %s ]", self.workers.prune()
+                )
+                prune_time = time.time() + 10
 
             if sentinel:
                 self.driver.job_close()
