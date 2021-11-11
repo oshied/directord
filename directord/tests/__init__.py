@@ -253,7 +253,6 @@ class TestDriverBase(unittest.TestCase):
         )
         self.mock_driver = self.mock_driver_patched.start()
         self.mock_driver.job_check.return_value = True
-        self.mock_driver.credit = 1
         self.mock_driver.nullbyte = base_driver.nullbyte
         self.mock_driver.heartbeat_notice = base_driver.heartbeat_notice
         self.mock_driver.job_end = base_driver.job_end

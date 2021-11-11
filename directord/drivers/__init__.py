@@ -39,7 +39,6 @@ class BaseDriver:
     nullbyte = "\x00"  # Signals null
     transfer_start = "\x02"  # Signals transfer start
     transfer_end = "\x03"  # Signals transfer end
-    credit = 2048  # Driver connection credit loop
 
     def __init__(
         self,

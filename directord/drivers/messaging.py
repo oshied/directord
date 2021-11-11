@@ -219,7 +219,6 @@ class Driver(drivers.BaseDriver):
             time.sleep(self.timeout)
             return False
         else:
-            self.log.debug("Current transport credit [ %s ]", self.credit)
             return True
 
     @expose

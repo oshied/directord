@@ -151,7 +151,6 @@ class Driver(drivers.BaseDriver):
         self.bind_job = None
         self.bind_backend = None
         self.hwm = getattr(self.args, "zmq_highwater_mark", 1024)
-        self.credit = int(self.hwm * 0.75)
 
     def __copy__(self):
         """Return a new copy of the driver."""
@@ -216,7 +215,6 @@ class Driver(drivers.BaseDriver):
 
         socks = dict(self.poller.poll(interval * constant))
         if socks.get(bind) == zmq.POLLIN:
-            self.log.debug("Current transport credit [ %s ]", self.credit)
             return True
         else:
             return False

@@ -50,7 +50,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "finger_print": False,
@@ -80,7 +80,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -108,7 +108,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -136,7 +136,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -164,7 +164,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -192,7 +192,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -221,7 +221,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -249,7 +249,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -277,7 +277,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -305,7 +305,7 @@ class TestMain(unittest.TestCase):
             {
                 "config_file": None,
                 "check": False,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -332,7 +332,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -352,7 +352,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
@@ -374,7 +374,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -406,7 +406,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -438,7 +438,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -470,7 +470,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -502,7 +502,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -534,7 +534,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -566,7 +566,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -598,7 +598,7 @@ class TestMain(unittest.TestCase):
             vars(args),
             {
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "dump_cache": False,
@@ -633,7 +633,7 @@ class TestMain(unittest.TestCase):
             {
                 "catalog": mock.ANY,
                 "config_file": None,
-                "datastore": "file:///var/cache/directord",
+                "datastore": "memory",
                 "debug": False,
                 "driver": "zmq",
                 "job_port": 5555,
