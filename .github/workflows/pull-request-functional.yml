@@ -117,7 +117,7 @@ jobs:
           name: functional-test-logs
           path: /tmp/directord*
 
-  functional_memory_check:
+  functional_posix_check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -129,9 +129,9 @@ jobs:
           python -m pip install --upgrade pip
       - name: Run install
         run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
-      - name: Configure memory backend
+      - name: Configure posix backend
         run: >-
-          echo 'datastore: memory' | sudo tee -a /etc/directord/config.yaml
+          echo 'datastore: file:///var/cache/directord' | sudo tee -a /etc/directord/config.yaml
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -165,7 +165,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: functional-memory-test-logs
+          name: functional-posix-test-logs
           path: /tmp/directord-*.log
 
   functional_redis_check:

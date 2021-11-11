@@ -403,13 +403,13 @@ class Cache:
         self.log = logger.getLogger(name="directord-cache")
         self.lock = multiprocessing.Lock()
         self.db_path = os.path.abspath(os.path.expanduser(url))
+        os.makedirs(self.db_path, exist_ok=True)
         try:
             self.encoder = object_sha3_224
         except OSError:
             self.encoder = str
 
     def __enter__(self):
-        os.makedirs(self.db_path, exist_ok=True)
         return self
 
     def __exit__(self, *args, **kwargs):
