@@ -729,7 +729,7 @@ class Client(interface.Interface):
                 heartbeat_time = time.time() + 30
 
             while self.job_q_results():
-                pass
+                poller_interval, poller_time = 1, time.time()
 
             while self.driver.job_check(constant=poller_interval):
                 poller_interval, poller_time = 1, time.time()
