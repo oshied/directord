@@ -319,7 +319,7 @@ class DirectordConnect:
         :type: force_async: Boolean
         """
 
-        args = SimpleNamespace(
+        self.args = SimpleNamespace(
             **{
                 "debug": debug,
                 "socket_path": socket_path,
@@ -328,10 +328,8 @@ class DirectordConnect:
                 "identity": None,
             }
         )
-        _mixin = plugin_import(plugin=".mixin")
-        self.mixin = _mixin.Mixin(args=args)
         _user = plugin_import(plugin=".user")
-        self.manage = _user.Manage(args=args)
+        self.manage = _user.Manage(args=self.args)
 
     def __enter__(self):
         """Enter the context manager returning self."""
@@ -365,9 +363,12 @@ class DirectordConnect:
         :returns: List
         """
 
+        _mixin = plugin_import(plugin=".mixin")
+        mixin = _mixin.Mixin(args=self.args)
+
         return [
             i.decode()
-            for i in self.mixin.exec_orchestrations(
+            for i in mixin.exec_orchestrations(
                 orchestrations,
                 defined_targets=defined_targets,
                 return_raw=True,
@@ -429,6 +430,38 @@ class DirectordConnect:
         return self._from_json(self.manage.run(override="purge-jobs"))[
             "success"
         ]
+
+    def bootstrap(self, catalogs=None):
+        """Run cluster wide bootstrap operations.
+
+        Runs bootstrap operations from the directord library and returns a
+        Tuple of all bootstrapped nodes. This method requires a list of
+        catalogs entries which are expected to be fully qualified files.
+
+        >>> lib.bootstrap(catalogs=["/path/file1"])
+
+        If the catalogs parameter is None, this method will raise a Syntax
+        Error.
+
+        :param catalogs: List of files parsed as bootstrap catalogs
+        :type catalogs: List
+        :returns: Tuple
+        """
+
+        if not catalogs:
+            raise SyntaxError("Missing catalog data.")
+
+        self.args.catalog = list()
+        try:
+            for c in catalogs:
+                self.args.catalog.append(open(c))
+
+            _bootstrap = plugin_import(plugin=".bootstrap")
+            bootstrap = _bootstrap.Bootstrap(args=self.args)
+            return bootstrap.bootstrap_cluster(run_indicator=False)
+        finally:
+            for c in self.args.catalog:
+                c.close()
 
 
 class Spinner(object):

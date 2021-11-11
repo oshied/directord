@@ -68,6 +68,7 @@ class Bootstrap(directord.Processor):
             name="directord", debug_logging=getattr(args, "debug", False)
         )
         self.indicator = None
+        self.return_queue = self.get_queue()
 
     @staticmethod
     def bootstrap_catalog_entry(entry):
@@ -413,6 +414,8 @@ class Bootstrap(directord.Processor):
                             ssh=ssh, localfile=localfile, remotefile=remotefile
                         )
 
+        self.return_queue.put(job_def["host"])
+
     def bootstrap_q_processor(self, queue, catalog):
         """Run a queing execution thread.
 
@@ -436,13 +439,17 @@ class Bootstrap(directord.Processor):
                     catalog=catalog,
                 )
 
-    def bootstrap_cluster(self):
+    def bootstrap_cluster(self, run_indicator=None):
         """Run a cluster wide bootstrap using a catalog file.
 
         Cluster bootstrap requires a catalog file to run. Catalogs are broken
         up into two sections, `directord_server` and `directord_client`. All
         servers are processed serially and first. All clients are processing
         in parallel using a maximum of the threads argument.
+
+        :param run_indicator: Enable | disable the run indicator
+        :type run_indicator: Boolean
+        :returns: Tuple
         """
 
         q = self.get_queue()
@@ -453,7 +460,9 @@ class Bootstrap(directord.Processor):
         for c in self.args.catalog:
             utils.merge_dict(base=catalog, new=yaml.safe_load(c))
 
-        run_indicator = not getattr(self.args, "debug", False)
+        if run_indicator is None:
+            run_indicator = not getattr(self.args, "debug", False)
+
         with directord.Spinner(run=run_indicator) as indicator:
             self.indicator = indicator
             directord_server = catalog.get("directord_server")
@@ -484,3 +493,12 @@ class Bootstrap(directord.Processor):
                 )
             else:
                 self.run_threads(threads=threads)
+
+        targets = set()
+        while not self.return_queue.empty():
+            try:
+                targets.add(self.return_queue.get_nowait())
+            except Exception:
+                pass
+
+        return tuple(sorted(targets))
