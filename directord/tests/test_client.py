@@ -344,10 +344,8 @@ class TestClient(tests.TestDriverBase):
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_failed)
 
     @patch("os.makedirs", autospec=True)
-    @patch("shelve.open", autospec=True)
     @patch("directord.client.Client.run_threads", autospec=True)
-    def test_worker_run(self, mock_run_threads, mock_diskcache, mock_makedirs):
+    def test_worker_run(self, mock_run_threads, mock_makedirs):
         self.client.worker_run()
         mock_run_threads.assert_called_with(ANY, threads=[ANY])
-        mock_diskcache.assert_called()
         mock_makedirs.assert_called()
