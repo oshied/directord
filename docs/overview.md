@@ -63,9 +63,9 @@ Directord has two modes of operation for data-storage and persistence.
 
 | Datastore               | Configuration (/etc/directord/config.yaml) |
 | ----------------------- | ------------------------------------------ |
-| disc (default)          | file:///var/cache/directord                |
+| disc                    | file:///var/cache/directord                |
 | redis                   | redis://127.0.0.1:6379/4                   |
-| memory                  | memory                                     |
+| memory (default)        | memory                                     |
 
 #### Profiling
 

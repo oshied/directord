@@ -331,12 +331,12 @@ def return_poller_interval(poller_time, poller_interval, log=None):
     if current_time >= poller_time + 64:
         if poller_interval != 2048:
             if log:
-                log.debug("Directord entering idle state.")
+                log.info("Directord entering idle state.")
         poller_interval = 2048
     elif current_time >= poller_time + 32:
         if poller_interval != 1024:
             if log:
-                log.debug("Directord ramping down.")
+                log.info("Directord ramping down.")
         poller_interval = 1024
 
     return poller_interval

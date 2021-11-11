@@ -158,11 +158,9 @@ def _args(exec_args=None):
             " option is set to 'memory', the server will spawn a manager"
             " thread to facilitate the document store. The 'memory' option is"
             " fully ephemeral and will not save anything across process"
-            " restarts."
+            " restarts. Default: %(default)s"
         ),
-        default=os.getenv(
-            "DIRECTORD_DATASTORE", "file:///var/cache/directord"
-        ),
+        default=os.getenv("DIRECTORD_DATASTORE", "memory"),
         metavar="STRING",
         type=str,
     )

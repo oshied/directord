@@ -42,7 +42,6 @@ class Server(interface.Interface):
         super(Server, self).__init__(args=args)
         self.job_queue = self.get_queue()
         self.send_queue = self.get_queue()
-        self.lock = self.get_lock()
         datastore = getattr(self.args, "datastore", None)
         self.workers = dict()
         if not datastore or datastore == "memory":
@@ -203,11 +202,7 @@ class Server(interface.Interface):
 
         job_metadata["_lasttime"] = time.time()
 
-        self.lock.acquire()
-        try:
-            self.return_jobs[job_id] = job_metadata
-        finally:
-            self.lock.release()
+        self.return_jobs[job_id] = job_metadata
 
     def create_return_jobs(self, task, job_item, targets):
         """Create a job return item if needed.
@@ -228,34 +223,28 @@ class Server(interface.Interface):
                 pass
             _nodes.add(target)
 
-        self.lock.acquire()
-        try:
-            return self.return_jobs.set(
-                task,
-                {
-                    "ACCEPTED": True,
-                    "INFO": dict(),
-                    "STDOUT": dict(),
-                    "STDERR": dict(),
-                    "_nodes": list(sorted(_nodes)),
-                    "VERB": job_item["verb"],
-                    "JOB_SHA3_224": job_item["job_sha3_224"],
-                    "JOB_NAME": job_item.get(
-                        "job_name", job_item["job_sha3_224"]
-                    ),
-                    "JOB_DEFINITION": job_item,
-                    "PARENT_JOB_ID": job_item.get("parent_id"),
-                    "PARENT_JOB_NAME": job_item.get(
-                        "parent_name", job_item.get("parent_id")
-                    ),
-                    "_createtime": time.time(),
-                    "_executiontime": dict(),
-                    "_roundtripltime": dict(),
-                    "_processing": dict(),
-                },
-            )
-        finally:
-            self.lock.release()
+        return self.return_jobs.set(
+            task,
+            {
+                "ACCEPTED": True,
+                "INFO": dict(),
+                "STDOUT": dict(),
+                "STDERR": dict(),
+                "_nodes": list(sorted(_nodes)),
+                "VERB": job_item["verb"],
+                "JOB_SHA3_224": job_item["job_sha3_224"],
+                "JOB_NAME": job_item.get("job_name", job_item["job_sha3_224"]),
+                "JOB_DEFINITION": job_item,
+                "PARENT_JOB_ID": job_item.get("parent_id"),
+                "PARENT_JOB_NAME": job_item.get(
+                    "parent_name", job_item.get("parent_id")
+                ),
+                "_createtime": time.time(),
+                "_executiontime": dict(),
+                "_roundtripltime": dict(),
+                "_processing": dict(),
+            },
+        )
 
     def run_job(self, sentinel=False):
         """Run a job interaction.
@@ -273,9 +262,9 @@ class Server(interface.Interface):
         """
 
         self.log.info("Starting run process.")
-        while not self.job_queue.empty():
+        while True:
             try:
-                job_item = self.job_queue.get(timeout=60)
+                job_item = self.job_queue.get_nowait()
             except Exception:
                 break
             else:
@@ -565,42 +554,6 @@ class Server(interface.Interface):
         :type sentinel: Boolean
         """
 
-        def _job_interaction(interval, interval_time):
-            """Run job handling in a uniform way.
-
-            :param interval: The current process interval
-            :paran interval: Integer
-            :param interval_time: The curent timestamp since the last interval
-            :paran interval_time: Float
-            :returns: Tuple
-            """
-
-            (
-                identity,
-                msg_id,
-                control,
-                _,
-                data,
-                info,
-                stderr,
-                stdout,
-            ) = self.driver.job_recv()
-            if control == self.driver.heartbeat_notice:
-                self.handle_heartbeat(identity, data)
-            else:
-                self.handle_job(
-                    identity=identity,
-                    job_id=msg_id,
-                    control=control,
-                    data=data,
-                    info=info,
-                    stderr=stderr,
-                    stdout=stdout,
-                )
-                interval, interval_time = 1, time.time()
-
-            return interval, interval_time
-
         self.driver.job_init()
         poller_time = time.time()
         prune_time = time.time() + 10
@@ -618,12 +571,6 @@ class Server(interface.Interface):
                         daemon=True,
                     )
                     run_jobs_thread.start()
-            elif self.send_queue.empty():
-                poller_interval = utils.return_poller_interval(
-                    poller_time=poller_time,
-                    poller_interval=poller_interval,
-                    log=self.log,
-                )
 
             while not self.send_queue.empty():
                 try:
@@ -640,15 +587,37 @@ class Server(interface.Interface):
                     self.driver.job_send(
                         **send_item,
                     )
-                    if self.driver.job_check(constant=0.1):
-                        poller_interval, poller_time = _job_interaction(
-                            interval=poller_interval, interval_time=poller_time
-                        )
 
             while self.driver.job_check(constant=poller_interval):
-                poller_interval, poller_time = _job_interaction(
-                    interval=poller_interval, interval_time=poller_time
-                )
+                (
+                    identity,
+                    msg_id,
+                    control,
+                    _,
+                    data,
+                    info,
+                    stderr,
+                    stdout,
+                ) = self.driver.job_recv()
+                if control == self.driver.heartbeat_notice:
+                    self.handle_heartbeat(identity, data)
+                else:
+                    poller_interval, poller_time = 1, time.time()
+                    self.handle_job(
+                        identity=identity,
+                        job_id=msg_id,
+                        control=control,
+                        data=data,
+                        info=info,
+                        stderr=stderr,
+                        stdout=stdout,
+                    )
+
+            poller_interval = utils.return_poller_interval(
+                poller_time=poller_time,
+                poller_interval=poller_interval,
+                log=self.log,
+            )
 
             if time.time() > prune_time:
                 self.log.debug(

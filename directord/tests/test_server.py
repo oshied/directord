@@ -540,7 +540,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, True, False]
             self.server.run_interactions(sentinel=True)
@@ -569,7 +569,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 66, 1, 1, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 66, 1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, True, False]
             self.server.run_interactions(sentinel=True)
@@ -598,7 +598,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 34, 1, 1, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 34, 1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, True, False]
             self.server.run_interactions(sentinel=True)
@@ -630,7 +630,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, True, False]
             self.server.run_interactions(sentinel=True)
@@ -666,7 +666,7 @@ class TestServer(tests.TestDriverBase):
                 None,
             ),
         ]
-        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, True, False]
             self.server.run_interactions(sentinel=True)

@@ -53,12 +53,11 @@ class Client(interface.Interface):
         :type lock: Object
         """
 
-        while True:
+        while not queue.empty():
             try:
-                (component_kwargs, command, info) = queue.get(timeout=0.5)
+                component_kwargs, command, info = queue.get_nowait()
             except ValueError as e:
                 self.log.critical("Queue object value error [ %s ]", str(e))
-                break
             except Exception:
                 break
             else:
@@ -130,7 +129,6 @@ class Client(interface.Interface):
         if not lock:
             lock = self.get_lock()
 
-        loop_time = time.time()
         parent_tracker = collections.OrderedDict()
         while not q_processes.empty() or parent_tracker:
             try:
@@ -141,7 +139,6 @@ class Client(interface.Interface):
                 ) = q_processes.get_nowait()
             except ValueError as e:
                 self.log.critical("Queue object value error [ %s ]", str(e))
-                pass
             except Exception:
                 sleep_interval = 0.1
             else:
@@ -211,21 +208,15 @@ class Client(interface.Interface):
                 if value["t"].is_alive() or value["t"].exitcode is None:
                     continue
                 else:
-                    if value["q"].empty():
-                        timestamp = time.time()
-                        if timestamp - value.get("timeout", timestamp) > 3:
-                            self.terminate_process(process=value["t"])
-                            value["q"].close()
-                            value["q"].join_thread()
-                            parent_tracker.pop(key)
-                            self.log.info("Pruned parent [ %s ]", key)
-                        else:
-                            if "timeout" not in parent_tracker[key]:
-                                self.log.info(
-                                    "Starting to prune parent [ %s ]", key
-                                )
-                                parent_tracker[key]["timeout"] = timestamp
-                    else:
+                    timestamp = time.time()
+                    timeout = timestamp - value.get("timeout", timestamp) > 5
+                    if value["q"].empty() and timeout:
+                        self.terminate_process(process=value["t"])
+                        value["q"].close()
+                        value["q"].join_thread()
+                        parent_tracker.pop(key)
+                        self.log.info("Pruned parent [ %s ]", key)
+                    elif not value["q"].empty():
                         self.log.warning(
                             "Parent thread was terminated but the queue [ %s ]"
                             " had items in it, respawning",
@@ -241,17 +232,9 @@ class Client(interface.Interface):
                             name=key,
                             daemon=True,
                         )
-
-            if time.time() > loop_time:
-                known_parents = list(parent_tracker.keys())
-                if known_parents:
-                    self.log.info("Known parents: %s", known_parents)
-
-                self.log.info(
-                    "Active processes: %s",
-                    _get_thread_count(parents=parent_tracker),
-                )
-                loop_time = time.time() + 30
+                    elif "timeout" not in parent_tracker[key]:
+                        self.log.info("Starting to prune parent [ %s ]", key)
+                        parent_tracker[key]["timeout"] = timestamp
 
             time.sleep(sleep_interval)
 
@@ -625,43 +608,39 @@ class Client(interface.Interface):
         :returns: Boolean
         """
 
-        processed_results = False
-        while not self.q_return.empty():
-            try:
-                (
+        try:
+            (
+                stdout,
+                stderr,
+                outcome,
+                return_info,
+                job,
+                command,
+                execution_time,
+                block_on_tasks,
+            ) = self.q_return.get_nowait()
+        except ValueError as e:
+            self.log.critical("Return object value error [ %s ]", str(e))
+        except Exception:
+            return False
+        else:
+            self.log.debug("Found task results for [ %s ].", job["job_id"])
+            with utils.ClientStatus(
+                job_id=job["job_id"],
+                command=command,
+                ctx=self,
+            ) as c:
+                job["execution_time"] = execution_time
+                self._set_job_status(
                     stdout,
                     stderr,
                     outcome,
                     return_info,
                     job,
-                    command,
-                    execution_time,
                     block_on_tasks,
-                ) = self.q_return.get_nowait()
-            except ValueError as e:
-                self.log.critical("Return object value error [ %s ]", str(e))
-            except Exception:
-                break
-            else:
-                self.log.debug("Found task results for [ %s ].", job["job_id"])
-                with utils.ClientStatus(
-                    job_id=job["job_id"],
-                    command=command,
-                    ctx=self,
-                ) as c:
-                    job["execution_time"] = execution_time
-                    self._set_job_status(
-                        stdout,
-                        stderr,
-                        outcome,
-                        return_info,
-                        job,
-                        block_on_tasks,
-                        c,
-                    )
-                processed_results = True
-
-        return processed_results
+                    c,
+                )
+            return True
 
     def _parent_check(self, conn, cache, job):
         """Check if a parent job has failed.
@@ -732,15 +711,6 @@ class Client(interface.Interface):
                 )
                 run_q_processor_thread.start()
 
-            if self.job_q_results():
-                poller_interval, poller_time = 1, time.time()
-            else:
-                poller_interval = utils.return_poller_interval(
-                    poller_time=poller_time,
-                    poller_interval=poller_interval,
-                    log=self.log,
-                )
-
             if time.time() > heartbeat_time:
                 with open("/proc/uptime", "r") as f:
                     uptime = float(f.readline().split()[0])
@@ -758,6 +728,9 @@ class Client(interface.Interface):
                 )
                 heartbeat_time = time.time() + 30
 
+            while self.job_q_results():
+                pass
+
             while self.driver.job_check(constant=poller_interval):
                 poller_interval, poller_time = 1, time.time()
                 (
@@ -771,7 +744,11 @@ class Client(interface.Interface):
                 ) = self.driver.job_recv()
                 self.handle_job(command=command, data=data, info=info)
 
-            time.sleep(poller_interval * 0.001)
+            poller_interval = utils.return_poller_interval(
+                poller_time=poller_time,
+                poller_interval=poller_interval,
+                log=self.log,
+            )
 
             if sentinel:
                 self.driver.job_close()
