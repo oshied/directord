@@ -850,10 +850,8 @@ class Client(interface.Interface):
                 False,
             ),
         ]
-        # Ensure that the cache path exists before executing.
-        os.makedirs(self.args.cache_path, exist_ok=True)
         with utils.Cache(
-            path=self.args.cache_path, filename="client.db"
+            url=os.path.join(self.args.cache_path, "client")
         ) as cache:
             self.cache = cache
             self.run_threads(threads=threads)

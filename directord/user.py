@@ -341,7 +341,7 @@ class Manage(User):
         def _cache_dump():
             try:
                 with utils.Cache(
-                    path=self.args.cache_path, filename="client.db", flags="r"
+                    url=os.path.join(self.args.cache_path, "client")
                 ) as cache:
                     print(json.dumps(dict(cache.items()), indent=4))
             except KeyError:

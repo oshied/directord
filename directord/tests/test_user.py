@@ -262,7 +262,12 @@ class TestManager(tests.TestDriverBase):
         )
 
     @patch("builtins.print")
-    @patch("shelve.open", autospec=True)
-    def test_run_override_dump_cache_empty(self, mock_diskcache, mock_print):
+    @patch("os.chdir", autospec=True)
+    @patch("os.makedirs", autospec=True)
+    def test_run_override_dump_cache_empty(
+        self, mock_makedirs, mock_chdirs, mock_print
+    ):
         self.manage.run(override="dump-cache")
         mock_print.assert_called_with("{}")
+        mock_makedirs.assert_called()
+        mock_chdirs.assert_called()

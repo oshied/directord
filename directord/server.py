@@ -52,31 +52,29 @@ class Server(interface.Interface):
             self.return_jobs = manager.document()
         else:
             url = urlparse.urlparse(datastore)
-            if url.scheme in ["file"]:
-                disc = directord.plugin_import(plugin=".datastores.disc")
+            if url.scheme == "file":
+                db_plugin = directord.plugin_import(plugin=".datastores.disc")
                 self.log.debug("Disc base document store initialized")
                 path = os.path.abspath(os.path.expanduser(url.path))
                 # Ensure that the cache path exists before executing.
                 workers_path = os.path.join(path, "workers")
-                os.makedirs(workers_path, exist_ok=True)
-                self.workers = disc.BaseDocument(url=workers_path)
+                self.workers = db_plugin.BaseDocument(url=workers_path)
                 jobs_path = os.path.join(path, "jobs")
-                os.makedirs(jobs_path, exist_ok=True)
-                self.return_jobs = disc.BaseDocument(url=jobs_path)
-            if url.scheme in ["redis", "rediss"]:
+                self.return_jobs = db_plugin.BaseDocument(url=jobs_path)
+            elif url.scheme in ["redis", "rediss"]:
                 self.log.info("Connecting to redis datastore")
                 try:
                     db = int(url.path.lstrip("/"))
                 except ValueError:
                     db = 0
-                redis = directord.plugin_import(plugin=".datastores.redis")
+                db_plugin = directord.plugin_import(plugin=".datastores.redis")
                 self.log.debug("Redis worker keyspace is %s", db)
-                self.workers = redis.BaseDocument(
+                self.workers = db_plugin.BaseDocument(
                     url=url._replace(path="").geturl(), database=(db)
                 )
                 jdb = db + 1
                 self.log.debug("Redis job keyspace base is %s", jdb)
-                self.return_jobs = redis.BaseDocument(
+                self.return_jobs = db_plugin.BaseDocument(
                     url=url._replace(path="").geturl(), database=(jdb)
                 )
 
@@ -282,10 +280,9 @@ class Server(interface.Interface):
 
                 targets = list()
                 self.log.debug("Processing targets.")
-                for target in (
-                    job_item.pop("targets", None) or self.workers.keys()
-                ):
-                    if target in self.workers.keys():
+                known_workers = list(self.workers.keys())
+                for target in job_item.pop("targets", None) or known_workers:
+                    if target in known_workers:
                         self.log.debug("Target identified [ %s ].", target)
                         targets.append(target)
                     else:
@@ -306,7 +303,7 @@ class Server(interface.Interface):
                             identity=target,
                             job_output=(
                                 "Target unknown. Available targets {}".format(
-                                    list(self.workers.keys())
+                                    known_workers
                                 )
                             ),
                             recv_time=time.time(),
@@ -324,7 +321,7 @@ class Server(interface.Interface):
                     #                  the nodes defined within the job
                     #                  execution.
                     job_item["targets"] = [i for i in targets]
-                    targets = self.workers.keys()
+                    targets = known_workers
                 elif job_item.get("run_once", False):
                     self.log.debug("Run once enabled.")
                     targets = [targets[0]]
@@ -849,7 +846,7 @@ class Server(interface.Interface):
                     targets,
                 )
             else:
-                targets = self.workers.keys()
+                targets = list(self.workers.keys())
                 self.log.debug(
                     "Targets undefined in old job specification"
                     " running everwhere"
