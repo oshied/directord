@@ -42,26 +42,24 @@ thousands, Directord has it covered.
 Getting started is simple.
 
 * [Tutorials](tutorials.md)
+* [Installation](installation.md)
+
+Syntax, components, and developer enablement.
+
+* [Syntax](syntax.md)
 * [Library](library.md)
-
-Developing user defined components.
-
-* [Components](components.md)
+* [Orchestrations](orchestrations.md)
 
 Documentation needed to be successful with Directord.
 
 * [Overview](overview.md)
-* [Installation](installation.md)
-* [Service Setup](service-setup.md)
 * [Drivers](drivers.md)
 * [Containerization](containerization.md)
-* [Syntax](syntax.md)
-* [Orchestrations](orchestrations.md)
-* [Testing](testing.md)
 
 Comparative Execution Analysis of Different Tools.
 
 * [Analysis](analysis.md)
+* [Testing](testing.md)
 
 ### Have Questions?
 

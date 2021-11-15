@@ -7,8 +7,11 @@ Because Directord is task driven and messaging backed it is fast, Directord's
 time to work is measured in microseconds with return trip times measured in
 milliseconds.
 
-To test interactions we used comparison files from the tests directory which
-run 1000 tasks across a small 6 node environment.
+> To test interactions used can all be found in the `tests` directory of the
+  project repository.
+
+Each test interaction measures the performance of 1000 minimal tasks run
+across a 6 node environment.
 
 ## Analysis, Setup and Overview
 
@@ -49,8 +52,8 @@ All client targets within the test environment used the same configuration.
 To ensure that the tests were as fair as possible, all tests were first run
 using default configurations. Later tests were run using asynchronous
 strategies to ensure all of the common basis were covered for our results. In
-the case of Ansible, Non-standard configuration was used to ensure we're able
-also test using even more optimized execution processes.
+the case of Ansible, Non-default configuration was used to ensure the Ansible
+execuution is done in the most optimized way possible.
 
 ### Test Results
 

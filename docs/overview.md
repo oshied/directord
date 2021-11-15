@@ -67,6 +67,15 @@ Directord has two modes of operation for data-storage and persistence.
 | redis                   | redis://127.0.0.1:6379/4                   |
 | memory (default)        | memory                                     |
 
+### Client caching and persistence
+
+Directord clients make use of a POSIX friendly cache, which allows the server
+and client interactions make use of stored values and ensure client level
+idempotency during execution. Cached task values are stored for 72 hours
+unless otherwise configured differently. Cached [ARGS](components.md#arg)
+are stored indefinitely but can be [EVICTED](components.md#cacheevict)
+through client interactions as needed.
+
 #### Profiling
 
 Every Directord task is profiled. The execution and the round trip time are
