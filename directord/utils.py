@@ -396,6 +396,14 @@ class Cache:
     def __init__(self, url):
         """Initialize the POSIX compatible datastore.
 
+        The POSIX cache store uses xattrs to store metadata about stored
+        objects. Metadata is used to store the key and expiry information
+        which is used to ensure we're maintaining a POSIX compliant data
+        store which leverages simple file hashing. If xattrs are not
+        availble on the filesystem, the cache method will fallback to a
+        standard string encoding, and rely on in file information for
+        expiry times.
+
         :param url: Connection string to the file backend.
         :type url: String
         """
@@ -405,9 +413,11 @@ class Cache:
         self.db_path = os.path.abspath(os.path.expanduser(url))
         os.makedirs(self.db_path, exist_ok=True)
         try:
-            self.encoder = object_sha3_224
-        except OSError:
+            os.listxattr(self.db_path)
+        except Exception:
             self.encoder = str
+        else:
+            self.encoder = object_sha3_224
 
     def __enter__(self):
         return self
@@ -491,7 +501,7 @@ class Cache:
         """
 
         for item in self.keys():
-            yield item, self.get(item)
+            yield item, self.__getitem__(item)
 
     def keys(self):
         """Return an array of all keys.
@@ -520,9 +530,12 @@ class Cache:
         """
 
         try:
-            self.__delitem__(key=key)
-        except KeyError:
-            pass
+            data = self.__getitem__(key)
+            self.__delitem__(key)
+        except Exception:
+            return
+        else:
+            return data
 
     def get(self, key, default=None):
         """Return the value of a given key.
