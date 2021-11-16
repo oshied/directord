@@ -1,0 +1,7 @@
+---
+directord_clients:
+  jobs:
+  - RUN: echo test-clients-only | sudo tee /tmp/test-file.clients-only
+  - GET: /tmp/test-file.clients-only /tmp/test-file.clients-only.get
+  - ADD: /tmp/test-file.clients-only.get /tmp/test-file.clients-only.add
+  - RUN: grep test-clients-only /tmp/test-file.clients-only.add

@@ -570,6 +570,13 @@ jobs:
                                        --catalog tools/directord-inventory-catalog.yaml \
                                        --catalog tests/directord-test-catalog.yaml \
                                        --key-file ~/.ssh/id_rsa &> /tmp/directord-bootstrap-failure.log
+      - name: Run bootstrap test for clients only
+        run: |
+          /opt/directord/bin/directord --debug \
+                                       bootstrap \
+                                       --catalog tools/directord-inventory-catalog.yaml \
+                                       --catalog tests/directord-test-catalog-no-srvr.yaml \
+                                       --key-file ~/.ssh/id_rsa &> /tmp/directord-bootstrap-failure-no-srvr.log
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
