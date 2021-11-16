@@ -71,16 +71,21 @@ class Bootstrap(directord.Processor):
         self.return_queue = self.get_queue()
 
     @staticmethod
-    def bootstrap_catalog_entry(entry):
+    def bootstrap_catalog_entry(entry, required_entries=None):
         """Return a flattened list of bootstrap job entries.
 
         :param entry: Catalog entry for bootstraping.
         :type entry: Dictionary
+        :param required_entries: List of required items
+        :type required_entries: List
         :returns: List
         """
 
+        if not required_entries:
+            required_entries = ["jobs", "targets"]
+
         ordered_entries = list()
-        for item in ["jobs", "targets"]:
+        for item in required_entries:
             if item not in entry:
                 raise SystemExit(
                     "The bootstrap catalog is missing a"
@@ -468,7 +473,9 @@ class Bootstrap(directord.Processor):
             directord_server = catalog.get("directord_server")
             if directord_server:
                 self.log.debug("Loading server information")
-                for s in self.bootstrap_catalog_entry(entry=directord_server):
+                for s in self.bootstrap_catalog_entry(
+                    entry=directord_server, required_entries=["targets"]
+                ):
                     s["key_file"] = self.args.key_file
                     catalog["directord_bootstrap"] = s
                     self.bootstrap_run(job_def=s, catalog=catalog)
