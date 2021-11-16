@@ -98,18 +98,19 @@ class Bootstrap(directord.Processor):
                 target_host = target["host"]
             except KeyError:
                 raise SystemExit("[host] is undefined in bootstrap catalog")
-            item = dict(
-                host=target_host,
-                username=target.get(
-                    "username", args.get("username", getpass.getuser())
-                ),
-                port=target.get("port", args.get("port", 22)),
-                jobs=entry["jobs"],
-            )
-            name = target.get("name")
-            if name:
-                item["name"] = name
-            ordered_entries.append(item)
+            if "jobs" in entry:
+                item = dict(
+                    host=target_host,
+                    username=target.get(
+                        "username", args.get("username", getpass.getuser())
+                    ),
+                    port=target.get("port", args.get("port", 22)),
+                    jobs=entry["jobs"],
+                )
+                name = target.get("name")
+                if name:
+                    item["name"] = name
+                ordered_entries.append(item)
         return ordered_entries
 
     @staticmethod
