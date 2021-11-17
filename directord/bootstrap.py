@@ -334,7 +334,9 @@ class Bootstrap(directord.Processor):
                 pass
 
             if chan.get_exit_status() != 0:
-                self.log.warning("FAILURE: [ %s ]", command)
+                self.log.warning(
+                    "\nHOST: [ %s ] FAILURE: [ %s ]", ssh.host, command
+                )
                 with PrintError():
                     self.log.critical(data)
                     raise SystemExit(
@@ -375,50 +377,66 @@ class Bootstrap(directord.Processor):
                 self.log.info(msg)
         else:
             self.log.info("Connecting to %s", job_def["host"])
-        with utils.SSHConnect(
-            host=job_def["host"],
-            username=job_def["username"],
-            port=job_def["port"],
-            key_file=job_def.get("key_file"),
-            debug=getattr(self.args, "debug", False),
-        ) as ssh:
-            for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
-                key, value = next(iter(job.items()))
-                self.log.debug("Executing: %s %s", key, value)
-                with self.timeout(
-                    time=600, job_id=job_def["host"], reraise=True
-                ):
-                    if self.indicator:
-                        msg = self.indicator.indicator_msg(
-                            msg="Executing {} to {}".format(
-                                key, job_def["host"]
+
+        try:
+            with utils.SSHConnect(
+                host=job_def["host"],
+                username=job_def["username"],
+                port=job_def["port"],
+                key_file=job_def.get("key_file"),
+                debug=getattr(self.args, "debug", False),
+            ) as ssh:
+                for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
+                    key, value = next(iter(job.items()))
+                    self.log.debug("Executing: %s %s", key, value)
+                    with self.timeout(
+                        time=600, job_id=job_def["host"], reraise=True
+                    ):
+                        if self.indicator:
+                            msg = self.indicator.indicator_msg(
+                                msg="Executing {} to {}".format(
+                                    key, job_def["host"]
+                                )
                             )
-                        )
-                        if msg:
-                            self.log.info(msg)
-                    else:
-                        self.log.info("Connecting to %s", job_def["host"])
-                    if key == "RUN":
-                        self.bootstrap_exec(
-                            ssh=ssh, command=value, catalog=catalog
-                        )
-                    elif key == "ADD":
-                        value = self._blueprinter(
-                            string=value, catalog=catalog
-                        )
-                        localfile, remotefile = value.split(" ", 1)
-                        localfile = self.bootstrap_localfile_padding(localfile)
-                        self.bootstrap_file_send(
-                            ssh=ssh, localfile=localfile, remotefile=remotefile
-                        )
-                    elif key == "GET":
-                        value = self._blueprinter(
-                            string=value, catalog=catalog
-                        )
-                        remotefile, localfile = value.split(" ", 1)
-                        self.bootstrap_file_get(
-                            ssh=ssh, localfile=localfile, remotefile=remotefile
-                        )
+                            if msg:
+                                self.log.info(msg)
+                        else:
+                            self.log.info(
+                                "Connecting to [ %s ]", job_def["host"]
+                            )
+                        if key == "RUN":
+                            self.bootstrap_exec(
+                                ssh=ssh, command=value, catalog=catalog
+                            )
+                        elif key == "ADD":
+                            value = self._blueprinter(
+                                string=value, catalog=catalog
+                            )
+                            localfile, remotefile = value.split(" ", 1)
+                            localfile = self.bootstrap_localfile_padding(
+                                localfile
+                            )
+                            self.bootstrap_file_send(
+                                ssh=ssh,
+                                localfile=localfile,
+                                remotefile=remotefile,
+                            )
+                        elif key == "GET":
+                            value = self._blueprinter(
+                                string=value, catalog=catalog
+                            )
+                            remotefile, localfile = value.split(" ", 1)
+                            self.bootstrap_file_get(
+                                ssh=ssh,
+                                localfile=localfile,
+                                remotefile=remotefile,
+                            )
+        except OSError as e:
+            print(
+                "\nFailed to connect to [ {} ]: {}\n".format(
+                    job_def["host"], str(e)
+                )
+            )
 
         self.return_queue.put(job_def["host"])
 
