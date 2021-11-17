@@ -473,6 +473,14 @@ class Cache:
             with open(file_object, "w") as f:
                 f.write(value)
             try:
+                try:
+                    os.getxattr(file_object, "user.birthtime")
+                except OSError:
+                    os.setxattr(
+                        file_object,
+                        "user.birthtime",
+                        struct.pack(">d", time.time()),
+                    )
                 os.setxattr(file_object, "user.key", key.encode())
                 if expire:
                     os.setxattr(
@@ -503,6 +511,17 @@ class Cache:
         for item in self.keys():
             yield item, self.__getitem__(item)
 
+    @staticmethod
+    def _get_create_time(path):
+        try:
+            return struct.unpack(">d", os.getxattr(path, "user.birthtime"))[0]
+        except Exception:
+            stat = os.stat(path)
+            try:
+                return stat.st_birthtime
+            except AttributeError:
+                return stat.st_ctime
+
     def keys(self):
         """Return an array of all keys.
 
@@ -513,7 +532,7 @@ class Cache:
         try:
             os.chdir(self.db_path)
             for item in sorted(
-                filter(os.path.isfile, os.listdir()), key=os.path.getctime
+                filter(os.path.isfile, os.listdir()), key=self._get_create_time
             ):
                 try:
                     yield os.getxattr(item, "user.key").decode()
