@@ -413,6 +413,8 @@ class Mixin:
         original_data = list(dict(data).items())
         result_filter = getattr(self.args, "filter", None)
         for key, value in original_data:
+            if not value:
+                continue
             arranged_data = [key]
             include = result_filter is None
             for item in restrict_headings:
