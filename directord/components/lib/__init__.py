@@ -48,9 +48,9 @@ def cacheargs(func):
             arg_job["verb"] = "ARG"
             arg_job["args"] = {}
             if stdout_arg:
-                arg_job["args"].update({stdout_arg: clean_info})
+                arg_job["args"].update({stdout_arg: clean_info.strip()})
             if stderr_arg:
-                arg_job["args"].update({stderr_arg: clean_info_err})
+                arg_job["args"].update({stderr_arg: clean_info_err.strip()})
             arg_job["parent_async_bypass"] = True
             arg_job["targets"] = [self.driver.identity]
             arg_job["job_id"] = utils.get_uuid()
