@@ -508,7 +508,7 @@ class Driver(drivers.BaseDriver):
         return socket.recv_multipart(flags=flags)
 
     @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(TimeoutError),
+        retry=tenacity.retry_if_exception_type(Exception),
         wait=tenacity.wait_fixed(5),
         before_sleep=tenacity.before_sleep_log(
             logger.getLogger(name="directord"), logging.WARN
@@ -623,7 +623,11 @@ class Driver(drivers.BaseDriver):
         else:
             flags = 0
 
-        return socket.send_multipart(message_parts, flags=flags)
+        try:
+            return socket.send_multipart(message_parts, flags=flags)
+        except Exception as e:
+            self.log.warn("Failed to send message to [ %s ]", identity)
+            raise e
 
     def _recv(self, socket, nonblocking=False):
         """Receive message.

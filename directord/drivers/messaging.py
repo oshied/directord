@@ -485,7 +485,7 @@ class Driver(drivers.BaseDriver):
         )
 
     @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(TimeoutError),
+        retry=tenacity.retry_if_exception_type(Exception),
         wait=tenacity.wait_fixed(1),
         before_sleep=tenacity.before_sleep_log(
             logger.getLogger(name="directord"), logging.WARN
@@ -513,7 +513,16 @@ class Driver(drivers.BaseDriver):
         client = oslo_messaging.RPCClient(
             self.transport, target, timeout=2, retry=3
         )
-        client.call({}, method, **kwargs)
+
+        try:
+            return client.call({}, method, **kwargs)
+        except Exception as e:
+            self.log.warn(
+                "Failed to send message using topic [ %s ] to server [ %s ]",
+                topic,
+                server,
+            )
+            raise e
 
     def backend_check(self, interval=1, constant=1000):
         """Return True if the backend contains work ready.
