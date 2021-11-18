@@ -2,27 +2,32 @@
 
 directord_server:
   jobs:
-  - ADD: prod-setup.sh prod-setup.sh
-  - RUN: sudo bash prod-setup.sh
+  - RUN: dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
+  - RUN: dnf install -y python3 python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-directord python3-ssh-python
+  - RUN: mkdir -p /etc/directord /etc/directord/private_keys /etc/directord/public_keys
   - RUN: sudo getent group directord || sudo groupadd -r directord
   - RUN: sudo /usr/bin/directord-server-systemd --group directord
+  - RUN: |-
+      sudo python3 <<EOC
+      import yaml
+      try:
+          with open('/etc/directord/config.yaml') as f:
+              config = yaml.safe_load(f)
+      except FileNotFoundError:
+          config = dict()
+      config['driver'] = "zmq"
+      with open('/etc/directord/config.yaml', 'w') as f:
+          f.write(yaml.safe_dump(config, default_flow_style=False))
+      EOC
   - RUN: sudo systemctl daemon-reload
   - RUN: sudo systemctl enable directord-server.service
   - RUN: sudo systemctl restart directord-server.service
-  - GET: /etc/directord/private_keys/client.key_secret /tmp/client.key_secret
-  - GET: /etc/directord/public_keys/client.key /tmp/client.key
-  - GET: /etc/directord/public_keys/server.key /tmp/server.key
 
 directord_clients:
   jobs:
-  - ADD: prod-setup.sh prod-setup.sh
-  - RUN: sudo bash prod-setup.sh
-  - ADD: /tmp/client.key_secret /tmp/client.key_secret-stash
-  - RUN: sudo mv /tmp/client.key_secret-stash /etc/directord/private_keys/client.key_secret
-  - ADD: /tmp/client.key /tmp/client.key-stash
-  - RUN: sudo mv /tmp/client.key-stash /etc/directord/public_keys/client.key
-  - ADD: /tmp/server.key /tmp/server.key-stash
-  - RUN: sudo mv /tmp/server.key-stash /etc/directord/public_keys/server.key
+  - RUN: dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
+  - RUN: dnf install -y python3 python3-tenacity python3-tabulate python3-zmq python3-pyyaml python3-jinja2 zeromq libsodium python3-directord python3-ssh-python
+  - RUN: mkdir -p /etc/directord /etc/directord/private_keys /etc/directord/public_keys
   - RUN: sudo getent group directord || sudo groupadd -r directord
   - RUN: sudo /usr/bin/directord-client-systemd --group directord
   - RUN: |-
