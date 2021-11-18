@@ -51,13 +51,13 @@ class Component(components.ComponentBase):
         )
         self.parser.add_argument(
             "--retry",
-            default=0,
+            default=30,
             type=int,
             help="Number of times to retry condition (ignored with --seconds)",
         )
         self.parser.add_argument(
             "--retry-wait",
-            default=10,
+            default=1,
             type=int,
             help="Time to wait between retries(ignored with --seconds)",
         )
