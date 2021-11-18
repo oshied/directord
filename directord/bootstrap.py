@@ -487,7 +487,7 @@ class Bootstrap(directord.Processor):
         if run_indicator is None:
             run_indicator = not getattr(self.args, "debug", False)
 
-        with directord.Spinner(run=run_indicator) as indicator:
+        with directord.Spinner(run=run_indicator, queue=q) as indicator:
             self.indicator = indicator
             directord_server = catalog.get("directord_server")
             if directord_server:

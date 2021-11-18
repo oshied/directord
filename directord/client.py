@@ -470,9 +470,7 @@ class Client(interface.Interface):
 
                 if block_on_task_success:
                     self.log.debug(
-                        "Job [ %s ] task sha [ %s ] callback complete",
-                        job["job_id"],
-                        block_on_task_data["job_sha3_224"],
+                        "Job [ %s ] callback complete", job["job_id"]
                     )
                     self.q_return.put(
                         (
@@ -490,10 +488,8 @@ class Client(interface.Interface):
                     )
                 else:
                     self.log.error(
-                        "Job [ %s ] task sha [ %s ] callback never"
-                        " completed",
+                        "Job [ %s ] callback never completed",
                         job["job_id"],
-                        block_on_task_data["job_sha3_224"],
                     )
                     self.q_return.put(
                         (

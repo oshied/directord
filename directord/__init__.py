@@ -467,7 +467,7 @@ class DirectordConnect:
 class Spinner(object):
     """Creates a visual indicator while normally performing actions."""
 
-    def __init__(self, run=False):
+    def __init__(self, run=False, queue=None):
         """Create an indicator thread while a job is running.
 
         Context Manager Usage:
@@ -484,11 +484,14 @@ class Spinner(object):
 
         :param run: Enable | disable debug
         :type run: Boolean
+        :param queue: Queue object to report counts on
+        :type queue: Object
         """
 
         self.job = multiprocessing.Process(target=self.indicator, daemon=True)
         self.pipe_a, self.pipe_b = multiprocessing.Pipe()
         self.run = run
+        self.queue = queue
         self.msg = "Please wait..."
 
     def __enter__(self):
@@ -516,6 +519,10 @@ class Spinner(object):
         """
 
         if self.run:
+            if self.queue:
+                msg = "Items in queue [ {} ] {}".format(
+                    self.queue.qsize(), msg
+                )
             self.pipe_b.send(msg)
         else:
             return msg
