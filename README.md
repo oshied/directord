@@ -88,7 +88,7 @@ To kickstart the bootstrapping you call  directord with the catalog file you cre
 ``` shell
 $ ~/directord/bin/directord bootstrap \
                             --catalog ~/directord-catalog.yaml  \
-                            --catalog ~/directord/share/directord/tools/directord-prod-bootstrap-catalog.yaml
+                            --catalog ~/directord/share/directord/tools/directord-dev-bootstrap-zmq.yaml
 ```
 Once that is ran you can now ssh to the server and issue all the commands from there
 
