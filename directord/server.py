@@ -664,9 +664,16 @@ class Server(interface.Interface):
             time=600,
             job_id=job_id,
         ):
-            while len(self.return_jobs[job_id]["STDOUT"].keys()) != len(
-                self.return_jobs[job_id]["_nodes"]
-            ):
+            _nodes = len(self.return_jobs[job_id]["_nodes"])
+            while True:
+                if self.return_jobs[job_id].get("FAILED"):
+                    self.log.critical(
+                        "Query job [ %s ] encountered failures.", job_id
+                    )
+                    return
+                elif len(self.return_jobs[job_id]["STDOUT"].keys()) >= _nodes:
+                    break
+
                 self.log.info("Waiting for [ %s ], QUERY to complete", job_id)
                 time.sleep(1)
 
