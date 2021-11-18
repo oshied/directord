@@ -12,7 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-__version__ = "0.11.2"
+__version__ = "0.11.3"
 __author__ = "Kevin Carter"
 __email__ = "kevin@cloudnull.com"
 __driver_default__ = "zmq"
