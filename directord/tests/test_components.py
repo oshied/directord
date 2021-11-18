@@ -676,11 +676,11 @@ class TestComponents(unittest.TestCase):
     @patch("time.sleep")
     def test_wait_url(self, mock_sleep, mock_get):
         r_500 = MagicMock()
-        r_500.response_code = 500
+        r_500.status_code = 500
         r_400 = MagicMock()
-        r_400.response_code = 400
+        r_400.status_code = 400
         r_200 = MagicMock()
-        r_200.response_code = 200
+        r_200.status_code = 200
         mock_get.side_effect = [r_500, r_400, r_200]
 
         stdout, stderr, outcome, return_info = self._wait.client(
@@ -702,7 +702,7 @@ class TestComponents(unittest.TestCase):
     @patch("time.sleep")
     def test_wait_url_fail(self, mock_sleep, mock_get):
         r_500 = MagicMock()
-        r_500.response_code = 500
+        r_500.status_code = 500
         mock_get.return_value = r_500
         stdout, stderr, outcome, return_info = self._wait.client(
             cache=tests.FakeCache(),

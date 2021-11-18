@@ -174,8 +174,8 @@ class Component(components.ComponentBase):
             count = count + 1
             try:
                 r = requests.get(url, verify=verify)
-                stdout = f"Response code was {r.response_code}"
-                if r.response_code >= 200 and r.response_code < 400:
+                stdout = f"Response code was {r.status_code}"
+                if r.status_code >= 200 and r.status_code < 400:
                     outcome = True
             except Exception as e:
                 stderr = "Exception occured while fetching url {}".format(
