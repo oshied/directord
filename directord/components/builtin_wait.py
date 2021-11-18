@@ -105,7 +105,19 @@ class Component(components.ComponentBase):
         self.log.debug("client(): job: %s, cache: %s", job, cache)
         seconds = job.get("seconds")
         url = job.get("url")
+        if url:
+            _, url = self.blueprinter(
+                content=url,
+                values=cache.get("args"),
+                allow_empty_values=True,
+            )
         cmd = job.get("command")
+        if cmd:
+            _, cmd = self.blueprinter(
+                content=cmd,
+                values=cache.get("args"),
+                allow_empty_values=True,
+            )
         retry = job.get("retry", 0)
         retry_wait = job.get("retry_wait", 0)
         insecure = job.get("insecure", False)
