@@ -11,6 +11,7 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
+
 from directord import utils
 
 
@@ -58,6 +59,22 @@ def cacheargs(func):
             arg_job["parent_id"] = utils.get_uuid()
             arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
             self.block_on_tasks.append(arg_job)
+
+        return stdout, stderr, outcome, command
+
+    return wrapper_func
+
+
+def retry(func):
+    """Retry executor."""
+
+    def wrapper_func(*args, **kwargs):
+        retry = kwargs["job"].get("retry", 1)
+        attempt = 0
+        outcome = False
+        while attempt < retry and not outcome:
+            stdout, stderr, outcome, command = func(*args, **kwargs)
+            attempt += 1
 
         return stdout, stderr, outcome, command
 

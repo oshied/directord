@@ -15,6 +15,7 @@
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import retry
 
 
 class Component(components.ComponentBase):
@@ -52,6 +53,12 @@ class Component(components.ComponentBase):
             help="Reload the systemd daemon",
         )
         self.parser.add_argument(
+            "--retry",
+            default=3,
+            type=int,
+            help="Number of times to retry",
+        )
+        self.parser.add_argument(
             "services",
             nargs="+",
             help="A space delineated list of services to manage.",
@@ -82,12 +89,14 @@ class Component(components.ComponentBase):
         else:
             data["running"] = "start"
 
+        data["retry"] = self.known_args.retry
         data["services"] = self.known_args.services
         data["daemon_reload"] = self.known_args.daemon_reload
 
         return data
 
     @cacheargs
+    @retry
     def client(self, cache, job):
         """Run service command operation.
 

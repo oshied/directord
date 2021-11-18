@@ -15,6 +15,7 @@
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import retry
 
 
 class Component(components.ComponentBase):
@@ -47,6 +48,12 @@ class Component(components.ComponentBase):
             nargs="+",
             help="A space delineated list of packages to manage.",
         )
+        self.parser.add_argument(
+            "--retry",
+            default=3,
+            type=int,
+            help="Number of times to retry",
+        )
 
     def server(self, exec_array, data, arg_vars):
         """Return data from formatted transfer action.
@@ -68,12 +75,14 @@ class Component(components.ComponentBase):
         else:
             data["state"] = "present"
 
+        data["retry"] = self.known_args.retry
         data["clear"] = self.known_args.clear_metadata
         data["packages"] = self.known_args.packages
 
         return data
 
     @cacheargs
+    @retry
     def client(self, cache, job):
         """Run file command operation.
 
