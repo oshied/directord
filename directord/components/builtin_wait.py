@@ -40,7 +40,9 @@ class Component(components.ComponentBase):
             help="Wait for the provided seconds",
         )
         condition_group.add_argument(
-            "--url", type=str, help="Wait for URL to return 2xx or 3xx"
+            "--url",
+            action="store_true",
+            help="Wait for URL to return 2xx or 3xx",
         )
         condition_group.add_argument(
             "--cmd",
@@ -55,7 +57,7 @@ class Component(components.ComponentBase):
         )
         self.parser.add_argument(
             "--retry-wait",
-            default=0,
+            default=10,
             type=int,
             help="Time to wait between retries(ignored with --seconds)",
         )
@@ -81,7 +83,7 @@ class Component(components.ComponentBase):
         if self.known_args.seconds:
             data["seconds"] = self.known_args.seconds
         elif self.known_args.url:
-            data["url"] = self.known_args.url
+            data["url"] = " ".join(self.unknown_args)
         elif self.known_args.cmd:
             data["command"] = " ".join(self.unknown_args)
         data["retry"] = self.known_args.retry
@@ -105,14 +107,14 @@ class Component(components.ComponentBase):
         self.log.debug("client(): job: %s, cache: %s", job, cache)
         seconds = job.get("seconds")
         url = job.get("url")
+        cmd = job.get("command")
         if url:
             _, url = self.blueprinter(
                 content=url,
                 values=cache.get("args"),
                 allow_empty_values=True,
             )
-        cmd = job.get("command")
-        if cmd:
+        elif cmd:
             _, cmd = self.blueprinter(
                 content=cmd,
                 values=cache.get("args"),
