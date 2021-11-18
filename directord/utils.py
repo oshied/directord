@@ -368,7 +368,7 @@ def component_lock_search():
 class Locker:
     """Context manager for multiprocessing lock object."""
 
-    def __init__(self, lock) -> None:
+    def __init__(self, lock):
         """Initialize the lock context manager.
 
         :param lock: Multiprocessing lock object
@@ -433,15 +433,16 @@ class Cache:
         :returns: Object
         """
 
-        try:
-            with open(os.path.join(self.db_path, self.encoder(key))) as f:
-                data = f.read()
-                try:
-                    return json.loads(data)
-                except json.decoder.JSONDecodeError:
-                    return data
-        except FileNotFoundError:
-            return
+        with Locker(lock=self.lock):
+            try:
+                with open(os.path.join(self.db_path, self.encoder(key))) as f:
+                    data = f.read()
+                    try:
+                        return json.loads(data)
+                    except json.decoder.JSONDecodeError:
+                        return data
+            except FileNotFoundError:
+                return
 
     def __setitem__(self, key, value):
         """Set an item in the datastore.
