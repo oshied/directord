@@ -272,6 +272,27 @@ class Manage(User):
 
         return self.analyze_data(parent_id=parent_id, parent_jobs=parent_jobs)
 
+    def analyze_all(self):
+        """Run analysis on a given parent UUID.
+
+        :param parent_id: Parent UUID
+        :type parent_id: String
+        :returns: String
+        """
+
+        data = directord.send_data(
+            socket_path=self.args.socket_path,
+            data=json.dumps(dict(manage={"list_jobs": None})),
+        )
+
+        if data:
+            data = dict(json.loads(data))
+            return self.analyze_data(
+                parent_id="All-Jobs", parent_jobs=list(data.values())
+            )
+        else:
+            return json.dumps({"no_jobs_found": "All-Jobs"})
+
     def analyze_data(self, parent_id, parent_jobs):
         """Run Parent analysis.
 
@@ -359,6 +380,7 @@ class Manage(User):
             "purge-nodes": {"purge_nodes": None},
             "analyze-parent": self.analyze_parent,
             "analyze-job": self.analyze_job,
+            "analyze-all": self.analyze_all,
         }
 
         if override and override in execution_map:
