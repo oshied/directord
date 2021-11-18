@@ -337,7 +337,7 @@ Conditional wait based on time, url, or command
 * `--seconds` **INTEGER** Wait for the provided seconds.
 * `--url` **STRING** URL to fetch and check for a 2xx or 3xx response.
 * `--cmd` **STRING** Run the provided command string and check success.
-* `--retry` **INTEGER** Number of retries on failure. Default: 0
+* `--retry` **INTEGER** Number of retries on failure. Default: 10
 * `--retry-wait` **INTEGER** Number of seconds to wait before retrying. Default: 0
 * `--insecure` **BOOLEAN** Allow insecure service connections when using SSL (works only with --url).
 
