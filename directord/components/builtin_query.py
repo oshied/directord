@@ -87,26 +87,9 @@ class Component(components.ComponentBase):
         else:
             query = None
 
-        self.block_on_tasks = list()
         arg_job = job.copy()
         query_item = arg_job.pop("query")
         targets = arg_job.get("targets", list())
-        arg_job.pop("parent_sha3_224", None)
-        arg_job.pop("parent_id", None)
-        arg_job.pop("job_sha3_224", None)
-        arg_job.pop("job_id", None)
-        arg_job["skip_cache"] = True
-        arg_job["extend_args"] = True
-        arg_job["verb"] = "ARG"
-        arg_job["args"] = {
-            "query": {self.driver.identity: {query_item: query}}
-        }
-        arg_job["parent_async_bypass"] = True
-        arg_job["job_id"] = utils.get_uuid()
-        arg_job["job_sha3_224"] = utils.object_sha3_224(obj=arg_job)
-        arg_job["parent_id"] = utils.get_uuid()
-        arg_job["parent_sha3_224"] = utils.object_sha3_224(obj=arg_job)
-        self.block_on_tasks.append(arg_job)
         if self.driver.identity in targets:
             if not job.get("no_wait"):
                 wait_job = dict(
@@ -115,13 +98,20 @@ class Component(components.ComponentBase):
                     item=query_item,
                     query_timeout=600,
                     parent_async_bypass=True,
-                    targets=targets,
+                    targets=[self.driver.identity],
                     identity=list(),
                 )
                 wait_job["job_id"] = utils.get_uuid()
                 wait_job["job_sha3_224"] = utils.object_sha3_224(obj=wait_job)
                 wait_job["parent_id"] = arg_job["parent_id"]
-                wait_job["parent_sha3_224"] = arg_job["parent_sha3_224"]
-                self.block_on_tasks.append(wait_job)
+                wait_job["parent_sha3_224"] = utils.object_sha3_224(
+                    obj=wait_job
+                )
+                self.block_on_tasks = [wait_job]
 
-        return json.dumps(query), None, True, None
+        return (
+            json.dumps({job["query"]: query}),
+            None,
+            True,
+            query,
+        )

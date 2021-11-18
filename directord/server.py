@@ -556,7 +556,12 @@ class Server(interface.Interface):
         prune_time = time.time() + 10
         poller_interval = 1
         run_jobs_thread = None
+        coordination_threads = dict()
         while True:
+            for k, v in list(coordination_threads.items()):
+                if self.terminate_process(process=v):
+                    coordination_threads.pop(k)
+
             if self.terminate_process(process=run_jobs_thread):
                 run_jobs_thread = None
 
@@ -590,7 +595,7 @@ class Server(interface.Interface):
                     identity,
                     msg_id,
                     control,
-                    _,
+                    command,
                     data,
                     info,
                     stderr,
@@ -610,6 +615,24 @@ class Server(interface.Interface):
                         stdout=stdout,
                     )
 
+                if (
+                    command == "QUERY"
+                    and control == self.driver.job_processing
+                ):
+                    if msg_id not in coordination_threads:
+                        self.log.info(
+                            "Job [ %s ], QUERY command found", msg_id
+                        )
+                        t = coordination_threads[msg_id] = self.thread(
+                            target=self._query_coordination,
+                            name=msg_id,
+                            daemon=True,
+                            kwargs={
+                                "job_id": msg_id,
+                            },
+                        )
+                        t.start()
+
             poller_interval = utils.return_poller_interval(
                 poller_time=poller_time,
                 poller_interval=poller_interval,
@@ -625,6 +648,65 @@ class Server(interface.Interface):
             if sentinel:
                 self.driver.job_close()
                 break
+
+    def _query_coordination(self, job_id):
+        """Run Query coordination.
+
+        Query coordination will poll for query job completion, aggregate data
+        and then spawn a callback job to update the query cached across all
+        workers in the environment.
+
+        :param job_id: Job Id
+        :type job_id: String
+        """
+
+        with self.timeout(
+            time=600,
+            job_id=job_id,
+        ):
+            while len(self.return_jobs[job_id]["STDOUT"].keys()) != len(
+                self.return_jobs[job_id]["_nodes"]
+            ):
+                self.log.info("Waiting for [ %s ], QUERY to complete", job_id)
+                time.sleep(1)
+
+            job_return = self.return_jobs[job_id]
+            new_task = dict()
+            new_task["skip_cache"] = True
+            new_task["extend_args"] = True
+            new_task["verb"] = "ARG"
+            query_data = dict()
+            for k, v in job_return["STDOUT"].items():
+                query_data[k] = json.loads(v)
+            new_task["args"] = {"query": query_data}
+            new_task["parent_async_bypass"] = True
+            new_task["job_id"] = utils.get_uuid()
+            new_task["job_sha3_224"] = utils.object_sha3_224(obj=new_task)
+            new_task["parent_id"] = utils.get_uuid()
+            new_task["parent_sha3_224"] = utils.object_sha3_224(obj=new_task)
+
+            targets = list(self.workers.keys())
+
+            self.create_return_jobs(
+                task=new_task["job_id"],
+                job_item=new_task,
+                targets=targets,
+            )
+
+            for target in targets:
+                self.log.debug(
+                    "Queuing QUERY ARG callback job [ %s ] for identity"
+                    " [ %s ]",
+                    new_task["job_id"],
+                    target,
+                )
+                self.send_queue.put(
+                    dict(
+                        identity=target,
+                        command=new_task["verb"],
+                        data=new_task,
+                    )
+                )
 
     def run_socket_server(self, sentinel=False):
         """Start a socket server.
