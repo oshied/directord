@@ -15,6 +15,7 @@
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import retry
 
 
 class Component(components.ComponentBase):
@@ -32,6 +33,12 @@ class Component(components.ComponentBase):
             action="store_true",
             help="Run a command in 'fire and forget' mode.",
         )
+        self.parser.add_argument(
+            "--retry",
+            default=1,
+            type=int,
+            help="Number of times to retry",
+        )
 
     def server(self, exec_array, data, arg_vars):
         """Return data from formatted transfer action.
@@ -47,11 +54,13 @@ class Component(components.ComponentBase):
 
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
         data["no_block"] = self.known_args.no_block
+        data["retry"] = self.known_args.retry
         data["command"] = " ".join(self.unknown_args)
 
         return data
 
     @cacheargs
+    @retry
     def client(self, cache, job):
         """Run file command operation.
 

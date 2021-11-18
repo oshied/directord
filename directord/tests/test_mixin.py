@@ -23,12 +23,12 @@ from directord import tests
 
 TEST_FINGER_PRINTS = """count    parent                                                    verb    exec      job
 -------  --------------------------------------------------------  ------  --------  --------------------------------------------------------
-0        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
-1        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
-2        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd
-3        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  ea5b3554e61a173c25152ad6fe29b178f66b0e3727556995f5816d7e
-4        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  a12748d70957f1f2d0ea3d2aae5af73983d8a0563f7b5a0ccd0b2767
-5        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd"""  # noqa
+0        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  e4b6223aa7e089ef41c972df012ea2b7ae309019cf00a35b4b00cf64
+1        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  9adf48fd066004bc9cf3e02670e3d1f3971c69dec353717e83be6266
+2        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3
+3        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command1  e4b6223aa7e089ef41c972df012ea2b7ae309019cf00a35b4b00cf64
+4        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command2  9adf48fd066004bc9cf3e02670e3d1f3971c69dec353717e83be6266
+5        5bc535e8fa927e4a4ab9ca188f8b560935b32a00dacc4f9e76b05d08  RUN     command3  40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3"""  # noqa
 
 
 TEST_ORCHESTRATION_READ = """---
@@ -46,6 +46,7 @@ TEST_ORCHESTRATION_READ = """---
 class TestMixin(tests.TestConnectionBase):
     def setUp(self):
         super().setUp()
+        self.maxDiff = None
         self.args = tests.FakeArgs()
         self.mixin = mixin.Mixin(args=self.args)
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
@@ -83,10 +84,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "9bbc435b49b5104da33093b22402c75a263a2d1665bcfc6faa29249e",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
@@ -103,10 +105,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "9bbc435b49b5104da33093b22402c75a263a2d1665bcfc6faa29249e",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test_target"],
@@ -124,10 +127,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "9bbc435b49b5104da33093b22402c75a263a2d1665bcfc6faa29249e",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                 }
@@ -144,10 +148,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "9bbc435b49b5104da33093b22402c75a263a2d1665bcfc6faa29249e",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "restrict": "Restrictedsha3_224",
@@ -165,10 +170,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "long '{{ jinja }}' quoted string string",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "df28f8fb5a4c06c52a3bf4f41035e71d1c641736ef424b3582eb30f2",  # noqa
+                    "job_sha3_224": "9bbc435b49b5104da33093b22402c75a263a2d1665bcfc6faa29249e",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "parent_id": "ParentID",
@@ -336,10 +342,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -375,10 +382,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": [
@@ -411,10 +419,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -446,10 +455,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3",  # noqa
                     "return_raw": False,
                     "skip_cache": True,
                     "targets": ["test1", "test2", "test3"],
@@ -480,10 +490,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3",  # noqa
                     "return_raw": True,
                     "skip_cache": False,
                     "targets": ["test1", "test2", "test3"],
@@ -548,10 +559,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "command3",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "f23220892ee6f80b9934a5b014a808e21904862d1c3eba3c470991dd",  # noqa
+                    "job_sha3_224": "40a7e8a1ca03e22337791ff51665494440c5463269c88228caa49bc3",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],
@@ -579,10 +591,11 @@ class TestMixin(tests.TestConnectionBase):
                 {
                     "verb": "RUN",
                     "no_block": False,
+                    "retry": 1,
                     "command": "command 1",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "36796bb09a3838fa2c8bcb802eb9494546289a6fd6ed988579524ee1",  # noqa
+                    "job_sha3_224": "04adb60da1a30eb6da60da3ff967fc4d025c39e45ec1ab021835d946",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                     "targets": ["test"],
