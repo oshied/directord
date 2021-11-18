@@ -396,6 +396,11 @@ def _args(exec_args=None):
         help="Analyze a given job ID.",
         metavar="STRING",
     )
+    manage_group.add_argument(
+        "--analyze-all",
+        help="Analyze all jobs in the datastore.",
+        action="store_true",
+    )
     parser_bootstrap = subparsers.add_parser(
         "bootstrap",
         help=(
