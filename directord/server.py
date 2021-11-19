@@ -861,21 +861,37 @@ class Server(interface.Interface):
         )
 
         if "machine_id" in metadata:
-            machine_id = metadata.get("machine_id")
-            worker = self.workers.get(identity) or dict()
-            worker_machine_id = worker.get("machine_id")
-            if worker_machine_id and worker_machine_id != machine_id:
-                self.log.fatal(
-                    "Worker [ %s ] not added. Duplicate machines with the"
-                    " same hostname detected. Existing [ %s ] != Incoming"
-                    " [ %s ]. For this node to be added, fix the hostname,"
-                    " reset the machine id, or purge the existing workers"
-                    " and re-enroll the nodes.",
-                    identity,
-                    machine_id,
-                    worker_machine_id,
-                )
-                return
+            machine_id = metadata["machine_id"]
+            if machine_id:
+                worker = self.workers.get(identity) or dict()
+                worker_machine_id = worker.get("machine_id")
+                if worker_machine_id and worker_machine_id != machine_id:
+                    self.log.fatal(
+                        "Worker [ %s ] not added. Duplicate machines with the"
+                        " same hostname detected. Existing [ %s ] != Incoming"
+                        " [ %s ]. For this node to be added, fix the"
+                        " hostname, reset the machine id, or purge the"
+                        " existing workers and re-enroll the nodes.",
+                        identity,
+                        machine_id,
+                        worker_machine_id,
+                    )
+                    return
+
+                for k, v in self.workers.items():
+                    if machine_id == v.get("machine_id") and identity != k:
+                        self.log.fatal(
+                            "Worker [ %s ] not added. Duplicate machines IDs"
+                            " detected. Existing machine [ %s ] and the"
+                            " Incoming node have the same Machine ID. For"
+                            " While this shouldn't be possible, this will"
+                            " need to be fixed before the node can be added"
+                            " to the system.",
+                            identity,
+                            k,
+                            machine_id,
+                        )
+                        return
 
         self.workers[identity] = metadata
 
