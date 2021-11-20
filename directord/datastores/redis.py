@@ -94,9 +94,7 @@ class BaseDocument:
         """Yield a tuple for key and value."""
 
         for item in self.datastore.keys("*"):
-            value = self.__getitem__(item)
-            if value:
-                yield item.decode(), value
+            yield item.decode(), self.__getitem__(item)
 
     def keys(self):
         """Return an array of all keys.

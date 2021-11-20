@@ -231,10 +231,10 @@ class BaseDriver:
         """
 
         unique_identifiers = [
+            "/sys/class/dmi/id/product_uuid",
             "/run/machine-id",
             "/etc/machine-id",
             "/var/lib/dbus/machine-id",
-            "/sys/class/dmi/id/product_uuid",
             "/proc/sys/kernel/random/boot_id",
         ]
         for identifier in unique_identifiers:
