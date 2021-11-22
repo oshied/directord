@@ -28,6 +28,7 @@ REQUIREMENTS = {
     "redis": ["redis"],
     "oslo_messaging": ["oslo_messaging[amqp1]"],
     "zmq": ["pyzmq"],
+    "grpc": ["grpcio<=1.26.0", "grpcio-tools<=1.26.0", "protobuf"],
 }
 REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 

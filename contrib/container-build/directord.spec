@@ -49,6 +49,8 @@ Recommends:       python3-zmq
 Recommends:       python3-redis
 Recommends:       python3-flask
 Recommends:       python3-oslo-messaging
+Recommends:       python3-grpcio <= 1.26.0
+Recommends:       python3-protobuf
 
 # Source Recommends
 # TODO(cloudnull): This needs to be packaged officially
