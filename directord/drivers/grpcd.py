@@ -361,21 +361,36 @@ class MessageServiceClient(object):
         Adds the channel to the generated client stub.
         """
         self.log = logger
+        self.server_address = server_address
+        self.server_port = server_port
+        self.secure = secure
+        self.channel = None
+        self.stub = None
+        self.connect()
+
+    def connect(self):
+        """Connect to channel."""
+        # NOTE(mwhahaha): work around for not fork friendly problems
+        if self.channel:
+            del self.channel
+        if self.stub:
+            del self.stub
+
         wait_for_channel = threading.Event()
 
         def wait_for_connection(connectivity):
-            logger.debug("wait_for_connection: %s", connectivity)
+            self.log.debug("wait_for_connection: %s", connectivity)
             if connectivity in [grpc.ChannelConnectivity.READY]:
                 wait_for_channel.set()
-        self.channel = grpc.insecure_channel(f"{server_address}:{server_port}")
+
+        self.channel = grpc.insecure_channel(
+            f"{self.server_address}:{self.server_port}"
+        )
         self.channel.subscribe(wait_for_connection, try_to_connect=True)
         self.stub = msg_pb2_grpc.MessageServiceStub(self.channel)
         self.log.debug("Waiting for channel connectivity...")
         wait_for_channel.wait()
         self.log.debug("Channel ready...")
-
-    def connect(self, channel):
-        """Connect to channel."""
 
     def close(self):
         """Close channels."""
@@ -666,11 +681,13 @@ class Driver(drivers.BaseDriver):
     def __copy__(self):
         """Return a new copy of the driver."""
 
-        return Driver(
+        drv = Driver(
             args=self.args,
             encrypted_traffic_data=self.encrypted_traffic_data,
             interface=self.interface,
         )
+        drv._backend_connection(force=True)
+        return drv
 
     def _backend_bind(self):
         """Create backend server."""
@@ -695,7 +712,7 @@ class Driver(drivers.BaseDriver):
         )
         self._backend_connection()
 
-    def _backend_connection(self):
+    def _backend_connection(self, force=False):
         """Create backend connection."""
         if self._client:
             self.log.debug("Backend already configured, ignoring bind")
@@ -703,6 +720,8 @@ class Driver(drivers.BaseDriver):
         self._client = MessageServiceClient(
             self.log, self.server_address, self.grpc_port, self.args.grpc_ssl
         )
+        if force:
+            self._client.connect()
         self.log.info(
             "grpc client to %s:%s started", self.server_address, self.grpc_port
         )
