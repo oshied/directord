@@ -23,11 +23,12 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 
 REQUIREMENTS = {
-    "dev": ["podman-py"],
+    "dev": ["podman-py", "grpcio-tools<=1.26.0"],
     "test": ["flake8", "coverage"],
     "redis": ["redis"],
     "oslo_messaging": ["oslo_messaging[amqp1]"],
     "zmq": ["pyzmq"],
+    "grpc": ["grpcio<=1.26.0", "protobuf"],
 }
 REQUIREMENTS["all"] = [item for line in REQUIREMENTS.values() for item in line]
 

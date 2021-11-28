@@ -68,6 +68,8 @@ as a point of correlation.
 | Directord (async)       | ZMQ Driver       | 15                       |
 | Directord               | Messaging Driver | 101                      |
 | Directord (async)       | Messaging Driver | 99                       |
+| Directord               | GRPC Driver      |                          |
+| Directord (async)       | GRPC Driver      |                          |
 | Ansible                 | Defaults         | 1947                     |
 | Ansible                 | Pipelining       | 1556                     |
 | Ansible (free strategy) | Pipelining       | 949                      |

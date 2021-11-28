@@ -1,0 +1,31 @@
+---
+
+directord_server:
+  jobs:
+  - ADD: dev-setup.sh dev-setup.sh
+  - RUN: sudo DRIVER=grpcd bash dev-setup.sh
+  - RUN: sudo /opt/directord/bin/directord-server-systemd
+  - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl enable directord-server.service
+  - RUN: sudo systemctl restart directord-server.service
+
+directord_clients:
+  jobs:
+  - ADD: dev-setup.sh dev-setup.sh
+  - RUN: sudo DRIVER=grpcd bash dev-setup.sh
+  - RUN: sudo /opt/directord/bin/directord-client-systemd
+  - RUN: |-
+      sudo python3 <<EOC
+      import yaml
+      try:
+          with open('/etc/directord/config.yaml') as f:
+              config = yaml.safe_load(f)
+      except FileNotFoundError:
+          config = dict()
+      config['grpc_server_address'] = "{{ directord_server['targets'][0]['host'] }}"
+      with open('/etc/directord/config.yaml', 'w') as f:
+          f.write(yaml.safe_dump(config, default_flow_style=False))
+      EOC
+  - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl enable directord-client.service
+  - RUN: sudo systemctl restart directord-client.service
