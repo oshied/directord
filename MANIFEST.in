@@ -1,4 +1,4 @@
 recursive-include directord/components *
 recursive-include directord/datastores *
-recursive-include directord/drivers/generated *
+recursive-include directord/drivers *
 recursive-include directord/templates *

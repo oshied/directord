@@ -3,24 +3,31 @@ on: [pull_request]
 jobs:
   py_black:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip tox
-      - name: If needed, commit black changes to the pull request
-        run: |
-          if ! tox -e black-check; then
-            tox -e black-format
-            git config --global user.name '${{ github.event.pull_request.user.login }}'
-            git config --global user.email '${{ github.event.pull_request.user.login }}@users.noreply.github.com'
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-            git commit -am "FIX: Auto format Python code with Black"
-            git push
-          fi
+    - name: Check out the repo
+      uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip tox
+    - name: Check python code syntax
+      run: |
+        tox -e black-check -- --target-version py$(echo "${{ matrix.python-version }}" | sed 's/\.//')
+    - name: Attempt to auto commit changes when required
+      if: failure()
+      run: |
+        tox -e black-format -- --target-version py$(echo "${{ matrix.python-version }}" | sed 's/\.//')
+        git config --global user.name '${{ github.event.pull_request.user.login }}'
+        git config --global user.email '${{ github.event.pull_request.user.login }}@users.noreply.github.com'
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+        git commit -am "FIX: Auto format Python code with Black"
+        git push
 
   py_coverage:
     runs-on: ubuntu-latest

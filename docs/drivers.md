@@ -28,7 +28,7 @@ security of an environment however both methods have some pros and cons.
 | Shared Key  | Plain Text  |
 | Curve25519  | Encryption  |
 
-### Shared Key
+### Shared Key Authentication
 
 **Shared Key** is the easiest method to setup and only requires a shared token
 be generated on all client and server nodes. **Shared Key** is only an
@@ -51,7 +51,7 @@ Client Setup
 $ directord --zmq-shared-key ${SECRET_TOKEN} client
 ```
 
-### Curve
+### Curve Encryption
 
 **Curve25519** is a more complicated method to setup as keys have to be
 generated and synchronized to all client and server nodes. While generating
@@ -105,7 +105,7 @@ $ directord orchestrate sync-curve-keys.yaml
   defining a restriction on the CLI. Once files are synchronized the client
   will need to be configured and restarted.
 
-### Key Rotation
+#### Curve Key Rotation
 
 When encryption is enabled it is important to be able to rotate keys and
 restart services whenever required. Directord makes this simple using both its
@@ -175,6 +175,7 @@ Once the dependecies are installed, enable and start the server process.
 $ sudo systemctl enable qdrouterd.service
 $ sudo systemctl start qdrouterd.service
 ```
+
 ### Encryption with SSL
 
 Encryption with SSL can be used to encrypt messages when using the `messaging`
@@ -253,3 +254,29 @@ SSL configured can be configured manually with the following steps.
             requireSSL: true
 			saslMechanisms: ANONYMOUS
 		}
+
+## GRPC
+
+Status: `Development`
+
+Used for distributed mesh communication between the server and client nodes.
+No additional setup is required outside of the initial package installation.
+
+### Configuration
+
+With the Directord needs to be configured to run with the `grpc` driver.
+To do this configuration edit the `/etc/directord/config.yaml` file and add
+the following options.
+
+```yaml
+driver: grpc
+grpc_server_address: 127.0.0.1
+```
+
+### Encryption
+
+TBD
+
+### Tuning
+ 
+TBD

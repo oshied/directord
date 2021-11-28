@@ -1,0 +1,79 @@
+// generate files
+// python3 -m grpc_tools.protoc -I . --python_out=generated/ --grpc_python_out=generated msg.proto && sed -i -E 's/^import.*_pb2/from . \0/' ./generated/*.py
+// Syntax version
+syntax = "proto3";
+
+// Service definition
+service MessageService {
+    rpc GetMessage (GetMessageRequest) returns (MessageResponse);
+    rpc PutMessage (PutMessageRequest) returns (Status);
+    rpc MessageCheck (CheckRequest) returns (CheckResponse);
+    rpc GetJob (GetJobRequest) returns (JobResponse);
+    rpc PutJob (PutJobRequest) returns (Status);
+    rpc JobCheck (CheckRequest) returns (CheckResponse);
+    rpc PurgeQueues (BasicRequest) returns (Status);
+}
+
+// Message types
+message Status {
+    string uuid = 1;
+    bool result = 2;
+}
+
+message MessageData {
+    string identity = 1;
+    string msg_id = 2;
+    string control = 3;
+    string command = 4;
+    string data = 5;
+    string info = 6;
+    string stderr = 7;
+    string stdout = 8;
+}
+
+message MessageResponse {
+    string uuid = 1;
+    bool status = 2;
+    string target = 3;
+    MessageData data = 4;
+}
+
+message GetMessageRequest {
+    string target = 1;
+}
+
+message PutMessageRequest {
+    string target = 1;
+    MessageData data = 2;
+}
+
+message JobResponse {
+    string uuid = 1;
+    bool status = 2;
+    string target = 3;
+    MessageData data = 4;
+}
+
+message GetJobRequest {
+    string target = 1;
+}
+
+message PutJobRequest {
+    string target = 1;
+    MessageData data = 2;
+}
+
+message CheckRequest {
+    string target = 3;
+}
+
+message CheckResponse {
+    string target = 1;
+    bool has_data = 2;
+}
+
+message BasicRequest {
+    bool verbose = 1;
+}
+
+
