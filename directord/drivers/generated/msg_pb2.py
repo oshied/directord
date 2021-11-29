@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\tmsg.proto\"&\n\x06Status\x12\x0c\n\x04uuid\x18\x01 \x01(\t\x12\x0e\n\x06result\x18\x02 \x01(\x08\"\x8d\x01\n\x0bMessageData\x12\x10\n\x08identity\x18\x01 \x01(\t\x12\x0e\n\x06msg_id\x18\x02 \x01(\t\x12\x0f\n\x07\x63ontrol\x18\x03 \x01(\t\x12\x0f\n\x07\x63ommand\x18\x04 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\t\x12\x0c\n\x04info\x18\x06 \x01(\t\x12\x0e\n\x06stderr\x18\x07 \x01(\t\x12\x0e\n\x06stdout\x18\x08 \x01(\t\"[\n\x0fMessageResponse\x12\x0c\n\x04uuid\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0e\n\x06target\x18\x03 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x04 \x01(\x0b\x32\x0c.MessageData\"#\n\x11GetMessageRequest\x12\x0e\n\x06target\x18\x01 \x01(\t\"?\n\x11PutMessageRequest\x12\x0e\n\x06target\x18\x01 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x0c.MessageData\"W\n\x0bJobResponse\x12\x0c\n\x04uuid\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0e\n\x06target\x18\x03 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x04 \x01(\x0b\x32\x0c.MessageData\"\x1f\n\rGetJobRequest\x12\x0e\n\x06target\x18\x01 \x01(\t\";\n\rPutJobRequest\x12\x0e\n\x06target\x18\x01 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x0c.MessageData\"\x1e\n\x0c\x43heckRequest\x12\x0e\n\x06target\x18\x03 \x01(\t\"1\n\rCheckResponse\x12\x0e\n\x06target\x18\x01 \x01(\t\x12\x10\n\x08has_data\x18\x02 \x01(\x08\"\x1f\n\x0c\x42\x61sicRequest\x12\x0f\n\x07verbose\x18\x01 \x01(\x08\x32\xbb\x02\n\x0eMessageService\x12\x32\n\nGetMessage\x12\x12.GetMessageRequest\x1a\x10.MessageResponse\x12)\n\nPutMessage\x12\x12.PutMessageRequest\x1a\x07.Status\x12-\n\x0cMessageCheck\x12\r.CheckRequest\x1a\x0e.CheckResponse\x12&\n\x06GetJob\x12\x0e.GetJobRequest\x1a\x0c.JobResponse\x12!\n\x06PutJob\x12\x0e.PutJobRequest\x1a\x07.Status\x12)\n\x08JobCheck\x12\r.CheckRequest\x1a\x0e.CheckResponse\x12%\n\x0bPurgeQueues\x12\r.BasicRequest\x1a\x07.Statusb\x06proto3')
+  serialized_pb=_b('\n\tmsg.proto\"(\n\x06Status\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06result\x18\x02 \x01(\x08\"\x8d\x01\n\x0bMessageData\x12\x10\n\x08identity\x18\x01 \x01(\t\x12\x0e\n\x06msg_id\x18\x02 \x01(\t\x12\x0f\n\x07\x63ontrol\x18\x03 \x01(\t\x12\x0f\n\x07\x63ommand\x18\x04 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\t\x12\x0c\n\x04info\x18\x06 \x01(\t\x12\x0e\n\x06stderr\x18\x07 \x01(\t\x12\x0e\n\x06stdout\x18\x08 \x01(\t\"]\n\x0fMessageResponse\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0e\n\x06target\x18\x03 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x04 \x01(\x0b\x32\x0c.MessageData\"3\n\x11GetMessageRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\"O\n\x11PutMessageRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x03 \x01(\x0b\x32\x0c.MessageData\"Y\n\x0bJobResponse\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0e\n\x06target\x18\x03 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x04 \x01(\x0b\x32\x0c.MessageData\"/\n\rGetJobRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\"K\n\rPutJobRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\x12\x1a\n\x04\x64\x61ta\x18\x03 \x01(\x0b\x32\x0c.MessageData\".\n\x0c\x43heckRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\"A\n\rCheckResponse\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0e\n\x06target\x18\x02 \x01(\t\x12\x10\n\x08has_data\x18\x03 \x01(\x08\"/\n\x0c\x42\x61sicRequest\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0f\n\x07verbose\x18\x02 \x01(\x08\x32\xbb\x02\n\x0eMessageService\x12\x32\n\nGetMessage\x12\x12.GetMessageRequest\x1a\x10.MessageResponse\x12)\n\nPutMessage\x12\x12.PutMessageRequest\x1a\x07.Status\x12-\n\x0cMessageCheck\x12\r.CheckRequest\x1a\x0e.CheckResponse\x12&\n\x06GetJob\x12\x0e.GetJobRequest\x1a\x0c.JobResponse\x12!\n\x06PutJob\x12\x0e.PutJobRequest\x1a\x07.Status\x12)\n\x08JobCheck\x12\r.CheckRequest\x1a\x0e.CheckResponse\x12%\n\x0bPurgeQueues\x12\r.BasicRequest\x1a\x07.Statusb\x06proto3')
 )
 
 
@@ -34,7 +34,7 @@ _STATUS = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='uuid', full_name='Status.uuid', index=0,
+      name='req_id', full_name='Status.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -60,7 +60,7 @@ _STATUS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=13,
-  serialized_end=51,
+  serialized_end=53,
 )
 
 
@@ -139,8 +139,8 @@ _MESSAGEDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=54,
-  serialized_end=195,
+  serialized_start=56,
+  serialized_end=197,
 )
 
 
@@ -152,7 +152,7 @@ _MESSAGERESPONSE = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='uuid', full_name='MessageResponse.uuid', index=0,
+      name='req_id', full_name='MessageResponse.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -191,8 +191,8 @@ _MESSAGERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=197,
-  serialized_end=288,
+  serialized_start=199,
+  serialized_end=292,
 )
 
 
@@ -204,8 +204,15 @@ _GETMESSAGEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='GetMessageRequest.target', index=0,
+      name='req_id', full_name='GetMessageRequest.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='target', full_name='GetMessageRequest.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -222,8 +229,8 @@ _GETMESSAGEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=290,
-  serialized_end=325,
+  serialized_start=294,
+  serialized_end=345,
 )
 
 
@@ -235,15 +242,22 @@ _PUTMESSAGEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='PutMessageRequest.target', index=0,
+      name='req_id', full_name='PutMessageRequest.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='data', full_name='PutMessageRequest.data', index=1,
-      number=2, type=11, cpp_type=10, label=1,
+      name='target', full_name='PutMessageRequest.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='data', full_name='PutMessageRequest.data', index=2,
+      number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -260,8 +274,8 @@ _PUTMESSAGEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=327,
-  serialized_end=390,
+  serialized_start=347,
+  serialized_end=426,
 )
 
 
@@ -273,7 +287,7 @@ _JOBRESPONSE = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='uuid', full_name='JobResponse.uuid', index=0,
+      name='req_id', full_name='JobResponse.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -312,8 +326,8 @@ _JOBRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=392,
-  serialized_end=479,
+  serialized_start=428,
+  serialized_end=517,
 )
 
 
@@ -325,8 +339,15 @@ _GETJOBREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='GetJobRequest.target', index=0,
+      name='req_id', full_name='GetJobRequest.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='target', full_name='GetJobRequest.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -343,8 +364,8 @@ _GETJOBREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=481,
-  serialized_end=512,
+  serialized_start=519,
+  serialized_end=566,
 )
 
 
@@ -356,15 +377,22 @@ _PUTJOBREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='PutJobRequest.target', index=0,
+      name='req_id', full_name='PutJobRequest.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='data', full_name='PutJobRequest.data', index=1,
-      number=2, type=11, cpp_type=10, label=1,
+      name='target', full_name='PutJobRequest.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='data', full_name='PutJobRequest.data', index=2,
+      number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -381,8 +409,8 @@ _PUTJOBREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=514,
-  serialized_end=573,
+  serialized_start=568,
+  serialized_end=643,
 )
 
 
@@ -394,8 +422,15 @@ _CHECKREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='CheckRequest.target', index=0,
-      number=3, type=9, cpp_type=9, label=1,
+      name='req_id', full_name='CheckRequest.req_id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='target', full_name='CheckRequest.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -412,8 +447,8 @@ _CHECKREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=575,
-  serialized_end=605,
+  serialized_start=645,
+  serialized_end=691,
 )
 
 
@@ -425,14 +460,59 @@ _CHECKRESPONSE = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='target', full_name='CheckResponse.target', index=0,
+      name='req_id', full_name='CheckResponse.req_id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='has_data', full_name='CheckResponse.has_data', index=1,
+      name='target', full_name='CheckResponse.target', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='has_data', full_name='CheckResponse.has_data', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=693,
+  serialized_end=758,
+)
+
+
+_BASICREQUEST = _descriptor.Descriptor(
+  name='BasicRequest',
+  full_name='BasicRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='req_id', full_name='BasicRequest.req_id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='verbose', full_name='BasicRequest.verbose', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -450,39 +530,8 @@ _CHECKRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=607,
-  serialized_end=656,
-)
-
-
-_BASICREQUEST = _descriptor.Descriptor(
-  name='BasicRequest',
-  full_name='BasicRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='verbose', full_name='BasicRequest.verbose', index=0,
-      number=1, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=658,
-  serialized_end=689,
+  serialized_start=760,
+  serialized_end=807,
 )
 
 _MESSAGERESPONSE.fields_by_name['data'].message_type = _MESSAGEDATA
@@ -587,8 +636,8 @@ _MESSAGESERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=692,
-  serialized_end=1007,
+  serialized_start=810,
+  serialized_end=1125,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetMessage',

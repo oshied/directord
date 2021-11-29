@@ -19,6 +19,7 @@ import queue
 import random
 import threading
 import time
+import uuid
 
 try:
     import grpc
@@ -240,21 +241,22 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         :returns: MessageResponse
         """
         target = request.target
-        self.log.debug("-> GetMessage Request: %s", request)
+        req_id = request.req_id
+        self.log.debug("%s | -> GetMessage Request: %s", req_id, request)
 
         q = MessageQueue.instance()
         status = True
         job_data = q.get_from_queue(target)
 
         if not job_data:
-            self.log.debug("! No messages for %s", target)
+            self.log.debug("%s | ! No messages for %s", req_id, target)
             status = False
             job_data = None
 
         response = msg_pb2.MessageResponse(
-            uuid="uuid!", status=status, target=target, data=job_data
+            req_id=req_id, status=status, target=target, data=job_data
         )
-        self.log.debug("<- GetMessage Response: %s", response)
+        self.log.debug("%s | <- GetMessage Response: %s", req_id, response)
         return response
 
     def GetJob(self, request, context):
@@ -267,21 +269,22 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         :returns: JobResponse
         """
         target = request.target
-        self.log.debug("-> GetJob Request: %s", request)
+        req_id = request.req_id
+        self.log.debug("%s | -> GetJob Request: %s", req_id, request)
 
         q = JobQueue.instance()
         status = True
         job_data = q.get_from_queue(target)
 
         if not job_data:
-            self.log.debug("! No jobs for %s", target)
+            self.log.debug("%s | ! No jobs for %s", req_id, target)
             status = False
             job_data = None
 
         response = msg_pb2.JobResponse(
-            uuid="uuid!", status=status, target=target, data=job_data
+            req_id=req_id, status=status, target=target, data=job_data
         )
-        self.log.debug("<- GetJob Response: %s", response)
+        self.log.debug("%s | <- GetJob Response: %s", req_id, response)
         return response
 
     def PutMessage(self, request, context):
@@ -294,15 +297,16 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         :returns: Status
         """
         target = request.target
+        req_id = request.req_id
         msg = request.data
 
-        self.log.debug("-> PutMessage Request: %s", request)
+        self.log.debug("%s | -> PutMessage Request: %s", req_id, request)
         q = MessageQueue.instance()
         q.add_queue(target, msg)
-        self.log.debug("+ We added message to queue (%s)", target)
+        self.log.debug("%s | + We added message to queue (%s)", req_id, target)
 
-        status = msg_pb2.Status(uuid="uuid!", result=True)
-        self.log.debug("<- PutMessage Response: %s", status)
+        status = msg_pb2.Status(req_id=req_id, result=True)
+        self.log.debug("%s | <- PutMessage Response: %s", req_id, status)
         return status
 
     def PutJob(self, request, context):
@@ -315,28 +319,32 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         :returns: Status
         """
         target = request.target
+        req_id = request.req_id
         msg = request.data
 
-        self.log.debug("-> PutJob Request: %s", request)
+        self.log.debug("%s | -> PutJob Request: %s", req_id, request)
         q = JobQueue.instance()
         q.add_queue(target, msg)
-        self.log.debug("+ We added job to queue (%s)", target)
+        self.log.debug("%s | + We added job to queue (%s)", req_id, target)
 
-        status = msg_pb2.Status(uuid="uuid!", result=True)
-        self.log.debug("<- PutJob Response: %s", status)
+        status = msg_pb2.Status(req_id=req_id, result=True)
+        self.log.debug("%s | <- PutJob Response: %s", req_id, status)
         return status
 
     def MessageCheck(self, request, context):
         """Check if messages in queue."""
-        self.log.debug("-> Message Check: %s", request.target)
+        self.log.debug(
+            "%s | -> Message Check: %s", request.req_id, request.target
+        )
         return msg_pb2.CheckResponse(
+            req_id=request.req_id,
             target=request.target,
             has_data=MessageQueue.instance().check_queue(request.target),
         )
 
     def JobCheck(self, request, context):
         """Check if jobs in queue."""
-        self.log.debug("-> Job Check: %s", request.target)
+        self.log.debug("%s | -> Job Check: %s", request.req_id, request.target)
         return msg_pb2.CheckResponse(
             target=request.target,
             has_data=JobQueue.instance().check_queue(request.target),
@@ -344,11 +352,13 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
 
     def PurgeQueues(self, request, context):
         """Nuke queues."""
-        self.log.warning("Purging message and job queues.")
+        self.log.warning(
+            "%s | Purging message and job queues.", request.req_id
+        )
         MessageQueue.instance().purge_queue()
         JobQueue.instance().purge_queue()
         # print("++ purging queue")
-        status = msg_pb2.Status(uuid="uuid!", result=True)
+        status = msg_pb2.Status(req_id=request.req_id, result=True)
         # print(f"<- Response: {status}")
         return status
 
@@ -402,22 +412,29 @@ class MessageServiceClient(object):
         if not self.stub:
             raise Exception("Message request after close")
 
-        request = msg_pb2.GetMessageRequest(target=target)
+        request = msg_pb2.GetMessageRequest(
+            req_id=str(uuid.uuid1()), target=target
+        )
 
         try:
             response = self.stub.GetMessage(request)
-            self.log.debug("get_message: Request OK.")
+            self.log.debug("%s | get_message: Request OK.", request.req_id)
             if response.status:
-                self.log.debug("get_message: Message fetched.")
+                self.log.debug(
+                    "%s | get_message: Message fetched.", request.req_id
+                )
                 # print(response)
                 return response.target, response.data
             else:
-                self.log.debug("get_message: No message found.")
+                self.log.debug(
+                    "%s | get_message: No message found.", request.req_id
+                )
                 # print(response)
                 return target, None
         except grpc.RpcError as err:
             self.log.error(
-                "get_message: %s, %s, %s",
+                "%s | get_message: %s, %s, %s",
+                request.req_id,
                 err.code().name,
                 err.code().value,
                 err.details(),
@@ -434,22 +451,25 @@ class MessageServiceClient(object):
         if not self.stub:
             raise Exception("Job request after close")
 
-        request = msg_pb2.GetJobRequest(target=target)
+        request = msg_pb2.GetJobRequest(
+            req_id=str(uuid.uuid1()), target=target
+        )
 
         try:
             response = self.stub.GetJob(request)
-            self.log.debug("get_job: Request OK.")
+            self.log.debug("%s | get_job: Request OK.", request.req_id)
             if response.status:
-                self.log.debug("get_job: Job fetched.")
+                self.log.debug("%s | get_job: Job fetched.", request.req_id)
                 # print(response)
                 return response.target, response.data
             else:
-                self.log.debug("get_job: No job found.")
+                self.log.debug("%s | get_job: No job found.", request.req_id)
                 # print(response)
                 return target, None
         except grpc.RpcError as err:
             self.log.error(
-                "get_job: %s, %s, %s",
+                "%s | get_job: %s, %s, %s",
+                request.req_id,
                 err.code().name,
                 err.code().value,
                 err.details(),
@@ -493,17 +513,22 @@ class MessageServiceClient(object):
             stderr=stderr,
             stdout=stdout,
         )
-        request = msg_pb2.PutMessageRequest(target=target, data=message)
-        self.log.debug("put_message: request %s", request)
+        request = msg_pb2.PutMessageRequest(
+            req_id=str(uuid.uuid1()), target=target, data=message
+        )
+        self.log.debug("%s | put_message: request %s", request.req_id, request)
 
         try:
             response = self.stub.PutMessage(request)
-            self.log.debug("put_message: Message submitted")
+            self.log.debug(
+                "%s | put_message: Message submitted", request.req_id
+            )
             # print(response)
             return response.result
         except grpc.RpcError as err:
             self.log.error(
-                "put_message: %s, %s, %s",
+                "%s | put_message: %s, %s, %s",
+                request.req_id,
                 err.code().name,
                 err.code().value,
                 err.details(),
@@ -547,17 +572,20 @@ class MessageServiceClient(object):
             stderr=stderr,
             stdout=stdout,
         )
-        request = msg_pb2.PutJobRequest(target=target, data=job)
-        self.log.debug("put_job: request %s", request)
+        request = msg_pb2.PutJobRequest(
+            req_id=str(uuid.uuid1()), target=target, data=job
+        )
+        self.log.debug("%s | put_job: request %s", request.req_id, request)
 
         try:
             response = self.stub.PutJob(request)
-            self.log.debug("put_job: Job submitted")
+            self.log.debug("%s | put_job: Job submitted", request.req_id)
             # print(response)
             return response.result
         except grpc.RpcError as err:
             self.log.error(
-                "put_job: %s, %s, %s",
+                "%s | put_job: %s, %s, %s",
+                request.req_id,
                 err.code().name,
                 err.code().value,
                 err.details(),
@@ -569,14 +597,15 @@ class MessageServiceClient(object):
         """Check if messages are in queue."""
         if not self.stub:
             raise Exception("Job request after close")
-        request = msg_pb2.CheckRequest(target=target)
+        request = msg_pb2.CheckRequest(req_id=str(uuid.uuid1()), target=target)
         try:
             response = self.stub.MessageCheck(request)
             # self.log.debug("message_check: %s", response.has_data)
             return response.has_data
         except grpc.RpcError as err:
             self.log.error(
-                "message_check: %s, %s, %s",
+                "%s | message_check: %s, %s, %s",
+                request.req_id,
                 err.code().name,
                 err.code().value,
                 err.details(),
@@ -588,14 +617,15 @@ class MessageServiceClient(object):
         """Check if jobs are in queue."""
         if not self.stub:
             raise Exception("Job request after close")
-        request = msg_pb2.CheckRequest(target=target)
+        request = msg_pb2.CheckRequest(req_id=str(uuid.uuid1()), target=target)
         try:
             response = self.stub.JobCheck(request)
             # self.log.debug("job_check: %s", response.has_data)
             return response.has_data
         except grpc.RpcError as err:
             self.log.error(
-                "job_check: %s, %s, %s",
+                "%s | job_check: %s, %s, %s",
+                request.req_id,
                 err.code().name,
                 err.code().value,
                 err.details(),
@@ -607,14 +637,15 @@ class MessageServiceClient(object):
         """Empty queues."""
         if not self.stub:
             raise Exception("Message request after close")
-        request = msg_pb2.BasicRequest(verbose=False)
+        request = msg_pb2.BasicRequest(req_id=str(uuid.uuid1()), verbose=False)
         try:
             response = self.stub.PurgeQueues(request)
-            self.log.warning("Queue purged")
+            self.log.warning("%s | Queue purged", request.req_id)
             return response.status
         except grpc.RpcError as err:
             self.log.error(
-                "purge_queue: %s, %s, %s",
+                "%s | purge_queue: %s, %s, %s",
+                request.req_id,
                 err.code().name,
                 err.code().value,
                 err.details(),
