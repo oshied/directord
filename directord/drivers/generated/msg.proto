@@ -1,5 +1,5 @@
 // generate files
-// python3 -m grpc_tools.protoc -I . --python_out=generated/ --grpc_python_out=generated msg.proto && sed -i -E 's/^import.*_pb2/from . \0/' ./generated/*.py
+// python3 -m grpc_tools.protoc -I . --python_out=. --grpc_python_out=. msg.proto && sed -i -E 's/^import.*_pb2/from . \0/' *.py
 // Syntax version
 syntax = "proto3";
 
@@ -16,7 +16,7 @@ service MessageService {
 
 // Message types
 message Status {
-    string uuid = 1;
+    string req_id = 1;
     bool result = 2;
 }
 
@@ -32,48 +32,55 @@ message MessageData {
 }
 
 message MessageResponse {
-    string uuid = 1;
+    string req_id = 1;
     bool status = 2;
     string target = 3;
     MessageData data = 4;
 }
 
 message GetMessageRequest {
-    string target = 1;
+    string req_id = 1;
+    string target = 2;
 }
 
 message PutMessageRequest {
-    string target = 1;
-    MessageData data = 2;
+    string req_id = 1;
+    string target = 2;
+    MessageData data = 3;
 }
 
 message JobResponse {
-    string uuid = 1;
+    string req_id = 1;
     bool status = 2;
     string target = 3;
     MessageData data = 4;
 }
 
 message GetJobRequest {
-    string target = 1;
+    string req_id = 1;
+    string target = 2;
 }
 
 message PutJobRequest {
-    string target = 1;
-    MessageData data = 2;
+    string req_id = 1;
+    string target = 2;
+    MessageData data = 3;
 }
 
 message CheckRequest {
-    string target = 3;
+    string req_id = 1;
+    string target = 2;
 }
 
 message CheckResponse {
-    string target = 1;
-    bool has_data = 2;
+    string req_id = 1;
+    string target = 2;
+    bool has_data = 3;
 }
 
 message BasicRequest {
-    bool verbose = 1;
+    string req_id = 1;
+    bool verbose = 2;
 }
 
 
