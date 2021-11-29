@@ -12,7 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import time
 import unittest
 
 from unittest import mock
@@ -158,23 +157,6 @@ class TestProcessor(unittest.TestCase):
         self.processor.run_threads(threads=[(thread1, False), (thread2, True)])
         self.assertFalse(thread1.daemon)
         self.assertTrue(thread2.daemon)
-
-    def test_timeout_error_reraise(self):
-        with self.assertRaises(TimeoutError):
-            with self.processor.timeout(1, "test-job_id", reraise=True):
-                time.sleep(5)
-
-    def test_timeout_error(self):
-        with self.processor.timeout(1, "test-job_id"):
-            time.sleep(5)
-
-    def test_timeout(self):
-        with self.processor.timeout(5, "test-job_id"):
-            time.sleep(1)
-
-    def test_raise_timeout(self):
-        with self.assertRaises(TimeoutError):
-            self.processor.raise_timeout()
 
 
 class TestUnixSocket(unittest.TestCase):
@@ -341,7 +323,7 @@ class TestDirectordInit(unittest.TestCase):
 
 class TestIndicator(unittest.TestCase):
     def setUp(self):
-        self.multi_patched = mock.patch("directord.multiprocessing.Process")
+        self.multi_patched = mock.patch("directord.threading.Thread")
         self.multi = self.multi_patched.start()
 
     def tearDown(self):

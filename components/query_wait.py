@@ -148,7 +148,7 @@ class Component(components.ComponentBase):
                 )
                 warning_loops = time.time()
 
-            self.delay(0.01)
+            self.event.wait(0.01)
 
         if missing_identity:
             info = (

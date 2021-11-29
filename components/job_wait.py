@@ -183,7 +183,7 @@ class Component(components.ComponentBase):
                                     info=info,
                                 )
                                 break
-                            self.delay(0.25)
+                            self.event.wait(0.25)
                         else:
                             self.log.debug(
                                 "Job [ %s ] expected SHA [ %s ] was not"

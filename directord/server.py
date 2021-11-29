@@ -660,60 +660,55 @@ class Server(interface.Interface):
         :type job_id: String
         """
 
-        with self.timeout(
-            time=600,
-            job_id=job_id,
-        ):
-            _nodes = len(self.return_jobs[job_id]["_nodes"])
-            while True:
-                if self.return_jobs[job_id].get("FAILED"):
-                    self.log.critical(
-                        "Query job [ %s ] encountered failures.", job_id
-                    )
-                    return
-                elif len(self.return_jobs[job_id]["STDOUT"].keys()) >= _nodes:
-                    break
+        _nodes = len(self.return_jobs[job_id]["_nodes"])
+        while True:
+            if self.return_jobs[job_id].get("FAILED"):
+                self.log.critical(
+                    "Query job [ %s ] encountered failures.", job_id
+                )
+                return
+            elif len(self.return_jobs[job_id]["STDOUT"].keys()) >= _nodes:
+                break
 
-                self.log.info("Waiting for [ %s ], QUERY to complete", job_id)
-                time.sleep(1)
+            self.log.info("Waiting for [ %s ], QUERY to complete", job_id)
+            time.sleep(1)
 
-            job_return = self.return_jobs[job_id]
-            new_task = dict()
-            new_task["skip_cache"] = True
-            new_task["extend_args"] = True
-            new_task["verb"] = "ARG"
-            query_data = dict()
-            for k, v in job_return["STDOUT"].items():
-                query_data[k] = json.loads(v)
-            new_task["args"] = {"query": query_data}
-            new_task["parent_async_bypass"] = True
-            new_task["job_id"] = utils.get_uuid()
-            new_task["job_sha3_224"] = utils.object_sha3_224(obj=new_task)
-            new_task["parent_id"] = utils.get_uuid()
-            new_task["parent_sha3_224"] = utils.object_sha3_224(obj=new_task)
+        job_return = self.return_jobs[job_id]
+        new_task = dict()
+        new_task["skip_cache"] = True
+        new_task["extend_args"] = True
+        new_task["verb"] = "ARG"
+        query_data = dict()
+        for k, v in job_return["STDOUT"].items():
+            query_data[k] = json.loads(v)
+        new_task["args"] = {"query": query_data}
+        new_task["parent_async_bypass"] = True
+        new_task["job_id"] = utils.get_uuid()
+        new_task["job_sha3_224"] = utils.object_sha3_224(obj=new_task)
+        new_task["parent_id"] = utils.get_uuid()
+        new_task["parent_sha3_224"] = utils.object_sha3_224(obj=new_task)
 
-            targets = list(self.workers.keys())
+        targets = list(self.workers.keys())
 
-            self.create_return_jobs(
-                task=new_task["job_id"],
-                job_item=new_task,
-                targets=targets,
+        self.create_return_jobs(
+            task=new_task["job_id"],
+            job_item=new_task,
+            targets=targets,
+        )
+
+        for target in targets:
+            self.log.debug(
+                "Queuing QUERY ARG callback job [ %s ] for identity" " [ %s ]",
+                new_task["job_id"],
+                target,
             )
-
-            for target in targets:
-                self.log.debug(
-                    "Queuing QUERY ARG callback job [ %s ] for identity"
-                    " [ %s ]",
-                    new_task["job_id"],
-                    target,
+            self.send_queue.put(
+                dict(
+                    identity=target,
+                    command=new_task["verb"],
+                    data=new_task,
                 )
-                self.send_queue.put(
-                    dict(
-                        identity=target,
-                        command=new_task["verb"],
-                        data=new_task,
-                    )
-                )
+            )
 
     def run_socket_server(self, sentinel=False):
         """Start a socket server.
@@ -996,19 +991,21 @@ class Server(interface.Interface):
 
         threads = [
             (
-                self.thread(
+                self.driver.thread_processor(
                     name="run_socket_server", target=self.run_socket_server
                 ),
                 True,
             ),
             (
-                self.thread(
+                self.driver.thread_processor(
                     name="run_interactions", target=self.run_interactions
                 ),
                 False,
             ),
             (
-                self.thread(name="run_backend", target=self.run_backend),
+                self.driver.thread_processor(
+                    name="run_backend", target=self.run_backend
+                ),
                 False,
             ),
         ]

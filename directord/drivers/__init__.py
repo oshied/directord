@@ -14,6 +14,7 @@
 
 import socket
 import time
+import threading
 
 from directord import logger
 
@@ -39,6 +40,7 @@ class BaseDriver:
     nullbyte = "\x00"  # Signals null
     transfer_start = "\x02"  # Signals transfer start
     transfer_end = "\x03"  # Signals transfer end
+    thread_processor = threading.Thread
 
     def __init__(
         self,

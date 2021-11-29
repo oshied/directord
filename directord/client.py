@@ -47,7 +47,7 @@ class Client(interface.Interface):
     def q_processor(self, queue, lock):
         """Process jobs from the known queue.
 
-        :param queue: Multiprocessing queue object.
+        :param queue: queue object.
         :type queue: Object
         :param lock: Locking object, used if a component requires it.
         :type lock: Object
@@ -91,7 +91,7 @@ class Client(interface.Interface):
                 for i in parents.values()
                 if i["bypass"]
                 and not i["t"].is_alive()
-                and i["t"].exitcode is None
+                and i["t"].ident is None
             ]
 
         def _get_pending_threads(parents):
@@ -107,7 +107,7 @@ class Client(interface.Interface):
                 for i in parents.values()
                 if not i["bypass"]
                 and not i["t"].is_alive()
-                and i["t"].exitcode is None
+                and i["t"].ident is None
             ]
 
         def _get_thread_count(parents):
@@ -205,15 +205,13 @@ class Client(interface.Interface):
                     break
 
             for key, value in list(parent_tracker.items()):
-                if value["t"].is_alive() or value["t"].exitcode is None:
+                if value["t"].is_alive() or value["t"].ident is None:
                     continue
                 else:
                     timestamp = time.time()
                     timeout = timestamp - value.get("timeout", timestamp) > 5
                     if value["q"].empty() and timeout:
                         self.terminate_process(process=value["t"])
-                        value["q"].close()
-                        value["q"].join_thread()
                         parent_tracker.pop(key)
                         self.log.info("Pruned parent [ %s ]", key)
                     elif not value["q"].empty():
@@ -372,19 +370,13 @@ class Client(interface.Interface):
                 locked = lock.acquire()
                 self.log.debug("Lock acquired for [ %s ]", job_id)
 
-            with self.timeout(
-                time=job.get("timeout", 600),
-                job_id=job_id,
-            ):
-                _starttime = time.time()
-                stdout, stderr, outcome, info = component.client(
-                    cache=self.cache, job=job
-                )
-                job[
-                    "component_exec_timestamp"
-                ] = datetime.datetime.fromtimestamp(time.time()).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+            _starttime = time.time()
+            stdout, stderr, outcome, info = component.client(
+                cache=self.cache, job=job
+            )
+            job["component_exec_timestamp"] = datetime.datetime.fromtimestamp(
+                time.time()
+            ).strftime("%Y-%m-%d %H:%M:%S")
 
             try:
                 if component.block_on_tasks:
@@ -446,27 +438,21 @@ class Client(interface.Interface):
                 )
                 self.log.debug("Job call backs: %s ", component.block_on_tasks)
                 block_on_task_success = False
-                with self.timeout(
-                    time=block_on_task_data.get("timeout", 600),
-                    job_id=block_on_task_data["job_id"],
-                ):
-                    while True:
-                        if self.cache.get(
-                            block_on_task_data["job_sha3_224"]
-                        ) in [
-                            self.driver.job_end,
-                            self.driver.job_failed,
-                        ]:
-                            block_on_task_success = True
-                            break
-                        else:
-                            self.log.debug(
-                                "waiting for callback job from [ %s ] to"
-                                " complete. %s",
-                                job["job_id"],
-                                block_on_task_data,
-                            )
-                            time.sleep(1)
+                while True:
+                    if self.cache.get(block_on_task_data["job_sha3_224"]) in [
+                        self.driver.job_end,
+                        self.driver.job_failed,
+                    ]:
+                        block_on_task_success = True
+                        break
+                    else:
+                        self.log.debug(
+                            "waiting for callback job from [ %s ] to"
+                            " complete. %s",
+                            job["job_id"],
+                            block_on_task_data,
+                        )
+                        time.sleep(1)
 
                 if block_on_task_success:
                     self.log.debug(
@@ -840,7 +826,7 @@ class Client(interface.Interface):
 
         threads = [
             (
-                self.thread(
+                self.driver.thread_processor(
                     name="run_job", target=self.run_job, kwargs=dict(lock=lock)
                 ),
                 False,
