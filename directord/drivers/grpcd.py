@@ -370,12 +370,6 @@ class MessageServiceClient(object):
 
     def connect(self):
         """Connect to channel."""
-        # NOTE(mwhahaha): work around for not fork friendly problems
-        if self.channel:
-            del self.channel
-        if self.stub:
-            del self.stub
-
         wait_for_channel = threading.Event()
 
         def wait_for_connection(connectivity):
@@ -629,6 +623,52 @@ class MessageServiceClient(object):
             raise
 
 
+class MessageServiceServer(object):
+    """Base queue."""
+
+    _instance = None
+    _server = None
+    log = None
+
+    def __init__(self):
+        """Init."""
+        raise RuntimeError("Use instance()")
+
+    def _setup(self, address, port, secure, workers):
+        """Setup data data."""
+        if self._server:
+            self.log.debug("Backend already configured, ignoring bind")
+            return
+        self._server = grpc.server(
+            futures.ThreadPoolExecutor(max_workers=workers)
+        )
+        # add grpc servicer(s)
+        msg_pb2_grpc.add_MessageServiceServicer_to_server(
+            MessageServiceServicer(self.log), self._server
+        )
+
+        # TODO: support ssl
+        self._server.add_insecure_port(f"{address}:{port}")
+        self._server.start()
+        self.log.info("Started Message Service Server (%s:%s)", address, port)
+
+    @classmethod
+    def instance(cls, logger, address, port, secure=False, workers=4):
+        """Get queue instance."""
+        if cls._instance is None:
+            cls._instance = cls.__new__(cls)
+            cls._instance.log = logger
+            cls._instance._setup(address, port, secure, workers)
+        return cls._instance
+
+    def stop(self, grace=None):
+        """Stop the server."""
+        if self._server:
+            self.log.info("Stopping Message Service Server")
+            self._server.stop(grace=grace)
+        self._server = None
+
+
 class Driver(drivers.BaseDriver):
     def __init__(
         self,
@@ -680,60 +720,14 @@ class Driver(drivers.BaseDriver):
 
     def __copy__(self):
         """Return a new copy of the driver."""
-
         drv = Driver(
             args=self.args,
             encrypted_traffic_data=self.encrypted_traffic_data,
             interface=self.interface,
         )
-        drv._backend_connection(force=True)
+        # init backend(s)
+        drv.job_init()
         return drv
-
-    def _backend_bind(self):
-        """Create backend server."""
-        if self._server:
-            self.log.debug("Backend already configured, ignoring bind")
-            return
-        self._server = grpc.server(
-            futures.ThreadPoolExecutor(
-                max_workers=self.args.grpc_server_workers
-            )
-        )
-        # add grpc servicers
-        msg_pb2_grpc.add_MessageServiceServicer_to_server(
-            MessageServiceServicer(self.log), self._server
-        )
-        # TODO: support ssl
-
-        self._server.add_insecure_port(f"{self.bind_address}:{self.grpc_port}")
-        self._server.start()
-        self.log.info(
-            "grpc backend started at %s:%s", self.bind_address, self.grpc_port
-        )
-        self._backend_connection()
-
-    def _backend_connection(self, force=False):
-        """Create backend connection."""
-        if self._client:
-            self.log.debug("Backend already configured, ignoring bind")
-            return
-        self._client = MessageServiceClient(
-            self.log, self.server_address, self.grpc_port, self.args.grpc_ssl
-        )
-        if force:
-            self._client.connect()
-        self.log.info(
-            "grpc client to %s:%s started", self.server_address, self.grpc_port
-        )
-
-    def _backend_close(self):
-        """Close backends."""
-        if self._server:
-            self._server.stop(grace=None)
-        if self._client:
-            self._client.close()
-        self._server = None
-        self._client = None
 
     def backend_recv(self, nonblocking=False):
         """Receive a transfer message.
@@ -742,6 +736,8 @@ class Driver(drivers.BaseDriver):
         :type nonblocking: Boolean
         :returns: Tuple
         """
+        while not self.backend_check():
+            self.log.debug("No messages ready, waiting...")
         target, data = self._client.get_message(self.identity)
         return_msg = [
             data.msg_id,
@@ -756,6 +752,30 @@ class Driver(drivers.BaseDriver):
             return_msg.insert(0, data.identity)
         return return_msg
 
+    def _grpc_init(self):
+        """Initialize server and client."""
+        if self.mode == "server" and not self._server:
+            self._server = MessageServiceServer.instance(
+                self.log,
+                self.bind_address,
+                self.grpc_port,
+                self.args.grpc_ssl,
+                self.args.grpc_server_workers,
+            )
+        # start connection to server
+        if not self._client:
+            self._client = MessageServiceClient(
+                self.log,
+                self.server_address,
+                self.grpc_port,
+                self.args.grpc_ssl,
+            )
+            self.log.info(
+                "Started Message Service client (%s:%s)",
+                self.server_address,
+                self.grpc_port,
+            )
+
     def backend_init(self):
         """Initialize the backend socket.
 
@@ -764,15 +784,14 @@ class Driver(drivers.BaseDriver):
 
         :returns: Object
         """
-        if self.mode == "server":
-            self._backend_bind()
-        else:
-            self._backend_connection()
+        self._grpc_init()
 
     def backend_close(self):
         """Close the backend connection."""
-
-        self._backend_close()
+        self.log.debug(
+            "The grpcd driver does not initialize a different backend "
+            "connection. Nothing to close."
+        )
 
     def backend_check(self, interval=1, constant=1000):
         """Return True if the backend contains work ready.
@@ -911,6 +930,8 @@ class Driver(drivers.BaseDriver):
         :returns: Tuple
         """
 
+        while not self.job_check():
+            self.log.debug("No jobs ready, waiting...")
         target, data = self._client.get_job(self.identity)
         return_msg = [
             data.msg_id,
@@ -933,15 +954,16 @@ class Driver(drivers.BaseDriver):
 
         :returns: Object
         """
-        if self.mode == "server":
-            self._backend_bind()
-        else:
-            self._backend_connection()
+        self._grpc_init()
 
     def job_close(self):
         """Close the job socket."""
-
-        self._backend_close()
+        if self.mode == "server" and self._server:
+            self._server.stop()
+        if self._client:
+            self._client.close()
+        self._server = None
+        self._client = None
 
     def job_check(self, interval=1, constant=1000):
         """Return True if a job contains work ready.
