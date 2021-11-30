@@ -19,7 +19,6 @@ import multiprocessing
 import os
 import socket
 import sys
-import threading
 
 from types import SimpleNamespace
 
@@ -448,7 +447,7 @@ class Spinner(object):
         :type queue: Object
         """
 
-        self.job = threading.Thread(target=self.indicator, daemon=True)
+        self.job = multiprocessing.Process(target=self.indicator, daemon=True)
         self.pipe_a, self.pipe_b = multiprocessing.Pipe()
         self.run = run
         self.queue = queue
