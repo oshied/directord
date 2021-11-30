@@ -141,11 +141,6 @@ class TestProcessor(unittest.TestCase):
     def tearDown(self):
         self.log_patched.stop()
 
-    def test_get_lock(self):
-        with patch("multiprocessing.Lock") as mock_lock:
-            self.processor.get_lock()
-            mock_lock.assert_called()
-
     def test_get_queue(self):
         with patch("multiprocessing.Queue") as mock_queue:
             self.processor.get_queue()

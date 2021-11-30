@@ -38,8 +38,8 @@ class Client(interface.Interface):
 
         super(Client, self).__init__(args=args)
 
-        self.q_return = self.get_queue()
-        self.q_processes = self.get_queue()
+        self.q_return = self.driver.get_queue()
+        self.q_processes = self.driver.get_queue()
         self.base_component = components.ComponentBase()
         self.cache = dict()
         self.start_time = time.time()
@@ -127,7 +127,7 @@ class Client(interface.Interface):
             )
 
         if not lock:
-            lock = self.get_lock()
+            lock = self.driver.get_lock()
 
         parent_tracker = collections.OrderedDict()
         while not q_processes.empty() or parent_tracker:
@@ -176,7 +176,7 @@ class Client(interface.Interface):
                 else:
                     _parent = parent_tracker[_q_name] = dict(
                         t=None,
-                        q=self.get_queue(),
+                        q=self.driver.get_queue(),
                         bypass=job.get("parent_async_bypass", False),
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
@@ -815,7 +815,7 @@ class Client(interface.Interface):
         run_threads method where their execution will be managed.
         """
 
-        lock = self.get_lock()
+        lock = self.driver.get_lock()
         for known_component in utils.component_lock_search():
             lock_name = "__lock_{}__".format(known_component.lower())
             if not hasattr(self, lock_name):
@@ -823,7 +823,7 @@ class Client(interface.Interface):
                 setattr(
                     self,
                     lock_name,
-                    self.get_lock(),
+                    self.driver.get_lock(),
                 )
 
         threads = [
@@ -835,7 +835,8 @@ class Client(interface.Interface):
             ),
         ]
         with utils.Cache(
-            url=os.path.join(self.args.cache_path, "client")
+            url=os.path.join(self.args.cache_path, "client"),
+            lock=self.driver.get_lock(),
         ) as cache:
             self.cache = cache
             self.run_threads(threads=threads)

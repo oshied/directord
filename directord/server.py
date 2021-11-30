@@ -40,8 +40,8 @@ class Server(interface.Interface):
         """
 
         super(Server, self).__init__(args=args)
-        self.job_queue = self.get_queue()
-        self.send_queue = self.get_queue()
+        self.job_queue = self.driver.get_queue()
+        self.send_queue = self.driver.get_queue()
         datastore = getattr(self.args, "datastore", None)
         self.workers = dict()
         if not datastore or datastore == "memory":

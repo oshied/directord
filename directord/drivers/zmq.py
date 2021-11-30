@@ -701,6 +701,18 @@ class Driver(drivers.BaseDriver):
         kwargs["socket"] = self.bind_backend
         return self._socket_send(*args, **kwargs)
 
+    @staticmethod
+    def get_lock():
+        """Returns a thread lock."""
+
+        return multiprocessing.Lock()
+
+    @staticmethod
+    def get_queue():
+        """Returns a thread lock."""
+
+        return multiprocessing.Queue()
+
     def key_generate(self, keys_dir, key_type):
         """Generate certificate.
 
