@@ -155,12 +155,6 @@ class Processor:
         return multiprocessing.Manager()
 
     @staticmethod
-    def get_lock():
-        """Returns a thread lock."""
-
-        return multiprocessing.Lock()
-
-    @staticmethod
     def get_queue():
         """Returns a queue."""
 

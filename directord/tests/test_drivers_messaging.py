@@ -41,6 +41,16 @@ class TestDriverMessaging(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_get_lock(self):
+        with patch("threading.Lock") as mock_lock:
+            self.driver.get_lock()
+            mock_lock.assert_called()
+
+    def test_get_queue(self):
+        with patch("queue.Queue") as mock_queue:
+            self.driver.get_queue()
+            mock_queue.assert_called()
+
     @patch("directord.utils.get_uuid", autospec=True)
     @patch("directord.drivers.messaging.Driver._send")
     def test_heartbeat_send(self, mock_send, mock_get_uuid):

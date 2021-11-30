@@ -22,8 +22,6 @@ import sys
 import time
 import uuid
 
-import multiprocessing
-
 import tabulate
 import yaml
 
@@ -366,7 +364,7 @@ def component_lock_search():
 
 
 class Locker:
-    """Context manager for multiprocessing lock object."""
+    """Context manager for lock object."""
 
     def __init__(self, lock):
         """Initialize the lock context manager.
@@ -383,17 +381,20 @@ class Locker:
         :returns: Object
         """
 
-        self.lock.acquire()
+        if self.lock:
+            self.lock.acquire()
+
         return self.lock
 
     def __exit__(self, *args, **kwargs):
         """Exit the lock context manager."""
 
-        self.lock.release()
+        if self.lock:
+            self.lock.release()
 
 
 class Cache:
-    def __init__(self, url):
+    def __init__(self, url, lock=None):
         """Initialize the POSIX compatible datastore.
 
         The POSIX cache store uses xattrs to store metadata about stored
@@ -406,10 +407,12 @@ class Cache:
 
         :param url: Connection string to the file backend.
         :type url: String
+        :param lock: Lock type object
+        :type lock: Object
         """
 
         self.log = logger.getLogger(name="directord-cache")
-        self.lock = multiprocessing.Lock()
+        self.lock = lock
         self.db_path = os.path.abspath(os.path.expanduser(url))
         os.makedirs(self.db_path, exist_ok=True)
         try:

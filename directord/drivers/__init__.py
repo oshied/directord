@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import queue
 import socket
 import time
 import threading
@@ -69,6 +70,18 @@ class BaseDriver:
             self.machine_id = self.get_machine_id()
 
         self.interface = interface
+
+    @staticmethod
+    def get_lock():
+        """Returns a thread lock."""
+
+        return threading.Lock()
+
+    @staticmethod
+    def get_queue():
+        """Returns a thread lock."""
+
+        return queue.Queue()
 
     def __copy__(self):
         """Return a copy of the base class.
