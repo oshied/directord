@@ -323,7 +323,7 @@ class TestDirectordInit(unittest.TestCase):
 
 class TestIndicator(unittest.TestCase):
     def setUp(self):
-        self.multi_patched = mock.patch("directord.threading.Thread")
+        self.multi_patched = mock.patch("directord.multiprocessing.Process")
         self.multi = self.multi_patched.start()
 
     def tearDown(self):
