@@ -18,6 +18,7 @@ from directord import components
 from directord import utils
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -69,6 +70,7 @@ class Component(components.ComponentBase):
         data["no_wait"] = self.known_args.no_wait
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run query command operation.

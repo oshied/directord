@@ -15,6 +15,7 @@
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 try:
@@ -129,6 +130,7 @@ class Component(components.ComponentBase):
 
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run cache echo command operation.

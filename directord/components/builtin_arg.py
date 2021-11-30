@@ -18,6 +18,7 @@ import json
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -81,6 +82,7 @@ class Component(components.ComponentBase):
         data[self.cache_type] = {key: value}
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run cache command operation.

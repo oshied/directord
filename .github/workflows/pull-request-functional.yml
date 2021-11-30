@@ -109,6 +109,8 @@ jobs:
           sudo cp /etc/directord/messaging/ssl/directord* /tmp/directord
           sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord
           sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
@@ -458,6 +460,8 @@ jobs:
           sudo cp /etc/directord/messaging/ssl/directord* /tmp/directord
           sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord
           sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()

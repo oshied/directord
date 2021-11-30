@@ -567,7 +567,7 @@ class Server(interface.Interface):
 
             if not self.job_queue.empty():
                 if not run_jobs_thread:
-                    run_jobs_thread = self.thread(
+                    run_jobs_thread = self.driver.thread_processor(
                         target=self.run_job,
                         name="run_job",
                         daemon=True,
@@ -623,7 +623,9 @@ class Server(interface.Interface):
                         self.log.info(
                             "Job [ %s ], QUERY command found", msg_id
                         )
-                        t = coordination_threads[msg_id] = self.thread(
+                        t = coordination_threads[
+                            msg_id
+                        ] = self.driver.thread_processor(
                             target=self._query_coordination,
                             name=msg_id,
                             daemon=True,

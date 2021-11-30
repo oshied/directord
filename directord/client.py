@@ -183,7 +183,7 @@ class Client(interface.Interface):
 
                 _parent["q"].put((component_kwargs, command, info))
                 if not _parent["t"]:
-                    _parent["t"] = self.thread(
+                    _parent["t"] = self.driver.thread_processor(
                         target=self.q_processor,
                         kwargs=dict(
                             queue=_parent["q"],
@@ -221,7 +221,9 @@ class Client(interface.Interface):
                             key,
                         )
                         parent_tracker[key].pop("timeout", None)
-                        parent_tracker[key]["t"] = self.thread(
+                        parent_tracker[key][
+                            "t"
+                        ] = self.driver.thread_processor(
                             target=self.q_processor,
                             kwargs=dict(
                                 queue=parent_tracker[key]["q"],
@@ -685,7 +687,7 @@ class Client(interface.Interface):
                 run_q_processor_thread = None
 
             if not self.q_processes.empty() and not run_q_processor_thread:
-                run_q_processor_thread = self.thread(
+                run_q_processor_thread = self.driver.thread_processor(
                     target=self.job_q_processor,
                     kwargs=dict(q_processes=self.q_processes, lock=lock),
                     name="job_q_processor",

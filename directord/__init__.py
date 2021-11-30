@@ -142,7 +142,7 @@ class Processor:
     if cpu_count > 16:
         cpu_count = 16
 
-    thread = threading.Thread
+    thread = multiprocessing.Process
 
     def __init__(self):
         """Initialize Processor class."""

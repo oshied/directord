@@ -22,7 +22,7 @@ import sys
 import time
 import uuid
 
-import threading
+import multiprocessing
 
 import tabulate
 import yaml
@@ -366,12 +366,12 @@ def component_lock_search():
 
 
 class Locker:
-    """Context manager for threading lock object."""
+    """Context manager for multiprocessing lock object."""
 
     def __init__(self, lock):
         """Initialize the lock context manager.
 
-        :param lock: threading lock object
+        :param lock: Multiprocessing lock object
         :type lock: Object
         """
 
@@ -409,7 +409,7 @@ class Cache:
         """
 
         self.log = logger.getLogger(name="directord-cache")
-        self.lock = threading.Lock()
+        self.lock = multiprocessing.Lock()
         self.db_path = os.path.abspath(os.path.expanduser(url))
         os.makedirs(self.db_path, exist_ok=True)
         try:

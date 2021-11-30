@@ -25,6 +25,7 @@ except ImportError:
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -126,6 +127,7 @@ class Component(components.ComponentBase):
             raise AttributeError(msg)
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run cache echo command operation.

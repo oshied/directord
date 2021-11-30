@@ -16,6 +16,7 @@ from directord import components
 
 from directord.components.lib import cacheargs
 from directord.components.lib import retry
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -59,6 +60,7 @@ class Component(components.ComponentBase):
 
         return data
 
+    @timeout
     @cacheargs
     @retry
     def client(self, cache, job):
