@@ -14,9 +14,9 @@
 
 import json
 import logging
-import multiprocessing
 import os
 import pkg_resources
+import queue
 import time
 
 try:
@@ -151,9 +151,9 @@ class Driver(drivers.BaseDriver):
         self.transport = self._rpc_transport()
         self.server = None
         self.backend_server = None
-        self.job_q = multiprocessing.Queue()
-        self.backend_q = multiprocessing.Queue()
-        self.send_q = multiprocessing.Queue()
+        self.job_q = queue.Queue()
+        self.backend_q = queue.Queue()
+        self.send_q = queue.Queue()
         self.process_send_q = None
         self.timeout = 1
 

@@ -15,6 +15,7 @@
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -55,6 +56,7 @@ class Component(components.ComponentBase):
         data["parent_async_bypass"] = True
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run cache command operation.

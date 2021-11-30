@@ -25,6 +25,7 @@ except ImportError:
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -156,6 +157,7 @@ class Component(components.ComponentBase):
         data["socket_path"] = self.known_args.socket_path
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run pod command operation.

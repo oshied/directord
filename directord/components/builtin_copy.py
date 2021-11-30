@@ -24,6 +24,7 @@ from directord import components
 from directord import utils
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -88,6 +89,7 @@ class Component(components.ComponentBase):
 
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run file transfer operation.

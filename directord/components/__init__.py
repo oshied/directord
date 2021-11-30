@@ -17,7 +17,7 @@ import os
 import subprocess
 import time
 
-from multiprocessing import Event
+from threading import Event
 
 import jinja2
 from jinja2 import StrictUndefined
@@ -37,7 +37,7 @@ class ComponentBase:
     verb = None
     block_on_tasks = None
     queue_sentinel = False
-    delay = Event().wait
+    event = Event()
 
     def __init__(self, desc=None):
         """Initialize the component base class.

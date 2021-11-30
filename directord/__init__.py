@@ -12,15 +12,14 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import contextlib
 import importlib
 import importlib.util as importlib_util
 import json
 import multiprocessing
 import os
-import signal
 import socket
 import sys
+import threading
 
 from types import SimpleNamespace
 
@@ -146,11 +145,7 @@ class Processor:
     thread = multiprocessing.Process
 
     def __init__(self):
-        """Initialize Processor class creating all required manager objects.
-
-        Managers maintain a multiprocessing proxy object which allows data to
-        be shared across threads.
-        """
+        """Initialize Processor class."""
 
         self.log = logger.getLogger(name="directord")
 
@@ -162,13 +157,13 @@ class Processor:
 
     @staticmethod
     def get_lock():
-        """Returns a multiprocessing lock."""
+        """Returns a thread lock."""
 
         return multiprocessing.Lock()
 
     @staticmethod
     def get_queue():
-        """Returns a multiprocessing queue."""
+        """Returns a queue."""
 
         return multiprocessing.Queue()
 
@@ -178,7 +173,7 @@ class Processor:
         * If the process object is null, return False
         * If the process is in an "alive", return False.
 
-        :param process: Multiprocessing object.
+        :param process: Thread object.
         :type process: Object
         :returns: Boolean
         """
@@ -188,8 +183,7 @@ class Processor:
 
         try:
             if not process.is_alive():
-                process.join(timeout=0.1)
-                process.terminate()
+                process.join(timeout=1)
                 self.log.info("Process [ %s ] cleaned up", process.name)
                 return True
         except Exception as e:
@@ -222,40 +216,6 @@ class Processor:
 
         for t, _ in threads:
             t.join()
-
-    @contextlib.contextmanager
-    def timeout(self, time, job_id, reraise=False):
-        """Registers a context manager to raise whenever a timeout occurs.
-
-        :param time: Time in seconds before an alarm is raised.
-        :type time: Integer
-        :param job_id: Job UUID
-        :type job_id: String
-        :param reraise: Reraise the timeout exception
-        :type reraise: Boolean
-        :yields:
-        """
-
-        signal.signal(signal.SIGALRM, self.raise_timeout)
-        signal.alarm(time)
-        try:
-            yield
-        except TimeoutError:
-            self.log.warning(
-                "Timeout encountered after [ %s ] seconds running [ %s ].",
-                time,
-                job_id,
-            )
-            if reraise:
-                raise TimeoutError
-        finally:
-            signal.signal(signal.SIGALRM, signal.SIG_IGN)
-
-    def raise_timeout(self, *args, **kwargs):
-        """Log, then raise a Timeout error."""
-
-        self.log.error("Task timeout encountered.")
-        raise TimeoutError
 
 
 class UNIXSocketConnect:
@@ -488,7 +448,7 @@ class Spinner(object):
         :type queue: Object
         """
 
-        self.job = multiprocessing.Process(target=self.indicator, daemon=True)
+        self.job = threading.Thread(target=self.indicator, daemon=True)
         self.pipe_a, self.pipe_b = multiprocessing.Pipe()
         self.run = run
         self.queue = queue
@@ -506,7 +466,6 @@ class Spinner(object):
             self.run = False
             self.pipe_a.close()
             self.pipe_b.close()
-            self.job.terminate()
             print("Done.")
 
     def indicator_msg(self, msg):

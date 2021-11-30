@@ -14,6 +14,7 @@
 
 import json
 import logging
+import multiprocessing
 import os
 import time
 
@@ -112,6 +113,7 @@ class Driver(drivers.BaseDriver):
         :type interface: Object
         """
 
+        self.thread_processor = multiprocessing.Process
         self.args = args
         self.encrypted_traffic_data = encrypted_traffic_data
 

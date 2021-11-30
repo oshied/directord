@@ -17,6 +17,7 @@ import time
 from directord import components
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 class Component(components.ComponentBase):
@@ -76,6 +77,7 @@ class Component(components.ComponentBase):
         data["identity"] = self.known_args.identity
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run cache query_wait command operation.
@@ -148,7 +150,7 @@ class Component(components.ComponentBase):
                 )
                 warning_loops = time.time()
 
-            self.delay(0.01)
+            self.event.wait(0.01)
 
         if missing_identity:
             info = (

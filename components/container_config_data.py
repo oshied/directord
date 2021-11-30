@@ -20,6 +20,7 @@ from directord import components
 from directord import utils
 
 from directord.components.lib import cacheargs
+from directord.components.lib import timeout
 
 
 # This component was adapted from here:
@@ -91,6 +92,7 @@ class Component(components.ComponentBase):
         data.update(vars(self.known_args))
         return data
 
+    @timeout
     @cacheargs
     def client(self, cache, job):
         """Run cache echo command operation.

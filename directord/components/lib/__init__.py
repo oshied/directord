@@ -79,3 +79,18 @@ def retry(func):
         return stdout, stderr, outcome, command
 
     return wrapper_func
+
+
+def timeout(func):
+    """Decorator to raise whenever a timeout occurs.
+
+    NotImplemented - Rework this functiont to better support threads and
+    processes.
+
+    :returns: Tuple
+    """
+
+    def wrapper_func(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper_func
