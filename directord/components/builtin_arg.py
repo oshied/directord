@@ -33,6 +33,7 @@ class Component(components.ComponentBase):
         super().__init__(desc="Process cache commands")
         self.cacheable = False
         self.requires_lock = True
+        self.lock_name = "arg"  # ENV and ARG are aliases
         self.cache_type = None
 
     def args(self):
