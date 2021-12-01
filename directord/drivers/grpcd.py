@@ -65,6 +65,13 @@ def parse_args(parser, parser_server, parser_client):
         metavar="STRING",
         default=os.getenv("DIRECTORD_GRPC_SERVER_ADDRESS", "127.0.0.1"),
     )
+    group.add_argument(
+        "--grpc-disable-compression",
+        action="store_true",
+        default=os.getenv("DIRECTORD_GRPC_DISABLE_COMPRESSION", False),
+        help=("Disable compression between client and server."),
+    )
+
     server_group = parser_server.add_argument_group(
         "gRPC Server driver options"
     )
@@ -366,7 +373,14 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
 
 
 class MessageServiceClient(object):
-    def __init__(self, logger, server_address, server_port, secure=False):
+    def __init__(
+        self,
+        logger,
+        server_address,
+        server_port,
+        secure=False,
+        compression=True,
+    ):
         """Initializer.
 
         Creates a gRPC channel for connecting to the server.
@@ -378,6 +392,7 @@ class MessageServiceClient(object):
         self.secure = secure
         self.channel = None
         self.stub = None
+        self.compression = compression
         self.connect()
 
     def connect(self):
@@ -389,8 +404,12 @@ class MessageServiceClient(object):
             if connectivity in [grpc.ChannelConnectivity.READY]:
                 wait_for_channel.set()
 
+        compression_type = grpc.Compression.Gzip
+        if not self.compression:
+            compression_type = grpc.Compression.NoCompression
         self.channel = grpc.insecure_channel(
-            f"{self.server_address}:{self.server_port}"
+            f"{self.server_address}:{self.server_port}",
+            compression=compression_type,
         )
         self.channel.subscribe(wait_for_connection, try_to_connect=True)
         self.stub = msg_pb2_grpc.MessageServiceStub(self.channel)
@@ -675,13 +694,18 @@ class MessageServiceServer(object):
         """Init."""
         raise RuntimeError("Use instance()")
 
-    def _setup(self, address, port, secure, workers):
+    def _setup(self, address, port, secure, workers, compression=True):
         """Setup data data."""
         if self._server:
             self.log.debug("Backend already configured, ignoring bind")
             return
+        compression_type = grpc.Compression.Gzip
+        if not compression:
+            compression_type = grpc.Compression.NoCompression
+
         self._server = grpc.server(
-            futures.ThreadPoolExecutor(max_workers=workers)
+            futures.ThreadPoolExecutor(max_workers=workers),
+            compression=compression_type,
         )
         # add grpc servicer(s)
         msg_pb2_grpc.add_MessageServiceServicer_to_server(
@@ -694,12 +718,14 @@ class MessageServiceServer(object):
         self.log.info("Started Message Service Server (%s:%s)", address, port)
 
     @classmethod
-    def instance(cls, logger, address, port, secure=False, workers=4):
+    def instance(
+        cls, logger, address, port, secure=False, workers=4, compression=True
+    ):
         """Get queue instance."""
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
             cls._instance.log = logger
-            cls._instance._setup(address, port, secure, workers)
+            cls._instance._setup(address, port, secure, workers, compression)
         return cls._instance
 
     def stop(self, grace=None):
@@ -802,6 +828,7 @@ class Driver(drivers.BaseDriver):
                 self.grpc_port,
                 self.args.grpc_ssl,
                 self.args.grpc_server_workers,
+                not self.args.grpc_disable_compression,
             )
         # start connection to server
         if not self._client:
@@ -810,6 +837,7 @@ class Driver(drivers.BaseDriver):
                 self.server_address,
                 self.grpc_port,
                 self.args.grpc_ssl,
+                not self.args.grpc_disable_compression,
             )
             self.log.info(
                 "Started Message Service client (%s:%s)",
