@@ -42,6 +42,7 @@ class BaseDriver:
     transfer_start = "\x02"  # Signals transfer start
     transfer_end = "\x03"  # Signals transfer end
     thread_processor = threading.Thread
+    event = threading.Event()
 
     def __init__(
         self,

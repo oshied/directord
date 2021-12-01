@@ -150,7 +150,7 @@ class Component(components.ComponentBase):
                 )
                 warning_loops = time.time()
 
-            self.event.wait(0.01)
+            self.driver.event.wait(0.01)
 
         if missing_identity:
             info = (
