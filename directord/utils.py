@@ -351,12 +351,17 @@ def component_lock_search():
     if sys.base_prefix != sys.prefix:
         paths.insert(0, os.path.join(sys.prefix, "share/directord/components"))
 
-    lock_commands = list()
+    lock_commands = set()
     for importer, name, _ in pkgutil.iter_modules(paths):
         component = importer.find_module(name).load_module(name)
         try:
-            if component.Component().requires_lock:
-                lock_commands.append(name.lstrip("builtin_"))
+            component_obj = component.Component()
+            if component_obj.requires_lock:
+                lock_commands.add(
+                    getattr(
+                        component_obj, "lock_name", name.lstrip("builtin_")
+                    )
+                )
         except AttributeError:
             pass
     else:

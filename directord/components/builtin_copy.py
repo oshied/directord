@@ -33,6 +33,7 @@ class Component(components.ComponentBase):
 
         super().__init__(desc="Process transfer commands")
         self.requires_lock = True
+        self.lock_name = "copy"  # ADD and COPY are aliases
 
     def args(self):
         """Set default arguments for a component."""

@@ -354,7 +354,9 @@ class Client(interface.Interface):
 
             locked = False
             if component.requires_lock:
-                lock_name = "__lock_{}__".format(command_lower)
+                lock_name = "__lock_{}__".format(
+                    getattr(component, "lock_name", command_lower)
+                )
                 try:
                     lock = getattr(self, lock_name)
                 except AttributeError:
