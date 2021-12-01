@@ -242,7 +242,7 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         """
         target = request.target
         req_id = request.req_id
-        self.log.debug("%s | -> GetMessage Request: %s", req_id, request)
+        # self.log.debug("%s | -> GetMessage Request: %s", req_id, request)
 
         q = MessageQueue.instance()
         status = True
@@ -256,7 +256,7 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         response = msg_pb2.MessageResponse(
             req_id=req_id, status=status, target=target, data=job_data
         )
-        self.log.debug("%s | <- GetMessage Response: %s", req_id, response)
+        # self.log.debug("%s | <- GetMessage Response: %s", req_id, response)
         return response
 
     def GetJob(self, request, context):
@@ -270,7 +270,7 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         """
         target = request.target
         req_id = request.req_id
-        self.log.debug("%s | -> GetJob Request: %s", req_id, request)
+        # self.log.debug("%s | -> GetJob Request: %s", req_id, request)
 
         q = JobQueue.instance()
         status = True
@@ -284,7 +284,7 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         response = msg_pb2.JobResponse(
             req_id=req_id, status=status, target=target, data=job_data
         )
-        self.log.debug("%s | <- GetJob Response: %s", req_id, response)
+        # self.log.debug("%s | <- GetJob Response: %s", req_id, response)
         return response
 
     def PutMessage(self, request, context):
@@ -300,13 +300,13 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         req_id = request.req_id
         msg = request.data
 
-        self.log.debug("%s | -> PutMessage Request: %s", req_id, request)
+        # self.log.debug("%s | -> PutMessage Request: %s", req_id, request)
         q = MessageQueue.instance()
         q.add_queue(target, msg)
         self.log.debug("%s | + We added message to queue (%s)", req_id, target)
 
         status = msg_pb2.Status(req_id=req_id, result=True)
-        self.log.debug("%s | <- PutMessage Response: %s", req_id, status)
+        # self.log.debug("%s | <- PutMessage Response: %s", req_id, status)
         return status
 
     def PutJob(self, request, context):
@@ -322,20 +322,20 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         req_id = request.req_id
         msg = request.data
 
-        self.log.debug("%s | -> PutJob Request: %s", req_id, request)
+        # self.log.debug("%s | -> PutJob Request: %s", req_id, request)
         q = JobQueue.instance()
         q.add_queue(target, msg)
         self.log.debug("%s | + We added job to queue (%s)", req_id, target)
 
         status = msg_pb2.Status(req_id=req_id, result=True)
-        self.log.debug("%s | <- PutJob Response: %s", req_id, status)
+        # self.log.debug("%s | <- PutJob Response: %s", req_id, status)
         return status
 
     def MessageCheck(self, request, context):
         """Check if messages in queue."""
-        self.log.debug(
-            "%s | -> Message Check: %s", request.req_id, request.target
-        )
+        # self.log.debug(
+        #     "%s | -> Message Check: %s", request.req_id, request.target
+        # )
         return msg_pb2.CheckResponse(
             req_id=request.req_id,
             target=request.target,
@@ -344,7 +344,9 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
 
     def JobCheck(self, request, context):
         """Check if jobs in queue."""
-        self.log.debug("%s | -> Job Check: %s", request.req_id, request.target)
+        # self.log.debug(
+        #     "%s | -> Job Check: %s", request.req_id, request.target
+        # )
         return msg_pb2.CheckResponse(
             target=request.target,
             has_data=JobQueue.instance().check_queue(request.target),
@@ -383,7 +385,7 @@ class MessageServiceClient(object):
         wait_for_channel = threading.Event()
 
         def wait_for_connection(connectivity):
-            self.log.debug("wait_for_connection: %s", connectivity)
+            self.log.debug("grpc wait_for_connection: %s", connectivity)
             if connectivity in [grpc.ChannelConnectivity.READY]:
                 wait_for_channel.set()
 
@@ -418,7 +420,7 @@ class MessageServiceClient(object):
 
         try:
             response = self.stub.GetMessage(request)
-            self.log.debug("%s | get_message: Request OK.", request.req_id)
+            # self.log.debug("%s | get_message: Request OK.", request.req_id)
             if response.status:
                 self.log.debug(
                     "%s | get_message: Message fetched.", request.req_id
@@ -457,7 +459,7 @@ class MessageServiceClient(object):
 
         try:
             response = self.stub.GetJob(request)
-            self.log.debug("%s | get_job: Request OK.", request.req_id)
+            # self.log.debug("%s | get_job: Request OK.", request.req_id)
             if response.status:
                 self.log.debug("%s | get_job: Job fetched.", request.req_id)
                 # print(response)
@@ -516,12 +518,16 @@ class MessageServiceClient(object):
         request = msg_pb2.PutMessageRequest(
             req_id=str(uuid.uuid1()), target=target, data=message
         )
-        self.log.debug("%s | put_message: request %s", request.req_id, request)
+        # self.log.debug(
+        #     "%s | put_message: request %s", request.req_id, request
+        # )
 
         try:
             response = self.stub.PutMessage(request)
             self.log.debug(
-                "%s | put_message: Message submitted", request.req_id
+                "%s | put_message: Message submitted, %s",
+                request.req_id,
+                message.msg_id,
             )
             # print(response)
             return response.result
@@ -575,11 +581,15 @@ class MessageServiceClient(object):
         request = msg_pb2.PutJobRequest(
             req_id=str(uuid.uuid1()), target=target, data=job
         )
-        self.log.debug("%s | put_job: request %s", request.req_id, request)
+        # self.log.debug("%s | put_job: request %s", request.req_id, request)
 
         try:
             response = self.stub.PutJob(request)
-            self.log.debug("%s | put_job: Job submitted", request.req_id)
+            self.log.debug(
+                "%s | put_job: Job submitted, %s",
+                request.req_id,
+                job.msg_id,
+            )
             # print(response)
             return response.result
         except grpc.RpcError as err:
