@@ -12,8 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import asyncio
-
 from directord import utils
 
 
@@ -84,30 +82,15 @@ def retry(func):
 
 
 def timeout(func):
-    """Timeout coroutine."""
+    """Decorator to raise whenever a timeout occurs.
 
-    async def _main(*args, **kwargs):
-        self = args[0]
-        user_timeout = float(kwargs["job"].get("timeout", 600))
-        self.log.debug(
-            "Job [ %s ] running, timeout set for %s.",
-            kwargs["job"].get("job_id"),
-            user_timeout,
-        )
-        loop = asyncio.get_running_loop()
-        future = loop.run_in_executor(None, lambda: func(*args, **kwargs))
-        try:
-            return await asyncio.wait_for(future, timeout=user_timeout)
-        except asyncio.exceptions.TimeoutError:
-            self.log.warning(
-                "Job [ %s ] timeout after %s.",
-                kwargs["job"].get("job_id"),
-                user_timeout,
-            )
-            future.cancel()
-            return None, "Timeout encountered", False, None
+    NotImplemented - Rework this functiont to better support threads and
+    processes.
+
+    :returns: Tuple
+    """
 
     def wrapper_func(*args, **kwargs):
-        return asyncio.run(_main(*args, **kwargs))
+        return func(*args, **kwargs)
 
     return wrapper_func
