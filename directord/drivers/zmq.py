@@ -114,6 +114,7 @@ class Driver(drivers.BaseDriver):
         """
 
         self.thread_processor = multiprocessing.Process
+        self.event = multiprocessing.Event()
         self.args = args
         self.encrypted_traffic_data = encrypted_traffic_data
 

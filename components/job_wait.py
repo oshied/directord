@@ -185,7 +185,7 @@ class Component(components.ComponentBase):
                                     info=info,
                                 )
                                 break
-                            self.event.wait(0.25)
+                            self.driver.event.wait(0.25)
                         else:
                             self.log.debug(
                                 "Job [ %s ] expected SHA [ %s ] was not"
