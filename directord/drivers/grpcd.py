@@ -68,11 +68,12 @@ def parse_args(parser, parser_server, parser_client):
     )
     group.add_argument(
         "--grpc-disable-compression",
-        action="store_true",
+        metavar="BOOLEAN",
         default=bool(
             strtobool(os.getenv("DIRECTORD_GRPC_DISABLE_COMPRESSION", "False"))
         ),
         help=("Disable compression between client and server."),
+        type=bool,
     )
 
     server_group = parser_server.add_argument_group(
@@ -140,6 +141,16 @@ def parse_args(parser, parser_server, parser_client):
         ),
         type=str,
     )
+    auth_group.add_argument(
+        "--grpc-ssl-client-auth",
+        help=("Require ssl client auth. Default: %(default)s"),
+        metavar="BOOLEAN",
+        default=bool(
+            strtobool(os.getenv("DIRECTORD_GRPC_SSL_CLIENT_AUTH", "False"))
+        ),
+        type=bool,
+    )
+
     return parser
 
 
@@ -378,6 +389,9 @@ class MessageServiceClient(object):
         server_port,
         secure=False,
         compression=True,
+        ssl_ca=None,
+        ssl_cert=None,
+        ssl_key=None,
     ):
         """Initializer.
 
@@ -391,6 +405,9 @@ class MessageServiceClient(object):
         self.channel = None
         self.stub = None
         self.compression = compression
+        self.ssl_ca = ssl_ca
+        self.ssl_cert = ssl_cert
+        self.ssl_key = ssl_key
         self.connect()
 
     def connect(self):
@@ -405,10 +422,50 @@ class MessageServiceClient(object):
         compression_type = grpc.Compression.Gzip
         if not self.compression:
             compression_type = grpc.Compression.NoCompression
-        self.channel = grpc.insecure_channel(
-            f"{self.server_address}:{self.server_port}",
-            compression=compression_type,
-        )
+
+        if self.secure:
+            ssl_cert = None
+            ssl_key = None
+            if not os.path.exists(self.ssl_ca):
+                raise Exception(
+                    "SSL is enabled but CA file does not exist "
+                    f"({self.ssl_ca})"
+                )
+            with open(self.ssl_ca, "rb") as ca_file:
+                ca_cert = ca_file.read()
+
+            if (
+                not self.ssl_cert
+                or not os.path.exists(self.ssl_cert)
+                or not self.ssl_key
+                or not os.path.exists(self.ssl_key)
+            ):
+                self.log.warning(
+                    "Client SSL Cert or Key do not exist. "
+                    "Skipping configuration"
+                )
+            else:
+                with open(self.ssl_cert, "rb") as cert_file:
+                    ssl_cert = cert_file.read()
+                with open(self.ssl_key, "rb") as key_file:
+                    ssl_key = key_file.read()
+
+            credentials = grpc.ssl_channel_credentials(
+                ca_cert, ssl_key, ssl_cert
+            )
+            self.log.info("grpc client IS using SSL")
+            self.channel = grpc.secure_channel(
+                f"{self.server_address}:{self.server_port}",
+                credentials=credentials,
+                compression=compression_type,
+            )
+
+        else:
+            self.log.info("grpc client IS NOT using SSL")
+            self.channel = grpc.insecure_channel(
+                f"{self.server_address}:{self.server_port}",
+                compression=compression_type,
+            )
         self.channel.subscribe(wait_for_connection, try_to_connect=True)
         self.stub = msg_pb2_grpc.MessageServiceStub(self.channel)
         self.log.debug("Waiting for channel connectivity...")
@@ -692,7 +749,18 @@ class MessageServiceServer(object):
         """Init."""
         raise RuntimeError("Use instance()")
 
-    def _setup(self, address, port, secure, workers, compression=True):
+    def _setup(
+        self,
+        address,
+        port,
+        secure,
+        workers,
+        compression=True,
+        ssl_ca=None,
+        ssl_cert=None,
+        ssl_key=None,
+        ssl_auth=False,
+    ):
         """Setup data data."""
         if self._server:
             self.log.debug("Backend already configured, ignoring bind")
@@ -710,20 +778,70 @@ class MessageServiceServer(object):
             MessageServiceServicer(self.log), self._server
         )
 
-        # TODO: support ssl
-        self._server.add_insecure_port(f"{address}:{port}")
+        if secure:
+            # handle cert/key
+            key_pairs = []
+            if not ssl_cert or not os.path.exists(ssl_cert):
+                raise Exception(
+                    f"Configured SSL Cert {ssl_cert} does not exist."
+                )
+            if not ssl_key or not os.path.exists(ssl_key):
+                raise Exception(
+                    f"Configured SSL Key {ssl_key} does not exist."
+                )
+            with open(ssl_cert, "rb") as cert_data:
+                ssl_cert_data = cert_data.read()
+            with open(ssl_key, "rb") as key_data:
+                ssl_key_data = key_data.read()
+            key_pairs.append((ssl_key_data, ssl_cert_data))
+            # handle ca
+            if not ssl_ca or not os.path.exists(ssl_ca):
+                raise Exception(f"Configured SSL CA {ssl_ca} does not exist.")
+            with open(ssl_ca, "rb") as ca_data:
+                ssl_ca_data = ca_data.read()
+
+            server_credentials = grpc.ssl_server_credentials(
+                key_pairs, ssl_ca_data, ssl_auth
+            )
+
+            self.log.info("grpc server IS using SSL")
+            self._server.add_secure_port(
+                f"{address}:{port}", server_credentials
+            )
+        else:
+            self.log.info("grpc server IS NOT using SSL")
+            self._server.add_insecure_port(f"{address}:{port}")
         self._server.start()
         self.log.info("Started Message Service Server (%s:%s)", address, port)
 
     @classmethod
     def instance(
-        cls, logger, address, port, secure=False, workers=4, compression=True
+        cls,
+        logger,
+        address,
+        port,
+        secure=False,
+        workers=4,
+        compression=True,
+        ssl_ca=None,
+        ssl_cert=None,
+        ssl_key=None,
+        ssl_auth=False,
     ):
         """Get queue instance."""
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
             cls._instance.log = logger
-            cls._instance._setup(address, port, secure, workers, compression)
+            cls._instance._setup(
+                address,
+                port,
+                secure,
+                workers,
+                compression,
+                ssl_ca,
+                ssl_cert,
+                ssl_key,
+            )
         return cls._instance
 
     def stop(self, grace=None):
@@ -770,7 +888,7 @@ class Driver(drivers.BaseDriver):
         else:
             self.bind_address = "0.0.0.0"
 
-        # TODO(mwhahaha): fix encryption
+        # TODO(mwhahaha): fix encryption?
         self.encrypted_traffic_data = False
 
         super(Driver, self).__init__(
@@ -827,6 +945,10 @@ class Driver(drivers.BaseDriver):
                 self.args.grpc_ssl,
                 self.args.grpc_server_workers,
                 not self.args.grpc_disable_compression,
+                self.args.grpc_ssl_ca,
+                self.args.grpc_ssl_cert,
+                self.args.grpc_ssl_key,
+                self.args.grpc_ssl_client_auth,
             )
         # start connection to server
         if not self._client:
@@ -836,6 +958,9 @@ class Driver(drivers.BaseDriver):
                 self.grpc_port,
                 self.args.grpc_ssl,
                 not self.args.grpc_disable_compression,
+                self.args.grpc_ssl_ca,
+                self.args.grpc_ssl_cert,
+                self.args.grpc_ssl_key,
             )
             self.log.info(
                 "Started Message Service client (%s:%s)",
@@ -851,7 +976,13 @@ class Driver(drivers.BaseDriver):
 
         :returns: Object
         """
-        self._grpc_init()
+        try:
+            self._grpc_init()
+        except Exception as e:
+            self.log.error(
+                "Unable to initialize backend. And Exception was raised. %s", e
+            )
+            raise
 
     def backend_close(self):
         """Close the backend connection."""
@@ -1021,7 +1152,17 @@ class Driver(drivers.BaseDriver):
 
         :returns: Object
         """
-        self._grpc_init()
+        try:
+            self._grpc_init()
+        except Exception as e:
+            self.log.error(
+                (
+                    "Unable to initialize jobs backend. And Exception was "
+                    "raised. %s"
+                ),
+                e,
+            )
+            raise
 
     def job_close(self):
         """Close the job socket."""

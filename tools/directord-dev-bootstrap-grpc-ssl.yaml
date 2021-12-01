@@ -1,0 +1,91 @@
+directord_server:
+  jobs:
+  - ADD: dev-setup.sh dev-setup.sh
+  - RUN: sudo DRIVER=grpcd bash dev-setup.sh
+  - RUN: sudo mkdir -p /etc/directord/grpc/ssl
+  - ADD: scripts/messaging/set-ca.sh set-ca.sh
+  - ADD: scripts/grpcd/grpcd-ssl-setup.sh grpcd-ssl-setup.sh
+  - ADD: scripts/messaging/getcert.sh getcert.sh
+  - RUN: sudo mkdir -p /opt/directord/grpc-ssl
+  - RUN: sudo ./grpcd-ssl-setup.sh
+  - ADD: scripts/messaging/getcert.sh getcert.sh
+  # TODO username fix
+  - RUN: |-
+      {% for client in directord_clients['targets'] %}
+        hostname=$(ssh -o StrictHostKeyChecking=no -i {{ directord_bootstrap['key_file']|default("~/.ssh/id_rsa") }} {{ directord_bootstrap['username'] }}@{{ client['host'] }} hostname)
+        sudo ./getcert.sh {{ client['host'] }} /opt/directord/messaging-ssl ${hostname}
+      {% endfor %}
+  - RUN: |-
+      echo $(hostname) | sudo tee /opt/directord/grpc-ssl/messaging-address
+  - RUN: sudo /bin/bash -c 'setfacl -m u:${SUDO_USER}:r /opt/directord/grpc-ssl/*'
+
+  - RUN: |-
+      sudo python3 <<EOC
+      import os
+      import yaml
+      try:
+          with open('/etc/directord/config.yaml') as f:
+              config = yaml.safe_load(f)
+      except FileNotFoundError:
+          config = dict()
+      with open('/opt/directord/grpc-ssl/messaging-address') as addr:
+        messaging_address = addr.read().strip()
+      config['grpc_server_address'] = messaging_address
+      config['grpc_ssl'] = True
+      config['grpc_ssl_ca'] = "/opt/directord/grpc-ssl/directord-ca.crt"
+      config['grpc_ssl_client_auth'] = True
+      with open('/etc/directord/config.yaml', 'w') as f:
+          f.write(yaml.safe_dump(config, default_flow_style=False))
+      EOC
+  - RUN: sudo /opt/directord/bin/directord-server-systemd
+  - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl enable directord-server.service
+  - RUN: sudo systemctl restart directord-server.service
+  - RUN: sleep 5
+
+directord_clients:
+  jobs:
+  - ADD: dev-setup.sh dev-setup.sh
+  - RUN: sudo DRIVER=grpcd bash dev-setup.sh
+  - RUN: sudo mkdir -p /etc/directord/grpc/ssl
+  - ADD: /opt/directord/grpc-ssl/{{ directord_bootstrap['host'] }}.crt {{ directord_bootstrap['host'] }}.crt
+  - RUN: sudo cp {{ directord_bootstrap['host'] }}.crt /etc/directord/grpc/ssl/{{ directord_bootstrap['host'] }}.crt
+  - ADD: /opt/directord/grpc-ssl/{{ directord_bootstrap['host'] }}.key {{ directord_bootstrap['host'] }}.key
+  - RUN: sudo cp {{ directord_bootstrap['host'] }}.key /etc/directord/grpc/ssl/{{ directord_bootstrap['host'] }}.key
+  - RUN: sudo mkdir -p /opt/directord/grpc-ssl
+  - ADD: /opt/directord/grpc-ssl/directord-ca.crt directord-ca.crt
+  - RUN: sudo cp directord-ca.crt /opt/directord/grpc-ssl/directord-ca.crt
+  - ADD: scripts/messaging/set-ca.sh set-ca.sh
+  - RUN: sudo /bin/bash -c '. set-ca.sh; cp /opt/directord/grpc-ssl/directord-ca.crt $CA_DIR; $CA_UPDATE'
+  - ADD: /opt/directord/grpc-ssl/messaging-address messaging-address
+  - RUN: |-
+      sudo cp messaging-address /opt/directord/grpc-ssl/messaging-address
+      rm -f messaging-address
+  - RUN: |-
+      sudo python3 <<EOC
+      import os
+      import yaml
+      try:
+          with open('/etc/directord/config.yaml') as f:
+              config = yaml.safe_load(f)
+      except FileNotFoundError:
+          config = dict()
+      with open('/opt/directord/grpc-ssl/messaging-address') as addr:
+        messaging_address = addr.read().strip()
+      config['grpc_server_address'] = messaging_address
+      config['grpc_ssl'] = True
+      config['grpc_ssl_cert'] = "{}.crt".format(os.path.join(
+          "/etc/directord/grpc/ssl/",
+          "{{ directord_bootstrap['host'] }}"))
+      config['grpc_ssl_key'] = "{}.key".format(os.path.join(
+          "/etc/directord/grpc/ssl/",
+          "{{ directord_bootstrap['host'] }}"))
+      config['grpc_ssl_ca'] = "/opt/directord/grpc-ssl/directord-ca.crt"
+      with open('/etc/directord/config.yaml', 'w') as f:
+          f.write(yaml.safe_dump(config, default_flow_style=False))
+      EOC
+  - RUN: sudo /opt/directord/bin/directord-client-systemd
+  - RUN: sudo systemctl daemon-reload
+  - RUN: sudo systemctl enable directord-client.service
+  - RUN: sudo systemctl restart directord-client.service
+
