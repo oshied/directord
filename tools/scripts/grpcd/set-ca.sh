@@ -1,0 +1,1 @@
+../messaging/set-ca.sh
