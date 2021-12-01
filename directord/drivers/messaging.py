@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+from distutils.util import strtobool
 import json
 import logging
 import os
@@ -57,12 +58,7 @@ def parse_args(parser, parser_server, parser_client):
         "--messaging-ssl",
         help=("Enable messaging driver SSL encryption. Default: %(default)s"),
         metavar="BOOLEAN",
-        default=bool(
-            os.getenv(
-                "DIRECTORD_MESSAGING_SSL",
-                "True",
-            )
-        ),
+        default=bool(strtobool(os.getenv("DIRECTORD_MESSAGING_SSL", "True"))),
         type=bool,
     )
     messaging_group.add_argument(

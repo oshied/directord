@@ -13,6 +13,7 @@
 #   under the License.
 
 from concurrent import futures
+from distutils.util import strtobool
 import json
 import os
 import queue
@@ -68,7 +69,9 @@ def parse_args(parser, parser_server, parser_client):
     group.add_argument(
         "--grpc-disable-compression",
         action="store_true",
-        default=os.getenv("DIRECTORD_GRPC_DISABLE_COMPRESSION", False),
+        default=bool(
+            strtobool(os.getenv("DIRECTORD_GRPC_DISABLE_COMPRESSION", "False"))
+        ),
         help=("Disable compression between client and server."),
     )
 
@@ -96,12 +99,7 @@ def parse_args(parser, parser_server, parser_client):
         "--grpc-ssl",
         help=("Enable gRPC driver SSL encryption. Default: %(default)s"),
         metavar="BOOLEAN",
-        default=bool(
-            os.getenv(
-                "DIRECTORD_GRPC_SSL",
-                "False",
-            )
-        ),
+        default=bool(strtobool(os.getenv("DIRECTORD_GRPC_SSL", "False"))),
         type=bool,
     )
     auth_group.add_argument(
