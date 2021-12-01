@@ -878,7 +878,7 @@ class Driver(drivers.BaseDriver):
             return True
         # limit checks to 5 per second and add some jitter
         self.timeout = (
-            max(interval * (constant * 0.001), 0.2)
+            max(interval * (constant * 0.001), 0.5)
             + random.randrange(0, 1000) / 10000
         )
         time.sleep(self.timeout)
@@ -1050,7 +1050,7 @@ class Driver(drivers.BaseDriver):
             return True
         # limit checks to 5 per second and add some jitter
         self.timeout = (
-            max(interval * (constant * 0.001), 0.2)
+            max(interval * (constant * 0.001), 0.5)
             + random.randrange(0, 1000) / 10000
         )
         time.sleep(self.timeout)
