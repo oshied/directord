@@ -244,7 +244,7 @@ class Server(interface.Interface):
             },
         )
 
-    def run_job(self, sentinel=False):
+    def run_job(self):
         """Run a job interaction.
 
         As the job loop executes it will interrogate the job item as returned
@@ -254,8 +254,6 @@ class Server(interface.Interface):
         receive the message. If a defined target is not found within the
         workers object no job will be executed.
 
-        :param sentinel: Breaks the loop
-        :type sentinel: Boolean
         :returns: Tuple
         """
 
@@ -273,7 +271,7 @@ class Server(interface.Interface):
                         self.log.debug(
                             "Job restriction %s is unknown.", restrict_sha3_224
                         )
-                        if sentinel:
+                        if self.driver.event.is_set():
                             break
                         else:
                             continue
@@ -375,10 +373,10 @@ class Server(interface.Interface):
                             )
                         )
 
-            if sentinel:
+            if self.driver.event.is_set():
                 break
 
-    def run_backend(self, sentinel=False):
+    def run_backend(self):
         """Execute the backend loop.
 
         Directord's interaction executor will slow down the poll interval
@@ -388,9 +386,6 @@ class Server(interface.Interface):
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 1.
-
-        :param sentinel: Breaks the loop
-        :type sentinel: Boolean
         """
 
         self.driver.backend_init()
@@ -533,10 +528,10 @@ class Server(interface.Interface):
                         info,
                     )
 
-            if sentinel:
+            if self.driver.event.is_set():
                 break
 
-    def run_interactions(self, sentinel=False):
+    def run_interactions(self):
         """Execute the interactions loop.
 
         Directord's interaction executor will slow down the poll interval
@@ -546,9 +541,6 @@ class Server(interface.Interface):
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 1.
-
-        :param sentinel: Breaks the loop
-        :type sentinel: Boolean
         """
 
         self.driver.job_init()
@@ -647,7 +639,7 @@ class Server(interface.Interface):
                 )
                 prune_time = time.time() + 10
 
-            if sentinel:
+            if self.driver.event.is_set():
                 self.driver.job_close()
                 break
 
@@ -712,7 +704,7 @@ class Server(interface.Interface):
                 )
             )
 
-    def run_socket_server(self, sentinel=False):
+    def run_socket_server(self):
         """Start a socket server.
 
         The socket server is used to broker a connection from the end user
@@ -724,9 +716,6 @@ class Server(interface.Interface):
         content. This is done for tracking and caching purposes. The task
         ID can be defined in the data. If a task ID is not defined one will
         be generated.
-
-        :param sentinel: Breaks the loop
-        :type sentinel: Boolean
         """
 
         try:
@@ -826,7 +815,7 @@ class Server(interface.Interface):
                         self.log.debug("Data sent to queue [ %s ]", json_data)
                         self.job_queue.put(json_data)
 
-            if sentinel:
+            if self.driver.event.is_set():
                 break
 
     def handle_heartbeat(self, identity, data):
@@ -1012,4 +1001,4 @@ class Server(interface.Interface):
             ),
         ]
 
-        self.run_threads(threads=threads)
+        self.run_threads(threads=threads, stop_event=self.driver.event)
