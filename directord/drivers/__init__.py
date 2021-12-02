@@ -30,6 +30,22 @@ def parse_args(parser):
     pass
 
 
+class ExceptionThreadProcessor(threading.Thread):
+    """Create an exception handling thread class."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.exception = None
+
+    def run(self):
+        """Run, but wrapped to store any encountered exception."""
+
+        try:
+            super().run()
+        except Exception as e:
+            self.exception = e
+
+
 class BaseDriver:
     coordination_failed = "\x07"  # Signals coordination failed
     coordination_ack = "\x10"  # Signals coordination acknowledged
@@ -41,7 +57,7 @@ class BaseDriver:
     nullbyte = "\x00"  # Signals null
     transfer_start = "\x02"  # Signals transfer start
     transfer_end = "\x03"  # Signals transfer end
-    thread_processor = threading.Thread
+    thread_processor = ExceptionThreadProcessor
     event = threading.Event()
 
     def __init__(

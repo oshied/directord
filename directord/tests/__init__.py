@@ -216,10 +216,13 @@ class FakeCache:
 class FakeThread:
     daemon = False
 
+    def is_alive(self):
+        pass
+
     def start(self):
         pass
 
-    def join(self):
+    def join(self, *args, **kwargs):
         pass
 
 
@@ -262,6 +265,9 @@ class TestDriverBase(unittest.TestCase):
         self.mock_driver.transfer_end = base_driver.transfer_end
         self.mock_driver.bind_job = MagicMock()
         self.mock_driver.heartbeat_send = MagicMock()
+        event = self.mock_driver.event = MagicMock()
+        event.is_set.return_value = True
+
         self.addCleanup(self.restoreDrivers)
 
     def restoreDrivers(self):

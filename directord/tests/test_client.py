@@ -50,7 +50,7 @@ class TestClient(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check", return_value=False):
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
 
     @patch("time.time", autospec=True)
     def test_run_job_idle(self, mock_time):
@@ -74,7 +74,7 @@ class TestClient(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 1, 66, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check", return_value=False):
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
 
     @patch("time.time", autospec=True)
     def test_run_job_ramp(self, mock_time):
@@ -98,7 +98,7 @@ class TestClient(tests.TestDriverBase):
         ]
         mock_time.side_effect = [1, 1, 1, 34, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check", return_value=False):
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
 
     @patch("shelve.open", autospec=True)
     @patch("time.time", autospec=True)
@@ -128,7 +128,7 @@ class TestClient(tests.TestDriverBase):
         mock_time.side_effect = [1, 1, 1, 1, 5000, 1, 1, 1, 1, 1]
         mock_diskcache.return_value = tests.FakeCache()
         with patch.object(self.mock_driver, "job_check", return_value=False):
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
 
     @patch("shelve.open", autospec=True)
     @patch("logging.Logger.debug", autospec=True)
@@ -161,7 +161,7 @@ class TestClient(tests.TestDriverBase):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
@@ -196,7 +196,7 @@ class TestClient(tests.TestDriverBase):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
@@ -230,7 +230,7 @@ class TestClient(tests.TestDriverBase):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
@@ -266,7 +266,7 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.client, "cache", cache):
             with patch.object(self.mock_driver, "job_check") as mock_job_check:
                 mock_job_check.side_effect = [True, False]
-                self.client.run_job(sentinel=True)
+                self.client.run_job()
         mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
@@ -303,7 +303,7 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.client, "cache", cache):
             with patch.object(self.mock_driver, "job_check") as mock_job_check:
                 mock_job_check.side_effect = [True, False]
-                self.client.run_job(sentinel=True)
+                self.client.run_job()
         mock_log_info.assert_called()
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_end)
 
@@ -339,7 +339,7 @@ class TestClient(tests.TestDriverBase):
         mock_time.side_effect = [1, 1, 1, 1, 1, 1, 1]
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
-            self.client.run_job(sentinel=True)
+            self.client.run_job()
         mock_log_info.assert_called()
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_failed)
 
@@ -347,5 +347,5 @@ class TestClient(tests.TestDriverBase):
     @patch("directord.client.Client.run_threads", autospec=True)
     def test_worker_run(self, mock_run_threads, mock_makedirs):
         self.client.worker_run()
-        mock_run_threads.assert_called_with(ANY, threads=[ANY])
+        mock_run_threads.assert_called_with(ANY, threads=[ANY], stop_event=ANY)
         mock_makedirs.assert_called()

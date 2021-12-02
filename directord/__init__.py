@@ -17,6 +17,7 @@ import importlib.util as importlib_util
 import json
 import multiprocessing
 import os
+import queue
 import socket
 import sys
 
@@ -188,7 +189,7 @@ class Processor:
 
         return False
 
-    def run_threads(self, threads):
+    def run_threads(self, threads, stop_event=None):
         """Execute process objects from an array.
 
         The array of threads are processed and started in a "daemon" mode.
@@ -199,16 +200,45 @@ class Processor:
           (Process(), Boolean). The boolean is used to enable or disable
           a daemonic process.
 
+        > Process joins will now check if the thread is alive and gracefully
+          attempt to shutdown the application should there be an exception or
+          any of the threads are dead.
+
         :param threads: An array of Process objects.
         :type threads: List
+        :param stop_event: Driver based event object used to shutdown the
+                           application.
+        :type stop_event: Object
         """
+
+        exceptions = list()
+        joinable = queue.Queue()
 
         for t, daemon in threads:
             t.daemon = daemon
             t.start()
+            joinable.put(t)
 
-        for t, _ in threads:
-            t.join()
+        while not joinable.empty():
+            t = joinable.get()
+            try:
+                t.join(timeout=1)
+            except Exception as e:
+                exceptions.append(e)
+            else:
+                if getattr(t, "exception", None) is not None:
+                    exceptions.append(t.exception)
+
+                if t.is_alive():
+                    joinable.put(t)
+                elif stop_event is not None:
+                    stop_event.set()
+
+        if exceptions:
+            for e in exceptions:
+                self.log.critical(e.__traceback__)
+
+            raise exceptions[0]
 
 
 class UNIXSocketConnect:

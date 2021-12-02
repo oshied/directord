@@ -663,7 +663,7 @@ class Client(interface.Interface):
         else:
             return True
 
-    def run_job(self, lock=None, sentinel=False):
+    def run_job(self, lock=None):
         """Job entry point.
 
         This creates a cached access object, connects to the socket and begins
@@ -674,9 +674,6 @@ class Client(interface.Interface):
 
         * Initial poll interval is 1024, maxing out at 2048. When work is
           present, the poll interval is 1.
-
-        :param sentinel: Breaks the loop
-        :type sentinel: Boolean
         """
 
         self.driver.job_init()
@@ -736,7 +733,7 @@ class Client(interface.Interface):
                 log=self.log,
             )
 
-            if sentinel:
+            if self.driver.event.is_set():
                 self.driver.job_close()
                 break
 
@@ -841,4 +838,4 @@ class Client(interface.Interface):
             lock=self.driver.get_lock(),
         ) as cache:
             self.cache = cache
-            self.run_threads(threads=threads)
+            self.run_threads(threads=threads, stop_event=self.driver.event)

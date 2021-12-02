@@ -148,7 +148,11 @@ class TestProcessor(unittest.TestCase):
 
     def test_run_threads(self):
         thread1 = tests.FakeThread()
+        p1 = unittest.mock.patch.object(thread1, "is_alive")
+        p1.side_effect = [True, False]
         thread2 = tests.FakeThread()
+        p2 = unittest.mock.patch.object(thread2, "is_alive")
+        p2.side_effect = [True, False]
         self.processor.run_threads(threads=[(thread1, False), (thread2, True)])
         self.assertFalse(thread1.daemon)
         self.assertTrue(thread2.daemon)
