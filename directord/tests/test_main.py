@@ -357,6 +357,7 @@ class TestMain(unittest.TestCase):
                 "driver": "zmq",
                 "job_port": 5555,
                 "backend_port": 5556,
+                "durable_queue_enabled": False,
                 "heartbeat_interval": 60,
                 "identity": None,
                 "socket_group": "0",

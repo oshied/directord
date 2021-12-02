@@ -17,7 +17,7 @@ import socket
 import time
 import threading
 
-from directord import logger
+from directord import logger, utils
 
 
 def parse_args(parser):
@@ -59,6 +59,7 @@ class BaseDriver:
     transfer_end = "\x03"  # Signals transfer end
     thread_processor = ExceptionThreadProcessor
     event = threading.Event()
+    condition = threading.Condition
 
     def __init__(
         self,
@@ -77,6 +78,9 @@ class BaseDriver:
         self.encrypted_traffic_data = encrypted_traffic_data
         self.log = logger.getLogger(name="directord")
         self.args = args
+        self.durable_queue_enabled = getattr(
+            args, "durable_queue_enabled", False
+        )
 
         self.identity = getattr(args, "identity", socket.gethostname())
         if not self.identity:
@@ -94,11 +98,25 @@ class BaseDriver:
 
         return threading.Lock()
 
-    @staticmethod
-    def get_queue():
-        """Returns a thread lock."""
+    def get_queue(self, path=None):
+        """Returns a queue object.
 
-        return queue.Queue()
+        If the path is defined, a durable queue object will be returned.
+
+        :param path: Path store all queue items.
+        :type path: String.
+        """
+
+        if path and self.durable_queue_enabled is True:
+            return utils.DurableQueue(
+                maxsize=0,
+                mutex=self.get_lock(),
+                lock=self.get_lock(),
+                condition=self.condition,
+                path=path,
+            )
+        else:
+            return queue.Queue()
 
     def __copy__(self):
         """Return a copy of the base class.

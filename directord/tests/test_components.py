@@ -39,10 +39,14 @@ from directord.components.lib.podman import PodmanClient
 class TestComponents(unittest.TestCase):
     def setUp(self):
         self.args = tests.FakeArgs()
+        self.patched_get_queue = patch(
+            "directord.utils.DurableQueue", autospec=True
+        )
+        self.patched_get_queue.start()
         self.client = client.Client(args=self.args)
-
         self.mock_q_patched = patch("queue.Queue", autospec=True)
         q = self.mock_q_patched.start()
+        self.patched_get_queue.return_value = q
         self.client.q_processes = q
         self.client.q_return = q
 
@@ -73,6 +77,7 @@ class TestComponents(unittest.TestCase):
             item.driver = drivers.BaseDriver(args=self.args)
 
     def tearDown(self):
+        self.patched_get_queue.stop()
         self.mock_q_patched.stop()
 
     def test_options_converter(self):
