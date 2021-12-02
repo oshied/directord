@@ -99,4 +99,4 @@ class Component(components.ComponentBase):
             self.log.debug("Facter data added to cache")
             return stdout, stderr, outcome, command
         else:
-            return (None, "Failed to add facter data to cache", False, None)
+            return None, "Failed to add facter data to cache", False, None
