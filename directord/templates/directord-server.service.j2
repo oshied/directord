@@ -5,6 +5,7 @@ After=network.target
 [Service]
 User=root
 Group={{ directord_group }}
+LimitNOFILE=65536
 ExecStart={{ directord_binary }} --config-file /etc/directord/config.yaml --socket-group {{ directord_group }} server
 Restart=on-failure
 RestartSec=10
