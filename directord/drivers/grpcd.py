@@ -382,9 +382,52 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
 
 
 class MessageServiceClient(object):
-    def __init__(
-        self,
+    """Service Client."""
+
+    _instance = None
+    log = None
+    server_address = None
+    server_port = None
+    channel = None
+    stub = None
+    compression = None
+    ssl_ca = None
+    ssl_cert = None
+    ssl_key = None
+
+    def __init__(self):
+        """Init."""
+        raise RuntimeError("Use instance()")
+
+    @classmethod
+    def instance(
+        cls,
         logger,
+        server_address,
+        server_port,
+        secure=False,
+        compression=True,
+        ssl_ca=None,
+        ssl_cert=None,
+        ssl_key=None,
+    ):
+        """Get client instance."""
+        if cls._instance is None:
+            cls._instance = cls.__new__(cls)
+            cls._instance.log = logger
+            cls._instance._setup(
+                server_address,
+                server_port,
+                secure,
+                compression,
+                ssl_ca,
+                ssl_cert,
+                ssl_key,
+            )
+        return cls._instance
+
+    def _setup(
+        self,
         server_address,
         server_port,
         secure=False,
@@ -398,7 +441,6 @@ class MessageServiceClient(object):
         Creates a gRPC channel for connecting to the server.
         Adds the channel to the generated client stub.
         """
-        self.log = logger
         self.server_address = server_address
         self.server_port = server_port
         self.secure = secure
@@ -952,7 +994,7 @@ class Driver(drivers.BaseDriver):
             )
         # start connection to server
         if not self._client:
-            self._client = MessageServiceClient(
+            self._client = MessageServiceClient.instance(
                 self.log,
                 self.server_address,
                 self.grpc_port,
