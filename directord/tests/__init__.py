@@ -12,12 +12,11 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import queue
 import unittest
 
 from unittest.mock import MagicMock
 from unittest.mock import patch
-
-from collections import namedtuple
 
 from directord import drivers
 from directord.drivers import messaging
@@ -250,10 +249,15 @@ class TestDriverBase(unittest.TestCase):
         self.zmq = zmq.Driver
         self.messaging = messaging.Driver
         base_driver = drivers.BaseDriver(args=FakeArgs())
+        self.patched_get_queue = patch(
+            "directord.utils.DurableQueue", autospec=True
+        )
         self.mock_driver_patched = patch(
             "directord.drivers.BaseDriver",
             autospec=True,
         )
+        self.mocked_get_queue = self.patched_get_queue.start()
+        self.mocked_get_queue.return_value = queue.Queue()
         self.mock_driver = self.mock_driver_patched.start()
         self.mock_driver.job_check.return_value = True
         self.mock_driver.nullbyte = base_driver.nullbyte
@@ -276,3 +280,4 @@ class TestDriverBase(unittest.TestCase):
 
     def tearDown(self):
         self.mock_driver_patched.stop()
+        self.patched_get_queue.stop()

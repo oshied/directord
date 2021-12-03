@@ -18,6 +18,8 @@ import os
 import pkgutil
 import sys
 
+from distutils.util import strtobool
+
 import jinja2
 from jinja2 import StrictUndefined
 
@@ -127,7 +129,7 @@ def _args(exec_args=None):
     parser.add_argument(
         "--debug",
         help="Enable debug mode. Default: %(default)s",
-        default=os.getenv("DIRECTORD_DEBUG", False),
+        default=bool(strtobool(os.getenv("DIRECTORD_DEBUG", "False"))),
         action="store_true",
     )
     server_group = parser.add_argument_group("Server options")
@@ -210,6 +212,14 @@ def _args(exec_args=None):
         metavar="STRING",
         default=os.getenv("DIRECTORD_MACHINE_ID", None),
         type=str,
+    )
+    parser_client.add_argument(
+        "--durable-queue-enabled",
+        help="Enable client side durable queues: %(default)s",
+        default=bool(
+            strtobool(os.getenv("DIRECTORD_DURABLE_QUEUE_ENABLED", "False"))
+        ),
+        action="store_true",
     )
     parser_orchestrate = subparsers.add_parser(
         "orchestrate", help="Orchestration mode help"
