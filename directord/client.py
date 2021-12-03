@@ -384,9 +384,19 @@ class Client(interface.Interface):
                 self.log.debug("Lock acquired for [ %s ]", job_id)
 
             _starttime = time.time()
-            stdout, stderr, outcome, info = component.client(
-                cache=self.cache, job=job
-            )
+            try:
+                stdout, stderr, outcome, info = component.client(
+                    cache=self.cache, job=job
+                )
+            except Exception as e:
+                stderr = "Job [ {} ] Component Failure: {}".format(
+                    job_id, str(e)
+                )
+                self.log.critical(stderr)
+                stdout = None
+                outcome = False
+                info = e.__traceback__
+
             job["component_exec_timestamp"] = datetime.datetime.fromtimestamp(
                 time.time()
             ).strftime("%Y-%m-%d %H:%M:%S")
