@@ -131,7 +131,7 @@ class ClientStatus:
         except AttributeError:
             pass
 
-        job_sent = self.ctx.driver.job_send(
+        self.ctx.driver.job_send(
             msg_id=self.job_id,
             control=self.job_state,
             command=self.command,
@@ -141,7 +141,7 @@ class ClientStatus:
             stdout=self.stdout,
         )
         self.ctx.log.debug(
-            "Job [ %s ] message sent on exit, %s", self.job_id, job_sent
+            "Job [ %s ] message sent on exit, %s", self.job_id, self.info
         )
 
 
@@ -373,13 +373,21 @@ def component_lock_search():
 class Locker:
     """Context manager for lock object."""
 
-    def __init__(self, lock):
+    def __init__(self, lock, blocking=True, timeout=None):
         """Initialize the lock context manager.
 
         :param lock: Multiprocessing lock object
         :type lock: Object
         """
 
+        if lock:
+            if not blocking and timeout:
+                raise ValueError("Timeout can not be used when not blocking.")
+            elif not timeout:
+                timeout = -1
+
+        self.blocking = blocking
+        self.timeout = timeout
         self.lock = lock
 
     def __enter__(self):
@@ -389,7 +397,7 @@ class Locker:
         """
 
         if self.lock:
-            self.lock.acquire()
+            self.lock.acquire(blocking=self.blocking, timeout=self.timeout)
 
         return self.lock
 
@@ -448,11 +456,7 @@ class Cache:
                 with open(
                     os.path.join(self.db_path, self.encoder(key)), "rb"
                 ) as f:
-                    data = pickle.load(f)
-                    try:
-                        return json.loads(data)
-                    except Exception:
-                        return data
+                    return pickle.load(f)
             except FileNotFoundError:
                 return
 
@@ -475,11 +479,6 @@ class Cache:
                 expire = None
         else:
             expire = None
-
-        try:
-            value = json.dumps(value)
-        except TypeError:
-            pass
 
         file_object = os.path.join(self.db_path, self.encoder(key))
         with Locker(lock=self.lock):
@@ -541,18 +540,26 @@ class Cache:
         :returns: List
         """
 
-        cwd = os.getcwd()
         try:
-            os.chdir(self.db_path)
-            for item in sorted(
-                filter(os.path.isfile, os.listdir()), key=self._get_create_time
-            ):
-                try:
-                    yield os.getxattr(item, "user.key").decode()
-                except OSError:
-                    yield item
-        finally:
-            os.chdir(cwd)
+            cwd = os.getcwd()
+            try:
+                os.chdir(self.db_path)
+                items = os.listdir()
+                if not items:
+                    return list()
+
+                for item in sorted(
+                    filter(os.path.isfile, items),
+                    key=self._get_create_time,
+                ):
+                    try:
+                        yield os.getxattr(item, "user.key").decode()
+                    except OSError:
+                        yield item
+            finally:
+                os.chdir(cwd)
+        except FileNotFoundError:
+            return list()
 
     def pop(self, key):
         """Remove a given key from the cache.
@@ -613,37 +620,82 @@ class Cache:
         for item in self.keys():
             self.__delitem__(key=item)
 
+    def size(self):
+        """Return the current cache size."""
 
-class DurableQueue(queue.Queue):
+        count = 0
+        for _ in self.keys():
+            count += 1
+
+        return count
+
+
+class DurableQueue:
     """Durable queue class, used to ensure queued items are disk backed."""
 
-    def __init__(self, maxsize, mutex, lock, condition, path):
-        self.maxsize = maxsize
-        self.mutex = mutex
-        self.not_empty = condition(self.mutex)
-        self.not_full = condition(self.mutex)
-        self.all_tasks_done = condition(self.mutex)
+    def __init__(self, mutex, fslock, path):
         self.path = path
-        self.queue = Cache(url=self.path, lock=lock)
-        self.unfinished_tasks = self._qsize()
-
-    def _init(self, *args, **kwargs):
-        pass
-
-    def _qsize(self):
-        """Return the queue size."""
-        return len(list(self.queue.keys()))
-
-    def _put(self, item):
-        """Put a new item within the queue."""
-        self.queue[get_uuid()] = item
+        self.mutex = mutex
+        self.queue = Cache(url=self.path, lock=fslock)
 
     def _get(self):
         """Retrieve the first item from the queue."""
+
         for item in self.queue.keys():
             return self.queue.pop(item)
+        else:
+            raise queue.Empty
 
-    def close(self):
-        """Close the current Queue and cleanup artifacts."""
-        self.queue.clear()
-        os.rmdir(self.path)
+    def _put(self, item):
+        """Put a new item within the queue."""
+
+        self.queue[get_uuid()] = item
+
+    def _qsize(self):
+        """Return the queue size."""
+
+        try:
+            return self.queue.size()
+        except Exception:
+            return 0
+
+    def join(self):
+        """Join the current Queue and cleanup artifacts."""
+
+        if not self.mutex.aquire(blocking=True, timeout=None):
+            self.queue.clear()
+            os.rmdir(self.path)
+
+    def empty(self):
+        """Return True if the queue is currently empty."""
+
+        return self._qsize() == 0
+
+    def get(self, block=True, timeout=None):
+        """Return an item from the queue."""
+
+        if not self.mutex.aquire(blocking=block, timeout=timeout):
+            raise queue.Empty
+
+        return self._get()
+
+    def get_nowait(self):
+        """Return an item from the queue without a timeout."""
+
+        return self._get()
+
+    def put(self, item, block=True, timeout=None):
+        """Put an item into the queue."""
+
+        self._put(item)
+        self.mutex.release()
+
+    def put_nowait(self, item):
+        """Put an item into the queue without a timeout."""
+
+        self._put(item)
+
+    def qsize(self):
+        """Return the current queue size."""
+
+        return self._qsize()

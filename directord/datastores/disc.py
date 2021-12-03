@@ -42,7 +42,7 @@ class BaseDocument(utils.Cache):
             if expire and time.time() >= expire:
                 self.__delitem__(key)
 
-        return len(list(self.keys()))
+        return self.size()
 
     def set(self, key, value):
         """Set key and value if key doesn't already exist.

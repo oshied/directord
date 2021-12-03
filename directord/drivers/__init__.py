@@ -17,6 +17,8 @@ import socket
 import time
 import threading
 
+from eventlet.green import thread
+
 from directord import logger, utils
 
 
@@ -78,8 +80,8 @@ class BaseDriver:
         self.encrypted_traffic_data = encrypted_traffic_data
         self.log = logger.getLogger(name="directord")
         self.args = args
-        self.durable_queue_enabled = getattr(
-            args, "durable_queue_enabled", False
+        self.durable_queue_disabled = getattr(
+            args, "durable_queue_disabled", False
         )
 
         self.identity = getattr(args, "identity", socket.gethostname())
@@ -107,12 +109,10 @@ class BaseDriver:
         :type path: String.
         """
 
-        if path and self.durable_queue_enabled is True:
+        if path and self.durable_queue_disabled is False:
             return utils.DurableQueue(
-                maxsize=0,
-                mutex=self.get_lock(),
-                lock=self.get_lock(),
-                condition=self.condition,
+                mutex=threading.Semaphore(0),
+                fslock=self.get_lock(),
                 path=path,
             )
         else:

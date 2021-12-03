@@ -718,12 +718,10 @@ class Driver(drivers.BaseDriver):
         :type path: String.
         """
 
-        if path and self.durable_queue_enabled is True:
+        if path and self.durable_queue_disabled is False:
             return utils.DurableQueue(
-                maxsize=0,
-                mutex=self.get_lock(),
-                lock=self.get_lock(),
-                condition=self.condition,
+                mutex=multiprocessing.Semaphore(0),
+                fslock=self.get_lock(),
                 path=path,
             )
         else:

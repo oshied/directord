@@ -214,10 +214,10 @@ def _args(exec_args=None):
         type=str,
     )
     parser_client.add_argument(
-        "--durable-queue-enabled",
-        help="Enable client side durable queues: %(default)s",
+        "--durable-queue-disabled",
+        help="Disable client side durable queues: %(default)s",
         default=bool(
-            strtobool(os.getenv("DIRECTORD_DURABLE_QUEUE_ENABLED", "False"))
+            strtobool(os.getenv("DIRECTORD_DURABLE_QUEUE_DISABLED", "False"))
         ),
         action="store_true",
     )

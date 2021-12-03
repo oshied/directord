@@ -290,7 +290,7 @@ jobs:
         run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
       - name: Configure durable queues
         run: >-
-          echo 'durable_queue_enabled: true' | sudo tee -a /etc/directord/config.yaml
+          echo 'durable_queue_disabled: False' | sudo tee -a /etc/directord/config.yaml
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd

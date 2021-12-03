@@ -87,9 +87,9 @@ However, given the performance of modern storage media, the impact to
 client task performance should be minor, and in most cases it will go
 unnoticed.
 
-* Set the environment variable `DIRECTORD_DURABLE_QUEUE_ENABLED` to **True**,
-  define the option `durable_queue_enabled: true` in config,  or use the CLI
-  switch `--durable-queue-enabled` to enable the client-side durable queue
+* Set the environment variable `DIRECTORD_DURABLE_QUEUE_DISABLED` to **True**,
+  define the option `durable_queue_disabled: true` in config,  or use the CLI
+  switch `--durable-queue-disabled` to disable the client-side durable queue
   feature.
 
 #### Profiling

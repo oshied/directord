@@ -178,6 +178,8 @@ class Processor:
         try:
             if not process.is_alive():
                 process.join(timeout=1)
+                if hasattr(process, "terminate"):
+                    process.terminate()
                 self.log.info("Process [ %s ] cleaned up", process.name)
                 return True
         except Exception as e:
