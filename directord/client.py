@@ -38,12 +38,8 @@ class Client(interface.Interface):
 
         super(Client, self).__init__(args=args)
 
-        self.q_return = self.driver.get_queue(
-            path=os.path.join(self.args.cache_path, "queue", "q_return")
-        )
-        self.q_processes = self.driver.get_queue(
-            path=os.path.join(self.args.cache_path, "queue", "q_processes")
-        )
+        self.q_return = self.driver.get_queue()
+        self.q_processes = self.driver.get_queue()
         self.base_component = components.ComponentBase()
         self.cache = dict()
         self.start_time = time.time()
@@ -180,11 +176,7 @@ class Client(interface.Interface):
                 else:
                     _parent = parent_tracker[_q_name] = dict(
                         t=None,
-                        q=self.driver.get_queue(
-                            path=os.path.join(
-                                self.args.cache_path, "queue", _q_name
-                            )
-                        ),
+                        q=self.driver.get_queue(),
                         bypass=job.get("parent_async_bypass", False),
                     )
                     self.log.info("Parent queue [ %s ] created.", _q_name)
@@ -221,7 +213,6 @@ class Client(interface.Interface):
                     if value["q"].empty() and timeout:
                         self.terminate_process(process=value["t"])
                         parent_tracker.pop(key)
-                        value["q"].close()
                         self.log.info("Pruned parent [ %s ]", key)
                     elif not value["q"].empty():
                         self.log.warning(
@@ -858,9 +849,3 @@ class Client(interface.Interface):
         ) as cache:
             self.cache = cache
             self.run_threads(threads=threads, stop_event=self.driver.event)
-
-        if hasattr(self.q_processes, "close"):
-            self.q_processes.close()
-
-        if hasattr(self.q_return, "close"):
-            self.q_return.close()

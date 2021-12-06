@@ -115,7 +115,6 @@ class Driver(drivers.BaseDriver):
 
         self.thread_processor = multiprocessing.Process
         self.event = multiprocessing.Event()
-        self.condition = multiprocessing.Condition
         self.args = args
         self.encrypted_traffic_data = encrypted_traffic_data
 
@@ -709,25 +708,11 @@ class Driver(drivers.BaseDriver):
 
         return multiprocessing.Lock()
 
-    def get_queue(self, path=None):
-        """Returns a queue object.
+    @staticmethod
+    def get_queue():
+        """Returns a thread lock."""
 
-        If the path is defined, a durable queue object will be returned.
-
-        :param path: Path store all queue items.
-        :type path: String.
-        """
-
-        if path and self.durable_queue_enabled is True:
-            return utils.DurableQueue(
-                maxsize=0,
-                mutex=self.get_lock(),
-                lock=self.get_lock(),
-                condition=self.condition,
-                path=path,
-            )
-        else:
-            return multiprocessing.Queue()
+        return multiprocessing.Queue()
 
     def key_generate(self, keys_dir, key_type):
         """Generate certificate.
