@@ -90,9 +90,9 @@ class Component(components.ComponentBase):
             return None, "Facter returned invalid JSON!", False, None
         cache_set = self.set_cache(
             cache=cache,
-            key="facter",
-            value=json_data,
-            value_update=True,
+            key="args",
+            value={"facter": json_data},
+            value_update=False,
             extend=False,
         )
         if cache_set:
