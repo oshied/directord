@@ -74,11 +74,11 @@ class Component(components.ComponentBase):
         if not outcome:
             return None, "Facter is not installed!", False, None
         executable = stdout.decode().strip()
-        command = executable + " --json"
+        command = f"{executable} --json"
         if job["custom_dir"]:
-            command += " --custom-dir " + job["custom_dir"]
+            command = f"{command} --custom-dir {job['custom_dir']}"
         if job["external_dir"]:
-            command += " --external-dir " + job["external_dir"]
+            command = f"{command} --external-dir {job['external_dir']}"
         stdout, stderr, outcome = self.run_command(
             command=command,
             env=cache.get("envs"),
