@@ -1208,12 +1208,10 @@ class Driver(drivers.BaseDriver):
 
     def job_close(self):
         """Close the job socket."""
-        if self.mode == "server" and self._server:
-            self._server.stop()
-        if self._client:
-            self._client.close()
-        self._server = None
-        self._client = None
+        self.log.debug(
+            "The grpcd driver shares a single client between all threads, "
+            "skipping close."
+        )
 
     def job_check(self, interval=1, constant=1000):
         """Return True if a job contains work ready.
