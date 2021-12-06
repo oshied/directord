@@ -66,5 +66,4 @@ class TestDatastoreDisc(unittest.TestCase):
 
     def test_set(self):
         with patch("builtins.open", unittest.mock.mock_open()):
-            with patch("pickle.load", autospec=True):
-                self.datastore.set(key="key", value="value")
+            self.datastore.set(key="key", value="value")

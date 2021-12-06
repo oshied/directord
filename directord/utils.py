@@ -15,9 +15,7 @@
 import hashlib
 import json
 import os
-import pickle
 import pkgutil
-import queue
 import socket
 import struct
 import sys
@@ -445,13 +443,11 @@ class Cache:
 
         with Locker(lock=self.lock):
             try:
-                with open(
-                    os.path.join(self.db_path, self.encoder(key)), "rb"
-                ) as f:
-                    data = pickle.load(f)
+                with open(os.path.join(self.db_path, self.encoder(key))) as f:
+                    data = f.read()
                     try:
                         return json.loads(data)
-                    except Exception:
+                    except json.decoder.JSONDecodeError:
                         return data
             except FileNotFoundError:
                 return
@@ -483,8 +479,8 @@ class Cache:
 
         file_object = os.path.join(self.db_path, self.encoder(key))
         with Locker(lock=self.lock):
-            with open(file_object, "wb") as f:
-                pickle.dump(value, f)
+            with open(file_object, "w") as f:
+                f.write(value)
             try:
                 try:
                     os.getxattr(file_object, "user.birthtime")
@@ -612,38 +608,3 @@ class Cache:
 
         for item in self.keys():
             self.__delitem__(key=item)
-
-
-class DurableQueue(queue.Queue):
-    """Durable queue class, used to ensure queued items are disk backed."""
-
-    def __init__(self, maxsize, mutex, lock, condition, path):
-        self.maxsize = maxsize
-        self.mutex = mutex
-        self.not_empty = condition(self.mutex)
-        self.not_full = condition(self.mutex)
-        self.all_tasks_done = condition(self.mutex)
-        self.path = path
-        self.queue = Cache(url=self.path, lock=lock)
-        self.unfinished_tasks = self._qsize()
-
-    def _init(self, *args, **kwargs):
-        pass
-
-    def _qsize(self):
-        """Return the queue size."""
-        return len(list(self.queue.keys()))
-
-    def _put(self, item):
-        """Put a new item within the queue."""
-        self.queue[get_uuid()] = item
-
-    def _get(self):
-        """Retrieve the first item from the queue."""
-        for item in self.queue.keys():
-            return self.queue.pop(item)
-
-    def close(self):
-        """Close the current Queue and cleanup artifacts."""
-        self.queue.clear()
-        os.rmdir(self.path)

@@ -76,22 +76,6 @@ unless otherwise configured differently. Cached [ARGS](components.md#arg)
 are stored indefinitely but can be [EVICTED](components.md#cacheevict)
 through client interactions as needed.
 
-#### Client Durability
-
-Clients can also use durable queues, which will ensure that task operations
-are disk backed, making it possible for the client to automatically recover
-operations in the event of a crash. While durable queues are a production
-focused feature, enabling it comes with certain performance penalties due to
-queue operations running on the local file-system instead of within memory.
-However, given the performance of modern storage media, the impact to
-client task performance should be minor, and in most cases it will go
-unnoticed.
-
-* Set the environment variable `DIRECTORD_DURABLE_QUEUE_ENABLED` to **True**,
-  define the option `durable_queue_enabled: true` in config,  or use the CLI
-  switch `--durable-queue-enabled` to enable the client-side durable queue
-  feature.
-
 #### Profiling
 
 Every Directord task is profiled. The execution and the round trip time are
