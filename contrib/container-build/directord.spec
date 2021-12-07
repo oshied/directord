@@ -1,7 +1,7 @@
 %global pypi_name directord
-%{?!released_version: %global released_version 0.0.2}
+%{?!released_version: %global released_version 0.11.3}
 
-Name:           python-%{pypi_name}
+Name:           %{pypi_name}
 Release:        1%{?dist}
 Summary:        A deployment framework built to manage the data center life cycle
 
@@ -27,16 +27,10 @@ BuildRequires:  python3-oslo-messaging
 BuildRequires:  python3-ssh-python
 
 %description
- DirectordA deployment framework built to manage the data center life cycle.>
+Directord deployment framework built to manage the data center life cycle.>
 Task driven deployment, simplified, directed by you.Directord is an
 asynchronous deployment and operations platform with the aim to better enable
-simplicity, faster time to delivery, and consistency. Design PrinciplesThe
-Directord design principles can be [found here]( DocumentationAdditional
-documentation covering...
-
-%package -n     python3-%{pypi_name}
-Summary:        %{summary}
-%{?python_provide:%python_provide python3-%{pypi_name}}
+simplicity, faster time to delivery, and consistency.
 
 Requires:       python3-jinja2
 Requires:       python3-pyyaml
@@ -55,14 +49,6 @@ Recommends:       python3-protobuf
 # Source Recommends
 # TODO(cloudnull): This needs to be packaged officially
 Recommends:     python3dist(podman-py)
-
-%description -n python3-%{pypi_name}
- DirectordA deployment framework built to manage the data center life cycle.>
-Task driven deployment, simplified, directed by you.Directord is an
-asynchronous deployment and operations platform with the aim to better enable
-simplicity, faster time to delivery, and consistency. Design PrinciplesThe
-Directord design principles can be [found here]( DocumentationAdditional
-documentation covering...
 
 Requires(pre):    shadow-utils
 
@@ -84,7 +70,7 @@ rm -rf %{pypi_name}.egg-info
 %check
 %{__python3} setup.py test
 
-%files -n python3-%{pypi_name}
+%files
 %license LICENSE
 %doc README.md
 %{_bindir}/directord
