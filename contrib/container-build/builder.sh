@@ -12,11 +12,11 @@ echo "Creating artifact directory: ${ARTIFACT_DIR}"
 mkdir -p ${ARTIFACT_PATH}
 
 echo "Installing build deps..."
-echo "Logging to ${ARTIFACT_DIR}/builddep.log"
+echo "Logging to ${ARTIFACT_PATH}/builddep.log"
 sudo dnf -y builddep "${SPEC_PATH}" &> ${ARTIFACT_PATH}/builddep.log
 
 echo "Building: ${SPEC_PATH}"
-echo "Logging to ${ARTIFACT_DIR}/rpmbuild.log"
+echo "Logging to ${ARTIFACT_PATH}/rpmbuild.log"
 rpmbuild --undefine=_disable_source_fetch \
          --define "released_version ${RELEASE_VERSION}" \
          -ba ${SPEC_PATH} \
