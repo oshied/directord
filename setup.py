@@ -118,5 +118,13 @@ setuptools.setup(
                 if os.path.isfile(i)
             ],
         ),
+        (
+            "share/directord/tools/scripts/grpcd",
+            [
+                i
+                for i in glob.glob("tools/scripts/grpcd/*")
+                if os.path.isfile(i)
+            ],
+        ),
     ],
 )
