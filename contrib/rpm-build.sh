@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eux
 
 SCRIPT_DIR=$(dirname $(readlink -f $0))
 CONTAINER_NAME=localhost/centos8-builder
@@ -12,7 +12,7 @@ pushd ${SCRIPT_DIR}/../
   popd
 popd
 
-export RELEASE_VERSION=$(awk -F'"' '/version/ {print $2}' ${SCRIPT_DIR}/../../directord/meta.py)
+export RELEASE_VERSION=$(awk -F'"' '/version/ {print $2}' ${SCRIPT_DIR}/../directord/meta.py)
 
 buildah bud -t ${CONTAINER_NAME} ${SCRIPT_DIR}/container-build
-podman run -it -v ${SCRIPT_DIR}:/home/builder/rpm:z ${CONTAINER_NAME}:latest --env RELEASE_VERSION="${RELEASE_VERSION}"
+podman run -it -v ${SCRIPT_DIR}:/home/builder/rpm:z --env RELEASE_VERSION="${RELEASE_VERSION}" ${CONTAINER_NAME}:latest
