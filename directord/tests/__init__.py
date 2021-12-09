@@ -143,6 +143,16 @@ class FakeArgs:
     messaging_ssl_cert = "/etc/directord/messaging/ssl/directord.crt"
     messaging_ssl_key = "/etc/directord/messaging/ssl/directord.key"
     machine_id = None
+    grpc_port = 5558
+    grpc_bind_address = "0.0.0.0"
+    grpc_server_address = "127.0.0.1"
+    grpc_server_workers = 4
+    grpc_ssl = False
+    grpc_disable_compression = False
+    grpc_ssl_ca = "/etc/pki/ca-trust/source/anchors/cm-local-ca.pem"
+    grpc_ssl_cert = "/etc/directord/grpc/ssl/directord.crt"
+    grpc_ssl_key = "/etc/directord/grpc/ssl/directord.key"
+    grpc_ssl_client_auth = False
 
 
 class MockSocket:

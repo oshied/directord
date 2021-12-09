@@ -154,7 +154,7 @@ def parse_args(parser, parser_server, parser_client):
     return parser
 
 
-class QueueBase(object):
+class QueueBase:
     """Base queue."""
 
     _instance = None
@@ -225,7 +225,7 @@ class QueueBase(object):
         """Return queue stats."""
         stats = {}
         with self.get_lock():
-            stats["targets"] = self._data_queue.keys()
+            stats["targets"] = list(self._data_queue)
         return stats
 
     def purge_queue(self):
@@ -238,9 +238,13 @@ class QueueBase(object):
 class MessageQueue(QueueBase):
     """Message queue instance."""
 
+    _instance = None
+
 
 class JobQueue(QueueBase):
     """Job queue instance."""
+
+    _instance = None
 
 
 class MessageServiceServicer(grpc_MessageServiceServicer):
@@ -381,7 +385,7 @@ class MessageServiceServicer(grpc_MessageServiceServicer):
         return status
 
 
-class MessageServiceClient(object):
+class MessageServiceClient:
     """Service Client."""
 
     _instance = None
@@ -780,7 +784,7 @@ class MessageServiceClient(object):
             raise
 
 
-class MessageServiceServer(object):
+class MessageServiceServer:
     """Base queue."""
 
     _instance = None
@@ -883,6 +887,7 @@ class MessageServiceServer(object):
                 ssl_ca,
                 ssl_cert,
                 ssl_key,
+                ssl_auth,
             )
         return cls._instance
 
