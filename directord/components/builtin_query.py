@@ -111,9 +111,4 @@ class Component(components.ComponentBase):
                 )
                 self.block_on_tasks = [wait_job]
 
-        return (
-            json.dumps({job["query"]: query}),
-            None,
-            True,
-            query,
-        )
+        return (json.dumps({job["query"]: query}), None, True, job["query"])
