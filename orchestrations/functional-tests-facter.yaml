@@ -4,7 +4,7 @@
 - name: Run facter
   jobs:
     - FACTER: --skip-cache
-    - QUERY: --no-wait facter
+    - QUERY: facter
 
 - name: Check facter variables
   jobs:
