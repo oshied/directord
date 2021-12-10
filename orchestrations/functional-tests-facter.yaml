@@ -1,0 +1,15 @@
+# This orchestration will run a functional test, exercising much of the functionality Directord offers.
+#
+---
+- name: Run facter
+  jobs:
+    - FACTER: --skip-cache
+    - QUERY: facter
+
+- name: Check facter variables
+  jobs:
+
+  - RUN: >-
+      --skip-cache echo {{ query.values() | map(attribute="facter") | select("defined") | map(attribute="kernel") | list | first }} | grep -i linux
+  - RUN: >-
+      --skip-cache echo {{ query.values() | map(attribute="facter") | select("defined") | map(attribute="networking") | map(attribute="interfaces") | list }} | grep netmask

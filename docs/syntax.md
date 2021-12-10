@@ -361,6 +361,15 @@ Executes basic container image commands - pull, push, list, inspect, tag.
 > The options `--push`, `--pull`, `--list`, `--inspect` and `--tag` are
   mutually exclusive and one of the options must be provided.
 
+##### `FACTER`
+
+Syntax: `STRING`
+
+Runs `facter` on the target and saves result to cache.
+
+* `--custom-dir` **STRING** A directory to use for custom facts.
+* `--external-dir` **STRING** A directory to use for external facts.
+
 ### User defined Components
 
 User defined components are expected to be in the
