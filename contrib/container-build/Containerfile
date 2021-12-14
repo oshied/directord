@@ -25,7 +25,7 @@ RUN dnf -y update && \
     echo '%builder ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 # TODO(cloudnull): remove all this when ssh-python is packaged
-RUN dnf -y install rpmdevtools python3-pytoml python3-pyxdg python38-requests cmake openssl openssl-devel python3-devel && \
+RUN dnf -y install rpmdevtools python3-pytoml python3-pyxdg python38-requests cmake openssl openssl-devel python3-devel wget && \
     dnf -y groupinstall 'Development Tools' && \
     python3 -m venv /home/builder/pyp2rpm --system-site-packages && \
     /home/builder/pyp2rpm/bin/pip install pyp2rpm && \

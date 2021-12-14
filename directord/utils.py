@@ -17,11 +17,11 @@ import json
 import os
 import pkgutil
 import socket
-import struct
 import sys
 import time
 import uuid
 
+import iodict
 import tabulate
 import yaml
 
@@ -398,188 +398,11 @@ class Locker:
             self.lock.release()
 
 
-class Cache:
+class Cache(iodict.IODict):
     def __init__(self, url, lock=None):
-        """Initialize the POSIX compatible datastore.
-
-        The POSIX cache store uses xattrs to store metadata about stored
-        objects. Metadata is used to store the key and expiry information
-        which is used to ensure we're maintaining a POSIX compliant data
-        store which leverages simple file hashing. If xattrs are not
-        availble on the filesystem, the cache method will fallback to a
-        standard string encoding, and rely on in file information for
-        expiry times.
-
-        :param url: Connection string to the file backend.
-        :type url: String
-        :param lock: Lock type object
-        :type lock: Object
-        """
-
-        self.log = logger.getLogger(name="directord-cache")
-        self.lock = lock
-        self.db_path = os.path.abspath(os.path.expanduser(url))
-        os.makedirs(self.db_path, exist_ok=True)
-        try:
-            os.listxattr(self.db_path)
-        except Exception:
-            self.encoder = str
-        else:
-            self.encoder = object_sha3_224
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        pass
-
-    def __getitem__(self, key):
-        """Return the value of a given key.
-
-        :param key: Named object.
-        :type key: Object
-        :returns: Object
-        """
-
-        with Locker(lock=self.lock):
-            try:
-                with open(os.path.join(self.db_path, self.encoder(key))) as f:
-                    data = f.read()
-                    try:
-                        return json.loads(data)
-                    except json.decoder.JSONDecodeError:
-                        return data
-            except FileNotFoundError:
-                return
-
-    def __setitem__(self, key, value):
-        """Set an item in the datastore.
-
-        objects are serialized JSON. Files use xattrs to store meta-data which
-        is used to enhance operations.
-
-        :param key: Named object to set.
-        :type key: Object
-        :param value: Object to set.
-        :type value: Object
-        """
-
-        if isinstance(value, dict):
-            try:
-                expire = value.get("time")
-            except TypeError:
-                expire = None
-        else:
-            expire = None
-
-        try:
-            value = json.dumps(value)
-        except TypeError:
-            pass
-
-        file_object = os.path.join(self.db_path, self.encoder(key))
-        with Locker(lock=self.lock):
-            with open(file_object, "w") as f:
-                f.write(value)
-            try:
-                try:
-                    os.getxattr(file_object, "user.birthtime")
-                except OSError:
-                    os.setxattr(
-                        file_object,
-                        "user.birthtime",
-                        struct.pack(">d", time.time()),
-                    )
-                os.setxattr(file_object, "user.key", key.encode())
-                if expire:
-                    os.setxattr(
-                        file_object, "user.expire", struct.pack(">d", expire)
-                    )
-            except OSError:
-                pass
-
-    def __delitem__(self, key):
-        """Delete an item from the datastore.
-
-        :param key: Named object.
-        :type key: Object
-        """
-
-        with Locker(lock=self.lock):
-            try:
-                os.unlink(os.path.join(self.db_path, self.encoder(key)))
-            except FileNotFoundError:
-                return
-
-    def items(self):
-        """Iterate through all items and yield a tuples, for key and value.
-
-        :yields: Tuple
-        """
-
-        for item in self.keys():
-            yield item, self.__getitem__(item)
-
-    @staticmethod
-    def _get_create_time(path):
-        try:
-            return struct.unpack(">d", os.getxattr(path, "user.birthtime"))[0]
-        except Exception:
-            stat = os.stat(path)
-            try:
-                return stat.st_birthtime
-            except AttributeError:
-                return stat.st_ctime
-
-    def keys(self):
-        """Return an array of all keys.
-
-        :returns: List
-        """
-
-        cwd = os.getcwd()
-        try:
-            os.chdir(self.db_path)
-            for item in sorted(
-                filter(os.path.isfile, os.listdir()), key=self._get_create_time
-            ):
-                try:
-                    yield os.getxattr(item, "user.key").decode()
-                except OSError:
-                    yield item
-        finally:
-            os.chdir(cwd)
-
-    def pop(self, key):
-        """Remove a given key from the cache.
-
-        :param key: Named object.
-        :type key: Object
-        """
-
-        try:
-            data = self.__getitem__(key)
-            self.__delitem__(key)
-        except Exception:
-            return
-        else:
-            return data
-
-    def get(self, key, default=None):
-        """Return the value of a given key.
-
-        :param key: Named object.
-        :type key: Object
-        :param default: Default return.
-        :type default: Object
-        :returns: Object
-        """
-
-        data = self.__getitem__(key)
-        if data:
-            return data
-        else:
-            return default
+        super().__init__(
+            path=os.path.abspath(os.path.expanduser(url)), lock=lock
+        )
 
     def set(self, key, value):
         """Set key and value.
@@ -591,8 +414,7 @@ class Cache:
         :returns: Object
         """
 
-        self.__setitem__(key, value)
-        return value
+        return self.setdefault(key, value)
 
     def evict(self, key):
         """Remove a given key from the cache.
@@ -601,10 +423,4 @@ class Cache:
         :type key: Object
         """
 
-        self.__delitem__(key=key)
-
-    def clear(self):
-        """Remove all cache."""
-
-        for item in self.keys():
-            self.__delitem__(key=item)
+        self.pop(key)

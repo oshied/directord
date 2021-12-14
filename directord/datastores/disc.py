@@ -22,6 +22,36 @@ from directord import utils
 class BaseDocument(utils.Cache):
     """Create a document store object."""
 
+    def __setitem__(self, key, value):
+        """Set an item in the datastore.
+
+        objects are serialized JSON. Files use xattrs to store meta-data which
+        is used to enhance operations.
+
+        :param key: Named object to set.
+        :type key: Object
+        :param value: Object to set.
+        :type value: Object
+        """
+
+        super().__setitem__(key=key, value=value)
+        if isinstance(value, dict):
+            try:
+                expire = value.get("time")
+            except TypeError:
+                expire = None
+        else:
+            expire = None
+
+        file_object = os.path.join(self._db_path, self._encoder(key))
+        if expire:
+            try:
+                os.setxattr(
+                    file_object, "user.expire", struct.pack(">d", expire)
+                )
+            except OSError:
+                pass
+
     def empty(self):
         """Remove all cache."""
 
@@ -40,7 +70,7 @@ class BaseDocument(utils.Cache):
                 expire = value.get("time")
 
             if expire and time.time() >= expire:
-                self.__delitem__(key)
+                self.pop(key, default=None)
 
         return len(list(self.keys()))
 
@@ -54,9 +84,8 @@ class BaseDocument(utils.Cache):
         :returns: Object
         """
 
-        item = self.__getitem__(key)
+        item = self.get(key)
         if item:
             return item
 
-        self.__setitem__(key, value)
-        return value
+        return self.setdefault(key, value)
