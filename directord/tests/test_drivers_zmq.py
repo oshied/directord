@@ -42,11 +42,6 @@ class TestDriverZMQSharedAuth(tests.TestBase):
             self.driver.get_lock()
             mock_lock.assert_called()
 
-    def test_get_queue(self):
-        with patch("multiprocessing.Queue") as mock_queue:
-            self.driver.get_queue()
-            mock_queue.assert_called()
-
     def test_socket_connect_curve_auth(self):
         m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
         with patch("builtins.open", m):

@@ -12,12 +12,14 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import os
 import queue
 import socket
 import time
 import threading
 
 from directord import logger
+from directord import utils
 
 
 def parse_args(parser):
@@ -46,6 +48,16 @@ class ExceptionThreadProcessor(threading.Thread):
             self.exception = e
 
 
+class _FlushQueue(queue.Queue, utils.FlushQueue):
+    """Flush queue capability helper class."""
+
+    def __init__(self, path, lock, semaphore):
+        super().__init__()
+        self.path = path
+        self.lock = lock
+        self.semaphore = semaphore
+
+
 class BaseDriver:
     coordination_failed = "\x07"  # Signals coordination failed
     coordination_ack = "\x10"  # Signals coordination acknowledged
@@ -59,6 +71,8 @@ class BaseDriver:
     transfer_end = "\x03"  # Signals transfer end
     thread_processor = ExceptionThreadProcessor
     event = threading.Event()
+    semaphore = threading.Semaphore
+    flushqueue = _FlushQueue
 
     def __init__(
         self,
@@ -99,11 +113,24 @@ class BaseDriver:
 
         return threading.Lock()
 
-    @staticmethod
-    def get_queue():
-        """Returns a thread lock."""
+    def get_queue(self, name):
+        """Returns a thread lock.
 
-        return queue.Queue()
+        :param name: Queue name.
+        :type name: String
+        :returns: DurableQueue
+        """
+
+        path = os.path.join(
+            getattr(self.args, "cache_path", "/var/cache/directord"),
+            "queue",
+            name,
+        )
+        q = self.flushqueue(
+            path=path, lock=self.get_lock(), semaphore=self.semaphore
+        )
+        q.ingest()
+        return q
 
     def __copy__(self):
         """Return a copy of the base class.

@@ -104,7 +104,7 @@ class BaseDocument:
 
         return [i.decode() for i in self.datastore.keys("*")]
 
-    def empty(self):
+    def clear(self):
         """Empty all items from the datastore.
 
         Because a Manager Dict is a proxy object we don't want to replace the

@@ -18,20 +18,6 @@ import time
 class BaseDocument(dict):
     """Create a document store object."""
 
-    def empty(self):
-        """Empty all items from the datastore.
-
-        Because a Manager Dict is a proxy object we don't want to replace the
-        object we want to empty it keeping the original proxy intact. This
-        method will pop all items from the object.
-        """
-
-        try:
-            while self.popitem():
-                pass
-        except KeyError:
-            pass
-
     def prune(self):
         """Prune items that have a time based expiry."""
 

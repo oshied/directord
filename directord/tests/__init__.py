@@ -13,6 +13,7 @@
 #   under the License.
 
 import tracemalloc
+import queue
 import unittest
 
 from unittest.mock import MagicMock
@@ -192,12 +193,8 @@ class FakeCache:
 
         return self.cache.pop(key)
 
-    def set(self, key, value, **kwargs):
+    def setdefault(self, key, value, **kwargs):
         self.cache[key] = value
-
-    def evict(self, key):
-        popped = self.cache.pop(key, dict())
-        return len(popped)
 
     def clear(self):
         current = len(self.cache)
@@ -245,6 +242,11 @@ class TestBase(unittest.TestCase):
         self.patch_logger.stop()
 
 
+class FakeQueue(queue.Queue):
+    def close(self):
+        pass
+
+
 class TestConnectionBase(TestBase):
     def setUp(self):
         super().setUp()
@@ -273,10 +275,15 @@ class TestDriverBase(TestBase):
     def setUp(self):
         super().setUp()
         base_driver = drivers.BaseDriver(args=FakeArgs())
+        self.patched_get_queue = patch(
+            "directord.utils.DurableQueue", autospec=True
+        )
         self.mock_driver_patched = patch(
             "directord.drivers.BaseDriver",
             autospec=True,
         )
+        self.mocked_get_queue = self.patched_get_queue.start()
+        self.mocked_get_queue.return_value = FakeQueue()
         self.mock_driver = self.mock_driver_patched.start()
         self.mock_driver.job_check.return_value = True
         self.mock_driver.nullbyte = base_driver.nullbyte
@@ -295,3 +302,4 @@ class TestDriverBase(TestBase):
 
     def restoreDrivers(self):
         self.mock_driver_patched.stop()
+        self.patched_get_queue.stop()

@@ -29,7 +29,6 @@ BaseDictProxy = MakeProxyType(
         "__setitem__",
         "clear",
         "copy",
-        "empty",
         "get",
         "items",
         "keys",

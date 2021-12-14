@@ -12,7 +12,6 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import unittest
 from unittest.mock import patch
 
 import redis
@@ -53,7 +52,7 @@ class TestDatastoreRedis(tests.TestBase):
         self.datastore.keys()
 
     def test_empty(self):
-        self.datastore.empty()
+        self.datastore.clear()
 
     def test_pop(self):
         self.datastore.pop(key="key")

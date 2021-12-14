@@ -40,8 +40,8 @@ class Server(interface.Interface):
         """
 
         super(Server, self).__init__(args=args)
-        self.job_queue = self.driver.get_queue()
-        self.send_queue = self.driver.get_queue()
+        self.job_queue = self.driver.get_queue(name="job_queue")
+        self.send_queue = self.driver.get_queue(name="send_queue")
         datastore = getattr(self.args, "datastore", None)
         self.workers = dict()
         if not datastore or datastore == "memory":
@@ -80,7 +80,7 @@ class Server(interface.Interface):
 
         # NOTE(cloudnull): Once the datastore is initialized, ensure that the
         #                  worker pool is refreshed immediately.
-        self.workers.empty()
+        self.workers.clear()
 
     def _set_job_status(
         self,
@@ -753,7 +753,10 @@ class Server(interface.Interface):
             try:
                 conn, _ = sock.accept()
             except socket.timeout:
-                continue
+                if self.driver.event.is_set():
+                    break
+                else:
+                    continue
 
             with conn:
                 data = conn.recv(409600)
@@ -782,10 +785,10 @@ class Server(interface.Interface):
                         except KeyError:
                             data = []
                     elif key == "purge_nodes":
-                        self.workers.empty()
+                        self.workers.clear()
                         data = {"success": True}
                     elif key == "purge_jobs":
-                        self.return_jobs.empty()
+                        self.return_jobs.clear()
                         data = {"success": True}
                     else:
                         data = {"failed": True}
@@ -1017,3 +1020,5 @@ class Server(interface.Interface):
 
         self.run_threads(threads=threads, stop_event=self.driver.event)
         self.driver.shutdown()
+        self.job_queue.flush()
+        self.send_queue.flush()

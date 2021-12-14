@@ -368,59 +368,64 @@ def component_lock_search():
         return lock_commands
 
 
-class Locker:
-    """Context manager for lock object."""
-
-    def __init__(self, lock):
-        """Initialize the lock context manager.
-
-        :param lock: Multiprocessing lock object
-        :type lock: Object
-        """
-
-        self.lock = lock
-
-    def __enter__(self):
-        """Enter the lock context manager.
-
-        :returns: Object
-        """
-
-        if self.lock:
-            self.lock.acquire()
-
-        return self.lock
-
-    def __exit__(self, *args, **kwargs):
-        """Exit the lock context manager."""
-
-        if self.lock:
-            self.lock.release()
-
-
 class Cache(iodict.IODict):
-    def __init__(self, url, lock=None):
-        super().__init__(
-            path=os.path.abspath(os.path.expanduser(url)), lock=lock
+    """Helper class to create the Cache object."""
+
+    pass
+
+
+class DurableQueue(iodict.DurableQueue):
+    """Helper class to create the DurableQueue object."""
+
+    pass
+
+
+class FlushQueue:
+    def __init__(self, path, lock, semaphore):
+        """Queue class augmentation allowing queues to be flushed to disk.
+
+        This class requires a queue class to be used along with it.
+
+        >>> class _FlushQueue(queue.Queue, FlushQueue):
+        ...     pass
+
+        With multiple inheritence, we can create any queue object with flush
+        capabilities.
+        """
+
+        self.path = path
+        self.lock = lock
+        self.semaphore = semaphore
+
+    def flush(self):
+        """Flush all remaining items in queue to disk."""
+
+        durable = DurableQueue(
+            path=self.path, lock=self.lock, semaphore=self.semaphore
         )
+        while True:
+            try:
+                item = self.get_nowait()
+            except Exception:
+                break
+            else:
+                durable.put(item)
 
-    def set(self, key, value):
-        """Set key and value.
+    def ingest(self):
+        """Check for existing items in queue and restore them."""
 
-        :param key: Named object to set.
-        :type key: Object
-        :param value: Object to set.
-        :type value: Object
-        :returns: Object
-        """
+        if not os.path.exists(self.path):
+            return
 
-        return self.setdefault(key, value)
+        durable = DurableQueue(
+            path=self.path, lock=self.lock, semaphore=self.semaphore
+        )
+        while True:
+            try:
+                item = durable.get_nowait()
+            except Exception:
+                break
+            else:
+                self.put(item)
 
-    def evict(self, key):
-        """Remove a given key from the cache.
-
-        :param key: Named object.
-        :type key: Object
-        """
-
-        self.pop(key)
+        durable.close()

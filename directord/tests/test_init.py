@@ -22,7 +22,6 @@ import directord
 
 from directord import logger
 from directord import tests
-from directord import user
 
 
 COMPONENT_FAILURE_INFO = """Failure - Unknown Component

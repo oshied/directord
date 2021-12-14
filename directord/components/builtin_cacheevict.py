@@ -77,7 +77,11 @@ class Component(components.ComponentBase):
             evicted = cache.clear()
             info = "All cache has been cleared"
         else:
-            evicted = cache.evict(tag)
-            info = "Evicted {} items, tagged {}".format(evicted, tag)
+            try:
+                evicted = cache.pop(tag)
+            except KeyError as e:
+                return None, str(e), False, None
+            else:
+                info = "Evicted {} items, tagged {}".format(evicted, tag)
 
         return info, None, True, None

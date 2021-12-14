@@ -290,9 +290,9 @@ class ComponentBase:
             orig = cache.get(key, default=dict())
             value = utils.merge_dict(orig, value, extend=extend)
 
-        cache_set = cache.set(key, value)
+        cache_set = cache.setdefault(key, value)
         if not cache_set:
-            return cache.set(key, value)
+            return cache.setdefault(key, value)
         return cache_set
 
     def file_blueprinter(self, cache, file_to):

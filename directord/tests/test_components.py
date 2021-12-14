@@ -43,11 +43,13 @@ class TestComponents(tests.TestBase):
         with patch("directord.plugin_import", autospec=True):
             self.client = client.Client(args=self.args)
 
-        self.mock_q_patched = patch("queue.Queue", autospec=True)
-        q = self.mock_q_patched.start()
-        self.client.q_processes = q
-        self.client.q_return = q
-
+        self.patched_get_queue = patch(
+            "directord.utils.DurableQueue", autospec=True
+        )
+        self.patched_get_queue.start()
+        self.patched_get_queue.return_value = tests.FakeQueue()
+        self.client.q_processes = tests.FakeQueue()
+        self.client.q_return = tests.FakeQueue()
         self.fake_cache = tests.FakeCache()
         self.components = components.ComponentBase(desc="test")
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
@@ -76,7 +78,7 @@ class TestComponents(tests.TestBase):
 
     def tearDown(self):
         super().tearDown()
-        self.mock_q_patched.stop()
+        self.patched_get_queue.stop()
 
     def test_options_converter(self):
         self.components.args()

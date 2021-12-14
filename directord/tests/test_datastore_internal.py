@@ -25,7 +25,7 @@ class TestDatastoreInternal(tests.TestBase):
     def test_wq_prune_0(self):
         workers = datastores.BaseDocument()
         workers["test"] = 1
-        workers.empty()
+        workers.clear()
         self.assertDictEqual(workers, dict())
 
     def test_wq_prune_valid(self):
@@ -37,11 +37,11 @@ class TestDatastoreInternal(tests.TestBase):
         self.assertEqual(len(workers), 1)
         self.assertIn("valid1", workers)
 
-    def test_wq_empty(self):
+    def test_wq_clear(self):
         workers = datastores.BaseDocument()
         workers["valid1"] = {"time": time.time() + 2}
         workers["invalid1"] = {"time": time.time() - 2}
         workers["invalid2"] = {"time": time.time() - 3}
         self.assertEqual(len(workers), 3)
-        workers.empty()
+        workers.clear()
         self.assertEqual(len(workers), 0)

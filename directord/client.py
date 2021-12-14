@@ -38,8 +38,8 @@ class Client(interface.Interface):
 
         super(Client, self).__init__(args=args)
 
-        self.q_return = self.driver.get_queue()
-        self.q_processes = self.driver.get_queue()
+        self.q_return = self.driver.get_queue(name="q_return")
+        self.q_processes = self.driver.get_queue(name="q_processes")
         self.base_component = components.ComponentBase()
         self.cache = dict()
         self.start_time = time.time()
@@ -73,6 +73,9 @@ class Client(interface.Interface):
                     "Job received [ %s ]", component_kwargs["job"]["job_id"]
                 )
                 self.job_q_component_run(component_kwargs, command, info, lock)
+
+            if self.driver.event.is_set():
+                return
 
     def job_q_processor(self, q_processes, lock=None):
         """Process a given work queue.
@@ -137,7 +140,29 @@ class Client(interface.Interface):
         if not lock:
             lock = self.driver.get_lock()
 
+        parent_tracker_recover = utils.DurableQueue(
+            path=os.path.join(self.args.cache_path, "parent_tracker"),
+            lock=lock,
+        )
         parent_tracker = collections.OrderedDict()
+        while not parent_tracker_recover.empty():
+            try:
+                k, v = parent_tracker_recover.get_nowait()
+            except Exception:
+                break
+            else:
+                q = self.driver.get_queue(name=k)
+                parent_tracker[k] = dict(t=None, q=q, bypass=v)
+                parent_tracker[k]["t"] = self.driver.thread_processor(
+                    target=self.q_processor,
+                    kwargs=dict(
+                        queue=parent_tracker[k]["q"],
+                        lock=lock,
+                    ),
+                    name=k,
+                    daemon=True,
+                )
+
         while not q_processes.empty() or parent_tracker:
             try:
                 (
@@ -158,10 +183,7 @@ class Client(interface.Interface):
                 #                  queued items. This is on the ONE component
                 #                  where we intercept and react outside of
                 #                  the component structure.
-                if (
-                    lower_command == "queuesentinel"
-                    or self.driver.event.is_set()
-                ):
+                if lower_command == "queuesentinel":
                     count = 0
                     for value in list(parent_tracker.values()):
                         count += self.purge_queue(
@@ -182,27 +204,31 @@ class Client(interface.Interface):
                 else:
                     _q_name = "q_general"
 
-                if _q_name in parent_tracker:
-                    _parent = parent_tracker[_q_name]
-                else:
-                    _parent = parent_tracker[_q_name] = dict(
-                        t=None,
-                        q=self.driver.get_queue(),
-                        bypass=job.get("parent_async_bypass", False),
+                if _q_name not in parent_tracker:
+                    parent_tracker.setdefault(
+                        _q_name,
+                        dict(
+                            t=None,
+                            q=self.driver.get_queue(name=_q_name),
+                            bypass=job.get("parent_async_bypass", False),
+                        ),
                     )
-                    self.log.info("Parent queue [ %s ] created.", _q_name)
-
-                _parent["q"].put((component_kwargs, command, info))
-                if not _parent["t"]:
-                    _parent["t"] = self.driver.thread_processor(
+                    parent_tracker[_q_name][
+                        "t"
+                    ] = self.driver.thread_processor(
                         target=self.q_processor,
                         kwargs=dict(
-                            queue=_parent["q"],
+                            queue=parent_tracker[_q_name]["q"],
                             lock=lock,
                         ),
                         name=_q_name,
                         daemon=True,
                     )
+                    self.log.info("Parent queue [ %s ] created.", _q_name)
+
+                parent_tracker[_q_name]["q"].put(
+                    (component_kwargs, command, info)
+                )
 
             for t in _get_pending_bypass_threads(parents=parent_tracker):
                 self.log.info("Starting bypass process [ %s ]", t)
@@ -246,6 +272,12 @@ class Client(interface.Interface):
                     elif "timeout" not in parent_tracker[key]:
                         self.log.info("Starting to prune parent [ %s ]", key)
                         parent_tracker[key]["timeout"] = timestamp
+
+            if self.driver.event.is_set():
+                for k, v in parent_tracker.items():
+                    v["q"].flush()
+                    parent_tracker_recover.put((k, v["bypass"]))
+                return
 
             time.sleep(sleep_interval)
 
@@ -697,11 +729,14 @@ class Client(interface.Interface):
         heartbeat_time = time.time()
         poller_interval = 1
         run_q_processor_thread = None
+        startup = True
         while True:
             if self.terminate_process(process=run_q_processor_thread):
                 run_q_processor_thread = None
 
-            if not self.q_processes.empty() and not run_q_processor_thread:
+            if (
+                not self.q_processes.empty() and not run_q_processor_thread
+            ) or startup:
                 run_q_processor_thread = self.driver.thread_processor(
                     target=self.job_q_processor,
                     kwargs=dict(q_processes=self.q_processes, lock=lock),
@@ -709,6 +744,7 @@ class Client(interface.Interface):
                     daemon=False,
                 )
                 run_q_processor_thread.start()
+                startup = False
 
             if time.time() > heartbeat_time:
                 with open("/proc/uptime", "r") as f:
@@ -849,11 +885,10 @@ class Client(interface.Interface):
                 False,
             ),
         ]
-        with utils.Cache(
-            url=os.path.join(self.args.cache_path, "client"),
+        self.cache = utils.Cache(
+            path=os.path.join(self.args.cache_path, "client"),
             lock=self.driver.get_lock(),
-        ) as cache:
-            self.cache = cache
-            self.run_threads(threads=threads, stop_event=self.driver.event)
-
-        self.driver.shutdown()
+        )
+        self.run_threads(threads=threads, stop_event=self.driver.event)
+        self.q_return.flush()
+        self.q_processes.flush()

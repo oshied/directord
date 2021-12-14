@@ -15,6 +15,7 @@
 import json
 import logging
 import multiprocessing
+from multiprocessing import queues as mqs
 import os
 import time
 
@@ -101,6 +102,16 @@ def parse_args(parser, parser_server, parser_client):
     return parser
 
 
+class _FlushQueue(mqs.Queue, utils.FlushQueue):
+    """Flush queue capability helper class."""
+
+    def __init__(self, path, lock, semaphore):
+        super().__init__(ctx=multiprocessing.get_context())
+        self.path = path
+        self.lock = lock
+        self.semaphore = semaphore
+
+
 class Driver(drivers.BaseDriver):
     def __init__(
         self,
@@ -120,6 +131,8 @@ class Driver(drivers.BaseDriver):
 
         self.thread_processor = multiprocessing.Process
         self.event = multiprocessing.Event()
+        self.semaphore = multiprocessing.Semaphore
+        self.flushqueue = _FlushQueue
         self.args = args
         if getattr(self.args, "zmq_generate_keys", False) is True:
             self._generate_certificates()
@@ -796,12 +809,6 @@ class Driver(drivers.BaseDriver):
         """Returns a thread lock."""
 
         return multiprocessing.Lock()
-
-    @staticmethod
-    def get_queue():
-        """Returns a thread lock."""
-
-        return multiprocessing.Queue()
 
     def heartbeat_send(
         self, host_uptime=None, agent_uptime=None, version=None, driver=None
