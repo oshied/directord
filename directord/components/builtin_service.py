@@ -32,6 +32,11 @@ class Component(components.ComponentBase):
         super().args()
         running_group = self.parser.add_mutually_exclusive_group()
         running_group.add_argument(
+            "--reloaded",
+            action="store_true",
+            help="Ensure service is reloaded",
+        )
+        running_group.add_argument(
             "--restarted",
             action="store_true",
             help="Ensure service is restarted",
@@ -83,10 +88,12 @@ class Component(components.ComponentBase):
         elif self.known_args.disable:
             data["state"] = "disable"
 
-        elif self.known_args.restarted:
+        if self.known_args.restarted:
             data["running"] = "restart"
         elif self.known_args.stopped:
             data["running"] = "stop"
+        elif self.known_args.reloaded:
+            data["running"] = "reload"
         else:
             data["running"] = "start"
 

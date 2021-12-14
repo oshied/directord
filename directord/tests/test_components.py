@@ -458,6 +458,19 @@ class TestComponents(unittest.TestCase):
         self.assertTrue(outcome)
         self.assertEqual(mock_run_command.call_args_list, calls)
 
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_reload_success(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={"services": ["httpd.service"], "running": "reload"},
+        )
+        calls = [
+            call(command="systemctl reload httpd.service", env=None),
+        ]
+        self.assertTrue(outcome)
+        self.assertEqual(mock_run_command.call_args_list, calls)
+
     @patch("subprocess.Popen")
     def test_run_command_success(self, popen):
         popen.return_value = tests.FakePopen()
