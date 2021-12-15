@@ -150,7 +150,10 @@ class Client(interface.Interface):
                 #                  queued items. This is on the ONE component
                 #                  where we intercept and react outside of
                 #                  the component structure.
-                if lower_command == "queuesentinel":
+                if (
+                    lower_command == "queuesentinel"
+                    or self.driver.event.is_set()
+                ):
                     count = 0
                     for value in list(parent_tracker.values()):
                         count += self.purge_queue(
@@ -251,12 +254,7 @@ class Client(interface.Interface):
         total_count = 0
         while not queue.empty():
             try:
-                (
-                    _kwargs,
-                    _command,
-                    _,
-                    _,
-                ) = queue.get_nowait()
+                _kwargs, _command, _ = queue.get_nowait()
                 total_count += 1
             except ValueError as e:
                 self.log.critical("Queue object value error [ %s ]", str(e))
