@@ -1,0 +1,13 @@
+---
+
+directord_server:
+  jobs:
+  - RUN: dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
+  - RUN: dnf -y copr enable slagle/tripleo centos-stream-8-x86_64
+  - RUN: dnf install -y directord python3-zmq python3-ssh-python
+
+directord_clients:
+  jobs:
+  - RUN: dnf -y install https://www.rdoproject.org/repos/rdo-release.el8.rpm
+  - RUN: dnf -y copr enable slagle/tripleo centos-stream-8-x86_64
+  - RUN: dnf install -y directord python3-zmq python3-ssh-python
