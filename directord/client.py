@@ -44,6 +44,14 @@ class Client(interface.Interface):
         self.cache = dict()
         self.start_time = time.time()
 
+    def exit_gracefully(self, *args, **kwargs):
+        """Set the driver event to begin the shutdown of the application."""
+
+        self.log.warning(
+            "Shutdown signal intercepted. Starting client shutdown."
+        )
+        self.driver.event.set()
+
     def q_processor(self, queue, lock):
         """Process jobs from the known queue.
 
