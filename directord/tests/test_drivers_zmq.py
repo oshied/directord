@@ -23,12 +23,18 @@ from directord import tests
 from directord.drivers import zmq as zmq_driver
 
 
-class TestDriverZMQSharedAuth(unittest.TestCase):
+class TestDriverZMQSharedAuth(tests.TestBase):
     def setUp(self):
-        self.driver = zmq_driver.Driver(args=tests.FakeArgs)
+        super().setUp()
+        with patch("zmq.Context"):
+            self.driver = zmq_driver.Driver(args=tests.FakeArgs)
         self.driver.encrypted_traffic = True
         self.driver.secret_keys_dir = "test/key"
         self.driver.public_keys_dir = "test/key"
+
+    def tearDown(self):
+        super().tearDown()
+        self.driver.shutdown()
 
     def test_get_lock(self):
         with patch("multiprocessing.Lock") as mock_lock:
@@ -40,8 +46,7 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
             self.driver.get_queue()
             mock_queue.assert_called()
 
-    @patch("logging.Logger.info", autospec=True)
-    def test_socket_connect_curve_auth(self, mock_info_logging):
+    def test_socket_connect_curve_auth(self):
         m = unittest.mock.mock_open(read_data=tests.MOCK_CURVE_KEY.encode())
         with patch("builtins.open", m):
             with patch("os.path.exists") as mock_exists:
@@ -51,7 +56,7 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
                     connection="tcp://test",
                     port=1234,
                 )
-            self.assertEqual(bind.linger, -1)
+            self.assertEqual(bind.linger, 60)
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
@@ -74,12 +79,15 @@ class TestDriverZMQSharedAuth(unittest.TestCase):
             self.assertEqual(bind.curve_server, True)
 
 
-class TestDriverZMQ(unittest.TestCase):
+class TestDriverZMQ(tests.TestBase):
     def setUp(self):
-        self.driver = zmq_driver.Driver(args=tests.FakeArgs)
+        super().setUp()
+        with patch("zmq.Context"):
+            self.driver = zmq_driver.Driver(args=tests.FakeArgs)
 
     def tearDown(self):
-        pass
+        super().tearDown()
+        self.driver.shutdown()
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
@@ -91,12 +99,11 @@ class TestDriverZMQ(unittest.TestCase):
         )
         self.assertIsNotNone(bind.bind)
 
-    @patch("logging.Logger.info", autospec=True)
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
     @patch("directord.drivers.zmq.ThreadAuthenticator", autospec=True)
     def test_socket_bind_shared_auth(
-        self, mock_auth, mock_poller, mock_socket, mock_info_logging
+        self, mock_auth, mock_poller, mock_socket
     ):
         setattr(self.driver.args, "zmq_shared_key", "test")
         bind = self.driver._socket_bind(
@@ -107,8 +114,7 @@ class TestDriverZMQ(unittest.TestCase):
         self.assertIsNotNone(bind.bind)
         self.assertEqual(bind.plain_server, True)
 
-    @patch("logging.Logger.info", autospec=True)
-    def test_socket_connect_shared_key(self, mock_info_logging):
+    def test_socket_connect_shared_key(self):
         self.driver.encrypted_traffic = False
         setattr(self.driver.args, "zmq_shared_key", "test-key")
         bind = self.driver._socket_connect(
@@ -118,16 +124,15 @@ class TestDriverZMQ(unittest.TestCase):
         )
         self.assertEqual(bind.plain_username, b"admin")
         self.assertEqual(bind.plain_password, b"test-key")
-        self.assertEqual(bind.linger, -1)
+        self.assertEqual(bind.linger, 60)
 
-    @patch("logging.Logger.info", autospec=True)
-    def test_socket_connect(self, mock_info_logging):
+    def test_socket_connect(self):
         bind = self.driver._socket_connect(
             socket_type=zmq.PULL,
             connection="tcp://test",
             port=1234,
         )
-        self.assertEqual(bind.linger, -1)
+        self.assertEqual(bind.linger, 60)
 
     @patch("zmq.sugar.socket.Socket", autospec=True)
     def test_socket_send(self, mock_socket):
@@ -332,25 +337,31 @@ class TestDriverZMQ(unittest.TestCase):
             )
 
     @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_job_connect(self, mock_log_debug, mock_socket_connect):
+    def test_job_connect(self, mock_socket_connect):
         self.driver._job_connect()
         mock_socket_connect.assert_called()
 
     @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_backend_connect(self, mock_log_debug, mock_socket_connect):
+    def test_backend_connect(self, mock_socket_connect):
         self.driver._backend_connect()
         mock_socket_connect.assert_called()
 
     def test_zmq_mode_client(self):
         client_args = tests.FakeArgs()
         client_args.mode = "client"
-        driver = zmq_driver.Driver(args=client_args)
-        self.assertEqual(driver.bind_address, "localhost")
+        with patch("zmq.Context"):
+            driver = zmq_driver.Driver(args=client_args)
+        try:
+            self.assertEqual(driver.bind_address, "localhost")
+        finally:
+            driver.shutdown()
 
     def test_zmq_mode_server(self):
         server_args = tests.FakeArgs()
         server_args.mode = "server"
-        driver = zmq_driver.Driver(args=server_args)
-        self.assertEqual(driver.bind_address, "10.1.10.1")
+        with patch("zmq.Context"):
+            driver = zmq_driver.Driver(args=server_args)
+        try:
+            self.assertEqual(driver.bind_address, "10.1.10.1")
+        finally:
+            driver.shutdown()

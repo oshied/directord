@@ -36,10 +36,12 @@ from directord.components.lib.podman import PodmanImage
 from directord.components.lib.podman import PodmanClient
 
 
-class TestComponents(unittest.TestCase):
+class TestComponents(tests.TestBase):
     def setUp(self):
+        super().setUp()
         self.args = tests.FakeArgs()
-        self.client = client.Client(args=self.args)
+        with patch("directord.plugin_import", autospec=True):
+            self.client = client.Client(args=self.args)
 
         self.mock_q_patched = patch("queue.Queue", autospec=True)
         q = self.mock_q_patched.start()
@@ -73,6 +75,7 @@ class TestComponents(unittest.TestCase):
             item.driver = drivers.BaseDriver(args=self.args)
 
     def tearDown(self):
+        super().tearDown()
         self.mock_q_patched.stop()
 
     def test_options_converter(self):
@@ -193,10 +196,7 @@ class TestComponents(unittest.TestCase):
 
     @patch("directord.utils.file_sha3_224", autospec=True)
     @patch("os.path.isfile", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test__run_transfer_not_exists(
-        self, mock_log_debug, mock_isfile, mock_file_sha3_224
-    ):
+    def test__run_transfer_not_exists(self, mock_isfile, mock_file_sha3_224):
         mock_isfile.return_value = False
         mock_file_sha3_224.return_value = "YYYYYYYYY"
         with patch("builtins.open", unittest.mock.mock_open()):
@@ -211,13 +211,11 @@ class TestComponents(unittest.TestCase):
             )
         self.assertEqual(stdout, None)
         self.assertEqual(outcome, False)
-        mock_log_debug.assert_called()
 
     @patch("directord.utils.file_sha3_224", autospec=True)
     @patch("os.path.isfile", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     def test__run_transfer_not_exists_blueprinted(
-        self, mock_log_debug, mock_isfile, mock_file_sha3_224
+        self, mock_isfile, mock_file_sha3_224
     ):
         mock_isfile.return_value = False
         mock_file_sha3_224.return_value = "YYYYYYYYY"
@@ -234,17 +232,14 @@ class TestComponents(unittest.TestCase):
             )
         self.assertEqual(stdout, None)
         self.assertEqual(outcome, False)
-        mock_log_debug.assert_called()
 
     @patch("pwd.getpwnam", autospec=True)
     @patch("grp.getgrnam", autospec=True)
     @patch("directord.utils.file_sha3_224", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("os.chown", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     def test__run_transfer_not_chown_str(
         self,
-        mock_log_debug,
         mock_chown,
         mock_isfile,
         mock_file_sha3_224,
@@ -273,15 +268,12 @@ class TestComponents(unittest.TestCase):
             )
         self.assertEqual(stdout, None)
         self.assertEqual(outcome, False)
-        mock_log_debug.assert_called()
 
     @patch("directord.utils.file_sha3_224", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("os.chown", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     def test__run_transfer_not_chown_int(
         self,
-        mock_log_debug,
         mock_chown,
         mock_isfile,
         mock_file_sha3_224,
@@ -302,15 +294,12 @@ class TestComponents(unittest.TestCase):
             )
         self.assertEqual(stdout, None)
         self.assertEqual(outcome, False)
-        mock_log_debug.assert_called()
 
     @patch("directord.utils.file_sha3_224", autospec=True)
     @patch("os.path.isfile", autospec=True)
     @patch("os.chmod", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     def test__run_transfer_not_mode(
         self,
-        mock_log_debug,
         mock_chmod,
         mock_isfile,
         mock_file_sha3_224,
@@ -330,7 +319,6 @@ class TestComponents(unittest.TestCase):
             )
         self.assertEqual(stdout, None)
         self.assertEqual(outcome, False)
-        mock_log_debug.assert_called()
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__dnf_command_success(self, mock_run_command):
@@ -546,8 +534,7 @@ class TestComponents(unittest.TestCase):
             start_new_session=False,
         )
 
-    @patch("logging.Logger.info", autospec=True)
-    def test_file_blueprinter(self, mock_log_info):
+    def test_file_blueprinter(self):
         fake_cache = tests.FakeCache()
         with patch(
             "builtins.open",
@@ -557,16 +544,13 @@ class TestComponents(unittest.TestCase):
                 cache=fake_cache, file_to="/test/file1"
             )
             self.assertTrue(success)
-        mock_log_info.assert_called()
 
-    @patch("logging.Logger.critical", autospec=True)
-    def test_file_blueprinter_failed(self, mock_log_critical):
+    def test_file_blueprinter_failed(self):
         fake_cache = tests.FakeCache()
         success, _ = self.components.file_blueprinter(
             cache=fake_cache, file_to="/test/file1"
         )
         self.assertFalse(success)
-        mock_log_critical.assert_called()
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__run_command(self, mock_run_command):
@@ -666,15 +650,13 @@ class TestComponents(unittest.TestCase):
             blueprinted_content, "No arguments were defined for blueprinting"
         )
 
-    @patch("logging.Logger.debug", autospec=True)
-    def test_blueprinter_failed(self, mock_log_debug):
+    def test_blueprinter_failed(self):
         _, blueprinted_content = self.components.blueprinter(
             content=tests.TEST_BLUEPRINT_CONTENT.encode(), values={"test": 1}
         )
         self.assertEqual(
             blueprinted_content, "Can't compile non template nodes"
         )
-        mock_log_debug.assert_called()
 
     @patch("time.sleep")
     def test_wait_seconds(self, mock_sleep):

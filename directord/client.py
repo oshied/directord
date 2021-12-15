@@ -855,3 +855,5 @@ class Client(interface.Interface):
         ) as cache:
             self.cache = cache
             self.run_threads(threads=threads, stop_event=self.driver.event)
+
+        self.driver.shutdown()

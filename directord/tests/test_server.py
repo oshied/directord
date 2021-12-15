@@ -20,15 +20,17 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 from directord import datastores
+from directord.datastores import memory  # noqa
 from directord import server
 from directord import tests
 
 
 class TestServer(tests.TestDriverBase):
     def setUp(self):
-        super(TestServer, self).setUp()
+        super().setUp()
         self.args = tests.FakeArgs()
-        self.server = server.Server(args=self.args)
+        with patch("directord.plugin_import", autospec=True):
+            self.server = server.Server(args=self.args)
         self.server.workers = datastores.BaseDocument()
         self.server.return_jobs = datastores.BaseDocument()
         self.server.driver = self.mock_driver
@@ -339,8 +341,7 @@ class TestServer(tests.TestDriverBase):
         )
 
     @patch("os.path.isfile", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
-    def test_run_backend(self, mock_log_info, mock_isfile):
+    def test_run_backend(self, mock_isfile):
         self.mock_driver.backend_check.side_effect = [True, True, False]
         self.mock_driver.backend_recv.side_effect = [
             (
@@ -466,15 +467,13 @@ class TestServer(tests.TestDriverBase):
         )
 
     @patch("queue.Queue", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_job(self, mock_log_debug, mock_queue):
+    def test_run_job(self, mock_queue):
         mock_queue.return_value = MagicMock()
         self.server.job_queue = mock_queue
         self.server.run_job()
 
     @patch("queue.Queue", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_job_restricted_null(self, mock_log_debug, mock_queue):
+    def test_run_job_restricted_null(self, mock_queue):
         mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
@@ -488,8 +487,7 @@ class TestServer(tests.TestDriverBase):
         self.server.run_job()
 
     @patch("queue.Queue", autospec=True)
-    @patch("logging.Logger.critical", autospec=True)
-    def test_run_job_run_node_fail(self, mock_log_critical, mock_queue):
+    def test_run_job_run_node_fail(self, mock_queue):
         mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
@@ -502,8 +500,7 @@ class TestServer(tests.TestDriverBase):
         self.server.run_job()
 
     @patch("queue.Queue", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_run_job_run(self, mock_log_debug, mock_queue):
+    def test_run_job_run(self, mock_queue):
         mock_queue.get_nowait.side_effect = [
             {
                 "verb": "RUN",
@@ -637,10 +634,8 @@ class TestServer(tests.TestDriverBase):
 
     @patch("directord.server.Server._set_job_status", autospec=True)
     @patch("time.time", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     def test_run_interactions_transfer_complete(
         self,
-        mock_log_debug,
         mock_time,
         mock_set_job_status,
     ):

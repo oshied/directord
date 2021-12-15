@@ -13,25 +13,20 @@
 #   under the License.
 
 import time
-import unittest
 
 from directord import datastores
+from directord import tests
 
 
-class TestDatastoreInternal(unittest.TestCase):
+class TestDatastoreInternal(tests.TestBase):
     def setUp(self):
-        self.log_patched = unittest.mock.patch("directord.logger.getLogger")
-        self.log = self.log_patched.start()
-
-    def tearDown(self):
-        self.log_patched.stop()
+        super().setUp()
 
     def test_wq_prune_0(self):
         workers = datastores.BaseDocument()
         workers["test"] = 1
         workers.empty()
         self.assertDictEqual(workers, dict())
-        self.log.debug.called_once()
 
     def test_wq_prune_valid(self):
         workers = datastores.BaseDocument()
@@ -41,7 +36,6 @@ class TestDatastoreInternal(unittest.TestCase):
         workers.prune()
         self.assertEqual(len(workers), 1)
         self.assertIn("valid1", workers)
-        self.log.debug.called_once()
 
     def test_wq_empty(self):
         workers = datastores.BaseDocument()

@@ -17,11 +17,12 @@ from unittest.mock import patch
 
 from directord.datastores import disc as datastore_disc
 
+from directord import tests
 
-class TestDatastoreDisc(unittest.TestCase):
+
+class TestDatastoreDisc(tests.TestBase):
     def setUp(self):
-        self.log_patched = patch("directord.logger.getLogger")
-        self.log = self.log_patched.start()
+        super().setUp()
         self.makedirs_patched = patch("os.makedirs", autospec=True)
         self.makedirs_patched.start()
         self.chdir_patched = patch("os.chdir", autospec=True)
@@ -31,7 +32,7 @@ class TestDatastoreDisc(unittest.TestCase):
         self.datastore = datastore_disc.BaseDocument(url="file:///test/things")
 
     def tearDown(self):
-        self.log_patched.stop()
+        super().tearDown()
         self.makedirs_patched.stop()
         self.chdir_patched.stop()
         self.setxattr_patched.stop()

@@ -22,6 +22,7 @@ import directord
 
 from directord import logger
 from directord import tests
+from directord import user
 
 
 COMPONENT_FAILURE_INFO = """Failure - Unknown Component
@@ -132,14 +133,10 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(logfile, "/root/test_file")
 
 
-class TestProcessor(unittest.TestCase):
+class TestProcessor(tests.TestBase):
     def setUp(self):
-        self.log_patched = unittest.mock.patch("directord.logger.getLogger")
-        self.log = self.log_patched.start()
+        super().setUp()
         self.processor = directord.Processor()
-
-    def tearDown(self):
-        self.log_patched.stop()
 
     def test_get_queue(self):
         with patch("multiprocessing.Queue") as mock_queue:
@@ -158,12 +155,14 @@ class TestProcessor(unittest.TestCase):
         self.assertTrue(thread2.daemon)
 
 
-class TestUnixSocket(unittest.TestCase):
+class TestUnixSocket(tests.TestBase):
     def setUp(self):
+        super().setUp()
         self.socket_patched = unittest.mock.patch("directord.socket.socket")
         self.socket = self.socket_patched.start()
 
     def tearDown(self):
+        super().tearDown()
         self.socket_patched.stop()
 
     def test_unix_socket(self):
@@ -174,8 +173,7 @@ class TestUnixSocket(unittest.TestCase):
             directord.socket.AF_UNIX, directord.socket.SOCK_STREAM
         )
 
-    @patch("logging.Logger.error", autospec=True)
-    def test_unix_socket_error(self, mock_log_error):
+    def test_unix_socket_error(self):
         with patch.object(directord, "UNIXSocketConnect") as conn:
             conn.side_effect = PermissionError()
             with self.assertRaises(PermissionError):
@@ -184,7 +182,8 @@ class TestUnixSocket(unittest.TestCase):
 
 class TestDirectordConnect(unittest.TestCase):
     def setUp(self):
-        self.dc = directord.DirectordConnect()
+        super().setUp()
+        self.dc = directord.DirectordConnect(driver="dummy")
 
     def test_from_json(self):
         return_data = self.dc._from_json(b'{"test": "value"}')
@@ -236,13 +235,7 @@ class TestDirectordConnect(unittest.TestCase):
         self.dc.list_jobs()
 
 
-class TestDirectordInit(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
+class TestDirectordInit(tests.TestBase):
     def test_plugin_import(self):
         with patch("importlib.import_module", autospec=True) as mock_module:
             directord.plugin_import("notaplugin")
@@ -320,17 +313,20 @@ class TestDirectordInit(unittest.TestCase):
                     )
 
 
-class TestIndicator(unittest.TestCase):
+class TestIndicator(tests.TestBase):
     def setUp(self):
+        super().setUp()
         self.multi_patched = mock.patch("directord.multiprocessing.Process")
         self.multi = self.multi_patched.start()
 
     def tearDown(self):
+        super().tearDown()
         self.multi_patched.stop()
 
     def test_spinner_class(self):
-        spinner = directord.Spinner()
-        self.assertEqual(spinner.run, False)
+        indicator = directord.Spinner(run=True)
+        self.assertEqual(indicator.run, True)
+        indicator.__exit__()
 
     def test_spinner_context(self):
         with directord.Spinner(run=True) as indicator:

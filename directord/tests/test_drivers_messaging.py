@@ -13,7 +13,6 @@
 #   under the License.
 
 import json
-import unittest
 
 from unittest.mock import MagicMock
 from unittest.mock import patch
@@ -23,8 +22,9 @@ from directord import tests
 from directord.drivers import messaging
 
 
-class TestDriverMessaging(unittest.TestCase):
+class TestDriverMessaging(tests.TestBase):
     def setUp(self):
+        super().setUp()
         self.mock_interface = MagicMock()
         args = tests.FakeArgs()
         args.driver = "messaging"
@@ -37,9 +37,6 @@ class TestDriverMessaging(unittest.TestCase):
                 args=args,
                 interface=self.mock_interface,
             )
-
-    def tearDown(self):
-        pass
 
     def test_get_lock(self):
         with patch("threading.Lock") as mock_lock:

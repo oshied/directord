@@ -12,21 +12,25 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from unittest.mock import patch
-
-from directord import interface
-from directord import tests
+from directord import drivers
 
 
-class TestInterface(tests.TestBase):
-    def setUp(self):
-        super().setUp()
-        self.args = tests.FakeArgs()
+def parse_args(parser, parser_server, parser_client):
+    """Add arguments for this driver to the parser.
 
-    def test_interface_no_driver(self):
-        with patch(
-            "directord.plugin_import", autospec=True
-        ) as mock_plugin_import:
-            mock_plugin_import.side_effect = ImportError("fail")
-            with self.assertRaises(SystemExit):
-                interface.Interface(args=self.args)
+    :param parser: Parser
+    :type parser: Object
+    :param parser_server: SubParser object
+    :type parser_server: Object
+    :param parser_client: SubParser object
+    :type parser_client: Object
+    :returns: Object
+    """
+
+    return parser
+
+
+class Driver(drivers.BaseDriver):
+    """Dummy driver implements the base class and nothing else."""
+
+    pass
