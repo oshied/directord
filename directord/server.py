@@ -244,6 +244,14 @@ class Server(interface.Interface):
             },
         )
 
+    def exit_gracefully(self, *args, **kwargs):
+        """Set the driver event to begin the shutdown of the application."""
+
+        self.log.warning(
+            "Shutdown signal intercepted. Starting server shutdown."
+        )
+        self.driver.event.set()
+
     def run_job(self):
         """Run a job interaction.
 
@@ -529,6 +537,7 @@ class Server(interface.Interface):
                     )
 
             if self.driver.event.is_set():
+                self.driver.backend_close()
                 break
 
     def run_interactions(self):
@@ -728,6 +737,7 @@ class Server(interface.Interface):
                 )
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(1)
         sock.bind(self.args.socket_path)
         self.log.debug("Socket:%s bound", self.args.socket_path)
         os.chmod(self.args.socket_path, 509)
@@ -740,7 +750,11 @@ class Server(interface.Interface):
         os.chown(self.args.socket_path, uid, gid)
         sock.listen(1)
         while True:
-            conn, _ = sock.accept()
+            try:
+                conn, _ = sock.accept()
+            except socket.timeout:
+                continue
+
             with conn:
                 data = conn.recv(409600)
                 data_decoded = data.decode()
