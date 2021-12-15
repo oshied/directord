@@ -27,8 +27,9 @@ except (ImportError, ModuleNotFoundError):
     GRPC_UNAVAILABLE = True
 
 
-class TestDriverGrpcdServerMode(unittest.TestCase):
+class TestDriverGrpcdServerMode(tests.TestBase):
     def setUp(self):
+        super().setUp()
         args = tests.FakeArgs()
         args.mode = "server"
         self.driver = grpcd.Driver(args=args)
@@ -36,9 +37,6 @@ class TestDriverGrpcdServerMode(unittest.TestCase):
         self.driver._client = self.client_mock
         self.server_mock = mock.MagicMock()
         self.driver._server = self.server_mock
-
-    def tearDown(self):
-        pass
 
     @mock.patch("directord.drivers.grpcd.MessageServiceClient.instance")
     @mock.patch("directord.drivers.grpcd.MessageServiceServer.instance")
@@ -389,17 +387,15 @@ class TestDriverGrpcdServerMode(unittest.TestCase):
         self.driver.key_generate("foo", "bar")
 
 
-class TestDriverGrpcdClientMode(unittest.TestCase):
+class TestDriverGrpcdClientMode(tests.TestBase):
     def setUp(self):
+        super().setUp()
         args = tests.FakeArgs()
         args.mode = "client"
         self.driver = grpcd.Driver(args=args)
         self.driver = grpcd.Driver(args=args)
         self.client_mock = mock.MagicMock()
         self.driver._client = self.client_mock
-
-    def tearDown(self):
-        pass
 
     @mock.patch("directord.drivers.grpcd.MessageServiceClient.instance")
     def test_grpc_init(self, mock_client_inst):
@@ -501,14 +497,16 @@ class TestDriverGrpcdClientMode(unittest.TestCase):
         )
 
 
-class TestGrpcQueueBase(unittest.TestCase):
+class TestGrpcQueueBase(tests.TestBase):
     """Test queue base."""
 
     def setUp(self):
+        super().setUp()
         grpcd.QueueBase._instance = None
         self.queue = grpcd.QueueBase.instance()
 
     def tearDown(self):
+        super().tearDown()
         grpcd.QueueBase._instance = None
 
     def test_instance(self):
@@ -554,7 +552,7 @@ class TestGrpcQueueBase(unittest.TestCase):
 
 
 @unittest.skipIf(GRPC_UNAVAILABLE, "grpc library unavailable")
-class TestGrpcServer(unittest.TestCase):
+class TestGrpcServer(tests.TestBase):
     """Test grpc server logic."""
 
     @mock.patch("directord.drivers.grpcd.MessageServiceServer._setup")
@@ -718,7 +716,7 @@ class TestGrpcServer(unittest.TestCase):
 
 
 @unittest.skipIf(GRPC_UNAVAILABLE, "grpc library unavailable")
-class TestGrpcClient(unittest.TestCase):
+class TestGrpcClient(tests.TestBase):
     """Test grpc client logic."""
 
     @mock.patch("directord.drivers.grpcd.MessageServiceClient.connect")

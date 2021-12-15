@@ -12,16 +12,16 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import tracemalloc
 import unittest
 
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-from collections import namedtuple
-
 from directord import drivers
-from directord.drivers import messaging
-from directord.drivers import zmq
+
+
+tracemalloc.start()
 
 
 TEST_BLUEPRINT_CONTENT = "This is a blueprint string {{ test }}"
@@ -236,8 +236,18 @@ class FakeThread:
         pass
 
 
-class TestConnectionBase(unittest.TestCase):
+class TestBase(unittest.TestCase):
     def setUp(self):
+        self.patch_logger = patch("directord.logger.getLogger", autospec=True)
+        self.patch_logger.start()
+
+    def tearDown(self):
+        self.patch_logger.stop()
+
+
+class TestConnectionBase(TestBase):
+    def setUp(self):
+        super().setUp()
         self.patched_socket = patch("socket.socket.connect", autospec=True)
         self.patched_socket.start()
         fakesession = MagicMock()
@@ -249,16 +259,19 @@ class TestConnectionBase(unittest.TestCase):
             "directord.utils.Session", autospec=True, return_value=fakesession
         )
         self.patched_session.start()
+        self.addCleanup(self.restoreSocket)
+
+    def restoreSocket(self):
+        self.patched_session.stop()
+        self.patched_socket.stop()
 
     def tearDown(self):
-        self.patched_socket.stop()
-        self.patched_session.stop()
+        super().tearDown()
 
 
-class TestDriverBase(unittest.TestCase):
+class TestDriverBase(TestBase):
     def setUp(self):
-        self.zmq = zmq.Driver
-        self.messaging = messaging.Driver
+        super().setUp()
         base_driver = drivers.BaseDriver(args=FakeArgs())
         self.mock_driver_patched = patch(
             "directord.drivers.BaseDriver",
@@ -281,8 +294,4 @@ class TestDriverBase(unittest.TestCase):
         self.addCleanup(self.restoreDrivers)
 
     def restoreDrivers(self):
-        zmq.Driver = self.zmq
-        messaging.Driver = self.messaging
-
-    def tearDown(self):
         self.mock_driver_patched.stop()

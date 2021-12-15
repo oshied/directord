@@ -23,9 +23,10 @@ from directord import tests
 
 class TestClient(tests.TestDriverBase):
     def setUp(self):
-        super(TestClient, self).setUp()
+        super().setUp()
         self.args = tests.FakeArgs()
-        self.client = client.Client(args=self.args)
+        with patch("directord.plugin_import", autospec=True):
+            self.client = client.Client(args=self.args)
         self.client.driver = self.mock_driver
 
     @patch("time.time", autospec=True)
@@ -131,12 +132,10 @@ class TestClient(tests.TestDriverBase):
             self.client.run_job()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_skip_skip_cache_run(
         self,
         mock_time,
-        mock_log_info,
         mock_diskcache,
     ):
         job_def = {
@@ -162,15 +161,12 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
             self.client.run_job()
-        mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_skip_ignore_cache_run(
         self,
         mock_time,
-        mock_log_info,
         mock_diskcache,
     ):
         job_def = {
@@ -197,15 +193,12 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
             self.client.run_job()
-        mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_parent_failed_run(
         self,
         mock_time,
-        mock_log_info,
         mock_diskcache,
     ):
         job_def = {
@@ -231,15 +224,12 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
             self.client.run_job()
-        mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_cache_hit_run(
         self,
         mock_time,
-        mock_log_info,
         mock_diskcache,
     ):
         job_def = {
@@ -267,15 +257,12 @@ class TestClient(tests.TestDriverBase):
             with patch.object(self.mock_driver, "job_check") as mock_job_check:
                 mock_job_check.side_effect = [True, False]
                 self.client.run_job()
-        mock_log_info.assert_called()
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_run(
         self,
         mock_time,
-        mock_log_info,
         mock_diskcache,
     ):
         job_def = {
@@ -304,16 +291,13 @@ class TestClient(tests.TestDriverBase):
             with patch.object(self.mock_driver, "job_check") as mock_job_check:
                 mock_job_check.side_effect = [True, False]
                 self.client.run_job()
-        mock_log_info.assert_called()
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_end)
 
     @patch("shelve.open", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
     @patch("time.time", autospec=True)
     def test_run_job_run_outcome_false(
         self,
         mock_time,
-        mock_log_info,
         mock_diskcache,
     ):
         job_def = {
@@ -340,7 +324,6 @@ class TestClient(tests.TestDriverBase):
         with patch.object(self.mock_driver, "job_check") as mock_job_check:
             mock_job_check.side_effect = [True, False]
             self.client.run_job()
-        mock_log_info.assert_called()
         self.assertEqual(cache.get("YYY"), self.mock_driver.job_failed)
 
     @patch("os.makedirs", autospec=True)

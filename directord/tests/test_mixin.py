@@ -64,9 +64,6 @@ class TestMixin(tests.TestConnectionBase):
         }
         self.target_orchestrations = [self.orchestration, self.orchestration]
 
-    def tearDown(self):
-        super().tearDown()
-
     def test_format_action_unknown(self):
         self.assertRaises(
             SystemExit,

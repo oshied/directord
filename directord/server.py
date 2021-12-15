@@ -1016,3 +1016,4 @@ class Server(interface.Interface):
         ]
 
         self.run_threads(threads=threads, stop_event=self.driver.event)
+        self.driver.shutdown()

@@ -26,6 +26,8 @@ class Testbootstrap(tests.TestConnectionBase):
     def setUp(self):
         super().setUp()
         self.args = tests.FakeArgs()
+        self.patch_spinner = patch("directord.Spinner", autospec=True)
+        self.patch_spinner.start()
         self.bootstrap = bootstrap.Bootstrap(args=self.args)
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
         self.orchestration = {
@@ -59,8 +61,10 @@ class Testbootstrap(tests.TestConnectionBase):
 
     def tearDown(self):
         super().tearDown()
+        self.patch_spinner.stop()
         self.mock_chan_patched.stop()
         self.mock_stat_patched.stop()
+        self.mock_ssh.sock.close()
 
     def test_bootstrap_catalog_entry_no_args(self):
         entry = {
@@ -211,8 +215,7 @@ class Testbootstrap(tests.TestConnectionBase):
         )
         self.assertEqual(return_data, ["one", "two", "three", "four"])
 
-    @patch("logging.Logger.info", autospec=True)
-    def test_bootstrap_run(self, mock_log_info):
+    def test_bootstrap_run(self):
         job_def = {
             "host": "String",
             "port": 22,
@@ -225,8 +228,6 @@ class Testbootstrap(tests.TestConnectionBase):
             with patch.object(self.fakechannel, "read") as mock_read:
                 mock_read.side_effect = [(5, b"start\n"), (0, b"end\n")]
                 self.bootstrap.bootstrap_run(job_def=job_def, catalog={})
-
-        mock_log_info.assert_called()
 
     def test_bootstrap_file_send(self):
         self.mock_stat.return_value = tests.FakeStat(uid=99, gid=99)
@@ -278,8 +279,7 @@ class Testbootstrap(tests.TestConnectionBase):
             value.request_exec.assert_called_with("command 1 test")
 
     @patch("queue.Queue", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
-    def test_bootstrap_q_processor(self, mock_log_info, mock_queue):
+    def test_bootstrap_q_processor(self, mock_queue):
         mock_queue.get.side_effect = [
             {
                 "host": "String",
@@ -298,11 +298,9 @@ class Testbootstrap(tests.TestConnectionBase):
                 self.bootstrap.bootstrap_q_processor(
                     queue=mock_queue, catalog={}
                 )
-        mock_log_info.assert_called()
 
     @patch("directord.bootstrap.Bootstrap.run_threads", autospec=True)
-    @patch("logging.Logger.info", autospec=True)
-    def test_bootstrap_cluster(self, mock_log_info, mock_threads):
+    def test_bootstrap_cluster(self, mock_threads):
         try:
             setattr(self.args, "catalog", ["/file.yaml"])
             setattr(self.args, "threads", 3)

@@ -88,6 +88,11 @@ class BaseDriver:
 
         self.interface = interface
 
+    def shutdown(self):
+        """Shutdown the driver."""
+
+        pass
+
     @staticmethod
     def get_lock():
         """Returns a thread lock."""

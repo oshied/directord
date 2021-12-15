@@ -24,13 +24,11 @@ from directord import tests
 from directord import user
 
 
-class TestUser(unittest.TestCase):
+class TestUser(tests.TestBase):
     def setUp(self):
+        super().setUp()
         self.args = tests.FakeArgs()
         self.user = user.User(args=self.args)
-
-    def tearDown(self):
-        pass
 
     def test_send_data(self):
         user.directord.socket.socket = tests.MockSocket
@@ -42,9 +40,10 @@ class TestUser(unittest.TestCase):
 
 class TestManager(tests.TestDriverBase):
     def setUp(self):
-        super(TestManager, self).setUp()
+        super().setUp()
         self.args = tests.FakeArgs()
-        self.manage = user.Manage(args=self.args)
+        with patch("directord.plugin_import", autospec=True):
+            self.manage = user.Manage(args=self.args)
         self.manage.driver = self.mock_driver
 
     @patch("os.rename", autospec=True)
@@ -260,14 +259,3 @@ class TestManager(tests.TestDriverBase):
         mock_print.assert_called_with(
             '{\n    "args": {\n        "test": 1\n    },\n    "test": "value"\n}'  # noqa
         )
-
-    @patch("builtins.print")
-    @patch("os.chdir", autospec=True)
-    @patch("os.makedirs", autospec=True)
-    def test_run_override_dump_cache_empty(
-        self, mock_makedirs, mock_chdirs, mock_print
-    ):
-        self.manage.run(override="dump-cache")
-        mock_print.assert_called_with("{}")
-        mock_makedirs.assert_called()
-        mock_chdirs.assert_called()

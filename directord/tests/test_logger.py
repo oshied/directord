@@ -21,7 +21,7 @@ from directord import logger
 
 class TestLoggerHandlers(unittest.TestCase):
     def setUp(self):
-
+        super().setUp()
         self.rh_patched = unittest.mock.patch(
             "directord.logger.handlers.RotatingFileHandler"
         )
@@ -38,6 +38,7 @@ class TestLoggerHandlers(unittest.TestCase):
         self._handler = unittest.mock.Mock()
 
     def tearDown(self):
+        super().tearDown()
         self.rh_patched.stop()
         self.sh_patched.stop()
 

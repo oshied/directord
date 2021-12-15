@@ -23,8 +23,9 @@ from directord import main
 from directord import tests
 
 
-class TestMain(unittest.TestCase):
+class TestMain(tests.TestBase):
     def setUp(self):
+        super().setUp()
         self.maxDiff = 20000
         self.args = tests.FakeArgs()
         self.systemdinstall = main.SystemdInstall()
@@ -32,9 +33,6 @@ class TestMain(unittest.TestCase):
         mock_parse_driver_args = mock.Mock()
         mock_parse_driver_args.side_effect = parse_driver_args_se
         main._parse_driver_args = mock_parse_driver_args
-
-    def tearDown(self):
-        pass
 
     def test__args_default(self):
         self.assertRaises(

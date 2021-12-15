@@ -143,7 +143,8 @@ class Driver(drivers.BaseDriver):
             self.secret_keys_dir = None
             self.public_keys_dir = None
 
-        self.ctx = zmq.Context().instance()
+        self._context = zmq.Context()
+        self.ctx = self._context.instance()
         self.poller = zmq.Poller()
         self.interface = interface
         super(Driver, self).__init__(
@@ -223,6 +224,9 @@ class Driver(drivers.BaseDriver):
             return False
 
     def _close(self, socket):
+        if socket is None:
+            return
+
         try:
             socket.close(linger=2)
             close_time = time.time()
@@ -238,7 +242,7 @@ class Driver(drivers.BaseDriver):
                     time.sleep(1)
         except Exception as e:
             self.log.error(
-                "Backend ran into an exception while closing the socket %s",
+                "Ran into an exception while closing the socket %s",
                 str(e),
             )
         else:
@@ -447,7 +451,7 @@ class Driver(drivers.BaseDriver):
         """
 
         bind = self.ctx.socket(socket_type)
-
+        bind.linger = getattr(self.args, "heartbeat_interval", 60)
         hwm = int(self.hwm * 4)
         try:
             bind.sndhwm = bind.rcvhwm = hwm
@@ -818,3 +822,15 @@ class Driver(drivers.BaseDriver):
         return self._bind_check(
             bind=self.bind_job, interval=interval, constant=constant
         )
+
+    def shutdown(self):
+        """Shutdown the driver."""
+
+        if hasattr(self.ctx, "close"):
+            self.ctx.close()
+
+        if hasattr(self._context, "close"):
+            self._context.close()
+
+        self.job_close()
+        self.backend_close()

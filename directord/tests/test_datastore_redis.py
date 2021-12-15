@@ -19,11 +19,12 @@ import redis
 
 from directord.datastores import redis as datastore_redis
 
+from directord import tests
 
-class TestDatastoreRedis(unittest.TestCase):
+
+class TestDatastoreRedis(tests.TestBase):
     def setUp(self):
-        self.log_patched = patch("directord.logger.getLogger")
-        self.log = self.log_patched.start()
+        super().setUp()
         self.redis_patched = patch.object(
             redis.Redis, "from_url", autospec=True
         )
@@ -33,7 +34,7 @@ class TestDatastoreRedis(unittest.TestCase):
         )
 
     def tearDown(self):
-        self.log_patched.stop()
+        super().tearDown()
         self.redis_patched.stop()
 
     def test___getitem__string(self):

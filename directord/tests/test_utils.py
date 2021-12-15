@@ -123,19 +123,14 @@ class TestUtils(tests.TestConnectionBase):
         )
 
     @patch("ssh.key.import_privkey_file", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    def test_sshconnect_keyfile(self, mock_log_debug, mock_import_key):
+    def test_sshconnect_keyfile(self, mock_import_key):
         with utils.SSHConnect(
             host="test", username="testuser", port=22, key_file="/test/key"
         ):
             mock_import_key.assert_called()
 
     @patch("ssh.key.import_privkey_file", autospec=True)
-    @patch("logging.Logger.debug", autospec=True)
-    @patch("logging.Logger.warning", autospec=True)
-    def test_sshconnect_agent_failure_default_key(
-        self, mock_log_debug, mock_log_warning, mock_import_key
-    ):
+    def test_sshconnect_agent_failure_default_key(self, mock_import_key):
         ssh = utils.SSHConnect(host="test", username="testuser", port=22)
         with patch.object(
             ssh.session, "userauth_agent", autospec=True
