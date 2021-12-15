@@ -281,6 +281,7 @@ Syntax: `SERVICE [SERVICE ...]`
 
 > Manage systemd service state
 
+* `--reloaded ` **BOOLEAN** Ensure service is reloaded.
 * `--restarted` **BOOLEAN** Ensure service is restarted.
 * `--stopped` **BOOLEAN** Ensure service is stopped.
 * `--enable` **BOOLEAN** Ensure service is enabled.
