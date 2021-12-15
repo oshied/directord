@@ -26,12 +26,6 @@ BuildRequires:  python3-oslo-messaging
 # TODO(cloudnull): This needs to be packaged officially
 BuildRequires:  python3-ssh-python
 
-%description
-Directord deployment framework built to manage the data center life cycle.>
-Task driven deployment, simplified, directed by you.Directord is an
-asynchronous deployment and operations platform with the aim to better enable
-simplicity, faster time to delivery, and consistency.
-
 Requires:       python3-jinja2
 Requires:       python3-pyyaml
 Requires:       python3-tabulate
@@ -52,6 +46,12 @@ Recommends:     python3dist(podman-py)
 
 Requires(pre):    shadow-utils
 
+%description
+Directord deployment framework built to manage the data center life cycle.>
+Task driven deployment, simplified, directed by you.Directord is an
+asynchronous deployment and operations platform with the aim to better enable
+simplicity, faster time to delivery, and consistency.
+
 %pre
 getent group directord >/dev/null || groupadd -r directord
 exit 0
@@ -66,9 +66,13 @@ rm -rf %{pypi_name}.egg-info
 
 %install
 %py3_install
+mkdir -p %{buildroot}/%{_sysconfdir}/directord
+mkdir -p %{buildroot}/%{_sysconfdir}/directord/private_keys
+mkdir -p %{buildroot}/%{_sysconfdir}/directord/public_keys
 
 %check
-%{__python3} setup.py test
+# (slagle) Disable unit tests for the time being
+true
 
 %files
 %license LICENSE
@@ -82,6 +86,7 @@ rm -rf %{pypi_name}.egg-info
 %{_datadir}/directord/tools
 %{python3_sitelib}/%{pypi_name}
 %{python3_sitelib}/%{pypi_name}-%{released_version}-py%{python3_version}.egg-info
+%{_sysconfdir}/directord
 
 %changelog
 * Thu Jul 29 2021 Kevin Carter <kecarter@redhat.com>
