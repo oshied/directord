@@ -70,12 +70,20 @@ class Interface(directord.Processor):
             self.log.debug(
                 "Loading messaging driver: [ %s ]", self.args.driver
             )
-            self.driver = _driver.Driver(
-                args=self.args,
-                encrypted_traffic_data={
-                    "enabled": self.keys_exist,
-                    "public_keys_dir": self.public_keys_dir,
-                    "secret_keys_dir": self.secret_keys_dir,
-                },
-                interface=self,
-            )
+            try:
+                self.driver = _driver.Driver(
+                    args=self.args,
+                    encrypted_traffic_data={
+                        "enabled": self.keys_exist,
+                        "public_keys_dir": self.public_keys_dir,
+                        "secret_keys_dir": self.secret_keys_dir,
+                    },
+                    interface=self,
+                )
+            except NameError as e:
+                raise OSError(
+                    "Failed to load driver {} - Error: {} - Check"
+                    " configuration and dependency installation.".format(
+                        self.args.driver, str(e)
+                    )
+                ) from None
