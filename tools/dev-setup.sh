@@ -110,7 +110,7 @@ with open('/etc/directord/config.yaml', 'w') as f:
 EOC
 
 if [ "${DRIVER}" == "zmq" ] && [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-  ${VENV_PATH}/bin/directord manage --generate-keys
+  ${VENV_PATH}/bin/directord --driver zmq server --zmq-generate-keys
 fi
 
 if [ "${SETUP}" = true ]; then

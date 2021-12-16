@@ -55,9 +55,9 @@ $ directord --zmq-shared-key ${SECRET_TOKEN} client
 
 **Curve25519** is a more complicated method to setup as keys have to be
 generated and synchronized to all client and server nodes. While generating
-keys is simple with the `directord manage --generate-keys` command, the
-**Curve25519** method is called out as more complex due to the requirement of
-file transfers. **Curve25519** will encrypt the traffic within the cluster
+keys is simple with the `directord --driver zmq server --zmq-generate-keys` command,
+the **Curve25519** method is called out as more complex due to the requirement
+of file transfers. **Curve25519** will encrypt the traffic within the cluster
 making it suitable for deployments that extend beyond a single data center.
 
 > When starting Directord, both on the server and client, if a keys are directed
@@ -70,10 +70,10 @@ The following command will generate the encryption keys required to enable
 **Curve25519**.
 
 ``` shell
-$ directord manage --generate-keys
+$ directord --driver zmq server --zmq-generate-keys
 ```
 
-> If the `--generate-keys` command is run more than once it will backup old key
+> If the `--zmq-generate-keys` command is run more than once it will backup old key
   files before creating new ones. This is important for rollback capabilities
   should that be needed.
 
@@ -117,7 +117,7 @@ run, which will first generate new keys on the server and run a simple
 orchestration to rotate the keys across an active cluster.
 
 ``` shell
-$ directord manage --generate-keys
+$ directord --driver zmq server --zmq-generate-keys
 $ directord orchestrate key-rotation.yaml
 ```
 
@@ -278,5 +278,5 @@ grpc_server_address: 127.0.0.1
 TBD
 
 ### Tuning
- 
+
 TBD
