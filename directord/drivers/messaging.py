@@ -720,12 +720,3 @@ class Driver(drivers.BaseDriver):
             stderr=stderr,
             stdout=stdout,
         )
-
-    def key_generate(self, keys_dir, key_type):
-        """Generate certificate."""
-
-        self.log.error(
-            "NotImplemented Key generation is not supported from within"
-            " the messaging driver. Certificates will need to be"
-            " generated outside of Directord."
-        )

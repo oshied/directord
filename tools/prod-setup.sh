@@ -72,7 +72,7 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; 
   echo "/usr/bin/directord-client-systemd"
   echo -e "/usr/bin/directord-server-systemd\n"
   if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-    directord manage --generate-keys
+    directord --driver zmq server --zmq-generate-keys
   fi
 else
   python3 -m venv --system-site-packages /opt/directord
@@ -85,7 +85,7 @@ else
   echo "/opt/directord/bin/directord-client-systemd"
   echo -e "/opt/directord/bin/directord-server-systemd\n"
   if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-    /opt/directord/bin/directord manage --generate-keys
+    /opt/directord/bin/directord --driver zmq server --zmq-generate-keys
   fi
 fi
 

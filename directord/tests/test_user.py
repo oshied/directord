@@ -46,67 +46,6 @@ class TestManager(tests.TestDriverBase):
             self.manage = user.Manage(args=self.args)
         self.manage.driver = self.mock_driver
 
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_move_cetrificates_null(self, mock_listdir, mock_rename):
-        mock_listdir.return_value = ["item-one", "item-two"]
-        self.manage.move_certificates(directory="/test/path")
-        mock_rename.assert_not_called()
-
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_move_cetrificates_normal(self, mock_listdir, mock_rename):
-        mock_listdir.return_value = ["item-one.key", "item-two.key"]
-        self.manage.move_certificates(directory="/test/path")
-        mock_rename.assert_called_with(
-            "/test/path/item-two.key", "/test/path/item-two.key"
-        )
-        mock_rename.assert_has_calls(
-            [
-                call("/test/path/item-one.key", "/test/path/item-one.key"),
-                call("/test/path/item-two.key", "/test/path/item-two.key"),
-            ]
-        )
-
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_move_cetrificates_backup(self, mock_listdir, mock_rename):
-        mock_listdir.return_value = ["item-one.key", "item-two.key"]
-        self.manage.move_certificates(directory="/test/path", backup=True)
-        mock_rename.assert_has_calls(
-            [
-                call("/test/path/item-one.key", "/test/path/item-one.key.bak"),
-                call("/test/path/item-two.key", "/test/path/item-two.key.bak"),
-            ]
-        )
-
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_move_cetrificates_target_directory(
-        self, mock_listdir, mock_rename
-    ):
-        mock_listdir.return_value = ["item-one.key", "item-two.key"]
-        self.manage.move_certificates(
-            directory="/test/path", target_directory="/new/test/path"
-        )
-        mock_rename.assert_has_calls(
-            [
-                call("/test/path/item-one.key", "/new/test/path/item-one.key"),
-                call("/test/path/item-two.key", "/new/test/path/item-two.key"),
-            ]
-        )
-
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_move_cetrificates_normal_selective(
-        self, mock_listdir, mock_rename
-    ):
-        mock_listdir.return_value = ["item-one.test", "item-two.key"]
-        self.manage.move_certificates(directory="/test/path", suffix=".test")
-        mock_rename.assert_called_once_with(
-            "/test/path/item-one.test", "/test/path/item-one.test"
-        )
-
     @patch("directord.send_data", autospec=True)
     def test_poll_job_unknown(self, mock_send_data):
         with patch.object(self.args, "timeout", 1):
@@ -214,40 +153,6 @@ class TestManager(tests.TestDriverBase):
         self.manage.run(override="purge-nodes")
         mock_send_data.assert_called_once_with(
             unittest.mock.ANY, data='{"manage": {"purge_nodes": null}}'
-        )
-
-    @patch("directord.user.Manage.generate_certificates", autospec=True)
-    @patch("directord.send_data", autospec=True)
-    def test_run_override_generate_keys(
-        self, mock_send_data, mock_generate_certificates
-    ):
-        self.manage.run(override="generate-keys")
-        mock_send_data.assert_not_called()
-
-    @patch("os.makedirs", autospec=True)
-    @patch("os.rename", autospec=True)
-    @patch("os.listdir", autospec=True)
-    def test_generate_certificates(
-        self, mock_listdir, mock_rename, mock_makedirs
-    ):
-        mock_listdir.return_value = ["item-one.test", "item-two.key"]
-        self.manage.generate_certificates()
-        mock_makedirs.assert_has_calls(
-            [
-                call("/etc/directord/certificates", exist_ok=True),
-                call("/etc/directord/public_keys", exist_ok=True),
-                call("/etc/directord/private_keys", exist_ok=True),
-            ]
-        )
-        self.manage.driver.key_generate.assert_has_calls(
-            [
-                call(
-                    keys_dir="/etc/directord/certificates", key_type="server"
-                ),
-                call(
-                    keys_dir="/etc/directord/certificates", key_type="client"
-                ),
-            ]
         )
 
     @patch("builtins.print")

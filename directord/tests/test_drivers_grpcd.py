@@ -381,11 +381,6 @@ class TestDriverGrpcdServerMode(tests.TestBase):
             "skipping close."
         )
 
-    def test_key_generate(self):
-        """Test key generate."""
-        # does nothing
-        self.driver.key_generate("foo", "bar")
-
 
 class TestDriverGrpcdClientMode(tests.TestBase):
     def setUp(self):

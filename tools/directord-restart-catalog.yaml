@@ -2,7 +2,7 @@
 
 directord_server:
   jobs:
-  - RUN: sudo /opt/directord/bin/directord manage --generate-keys
+  - RUN: sudo /opt/directord/bin/directord --driver zmq server --zmq-generate-keys
   - RUN: sudo systemctl restart directord-server.service
   - GET: /etc/directord/private_keys/client.key_secret /tmp/client.key_secret
   - GET: /etc/directord/public_keys/client.key /tmp/client.key

@@ -52,70 +52,6 @@ class Manage(User):
 
         super(User, self).__init__(args=args)
 
-    @staticmethod
-    def move_certificates(
-        directory, target_directory=None, backup=False, suffix=".key"
-    ):
-        """Move certificates when required.
-
-        :param directory: Set the origin path.
-        :type directory: String
-        :param target_directory: Set the target path.
-        :type target_directory: String
-        :param backup: Enable file backup before moving.
-        :type backup:  Boolean
-        :param suffix: Set the search suffix
-        :type suffix: String
-        """
-
-        for item in os.listdir(directory):
-            if backup:
-                target_file = "{}.bak".format(os.path.basename(item))
-            else:
-                target_file = os.path.basename(item)
-
-            if item.endswith(suffix):
-                os.rename(
-                    os.path.join(directory, item),
-                    os.path.join(target_directory or directory, target_file),
-                )
-
-    def generate_certificates(self, base_dir="/etc/directord"):
-        """Generate client and server CURVE certificate files.
-
-        :param base_dir: Directord configuration path.
-        :type base_dir: String
-        """
-
-        keys_dir = os.path.join(base_dir, "certificates")
-        public_keys_dir = os.path.join(base_dir, "public_keys")
-        secret_keys_dir = os.path.join(base_dir, "private_keys")
-
-        for item in [keys_dir, public_keys_dir, secret_keys_dir]:
-            os.makedirs(item, exist_ok=True)
-
-        # Run certificate backup
-        self.move_certificates(directory=public_keys_dir, backup=True)
-        self.move_certificates(
-            directory=secret_keys_dir, backup=True, suffix=".key_secret"
-        )
-
-        # create new keys in certificates dir
-        for item in ["server", "client"]:
-            self.driver.key_generate(keys_dir=keys_dir, key_type=item)
-
-        # Move generated certificates in place
-        self.move_certificates(
-            directory=keys_dir,
-            target_directory=public_keys_dir,
-            suffix=".key",
-        )
-        self.move_certificates(
-            directory=keys_dir,
-            target_directory=secret_keys_dir,
-            suffix=".key_secret",
-        )
-
     def poll_job(self, job_id):
         """Given a job poll for its completion and return status.
 
@@ -372,7 +308,6 @@ class Manage(User):
             "dump-cache": _cache_dump,
             "export-jobs": {"list_jobs": None},
             "export-nodes": {"list_nodes": None},
-            "generate-keys": self.generate_certificates,
             "job-info": {"job_info": override},
             "list-jobs": {"list_jobs": None},
             "list-nodes": {"list_nodes": None},

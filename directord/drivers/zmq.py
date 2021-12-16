@@ -56,6 +56,11 @@ def parse_args(parser, parser_server, parser_client):
         "ZMQ Server driver options"
     )
     server_group.add_argument(
+        "--zmq-generate-keys",
+        action="store_true",
+        help="Generate encryption keys for Curve authentication.",
+    )
+    server_group.add_argument(
         "--zmq-bind-address",
         help=(
             "ZMQ IP Address to bind a Directord Server."
@@ -89,7 +94,7 @@ def parse_args(parser, parser_server, parser_client):
         help=(
             "Server and client will connect using Curve authentication"
             " and encryption. Enabling this option assumes keys have been"
-            " generated. see `manage --generate-keys` for more."
+            " generated. see `--zmq-generate-keys` for more."
         ),
     )
 
@@ -116,6 +121,11 @@ class Driver(drivers.BaseDriver):
         self.thread_processor = multiprocessing.Process
         self.event = multiprocessing.Event()
         self.args = args
+        if getattr(self.args, "zmq_generate_keys", False) is True:
+            self._generate_certificates()
+            print("New certificates generated")
+            raise SystemExit(0)
+
         self.encrypted_traffic_data = encrypted_traffic_data
 
         mode = getattr(self.args, "mode", None)
@@ -248,6 +258,42 @@ class Driver(drivers.BaseDriver):
         else:
             self.log.debug("Backend socket closed")
 
+    def _generate_certificates(self, base_dir="/etc/directord"):
+        """Generate client and server CURVE certificate files.
+
+        :param base_dir: Directord configuration path.
+        :type base_dir: String
+        """
+
+        keys_dir = os.path.join(base_dir, "certificates")
+        public_keys_dir = os.path.join(base_dir, "public_keys")
+        secret_keys_dir = os.path.join(base_dir, "private_keys")
+
+        for item in [keys_dir, public_keys_dir, secret_keys_dir]:
+            os.makedirs(item, exist_ok=True)
+
+        # Run certificate backup
+        self._move_certificates(directory=public_keys_dir, backup=True)
+        self._move_certificates(
+            directory=secret_keys_dir, backup=True, suffix=".key_secret"
+        )
+
+        # create new keys in certificates dir
+        for item in ["server", "client"]:
+            self._key_generate(keys_dir=keys_dir, key_type=item)
+
+        # Move generated certificates in place
+        self._move_certificates(
+            directory=keys_dir,
+            target_directory=public_keys_dir,
+            suffix=".key",
+        )
+        self._move_certificates(
+            directory=keys_dir,
+            target_directory=secret_keys_dir,
+            suffix=".key_secret",
+        )
+
     def _job_bind(self):
         """Bind an address to a job socket and return the socket.
 
@@ -272,6 +318,45 @@ class Driver(drivers.BaseDriver):
             connection=self.connection_string,
             port=self.args.job_port,
         )
+
+    def _key_generate(self, keys_dir, key_type):
+        """Generate certificate.
+
+        :param keys_dir: Full Directory path where a given key will be stored.
+        :type keys_dir: String
+        :param key_type: Key type to be generated.
+        :type key_type: String
+        """
+
+        zmq_auth.create_certificates(keys_dir, key_type)
+
+    @staticmethod
+    def _move_certificates(
+        directory, target_directory=None, backup=False, suffix=".key"
+    ):
+        """Move certificates when required.
+
+        :param directory: Set the origin path.
+        :type directory: String
+        :param target_directory: Set the target path.
+        :type target_directory: String
+        :param backup: Enable file backup before moving.
+        :type backup:  Boolean
+        :param suffix: Set the search suffix
+        :type suffix: String
+        """
+
+        for item in os.listdir(directory):
+            if backup:
+                target_file = "{}.bak".format(os.path.basename(item))
+            else:
+                target_file = os.path.basename(item)
+
+            if item.endswith(suffix):
+                os.rename(
+                    os.path.join(directory, item),
+                    os.path.join(target_directory or directory, target_file),
+                )
 
     def _socket_bind(self, socket_type, connection, port, poller_type=None):
         """Return a socket object which has been bound to a given address.
@@ -717,17 +802,6 @@ class Driver(drivers.BaseDriver):
         """Returns a thread lock."""
 
         return multiprocessing.Queue()
-
-    def key_generate(self, keys_dir, key_type):
-        """Generate certificate.
-
-        :param keys_dir: Full Directory path where a given key will be stored.
-        :type keys_dir: String
-        :param key_type: Key type to be generated.
-        :type key_type: String
-        """
-
-        zmq_auth.create_certificates(keys_dir, key_type)
 
     def heartbeat_send(
         self, host_uptime=None, agent_uptime=None, version=None, driver=None

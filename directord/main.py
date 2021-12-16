@@ -49,10 +49,11 @@ def _find_drivers(limit_modules=None):
     for importer, name, _ in pkgutil.iter_modules([os.path.dirname(__file__)]):
         if name in limit_modules:
             module_loader = importer.find_module(name)
-            for driver_importer, driver_name, _ in pkgutil.iter_modules(
+            for driver_importer, driver_name, ispkg in pkgutil.iter_modules(
                 [os.path.dirname(module_loader.path)]
             ):
-                drivers.append((driver_importer, driver_name))
+                if not ispkg:
+                    drivers.append((driver_importer, driver_name))
 
     return drivers
 
@@ -377,11 +378,6 @@ def _args(exec_args=None):
         metavar="STRING",
     )
     manage_group.add_argument(
-        "--generate-keys",
-        action="store_true",
-        help="Generate encryption keys for Curve authentication.",
-    )
-    manage_group.add_argument(
         "--dump-cache",
         action="store_true",
         help="Dump the local cache to stdout.",
@@ -645,13 +641,6 @@ def main():
     elif args.mode == "manage":
         manage_exec = user.Manage(args=args)
         data = manage_exec.run()
-        if args.generate_keys:
-            print(
-                "Keys generated. Synchronize the server and client public"
-                " keys to client nodes to enable Curve encryption."
-            )
-            return
-
         try:
             data = json.loads(data)
         except Exception as e:

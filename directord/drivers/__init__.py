@@ -433,14 +433,3 @@ class BaseDriver:
         """
 
         pass
-
-    def key_generate(self, keys_dir, key_type):
-        """Generate certificate.
-
-        :param keys_dir: Full Directory path where a given key will be stored.
-        :type keys_dir: String
-        :param key_type: Key type to be generated.
-        :type key_type: String
-        """
-
-        pass
