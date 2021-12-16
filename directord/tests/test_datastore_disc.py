@@ -12,6 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import pickle
 import unittest
 from unittest.mock import patch
 
@@ -37,34 +38,13 @@ class TestDatastoreDisc(tests.TestBase):
         self.chdir_patched.stop()
         self.setxattr_patched.stop()
 
-    def test___getitem__string(self):
-        self.datastore.__getitem__(key="test")
-
-    def test___setitem__(self):
-        with patch("builtins.open", unittest.mock.mock_open()):
-            self.datastore.__setitem__(key="key", value="value")
-
-    def test___delitem__(self):
-        self.datastore.__delitem__(key="key")
-
-    def test_items(self):
-        self.datastore.items()
-
-    def test_keys(self):
-        self.datastore.keys()
-
-    def test_empty(self):
-        self.datastore.empty()
-
-    def test_pop(self):
-        self.datastore.pop(key="key")
-
     def test_prune(self):
         self.datastore.prune()
 
-    def test_get(self):
-        self.datastore.get(key="key")
-
     def test_set(self):
-        with patch("builtins.open", unittest.mock.mock_open()):
-            self.datastore.set(key="key", value="value")
+        read_data = pickle.dumps("value")
+        with patch(
+            "builtins.open", unittest.mock.mock_open(read_data=read_data)
+        ):
+            value = self.datastore.set(key="key", value="value")
+            self.assertAlmostEqual(value, "value")

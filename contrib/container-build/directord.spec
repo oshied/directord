@@ -31,6 +31,9 @@ Requires:       python3-pyyaml
 Requires:       python3-tabulate
 Requires:       python3-tenacity
 
+# TODO(cloudnull): Change this to an actual package when it exists.
+Requires:       python3dist(iodict)
+
 # Recommends
 Recommends:       python3-ssh-python
 Recommends:       python3-zmq

@@ -11,6 +11,13 @@ sudo chown builder: /home/builder/rpm
 echo "Creating artifact directory: ${ARTIFACT_DIR}"
 mkdir -p ${ARTIFACT_PATH}
 
+# Remove when iodict is actually packaged.
+IODICTRELEASE=$(curl --silent 'https://api.github.com/repos/directord/iodict/releases/latest' | grep '"tag_name":' |  sed -E 's/.*"([^"]+)".*/\1/')
+pushd ${ARTIFACT_PATH}
+  wget "https://github.com/directord/iodict/releases/download/${IODICTRELEASE}/iodict-${IODICTRELEASE}-1.el8.noarch.rpm"
+  sudo dnf -y install iodict-${IODICTRELEASE}-1.el8.noarch.rpm
+popd
+
 echo "Installing build deps..."
 echo "Logging to ${ARTIFACT_PATH}/builddep.log"
 sudo dnf -y builddep "${SPEC_PATH}" &> ${ARTIFACT_PATH}/builddep.log
