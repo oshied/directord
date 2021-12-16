@@ -159,7 +159,7 @@ class TestManager(tests.TestDriverBase):
     @patch("directord.utils.Cache", autospec=True)
     def test_run_override_dump_cache(self, mock_diskcache, mock_print):
         cache = mock_diskcache.return_value = tests.FakeCache()
-        cache.set(key="test", value="value")
+        cache.setdefault(key="test", value="value")
         self.manage.run(override="dump-cache")
         mock_print.assert_called_with(
             '{\n    "args": {\n        "test": 1\n    },\n    "test": "value"\n}'  # noqa

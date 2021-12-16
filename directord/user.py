@@ -297,10 +297,10 @@ class Manage(User):
 
         def _cache_dump():
             try:
-                with utils.Cache(
-                    url=os.path.join(self.args.cache_path, "client")
-                ) as cache:
-                    print(json.dumps(dict(cache.items()), indent=4))
+                cache = utils.Cache(
+                    path=os.path.join(self.args.cache_path, "client")
+                )
+                print(json.dumps(dict(cache.items()), indent=4))
             except KeyError:
                 pass
 

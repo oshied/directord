@@ -22,6 +22,9 @@ from directord import utils
 class BaseDocument(utils.Cache):
     """Create a document store object."""
 
+    def __init__(self, url):
+        super().__init__(path=os.path.abspath(os.path.expanduser(url)))
+
     def __setitem__(self, key, value):
         """Set an item in the datastore.
 
@@ -51,11 +54,6 @@ class BaseDocument(utils.Cache):
                 )
             except OSError:
                 pass
-
-    def empty(self):
-        """Remove all cache."""
-
-        self.clear()
 
     def prune(self):
         """Prune items that have a time based expiry."""
