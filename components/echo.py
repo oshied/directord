@@ -28,6 +28,7 @@ class Component(components.ComponentBase):
         super().args()
         self.parser.add_argument(
             "echo",
+            nargs="*",
             help="add echo statement for tests and example.",
         )
 
@@ -44,7 +45,7 @@ class Component(components.ComponentBase):
         """
 
         super().server(exec_array=exec_array, data=data, arg_vars=arg_vars)
-        data["echo"] = self.known_args.echo
+        data["echo"] = " ".join(self.known_args.echo)
         return data
 
     @timeout
