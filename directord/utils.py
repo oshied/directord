@@ -380,52 +380,7 @@ class DurableQueue(iodict.DurableQueue):
     pass
 
 
-class FlushQueue:
-    def __init__(self, path, lock, semaphore):
-        """Queue class augmentation allowing queues to be flushed to disk.
+class FlushQueue(iodict.FlushQueue):
+    """Helper class to cerate a flushing queue."""
 
-        This class requires a queue class to be used along with it.
-
-        >>> class _FlushQueue(queue.Queue, FlushQueue):
-        ...     pass
-
-        With multiple inheritence, we can create any queue object with flush
-        capabilities.
-        """
-
-        self.path = path
-        self.lock = lock
-        self.semaphore = semaphore
-
-    def flush(self):
-        """Flush all remaining items in queue to disk."""
-
-        durable = DurableQueue(
-            path=self.path, lock=self.lock, semaphore=self.semaphore
-        )
-        while True:
-            try:
-                item = self.get_nowait()
-            except Exception:
-                break
-            else:
-                durable.put(item)
-
-    def ingest(self):
-        """Check for existing items in queue and restore them."""
-
-        if not os.path.exists(self.path):
-            return
-
-        durable = DurableQueue(
-            path=self.path, lock=self.lock, semaphore=self.semaphore
-        )
-        while True:
-            try:
-                item = durable.get_nowait()
-            except Exception:
-                break
-            else:
-                self.put(item)
-
-        durable.close()
+    pass
