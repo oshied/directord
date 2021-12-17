@@ -14,6 +14,7 @@
 
 import logging
 import os
+import time
 
 import directord
 
@@ -87,3 +88,54 @@ class Interface(directord.Processor):
                         self.args.driver, str(e)
                     )
                 ) from None
+
+
+class Worker:
+    """Worker class object."""
+
+    expire_time = None
+    machine_id = None
+    version = None
+    host_uptime = None
+    agent_uptime = None
+    version = None
+    driver = None
+
+    def __init__(self, identity):
+        """Initialize the worker object."""
+
+        self.identity = identity
+
+    @property
+    def expired(self):
+        """Return Boolean, True if expiry is greater than Now or None."""
+
+        if self.expiry is None:
+            return True
+        else:
+            return time.time() >= self.expire_time
+
+    @property
+    def expiry(self):
+        """Return Float, for expiry."""
+
+        return self.expire_time - time.time()
+
+
+class Job:
+    """Job class object."""
+
+    INFO = dict()
+    STDOUT = dict()
+    STDERR = dict()
+    _createtime = time.time()
+    _executiontime = dict()
+    _roundtripltime = dict()
+    _processing = dict()
+
+    def __init__(self):
+        """Initialize the job object."""
+
+    @property
+    def _nodes(self):
+        pass

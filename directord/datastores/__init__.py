@@ -21,12 +21,16 @@ class BaseDocument(dict):
     def prune(self):
         """Prune items that have a time based expiry."""
 
-        for (key, value) in list(self.items()):
+        for key, value in list(self.items()):
             try:
-                if time.time() >= value["time"]:
+                if value.expired:
                     self.pop(key)
-            except (KeyError, TypeError):
-                pass
+            except (AttributeError, KeyError):
+                try:
+                    if time.time() >= value["time"]:
+                        self.pop(key)
+                except (KeyError, TypeError):
+                    pass
 
         return len(self)
 

@@ -82,6 +82,11 @@ class Server(interface.Interface):
         #                  worker pool is refreshed immediately.
         self.workers.clear()
 
+    def _get_active_workers(self):
+        """Return a list of identities from non-expired workers."""
+
+        return [i.identity for i in self.workers.values() if not i.expired]
+
     def _set_job_status(
         self,
         job_status,
@@ -228,7 +233,7 @@ class Server(interface.Interface):
                 "INFO": dict(),
                 "STDOUT": dict(),
                 "STDERR": dict(),
-                "_nodes": list(sorted(_nodes)),
+                "_nodes": sorted(_nodes),
                 "VERB": job_item["verb"],
                 "JOB_SHA3_224": job_item["job_sha3_224"],
                 "JOB_NAME": job_item.get("job_name", job_item["job_sha3_224"]),
@@ -286,7 +291,7 @@ class Server(interface.Interface):
 
                 targets = list()
                 self.log.debug("Processing targets.")
-                known_workers = list(self.workers.keys())
+                known_workers = self._get_active_workers()
                 for target in job_item.pop("targets", None) or known_workers:
                     if target in known_workers:
                         self.log.debug("Target identified [ %s ].", target)
@@ -691,7 +696,7 @@ class Server(interface.Interface):
         new_task["parent_id"] = utils.get_uuid()
         new_task["parent_sha3_224"] = utils.object_sha3_224(obj=new_task)
 
-        targets = list(self.workers.keys())
+        targets = self._get_active_workers()
 
         self.create_return_jobs(
             task=new_task["job_id"],
@@ -767,14 +772,12 @@ class Server(interface.Interface):
                     key, value = next(iter(json_data["manage"].items()))
                     if key == "list_nodes":
                         data = list()
-                        for k, v in self.workers.items():
-                            if v:
-                                expiry = v.pop("time") - time.time()
-                                v["expiry"] = expiry
-                                try:
-                                    data.append((k, v))
-                                except AttributeError:
-                                    data.append((str(k), v))
+                        for v in self.workers.values():
+                            if v.expired:
+                                continue
+                            item = v.__dict__
+                            item["expiry"] = v.expiry
+                            data.append((v.identity, item))
                     elif key == "list_jobs":
                         data = [
                             (str(k), v) for k, v in self.return_jobs.items()
@@ -844,31 +847,33 @@ class Server(interface.Interface):
         :type data: Dict
         """
 
-        expire = self.driver.get_expiry(
+        if identity in self.workers:
+            worker = self.workers[identity]
+        else:
+            worker = self.workers[identity] = interface.Worker(
+                identity=identity
+            )
+
+        worker.expire_time = self.driver.get_expiry(
             heartbeat_interval=self.heartbeat_interval,
         )
-        metadata = {"time": expire}
-        if data:
-            try:
-                loaded_data = json.loads(data)
-            except Exception:
-                pass
-            else:
-                if loaded_data:
-                    metadata.update(loaded_data)
+        try:
+            metadata = json.loads(data)
+        except TypeError:
+            pass
+        else:
+            self.log.debug(
+                "Job [ %s ] received Heartbeat from [ %s ]",
+                metadata["job_id"],
+                identity,
+            )
 
-        self.log.debug(
-            "Job [ %s ] received Heartbeat from [ %s ]",
-            metadata["job_id"],
-            identity,
-        )
+            worker_machine_id = metadata.pop("machine_id", None)
+            for k, v in metadata.items():
+                setattr(worker, k, v)
 
-        if "machine_id" in metadata:
-            machine_id = metadata["machine_id"]
-            if machine_id:
-                worker = self.workers.get(identity) or dict()
-                worker_machine_id = worker.get("machine_id")
-                if worker_machine_id and worker_machine_id != machine_id:
+            if worker.machine_id:
+                if worker.machine_id != worker_machine_id:
                     self.log.fatal(
                         "Worker [ %s ] not added. Duplicate machines with the"
                         " same hostname detected. Existing [ %s ] != Incoming"
@@ -876,13 +881,13 @@ class Server(interface.Interface):
                         " hostname, reset the machine id, or purge the"
                         " existing workers and re-enroll the nodes.",
                         identity,
-                        machine_id,
+                        worker.machine_id,
                         worker_machine_id,
                     )
                     return
 
                 for k, v in self.workers.items():
-                    if machine_id == v.get("machine_id") and identity != k:
+                    if worker.machine_id == v.machine_id and identity != k:
                         self.log.fatal(
                             "Worker [ %s ] not added. Duplicate machines IDs"
                             " detected. Existing machine [ %s ] and the"
@@ -892,11 +897,15 @@ class Server(interface.Interface):
                             " to the system.",
                             identity,
                             k,
-                            machine_id,
+                            worker.machine_id,
                         )
                         return
+            else:
+                worker.machine_id = worker_machine_id
 
-        self.workers[identity] = metadata
+        # NOTE(cloudnull): Re-store the worker object. Needed for some of the
+        #                  different data-store options.
+        self.workers[identity] = worker
 
     def handle_job(
         self, identity, job_id, control, data, info, stderr, stdout
@@ -954,7 +963,7 @@ class Server(interface.Interface):
                     targets,
                 )
             else:
-                targets = list(self.workers.keys())
+                targets = self._get_active_workers()
                 self.log.debug(
                     "Targets undefined in old job specification"
                     " running everwhere"
@@ -965,7 +974,7 @@ class Server(interface.Interface):
             #                  to that of the known workers.
             if "identity" in new_task and not new_task["identity"]:
                 self.log.debug("identities reset to all workers")
-                new_task["identity"] = [i for i in self.workers.keys()]
+                new_task["identity"] = self._get_active_workers()
 
             if "job_id" not in new_task:
                 new_task["job_id"] = utils.get_uuid()

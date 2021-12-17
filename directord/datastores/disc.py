@@ -38,39 +38,40 @@ class BaseDocument(utils.Cache):
         """
 
         super().__setitem__(key=key, value=value)
-        if isinstance(value, dict):
-            try:
-                expire = value.get("time")
-            except TypeError:
-                expire = None
+        try:
+            expire = value.get("time")
+        except (AttributeError, TypeError):
+            return
         else:
-            expire = None
-
-        file_object = os.path.join(self._db_path, self._encoder(key))
-        if expire:
-            try:
-                os.setxattr(
-                    file_object, "user.expire", struct.pack(">d", expire)
-                )
-            except OSError:
-                pass
+            if isinstance(expire, (float, int)):
+                file_object = os.path.join(self._db_path, self._encoder(key))
+                try:
+                    os.setxattr(
+                        file_object, "user.expire", struct.pack(">d", expire)
+                    )
+                except OSError:
+                    pass
 
     def prune(self):
         """Prune items that have a time based expiry."""
 
-        for key in self.keys():
+        for key, value in list(self.items()):
             try:
-                expire = struct.unpack(">d", os.getxattr(key, "user.expire"))[
-                    0
-                ]
-            except (IndexError, OSError):
-                value = self.get(key, dict())
-                expire = value.get("time")
+                if value.expired:
+                    self.pop(key, None)
+            except AttributeError:
+                try:
+                    expire = struct.unpack(
+                        ">d", os.getxattr(key, "user.expire")
+                    )[0]
+                except (IndexError, OSError):
+                    value = self.get(key, dict())
+                    expire = value.get("time")
 
-            if expire and time.time() >= expire:
-                self.pop(key, default=None)
+                if expire and time.time() >= expire:
+                    self.pop(key, None)
 
-        return len(list(self.keys()))
+        return len(self)
 
     def set(self, key, value):
         """Set key and value if key doesn't already exist.

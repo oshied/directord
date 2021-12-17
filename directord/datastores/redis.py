@@ -104,6 +104,12 @@ class BaseDocument:
 
         return [i.decode() for i in self.datastore.keys("*")]
 
+    def values(self):
+        """Yield a each value."""
+
+        for item in self.datastore.keys("*"):
+            yield self.__getitem__(item)
+
     def clear(self):
         """Empty all items from the datastore.
 

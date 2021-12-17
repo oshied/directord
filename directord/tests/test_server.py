@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 from directord import datastores
 from directord.datastores import memory  # noqa
+from directord import interface
 from directord import server
 from directord import tests
 
@@ -510,7 +511,11 @@ class TestServer(tests.TestDriverBase):
             }
         ]
         self.server.job_queue = mock_queue
-        self.server.workers = {b"test-node1": 12345, b"test-node2": 12345}
+        for i in ["test-node1", "test-node2"]:
+            w = interface.Worker(identity=i)
+            w.version = "x.x.x"
+            w.expire_time = 12345
+            self.server.workers[w.identity] = w
         self.server.run_job()
 
     @patch("time.time", autospec=True)
@@ -711,17 +716,36 @@ class TestServer(tests.TestDriverBase):
         ).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
-        self.server.workers = {
-            "test-node1": {"time": 12345, "version": "x.x.x"},
-            "test-node2": {"time": 12345, "version": "x.x.x"},
-        }
-        self.server.run_socket_server()
+        for i in ["test-node1", "test-node2"]:
+            w = interface.Worker(identity=i)
+            w.version = "x.x.x"
+            w.expire_time = 12345
+            self.server.workers[w.identity] = w
+        with patch("time.time", autospec=True) as mock_time:
+            mock_time.return_value = 0
+            self.server.run_socket_server()
         mock_unlink.assert_called_with(self.args.socket_path)
         conn.sendall.assert_called_with(
             json.dumps(
                 [
-                    ["test-node1", {"version": "x.x.x", "expiry": 12344}],
-                    ["test-node2", {"version": "x.x.x", "expiry": 12344}],
+                    [
+                        "test-node1",
+                        {
+                            "identity": "test-node1",
+                            "version": "x.x.x",
+                            "expire_time": 12345,
+                            "expiry": 12345,
+                        },
+                    ],
+                    [
+                        "test-node2",
+                        {
+                            "identity": "test-node2",
+                            "version": "x.x.x",
+                            "expire_time": 12345,
+                            "expiry": 12345,
+                        },
+                    ],
                 ]
             ).encode()
         )
@@ -763,9 +787,12 @@ class TestServer(tests.TestDriverBase):
         ).encode()
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
-        workers = self.server.workers = datastores.BaseDocument()
-        workers[b"test-node1"] = {"version": "x.x.x", "expiry": 12344}
-        workers[b"test-node2"] = {"version": "x.x.x", "expiry": 12344}
+        self.server.workers = datastores.BaseDocument()
+        for i in ["test-node1", "test-node2"]:
+            w = interface.Worker(identity=i)
+            w.version = "x.x.x"
+            w.expire_time = 0
+            self.server.workers[w.identity] = w
         self.server.run_socket_server()
         mock_unlink.assert_called_with(self.args.socket_path)
         self.assertDictEqual(self.server.workers, {})

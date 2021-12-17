@@ -430,7 +430,7 @@ class Driver(drivers.BaseDriver):
             identity = self.identity
         else:
             worker = self.interface.workers.get(identity)
-            target = worker.get("machine_id")
+            target = worker.machine_id
 
             if not target:
                 self.log.fatal(
