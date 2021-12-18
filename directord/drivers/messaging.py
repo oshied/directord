@@ -432,10 +432,11 @@ class Driver(drivers.BaseDriver):
             worker = self.interface.workers.get(identity)
             target = worker.machine_id
 
-            if not target:
+            if not worker.machine_id:
                 self.log.fatal(
                     "Machine ID for identity [ %s ] not found", identity
                 )
+                return
 
         self._send(
             method=method,

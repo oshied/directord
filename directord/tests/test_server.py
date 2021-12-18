@@ -35,67 +35,50 @@ class TestServer(tests.TestDriverBase):
         self.server.workers = datastores.BaseDocument()
         self.server.return_jobs = datastores.BaseDocument()
         self.server.driver = self.mock_driver
+        self.job_item = {
+            "job_id": "XXX",
+            "job_sha3_224": "YYY",
+            "parent_id": "ZZZ",
+            "verb": "TEST",
+        }
+        self.server.create_return_jobs(
+            task="XXX", job_item=self.job_item, targets=["test-node"]
+        )
 
     def test__set_job_status(self):
-        self.server.return_jobs = {
-            "XXX": {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": ["test-node"],
-                "VERB": "RUN",
-                "JOB_SHA3_224": "YYY",
-                "JOB_DEFINITION": {},
-                "PARENT_JOB_ID": "ZZZ",
-                "_createtime": 1,
-                "_lasttime": ANY,
-                "_processing": {"test-node": "\x16"},
-            }
-        }
         self.server._set_job_status(
             job_status=self.server.driver.job_processing,
             job_id="XXX",
             identity="test-node",
             job_output="output",
         )
-
         self.assertDictEqual(
-            self.server.return_jobs["XXX"],
+            self.server.return_jobs["XXX"].__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {"test-node": "output"},
-                "JOB_DEFINITION": {},
-                "_nodes": ["test-node"],
-                "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x16",
-                "STDERR": {},
-                "STDOUT": {},
-                "JOB_SHA3_224": "YYY",
-                "VERB": "RUN",
-                "_createtime": 1,
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
                 "_lasttime": ANY,
                 "_processing": {"test-node": "\x16"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
+                "VERB": "TEST",
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": "output"},
+                "PROCESSING": "\x16",
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": None},
+                "STDOUT": {"test-node": None},
+                "ROUNDTRIP_TIME": "0.00000000",
+                "EXECUTION_TIME": "0.00000000",
             },
         )
 
     def test__set_job_status_stdout(self):
-        self.server.return_jobs = {
-            "XXX": {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": ["test-node"],
-                "VERB": "RUN",
-                "JOB_SHA3_224": "YYY",
-                "JOB_DEFINITION": {},
-                "PARENT_JOB_ID": "ZZZ",
-                "_createtime": 1,
-                "_lasttime": ANY,
-                "_processing": dict(),
-            }
-        }
         self.server._set_job_status(
             job_status=self.server.driver.job_processing,
             job_id="XXX",
@@ -103,43 +86,33 @@ class TestServer(tests.TestDriverBase):
             job_output="output",
             job_stdout="stdout",
         )
-
         self.assertDictEqual(
-            self.server.return_jobs["XXX"],
+            self.server.return_jobs["XXX"].__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {"test-node": "output"},
-                "JOB_DEFINITION": {},
-                "_nodes": ["test-node"],
-                "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x16",
-                "STDERR": {},
-                "STDOUT": {"test-node": "stdout"},
-                "JOB_SHA3_224": "YYY",
-                "VERB": "RUN",
-                "_createtime": 1,
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
                 "_lasttime": ANY,
                 "_processing": {"test-node": "\x16"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
+                "VERB": "TEST",
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": "output"},
+                "PROCESSING": "\x16",
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": None},
+                "STDOUT": {"test-node": "stdout"},
+                "ROUNDTRIP_TIME": "0.00000000",
+                "EXECUTION_TIME": "0.00000000",
             },
         )
 
     def test__set_job_status_stderr(self):
-        self.server.return_jobs = {
-            "XXX": {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": ["test-node"],
-                "VERB": "RUN",
-                "JOB_SHA3_224": "YYY",
-                "JOB_DEFINITION": {},
-                "PARENT_JOB_ID": "ZZZ",
-                "_createtime": 1,
-                "_lasttime": ANY,
-                "_processing": {"test-node": "\x04"},
-            }
-        }
         self.server._set_job_status(
             job_status=self.server.driver.job_processing,
             job_id="XXX",
@@ -147,197 +120,161 @@ class TestServer(tests.TestDriverBase):
             job_output="output",
             job_stderr="stderr",
         )
-
         self.assertDictEqual(
-            self.server.return_jobs["XXX"],
+            self.server.return_jobs["XXX"].__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {"test-node": "output"},
-                "JOB_DEFINITION": {},
-                "_nodes": ["test-node"],
-                "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x16",
-                "STDERR": {"test-node": "stderr"},
-                "STDOUT": {},
-                "JOB_SHA3_224": "YYY",
-                "VERB": "RUN",
-                "_createtime": 1,
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
                 "_lasttime": ANY,
                 "_processing": {"test-node": "\x16"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
+                "VERB": "TEST",
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": "output"},
+                "PROCESSING": "\x16",
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": "stderr"},
+                "STDOUT": {"test-node": None},
+                "ROUNDTRIP_TIME": "0.00000000",
+                "EXECUTION_TIME": "0.00000000",
             },
         )
 
     def test__set_job_processing(self):
-        self.server.return_jobs = {
-            "XXX": {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": ["test-node"],
-                "VERB": "RUN",
-                "JOB_SHA3_224": "YYY",
-                "JOB_DEFINITION": {},
-                "PARENT_JOB_ID": "ZZZ",
-                "_createtime": 1,
-                "_lasttime": ANY,
-                "_processing": {"test-node": "\x16"},
-            }
-        }
         self.server._set_job_status(
             job_status=self.server.driver.job_processing,
             job_id="XXX",
             identity="test-node",
             job_output="output",
         )
-
         self.assertDictEqual(
-            self.server.return_jobs["XXX"],
+            self.server.return_jobs["XXX"].__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {"test-node": "output"},
-                "JOB_DEFINITION": {},
-                "_nodes": ["test-node"],
-                "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x16",
-                "STDERR": {},
-                "STDOUT": {},
-                "JOB_SHA3_224": "YYY",
-                "VERB": "RUN",
-                "_createtime": 1,
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
                 "_lasttime": ANY,
                 "_processing": {"test-node": "\x16"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
+                "VERB": "TEST",
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": "output"},
+                "PROCESSING": "\x16",
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": None},
+                "STDOUT": {"test-node": None},
+                "ROUNDTRIP_TIME": "0.00000000",
+                "EXECUTION_TIME": "0.00000000",
             },
         )
 
     def test__set_job_end(self):
-        self.server.return_jobs = {
-            "XXX": {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": ["test-node"],
-                "VERB": "RUN",
-                "JOB_SHA3_224": "YYY",
-                "JOB_DEFINITION": {},
-                "PARENT_JOB_ID": "ZZZ",
-                "_createtime": 1,
-                "_lasttime": ANY,
-                "_processing": {"test-node": "\x04"},
-            }
-        }
         self.server._set_job_status(
             job_status=self.server.driver.job_end,
             job_id="XXX",
             identity="test-node",
             job_output="output",
         )
-
         self.assertDictEqual(
-            self.server.return_jobs["XXX"],
+            self.server.return_jobs["XXX"].__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {"test-node": "output"},
-                "JOB_DEFINITION": {},
-                "_nodes": ["test-node"],
-                "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x04",
-                "STDERR": {},
-                "STDOUT": {},
-                "SUCCESS": ["test-node"],
-                "JOB_SHA3_224": "YYY",
-                "VERB": "RUN",
-                "_createtime": 1,
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
                 "_lasttime": ANY,
                 "_processing": {"test-node": "\x04"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
+                "VERB": "TEST",
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": "output"},
+                "PROCESSING": "\x04",
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": None},
+                "STDOUT": {"test-node": None},
+                "ROUNDTRIP_TIME": "0.00000000",
+                "EXECUTION_TIME": "0.00000000",
             },
         )
 
     def test__set_job_null(self):
-        self.server.return_jobs = {
-            "XXX": {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": ["test-node"],
-                "VERB": "RUN",
-                "JOB_SHA3_224": "YYY",
-                "JOB_DEFINITION": {},
-                "PARENT_JOB_ID": "ZZZ",
-                "_createtime": 1,
-                "_lasttime": ANY,
-                "_processing": {"test-node": "\x00"},
-            }
-        }
         self.server._set_job_status(
             job_status=self.server.driver.nullbyte,
             job_id="XXX",
             identity="test-node",
             job_output="output",
         )
-
         self.assertDictEqual(
-            self.server.return_jobs["XXX"],
+            self.server.return_jobs["XXX"].__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {"test-node": "output"},
-                "JOB_DEFINITION": {},
-                "_nodes": ["test-node"],
-                "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x04",
-                "STDERR": {},
-                "STDOUT": {},
-                "JOB_SHA3_224": "YYY",
-                "VERB": "RUN",
-                "_createtime": 1,
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
                 "_lasttime": ANY,
                 "_processing": {"test-node": "\x00"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
+                "VERB": "TEST",
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": "output"},
+                "PROCESSING": "\x04",
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": None},
+                "STDOUT": {"test-node": None},
+                "ROUNDTRIP_TIME": "0.00000000",
+                "EXECUTION_TIME": "0.00000000",
             },
         )
 
     def test__set_job_failed(self):
-        self.server.return_jobs = {
-            "XXX": {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": ["test-node"],
-                "VERB": "RUN",
-                "JOB_SHA3_224": "YYY",
-                "JOB_DEFINITION": {},
-                "PARENT_JOB_ID": "ZZZ",
-                "_createtime": 1,
-                "_lasttime": ANY,
-                "_processing": {"test-node": "\x15"},
-            }
-        }
         self.server._set_job_status(
             job_status=self.server.driver.job_failed,
             job_id="XXX",
             identity="test-node",
             job_output="output",
         )
-
         self.assertDictEqual(
-            self.server.return_jobs["XXX"],
+            self.server.return_jobs["XXX"].__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {"test-node": "output"},
-                "JOB_DEFINITION": {},
-                "_nodes": ["test-node"],
-                "PARENT_JOB_ID": "ZZZ",
-                "PROCESSING": "\x04",
-                "STDERR": {},
-                "STDOUT": {},
-                "FAILED": ["test-node"],
-                "JOB_SHA3_224": "YYY",
-                "VERB": "RUN",
-                "_createtime": 1,
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
                 "_lasttime": ANY,
                 "_processing": {"test-node": "\x15"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
+                "PARENT_JOB_ID": "ZZZ",
+                "PARENT_JOB_NAME": "ZZZ",
+                "VERB": "TEST",
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": "output"},
+                "PROCESSING": "\x04",
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": None},
+                "STDOUT": {"test-node": None},
+                "ROUNDTRIP_TIME": "0.00000000",
+                "EXECUTION_TIME": "0.00000000",
             },
         )
 
@@ -374,79 +311,67 @@ class TestServer(tests.TestDriverBase):
         self.mock_driver.backend_send.assert_called()
 
     def test_create_return_jobs(self):
-        self.server.return_jobs = datastores.BaseDocument()
         status = self.server.create_return_jobs(
             task="XXX",
-            job_item={
-                "verb": "TEST",
-                "job_sha3_224": "YYY",
-                "parent_id": "ZZZ",
-            },
+            job_item=self.job_item,
             targets=["test-node1", "test-node2"],
         )
         self.assertDictEqual(
-            status,
+            status.__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {},
-                "JOB_DEFINITION": {
-                    "parent_id": "ZZZ",
-                    "job_sha3_224": "YYY",
-                    "verb": "TEST",
-                },
-                "_nodes": ["test-node1", "test-node2"],
+                "_createtime": ANY,
+                "_executiontime": {"test-node": 0},
+                "_lasttime": ANY,
+                "_processing": {"test-node": "\x00"},
+                "_roundtripltime": {"test-node": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "YYY",
                 "PARENT_JOB_ID": "ZZZ",
                 "PARENT_JOB_NAME": "ZZZ",
-                "STDERR": {},
-                "STDOUT": {},
-                "JOB_NAME": "YYY",
-                "JOB_SHA3_224": "YYY",
                 "VERB": "TEST",
-                "_createtime": ANY,
-                "_processing": ANY,
-                "_executiontime": ANY,
-                "_roundtripltime": ANY,
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node": None},
+                "PROCESSING": None,
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node": None},
+                "STDOUT": {"test-node": None},
             },
         )
 
     def test_create_return_jobs_named(self):
         self.maxDiff = 1024
         self.server.return_jobs = datastores.BaseDocument()
+        job_item = self.job_item.copy()
+        job_item["parent_name"] = "test parent name"
+        job_item["job_name"] = "test job name"
         status = self.server.create_return_jobs(
             task="XXX",
-            job_item={
-                "verb": "TEST",
-                "job_sha3_224": "YYY",
-                "job_name": "test job name",
-                "parent_id": "ZZZ",
-                "parent_name": "test parent name",
-            },
+            job_item=job_item,
             targets=["test-node1", "test-node2"],
         )
         self.assertDictEqual(
-            status,
+            status.__dict__,
             {
-                "ACCEPTED": True,
-                "INFO": {},
-                "JOB_DEFINITION": {
-                    "verb": "TEST",
-                    "job_sha3_224": "YYY",
-                    "job_name": "test job name",
-                    "parent_id": "ZZZ",
-                    "parent_name": "test parent name",
-                },
-                "_nodes": ["test-node1", "test-node2"],
+                "_createtime": ANY,
+                "_executiontime": {"test-node1": 0, "test-node2": 0},
+                "_lasttime": ANY,
+                "_processing": {"test-node1": "\x00", "test-node2": "\x00"},
+                "_roundtripltime": {"test-node1": 0, "test-node2": 0},
+                "job_id": "XXX",
+                "JOB_DEFINITION": ANY,
+                "JOB_SHA3_224": "YYY",
+                "JOB_NAME": "test job name",
                 "PARENT_JOB_ID": "ZZZ",
                 "PARENT_JOB_NAME": "test parent name",
-                "STDERR": {},
-                "STDOUT": {},
-                "JOB_NAME": "test job name",
-                "JOB_SHA3_224": "YYY",
                 "VERB": "TEST",
-                "_createtime": ANY,
-                "_processing": ANY,
-                "_executiontime": ANY,
-                "_roundtripltime": ANY,
+                "COMPONENT_TIMESTAMP": None,
+                "INFO": {"test-node1": None, "test-node2": None},
+                "PROCESSING": None,
+                "RETURN_TIMESTAMP": None,
+                "STDERR": {"test-node1": None, "test-node2": None},
+                "STDOUT": {"test-node1": None, "test-node2": None},
             },
         )
 
@@ -455,11 +380,7 @@ class TestServer(tests.TestDriverBase):
         self.server.return_jobs["XXX"] = {"exists": True}
         status = self.server.create_return_jobs(
             task="XXX",
-            job_item={
-                "verb": "TEST",
-                "job_sha3_224": "YYY",
-                "parent_id": "ZZZ",
-            },
+            job_item=self.job_item,
             targets=[b"test-node1", b"test-node2"],
         )
         self.assertDictEqual(
@@ -732,8 +653,12 @@ class TestServer(tests.TestDriverBase):
                         "test-node1",
                         {
                             "identity": "test-node1",
-                            "version": "x.x.x",
                             "expire_time": 12345,
+                            "machine_id": None,
+                            "version": "x.x.x",
+                            "host_uptime": None,
+                            "agent_uptime": None,
+                            "driver": None,
                             "expiry": 12345,
                         },
                     ],
@@ -741,35 +666,18 @@ class TestServer(tests.TestDriverBase):
                         "test-node2",
                         {
                             "identity": "test-node2",
-                            "version": "x.x.x",
                             "expire_time": 12345,
+                            "machine_id": None,
+                            "version": "x.x.x",
+                            "host_uptime": None,
+                            "agent_uptime": None,
+                            "driver": None,
                             "expiry": 12345,
                         },
                     ],
                 ]
             ).encode()
         )
-        mock_chmod.assert_called()
-        mock_chown.assert_called()
-
-    @patch("os.chown", autospec=True)
-    @patch("os.chmod", autospec=True)
-    @patch("os.unlink", autospec=True)
-    @patch("socket.socket", autospec=True)
-    def test_run_socket_server_manage_list_jobs(
-        self, mock_socket, mock_unlink, mock_chmod, mock_chown
-    ):
-        socket = mock_socket.return_value = MagicMock()
-        conn = MagicMock()
-        conn.recv.return_value = json.dumps(
-            {"manage": {"list_jobs": None}}
-        ).encode()
-        conn.sendall = MagicMock()
-        socket.accept.return_value = [conn, MagicMock()]
-        self.server.return_jobs = {"k": {"v": "test"}}
-        self.server.run_socket_server()
-        mock_unlink.assert_called_with(self.args.socket_path)
-        conn.sendall.assert_called_with(b'[["k", {"v": "test"}]]')
         mock_chmod.assert_called()
         mock_chown.assert_called()
 
@@ -846,7 +754,7 @@ class TestServer(tests.TestDriverBase):
         socket.accept.return_value = [conn, MagicMock()]
         self.server.run_socket_server()
         mock_unlink.assert_called_with(self.args.socket_path)
-        self.assertDictEqual(self.server.return_jobs, {})
+        self.assertDictEqual(self.server.return_jobs, {"XXX": ANY})
         conn.sendall.assert_called_with(b"Job received. Task ID: XXX")
         mock_chmod.assert_called()
         mock_chown.assert_called()
@@ -874,7 +782,7 @@ class TestServer(tests.TestDriverBase):
         socket.accept.return_value = [conn, MagicMock()]
         self.server.run_socket_server()
         mock_unlink.assert_called_with(self.args.socket_path)
-        self.assertDictEqual(self.server.return_jobs, {})
+        self.assertDictEqual(self.server.return_jobs, {"XXX": ANY})
         conn.sendall.assert_called_with(b"XXX")
         mock_chmod.assert_called()
         mock_chown.assert_called()

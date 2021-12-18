@@ -116,7 +116,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: functional-test-logs
+          name: functional-messaging-test-logs
           path: /tmp/directord*
 
   functional_grpcd_check:

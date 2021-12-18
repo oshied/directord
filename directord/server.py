@@ -13,7 +13,6 @@
 #   under the License.
 
 import base64
-import decimal
 import grp
 import json
 import os
@@ -127,83 +126,44 @@ class Server(interface.Interface):
         :type recv_tim: Float
         """
 
-        def _set_time():
-            _createtime = job_metadata.get("_createtime")
-            if not _createtime:
-                _createtime = job_metadata["_createtime"] = time.time()
-
-            if isinstance(recv_time, (int, float)):
-                job_metadata["_roundtripltime"][identity] = (
-                    float(recv_time) - _createtime
-                )
-                job_metadata["ROUNDTRIP_TIME"] = "{:.8f}".format(
-                    decimal.Decimal(
-                        sum(job_metadata["_roundtripltime"].values())
-                        / len(job_metadata["_roundtripltime"].keys())
-                    )
-                )
-
-            if isinstance(execution_time, (int, float)):
-                job_metadata["_executiontime"][identity] = float(
-                    execution_time
-                )
-                job_metadata["EXECUTION_TIME"] = "{:.8f}".format(
-                    decimal.Decimal(
-                        sum(job_metadata["_executiontime"].values())
-                        / len(job_metadata["_executiontime"].keys())
-                    )
-                )
-
-        job_metadata = self.return_jobs.get(job_id)
-        if not job_metadata:
+        try:
+            job_metadata = self.return_jobs[job_id]
+        except KeyError:
             return
 
         if job_output and job_output is not self.driver.nullbyte:
-            job_metadata["INFO"][identity] = job_output
+            job_metadata.INFO[identity] = job_output
 
         if job_stdout and job_stdout is not self.driver.nullbyte:
-            job_metadata["STDOUT"][identity] = job_stdout
+            job_metadata.STDOUT[identity] = job_stdout
 
         if job_stderr and job_stderr is not self.driver.nullbyte:
-            job_metadata["STDERR"][identity] = job_stderr
+            job_metadata.STDERR[identity] = job_stderr
 
-        job_metadata["_processing"][identity] = job_status
-        if job_status == self.driver.job_processing:
-            self.log.debug(
-                "Job [ %s ] processing for [ %s ]", job_id, identity
-            )
+        job_metadata._processing[identity] = job_status
+
+        job_metadata.set_roundtripltime(identity=identity, recv_time=recv_time)
+
+        job_metadata.set_executiontime(
+            identity=identity, execution_time=execution_time
+        )
+
+        job_metadata.RETURN_TIMESTAMP = return_timestamp
+
+        job_metadata.COMPONENT_TIMESTAMP = component_exec_timestamp
+
+        if job_metadata.processing:
+            self.log.debug("Job [ %s ] processing", job_id)
         elif job_status == self.driver.job_end:
-            _set_time()
             self.log.debug(
-                "Job [ %s ] finished processing for [ %s ]", job_id, identity
+                "Job [ %s ] success for [ %s ]",
+                job_id,
+                identity,
             )
-            if "SUCCESS" in job_metadata:
-                job_metadata["SUCCESS"].append(identity)
-            else:
-                job_metadata["SUCCESS"] = [identity]
-            job_metadata["_processing"][identity] = self.driver.job_end
         elif job_status == self.driver.job_failed:
-            _set_time()
             self.log.warning("Job [ %s ] failed for [ %s ]", job_id, identity)
-            if "FAILED" in job_metadata:
-                job_metadata["FAILED"].append(identity)
-            else:
-                job_metadata["FAILED"] = [identity]
 
-        if return_timestamp:
-            job_metadata["RETURN_TIMESTAMP"] = return_timestamp
-
-        if component_exec_timestamp:
-            job_metadata["COMPONENT_TIMESTAMP"] = component_exec_timestamp
-
-        for process in job_metadata["_processing"].values():
-            if process == self.driver.job_processing:
-                job_metadata["PROCESSING"] = self.driver.job_processing
-                break
-        else:
-            job_metadata["PROCESSING"] = self.driver.job_end
-
-        job_metadata["_lasttime"] = time.time()
+        job_metadata._lasttime = time.time()
 
         self.return_jobs[job_id] = job_metadata
 
@@ -218,36 +178,20 @@ class Server(interface.Interface):
         :type targets: List
         """
 
-        _nodes = set()
+        _job = interface.Job(job_item=job_item)
         for target in targets:
             try:
                 target = target.decode()
             except AttributeError:
                 pass
-            _nodes.add(target)
+            _job._processing[target] = self.driver.nullbyte
+            _job._roundtripltime[target] = 0
+            _job._executiontime[target] = 0
+            _job.INFO[target] = None
+            _job.STDERR[target] = None
+            _job.STDOUT[target] = None
 
-        return self.return_jobs.set(
-            task,
-            {
-                "ACCEPTED": True,
-                "INFO": dict(),
-                "STDOUT": dict(),
-                "STDERR": dict(),
-                "_nodes": sorted(_nodes),
-                "VERB": job_item["verb"],
-                "JOB_SHA3_224": job_item["job_sha3_224"],
-                "JOB_NAME": job_item.get("job_name", job_item["job_sha3_224"]),
-                "JOB_DEFINITION": job_item,
-                "PARENT_JOB_ID": job_item.get("parent_id"),
-                "PARENT_JOB_NAME": job_item.get(
-                    "parent_name", job_item.get("parent_id")
-                ),
-                "_createtime": time.time(),
-                "_executiontime": dict(),
-                "_roundtripltime": dict(),
-                "_processing": dict(),
-            },
-        )
+        return self.return_jobs.set(task, _job)
 
     def exit_gracefully(self, *args, **kwargs):
         """Set the driver event to begin the shutdown of the application."""
@@ -668,26 +612,30 @@ class Server(interface.Interface):
         :type job_id: String
         """
 
-        _nodes = len(self.return_jobs[job_id]["_nodes"])
+        start_time = time.time()
         while True:
-            if self.return_jobs[job_id].get("FAILED"):
+            if self.return_jobs[job_id].failed:
                 self.log.critical(
                     "Query job [ %s ] encountered failures.", job_id
                 )
                 return
-            elif len(self.return_jobs[job_id]["STDOUT"].keys()) >= _nodes:
+            elif all(self.return_jobs[job_id].STDOUT.values()):
                 break
+            elif start_time + 600 >= time.time():
+                self.log.error(
+                    "Query job [ %s ] encountered a timeout.", job_id
+                )
+                return
 
             self.log.info("Waiting for [ %s ], QUERY to complete", job_id)
             time.sleep(1)
 
-        job_return = self.return_jobs[job_id]
         new_task = dict()
         new_task["skip_cache"] = True
         new_task["extend_args"] = True
         new_task["verb"] = "ARG"
         query_data = dict()
-        for k, v in job_return["STDOUT"].items():
+        for k, v in self.return_jobs[job_id].STDOUT.items():
             query_data[k] = json.loads(v)
         new_task["args"] = {"query": query_data}
         new_task["parent_async_bypass"] = True
@@ -731,6 +679,15 @@ class Server(interface.Interface):
         ID can be defined in the data. If a task ID is not defined one will
         be generated.
         """
+
+        def _node_return_info(node_info):
+            """Return a dictionary of parsed node information."""
+
+            _node_info = node_info.__dict__
+            _node_info["_nodes"] = node_info._nodes
+            _node_info["SUCCESS"] = node_info.success_nodes
+            _node_info["FAILED"] = node_info.failed_nodes
+            return _node_info
 
         try:
             os.unlink(self.args.socket_path)
@@ -779,12 +736,21 @@ class Server(interface.Interface):
                             item["expiry"] = v.expiry
                             data.append((v.identity, item))
                     elif key == "list_jobs":
-                        data = [
-                            (str(k), v) for k, v in self.return_jobs.items()
-                        ]
+                        data = list()
+                        for k, v in self.return_jobs.items():
+                            data.append(
+                                (str(k), _node_return_info(node_info=v))
+                            )
                     elif key == "job_info":
                         try:
-                            data = [(str(value), self.return_jobs[value])]
+                            data = [
+                                (
+                                    str(value),
+                                    _node_return_info(
+                                        node_info=self.return_jobs[value]
+                                    ),
+                                )
+                            ]
                         except KeyError:
                             data = []
                     elif key == "purge_nodes":
@@ -847,12 +813,9 @@ class Server(interface.Interface):
         :type data: Dict
         """
 
-        if identity in self.workers:
-            worker = self.workers[identity]
-        else:
-            worker = self.workers[identity] = interface.Worker(
-                identity=identity
-            )
+        worker = self.workers.get(identity)
+        if worker is None:
+            worker = interface.Worker(identity=identity)
 
         worker.expire_time = self.driver.get_expiry(
             heartbeat_interval=self.heartbeat_interval,
