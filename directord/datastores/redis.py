@@ -90,7 +90,7 @@ class BaseDocument:
     def items(self):
         """Yield a tuple for key and value."""
 
-        for item in self.datastore.keys("*"):
+        for item in reversed(self.datastore.keys("*")):
             yield item.decode(), self.__getitem__(item)
 
     def keys(self):
@@ -99,13 +99,13 @@ class BaseDocument:
         :returns: List
         """
 
-        for item in self.datastore.keys("*"):
+        for item in reversed(self.datastore.keys("*")):
             yield item.decode()
 
     def values(self):
         """Yield a each value."""
 
-        for item in self.datastore.keys("*"):
+        for item in reversed(self.datastore.keys("*")):
             yield self.__getitem__(item)
 
     def clear(self):
@@ -131,8 +131,20 @@ class BaseDocument:
         """Prune items that have a time based expiry."""
 
         count = 0
-        for _ in self.keys():
-            count += 1
+        for key, value in list(self.items()):
+            try:
+                if value.expired and value.active:
+                    self.pop(key)
+            except AttributeError:
+                value = self.get(key, dict())
+                expire = value.get("time")
+                if expire and time.time() >= expire:
+                    self.pop(key, None)
+                else:
+                    count += 1
+            else:
+                count += 1
+
         return count
 
     def get(self, key):

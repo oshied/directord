@@ -81,7 +81,7 @@ class Server(interface.Interface):
         #                  worker pool is refreshed immediately.
         self.workers.clear()
 
-    def _get_active_workers(self):
+    def _get_available_workers(self):
         """Return a list of identities from non-expired workers."""
 
         return [i.identity for i in self.workers.values() if not i.expired]
@@ -233,42 +233,42 @@ class Server(interface.Interface):
                         else:
                             continue
 
-                targets = list()
                 self.log.debug("Processing targets.")
-                known_workers = self._get_active_workers()
-                for target in job_item.pop("targets", None) or known_workers:
-                    if target in known_workers:
-                        self.log.debug("Target identified [ %s ].", target)
-                        targets.append(target)
-                    else:
-                        self.log.critical(
-                            "Target [ %s ] is unknown. Check the name againt"
-                            " the available targets",
-                            target,
+                user_targets = job_item.pop("targets", [])
+                user_target_difference = set(user_targets) - set(
+                    self._get_available_workers()
+                )
+                if user_target_difference:
+                    self.log.critical(
+                        "Target [ %s ] is unknown. Check the name againt"
+                        " the available targets",
+                        user_target_difference,
+                    )
+                    if not self.return_jobs.get(job_item["job_id"]):
+                        self.create_return_jobs(
+                            task=job_item["job_id"],
+                            job_item=job_item,
+                            targets=user_target_difference,
                         )
-                        if not self.return_jobs.get(job_item["job_id"]):
-                            self.create_return_jobs(
-                                task=job_item["job_id"],
-                                job_item=job_item,
-                                targets=targets,
-                            )
+                    for target in user_target_difference:
                         self._set_job_status(
                             job_status=self.driver.job_failed,
                             job_id=job_item["job_id"],
                             identity=target,
                             job_output=(
                                 "Target unknown. Available targets {}".format(
-                                    known_workers
+                                    self._get_available_workers()
                                 )
                             ),
                             recv_time=time.time(),
                         )
+                    continue
 
+                targets = user_targets or self._get_available_workers()
                 if not targets:
                     self.log.error("No known targets defined.")
                     continue
 
-                self.log.debug("All targets %s", targets)
                 if job_item["verb"] == "QUERY":
                     self.log.debug("Query mode enabled.")
                     # NOTE(cloudnull): QUERY runs across the cluster. The
@@ -276,11 +276,10 @@ class Server(interface.Interface):
                     #                  the nodes defined within the job
                     #                  execution.
                     job_item["targets"] = [i for i in targets]
-                    targets = known_workers
+                    targets = self._get_available_workers()
                 elif job_item.get("run_once", False):
                     self.log.debug("Run once enabled.")
-                    targets = [targets[0]]
-                    job_item["targets"] = [targets[0]]
+                    targets = job_item["targets"] = [targets[0]]
 
                 job_id = job_item.get("job_id", utils.get_uuid())
                 self.create_return_jobs(
@@ -524,12 +523,20 @@ class Server(interface.Interface):
                     )
                     run_jobs_thread.start()
 
+            requeue = list()
             while not self.send_queue.empty():
                 try:
                     send_item = self.send_queue.get_nowait()
                 except Exception:
                     break
                 else:
+                    worker = self.workers.get(send_item["identity"])
+                    if not worker:
+                        continue
+                    elif worker.active is False:
+                        requeue.append(send_item)
+                        continue
+
                     self.log.debug(
                         "Sending job [ %s ] sent to [ %s ]",
                         send_item["data"]["job_id"],
@@ -539,6 +546,15 @@ class Server(interface.Interface):
                     self.driver.job_send(
                         **send_item,
                     )
+                    # NOTE(cloudnull): If the command is reboot make the node
+                    #                  inactive until the next healthcheck.
+                    if send_item["command"] == "REBOOT":
+                        worker.active = False
+                        self.workers[send_item["identity"]] = worker
+
+            # When a node is inactive the work will be requeued.
+            for item in requeue:
+                self.send_queue.put(item)
 
             while self.driver.job_check(constant=poller_interval):
                 (
@@ -584,6 +600,14 @@ class Server(interface.Interface):
                             },
                         )
                         t.start()
+                # NOTE(cloudnull): If we get a return from a reboot command
+                #                  mark the node inactive until the next
+                #                  healthcheck.
+                elif command == "REBOOT":
+                    worker = self.workers.get(identity)
+                    if worker:
+                        worker.active = False
+                        self.workers[identity] = worker
 
             poller_interval = utils.return_poller_interval(
                 poller_time=poller_time,
@@ -644,7 +668,7 @@ class Server(interface.Interface):
         new_task["parent_id"] = utils.get_uuid()
         new_task["parent_sha3_224"] = utils.object_sha3_224(obj=new_task)
 
-        targets = self._get_active_workers()
+        targets = self._get_available_workers()
 
         self.create_return_jobs(
             task=new_task["job_id"],
@@ -868,6 +892,7 @@ class Server(interface.Interface):
 
         # NOTE(cloudnull): Re-store the worker object. Needed for some of the
         #                  different data-store options.
+        worker.active = True
         self.workers[identity] = worker
 
     def handle_job(
@@ -926,7 +951,7 @@ class Server(interface.Interface):
                     targets,
                 )
             else:
-                targets = self._get_active_workers()
+                targets = self._get_available_workers()
                 self.log.debug(
                     "Targets undefined in old job specification"
                     " running everwhere"
@@ -937,7 +962,7 @@ class Server(interface.Interface):
             #                  to that of the known workers.
             if "identity" in new_task and not new_task["identity"]:
                 self.log.debug("identities reset to all workers")
-                new_task["identity"] = self._get_active_workers()
+                new_task["identity"] = self._get_available_workers()
 
             if "job_id" not in new_task:
                 new_task["job_id"] = utils.get_uuid()
