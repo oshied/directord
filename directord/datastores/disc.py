@@ -57,7 +57,7 @@ class BaseDocument(utils.Cache):
 
         for key, value in list(self.items()):
             try:
-                if value.expired:
+                if value.expired and value.active:
                     self.pop(key, None)
             except AttributeError:
                 try:

@@ -98,6 +98,7 @@ class Worker:
         """Initialize the worker object."""
 
         self.identity = identity
+        self.active = True
         self.expire_time = None
         self.machine_id = None
         self.version = None

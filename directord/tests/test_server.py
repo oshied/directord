@@ -653,6 +653,7 @@ class TestServer(tests.TestDriverBase):
                         "test-node1",
                         {
                             "identity": "test-node1",
+                            "active": True,
                             "expire_time": 12345,
                             "machine_id": None,
                             "version": "x.x.x",
@@ -666,6 +667,7 @@ class TestServer(tests.TestDriverBase):
                         "test-node2",
                         {
                             "identity": "test-node2",
+                            "active": True,
                             "expire_time": 12345,
                             "machine_id": None,
                             "version": "x.x.x",
