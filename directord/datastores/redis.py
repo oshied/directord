@@ -68,16 +68,13 @@ class BaseDocument:
         except AttributeError:
             pass
 
-        if isinstance(value, dict):
-            try:
-                expire = int(value.get("time") - time.time())
-            except TypeError:
-                expire = None
-            else:
-                if expire < 1:
-                    expire = 1
-        else:
+        try:
+            expire = int(value.get("time") - time.time())
+        except (AttributeError, TypeError):
             expire = None
+        else:
+            if expire < 1:
+                expire = 1
 
         self.datastore.set(key, pickle.dumps(value), ex=expire)
 
@@ -102,7 +99,14 @@ class BaseDocument:
         :returns: List
         """
 
-        return [i.decode() for i in self.datastore.keys("*")]
+        for item in self.datastore.keys("*"):
+            yield item.decode()
+
+    def values(self):
+        """Yield a each value."""
+
+        for item in self.datastore.keys("*"):
+            yield self.__getitem__(item)
 
     def clear(self):
         """Empty all items from the datastore.
@@ -126,7 +130,10 @@ class BaseDocument:
     def prune(self):
         """Prune items that have a time based expiry."""
 
-        return len(self.keys())
+        count = 0
+        for _ in self.keys():
+            count += 1
+        return count
 
     def get(self, key):
         """Return the value of a given key.

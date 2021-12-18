@@ -470,7 +470,6 @@ DEBUG Executing Management Command:list-jobs
 KEY                   VALUE
 --------------------  -------------------------------------------------------
 ID                    09a0d4aa-ff84-40e4-a7e2-88be8dff841a
-ACCEPTED              True
 STDOUT                df.next-c0.localdomain = true
 VERB                  ECHO
 JOB_SHA3_224          86823a46fb4af75c9f93c8bedb301dfa8968321a

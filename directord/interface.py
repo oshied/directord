@@ -12,8 +12,10 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
+import decimal
 import logging
 import os
+import time
 
 import directord
 
@@ -87,3 +89,152 @@ class Interface(directord.Processor):
                         self.args.driver, str(e)
                     )
                 ) from None
+
+
+class Worker:
+    """Worker class object."""
+
+    def __init__(self, identity):
+        """Initialize the worker object."""
+
+        self.identity = identity
+        self.expire_time = None
+        self.machine_id = None
+        self.version = None
+        self.host_uptime = None
+        self.agent_uptime = None
+        self.version = None
+        self.driver = None
+
+    @property
+    def expired(self):
+        """Return Boolean, True if expiry is greater than Now or None."""
+
+        if self.expiry is None:
+            return True
+        else:
+            return time.time() >= self.expire_time
+
+    @property
+    def expiry(self):
+        """Return Float, for expiry."""
+
+        return self.expire_time - time.time()
+
+
+class Job:
+    """Job class object."""
+
+    def __init__(self, job_item):
+        """Initialize the job object."""
+
+        self._createtime = time.time()
+        self._executiontime = dict()
+        self._lasttime = time.time()
+        self._processing = dict()
+        self._roundtripltime = dict()
+
+        self.job_id = job_item["job_id"]
+
+        self.JOB_DEFINITION = job_item
+        self.JOB_SHA3_224 = job_item["job_sha3_224"]
+        self.JOB_NAME = job_item.get("job_name", self.JOB_SHA3_224)
+        self.PARENT_JOB_ID = job_item.get("parent_id")
+        self.PARENT_JOB_NAME = job_item.get("parent_name", self.PARENT_JOB_ID)
+        self.VERB = job_item["verb"]
+        self.COMPONENT_TIMESTAMP = None
+        self.INFO = dict()
+        self.PROCESSING = None
+        self.RETURN_TIMESTAMP = None
+        self.STDERR = dict()
+        self.STDOUT = dict()
+
+    @property
+    def failed(self):
+        """Return True or Flase if job failed."""
+
+        return len(self.failed_nodes) > 0
+
+    @property
+    def _nodes(self):
+        """Return a sorted list of all nodes."""
+
+        return sorted(self._processing.keys())
+
+    def _check_nodes(self, status_code):
+        """Return a list of nodes based on a defined status code.
+
+        :param status_code: Status code string.
+        :type status_code: String
+        :returns: List
+        """
+        nodes = list()
+        for k, v in self._processing.items():
+            if v == status_code:
+                nodes.append(k)
+        return nodes
+
+    @property
+    def failed_nodes(self):
+        """Return a list of failed nodes."""
+
+        return self._check_nodes(status_code="\x15")
+
+    @property
+    def success_nodes(self):
+        """Return a list of success nodes."""
+
+        return self._check_nodes(status_code="\x04")
+
+    @property
+    def processing(self):
+        """Set the processing flag and return boolean if processing."""
+
+        processing = any(self._check_nodes(status_code="\x16"))
+        if processing:
+            self.PROCESSING = "\x16"
+        else:
+            self.PROCESSING = "\x04"
+        return processing
+
+    def set_roundtripltime(self, identity, recv_time):
+        """Set the round trip time.
+
+        The constante ROUNDTRIP_TIME is used to represent the average
+        roundtrip time.
+        """
+
+        if isinstance(recv_time, (int, float)):
+            self._roundtripltime[identity] = (
+                float(recv_time) - self._createtime
+            )
+
+        try:
+            self.ROUNDTRIP_TIME = "{:.8f}".format(
+                decimal.Decimal(
+                    sum(self._roundtripltime.values())
+                    / len(self._roundtripltime.keys())
+                )
+            )
+        except ZeroDivisionError:
+            pass
+
+    def set_executiontime(self, identity, execution_time):
+        """Set the execution time.
+
+        The constante EXECUTION_TIME is used to represent the average
+        execution time.
+        """
+
+        if isinstance(execution_time, (int, float)):
+            self._executiontime[identity] = float(execution_time)
+
+        try:
+            self.EXECUTION_TIME = "{:.8f}".format(
+                decimal.Decimal(
+                    sum(self._executiontime.values())
+                    / len(self._executiontime.keys())
+                )
+            )
+        except ZeroDivisionError:
+            pass

@@ -162,7 +162,6 @@ And voila here is our first orchestrated hello world:
 KEY                   VALUE
 --------------------  -------------------------------------------------------
 ID                    9bcf31cb-7faf-4367-bf37-57c11b3f81dc
-ACCEPTED              True
 INFO                  test1 = hello world
                       test2 = hello world
 STDOUT                test1 = hello world
