@@ -25,7 +25,7 @@ from directord import iodict
 from directord import utils
 
 
-class Client(interface.Interface):
+class Client(interface.ProcessInterface):
     """Directord client class."""
 
     def __init__(self, args):

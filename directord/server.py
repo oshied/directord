@@ -27,7 +27,7 @@ from directord import models
 from directord import utils
 
 
-class Server(interface.Interface):
+class Server(interface.ProcessInterface):
     """Directord server class."""
 
     def __init__(self, args):

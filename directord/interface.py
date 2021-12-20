@@ -14,6 +14,7 @@
 
 import logging
 import os
+import signal
 
 import directord
 
@@ -87,3 +88,26 @@ class Interface(directord.Processor):
                         self.args.driver, str(e)
                     )
                 ) from None
+
+
+class ProcessInterface(Interface):
+    """The ProcessInterface class.
+
+    This class defines everything required to execute the application process.
+    """
+
+    def __init__(self, args):
+        """Initialize the process interface class.
+
+        :param args: Arguments parsed by argparse.
+        :type args: Object
+        """
+
+        super(ProcessInterface, self).__init__(args=args)
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+    def exit_gracefully(self, *args, **kwargs):
+        """Handle a graceful exit of the application."""
+
+        raise SystemExit("Stop signal intercepted {}".format(args))
