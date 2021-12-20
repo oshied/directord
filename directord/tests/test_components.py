@@ -44,7 +44,7 @@ class TestComponents(tests.TestBase):
             self.client = client.Client(args=self.args)
 
         self.patched_get_queue = patch(
-            "directord.utils.DurableQueue", autospec=True
+            "directord.iodict.DurableQueue", autospec=True
         )
         self.patched_get_queue.start()
         self.patched_get_queue.return_value = tests.FakeQueue()

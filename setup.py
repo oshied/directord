@@ -51,7 +51,6 @@ setuptools.setup(
         "ssh-python",
         "tabulate",
         "tenacity",
-        "iodict",
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",
