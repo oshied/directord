@@ -188,9 +188,6 @@ class Server(interface.Interface):
             _job._processing[target] = self.driver.nullbyte
             _job._roundtripltime[target] = 0
             _job._executiontime[target] = 0
-            _job.INFO[target] = None
-            _job.STDERR[target] = None
-            _job.STDOUT[target] = None
 
         return self.return_jobs.set(task, _job)
 
@@ -629,12 +626,14 @@ class Server(interface.Interface):
 
         start_time = time.time()
         while True:
-            if self.return_jobs[job_id].failed:
+            job_entry = self.return_jobs[job_id]
+            if job_entry.failed:
                 self.log.critical(
                     "Query job [ %s ] encountered failures.", job_id
                 )
                 return
-            elif all(self.return_jobs[job_id].STDOUT.values()):
+            elif len(job_entry.STDOUT.keys()) >= len(job_entry._nodes):
+                self.log.info("Query job [ %s ] found all values.", job_id)
                 break
             elif start_time + 600 >= time.time():
                 self.log.error(
