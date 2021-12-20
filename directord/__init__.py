@@ -19,7 +19,6 @@ import multiprocessing
 import os
 import queue
 import socket
-import signal
 import sys
 
 from types import SimpleNamespace
@@ -149,13 +148,6 @@ class Processor:
         """Initialize Processor class."""
 
         self.log = logger.getLogger(name="directord")
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-    def exit_gracefully(self, *args, **kwargs):
-        """Handle a graceful exit of the application."""
-
-        raise SystemExit("Stop signal intercepted {}".format(args))
 
     @staticmethod
     def get_manager():
