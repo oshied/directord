@@ -216,110 +216,91 @@ class Server(interface.Interface):
         """
 
         self.log.info("Starting run process.")
-        while True:
-            try:
-                job_item = self.job_queue.get_nowait()
-            except Exception:
-                break
-            else:
-                self.log.debug("Job item received [ %s ]", job_item)
-                restrict_sha3_224 = job_item.get("restrict")
-                if restrict_sha3_224:
-                    if job_item["job_sha3_224"] not in restrict_sha3_224:
-                        self.log.debug(
-                            "Job restriction %s is unknown.", restrict_sha3_224
-                        )
-                        if self.driver.event.is_set():
-                            break
-                        else:
-                            continue
-
-                self.log.debug("Processing targets.")
-                user_targets = job_item.pop("targets", [])
-                user_target_difference = set(user_targets) - set(
-                    self._get_available_workers()
-                )
-                if user_target_difference:
-                    self.log.critical(
-                        "Target [ %s ] is unknown. Check the name againt"
-                        " the available targets",
-                        user_target_difference,
+        for job_item in self.job_queue.getter():
+            self.log.debug("Job item received [ %s ]", job_item)
+            restrict_sha3_224 = job_item.get("restrict")
+            if restrict_sha3_224:
+                if job_item["job_sha3_224"] not in restrict_sha3_224:
+                    self.log.debug(
+                        "Job restriction %s is unknown.", restrict_sha3_224
                     )
-                    if not self.return_jobs.get(job_item["job_id"]):
-                        self.create_return_jobs(
-                            task=job_item["job_id"],
-                            job_item=job_item,
-                            targets=user_target_difference,
-                        )
-                    for target in user_target_difference:
-                        self._set_job_status(
-                            job_status=self.driver.job_failed,
-                            job_id=job_item["job_id"],
-                            identity=target,
-                            job_output=(
-                                "Target unknown. Available targets {}".format(
-                                    self._get_available_workers()
-                                )
-                            ),
-                            recv_time=time.time(),
-                        )
-                    continue
-
-                targets = user_targets or self._get_available_workers()
-                if not targets:
-                    self.log.error("No known targets defined.")
-                    continue
-
-                if job_item["verb"] == "QUERY":
-                    self.log.debug("Query mode enabled.")
-                    # NOTE(cloudnull): QUERY runs across the cluster. The
-                    #                  callback tasks are scoped to only
-                    #                  the nodes defined within the job
-                    #                  execution.
-                    job_item["targets"] = [i for i in targets]
-                    targets = self._get_available_workers()
-                elif job_item.get("run_once", False):
-                    self.log.debug("Run once enabled.")
-                    targets = job_item["targets"] = [targets[0]]
-
-                job_id = job_item.get("job_id", utils.get_uuid())
-                self.create_return_jobs(
-                    task=job_id, job_item=job_item, targets=targets
-                )
-                self.log.debug("Processing job [ %s ]", job_item)
-                for identity in targets:
-                    if job_item["verb"] in ["ADD", "COPY"]:
-                        for file_path in job_item["from"]:
-                            job_item["file_sha3_224"] = utils.file_sha3_224(
-                                file_path=file_path
-                            )
-                            if job_item["to"].endswith(os.sep):
-                                job_item["file_to"] = os.path.join(
-                                    job_item["to"],
-                                    os.path.basename(file_path),
-                                )
-                            else:
-                                job_item["file_to"] = job_item["to"]
-
-                            self.log.debug(
-                                "Queueing file transfer job [ %s ] for"
-                                " file_path [ %s ] to identity [ %s ]",
-                                job_item["job_id"],
-                                file_path,
-                                identity,
-                            )
-                            self.send_queue.put(
-                                dict(
-                                    identity=identity,
-                                    command=job_item["verb"],
-                                    data=job_item,
-                                    info=file_path,
-                                )
-                            )
+                    if self.driver.event.is_set():
+                        break
                     else:
+                        continue
+
+            self.log.debug("Processing targets.")
+            user_targets = job_item.pop("targets", [])
+            user_target_difference = set(user_targets) - set(
+                self._get_available_workers()
+            )
+            if user_target_difference:
+                self.log.critical(
+                    "Target [ %s ] is unknown. Check the name againt"
+                    " the available targets",
+                    user_target_difference,
+                )
+                if not self.return_jobs.get(job_item["job_id"]):
+                    self.create_return_jobs(
+                        task=job_item["job_id"],
+                        job_item=job_item,
+                        targets=user_target_difference,
+                    )
+                for target in user_target_difference:
+                    self._set_job_status(
+                        job_status=self.driver.job_failed,
+                        job_id=job_item["job_id"],
+                        identity=target,
+                        job_output=(
+                            "Target unknown. Available targets {}".format(
+                                self._get_available_workers()
+                            )
+                        ),
+                        recv_time=time.time(),
+                    )
+                continue
+
+            targets = user_targets or self._get_available_workers()
+            if not targets:
+                self.log.error("No known targets defined.")
+                continue
+
+            if job_item["verb"] == "QUERY":
+                self.log.debug("Query mode enabled.")
+                # NOTE(cloudnull): QUERY runs across the cluster. The
+                #                  callback tasks are scoped to only
+                #                  the nodes defined within the job
+                #                  execution.
+                job_item["targets"] = [i for i in targets]
+                targets = self._get_available_workers()
+            elif job_item.get("run_once", False):
+                self.log.debug("Run once enabled.")
+                targets = job_item["targets"] = [targets[0]]
+
+            job_id = job_item.get("job_id", utils.get_uuid())
+            self.create_return_jobs(
+                task=job_id, job_item=job_item, targets=targets
+            )
+            self.log.debug("Processing job [ %s ]", job_item)
+            for identity in targets:
+                if job_item["verb"] in ["ADD", "COPY"]:
+                    for file_path in job_item["from"]:
+                        job_item["file_sha3_224"] = utils.file_sha3_224(
+                            file_path=file_path
+                        )
+                        if job_item["to"].endswith(os.sep):
+                            job_item["file_to"] = os.path.join(
+                                job_item["to"],
+                                os.path.basename(file_path),
+                            )
+                        else:
+                            job_item["file_to"] = job_item["to"]
+
                         self.log.debug(
-                            "Queuing job [ %s ] for identity [ %s ]",
+                            "Queueing file transfer job [ %s ] for"
+                            " file_path [ %s ] to identity [ %s ]",
                             job_item["job_id"],
+                            file_path,
                             identity,
                         )
                         self.send_queue.put(
@@ -327,8 +308,22 @@ class Server(interface.Interface):
                                 identity=identity,
                                 command=job_item["verb"],
                                 data=job_item,
+                                info=file_path,
                             )
                         )
+                else:
+                    self.log.debug(
+                        "Queuing job [ %s ] for identity [ %s ]",
+                        job_item["job_id"],
+                        identity,
+                    )
+                    self.send_queue.put(
+                        dict(
+                            identity=identity,
+                            command=job_item["verb"],
+                            data=job_item,
+                        )
+                    )
 
             if self.driver.event.is_set():
                 break
@@ -525,33 +520,28 @@ class Server(interface.Interface):
                     run_jobs_thread.start()
 
             requeue = list()
-            while not self.send_queue.empty():
-                try:
-                    send_item = self.send_queue.get_nowait()
-                except Exception:
-                    break
-                else:
-                    worker = self.workers.get(send_item["identity"])
-                    if not worker:
-                        continue
-                    elif worker.active is False:
-                        requeue.append(send_item)
-                        continue
+            for send_item in self.send_queue.getter():
+                worker = self.workers.get(send_item["identity"])
+                if not worker:
+                    continue
+                elif worker.active is False:
+                    requeue.append(send_item)
+                    continue
 
-                    self.log.debug(
-                        "Sending job [ %s ] sent to [ %s ]",
-                        send_item["data"]["job_id"],
-                        send_item["identity"],
-                    )
-                    send_item["data"] = json.dumps(send_item["data"])
-                    self.driver.job_send(
-                        **send_item,
-                    )
-                    # NOTE(cloudnull): If the command is reboot make the node
-                    #                  inactive until the next healthcheck.
-                    if send_item["command"] == "REBOOT":
-                        worker.active = False
-                        self.workers[send_item["identity"]] = worker
+                self.log.debug(
+                    "Sending job [ %s ] sent to [ %s ]",
+                    send_item["data"]["job_id"],
+                    send_item["identity"],
+                )
+                send_item["data"] = json.dumps(send_item["data"])
+                self.driver.job_send(
+                    **send_item,
+                )
+                # NOTE(cloudnull): If the command is reboot make the node
+                #                  inactive until the next healthcheck.
+                if send_item["command"] == "REBOOT":
+                    worker.active = False
+                    self.workers[send_item["identity"]] = worker
 
             # When a node is inactive the work will be requeued.
             for item in requeue:

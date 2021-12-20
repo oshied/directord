@@ -20,6 +20,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 from directord import drivers
+from directord import utils
 
 
 tracemalloc.start()
@@ -173,6 +174,11 @@ class MockSocket:
 
     def close(self):
         pass
+
+
+class MockQueue(queue.Queue, utils.BaseQueue):
+
+    pass
 
 
 class FakeCache:
