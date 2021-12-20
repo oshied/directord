@@ -890,5 +890,6 @@ class Client(interface.Interface):
             lock=self.driver.get_lock(),
         )
         self.run_threads(threads=threads, stop_event=self.driver.event)
+        self.driver.shutdown()
         self.q_return.flush()
         self.q_processes.flush()
