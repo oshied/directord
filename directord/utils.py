@@ -374,13 +374,26 @@ class Cache(iodict.IODict):
     pass
 
 
-class DurableQueue(iodict.DurableQueue):
+class BaseQueue:
+    def getter(self):
+        """Yield items from the queue until empty."""
+
+        while True:
+            try:
+                item = self.get_nowait()
+            except Exception:
+                break
+            else:
+                yield item
+
+
+class DurableQueue(BaseQueue, iodict.DurableQueue):
     """Helper class to create the DurableQueue object."""
 
     pass
 
 
-class FlushQueue(iodict.FlushQueue):
+class FlushQueue(BaseQueue, iodict.FlushQueue):
     """Helper class to cerate a flushing queue."""
 
     pass

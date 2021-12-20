@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 from directord import datastores
 from directord.datastores import memory  # noqa
-from directord import interface
+from directord import models
 from directord import server
 from directord import tests
 
@@ -388,56 +388,58 @@ class TestServer(tests.TestDriverBase):
             {"exists": True},
         )
 
-    @patch("queue.Queue", autospec=True)
-    def test_run_job(self, mock_queue):
-        mock_queue.return_value = MagicMock()
-        self.server.job_queue = mock_queue
+    def test_run_job(self):
+        q = tests.MockQueue()
+        self.server.job_queue = q
         self.server.run_job()
 
-    @patch("queue.Queue", autospec=True)
-    def test_run_job_restricted_null(self, mock_queue):
-        mock_queue.get_nowait.side_effect = [
-            {
-                "verb": "RUN",
-                "restrict": "12345",
-                "job_sha3_224": "YYY",
-                "targets": ["test-node1", "test-node2"],
-                "job_id": "XXX",
-            }
-        ]
-        self.server.job_queue = mock_queue
-        self.server.run_job()
+    def test_run_job_restricted_null(self):
+        q = tests.MockQueue()
+        with patch.object(q, "get_nowait", autospec=True) as mock_queue:
+            mock_queue.side_effect = [
+                {
+                    "verb": "RUN",
+                    "restrict": "12345",
+                    "job_sha3_224": "YYY",
+                    "targets": ["test-node1", "test-node2"],
+                    "job_id": "XXX",
+                }
+            ]
+            self.server.job_queue = q
+            self.server.run_job()
 
-    @patch("queue.Queue", autospec=True)
-    def test_run_job_run_node_fail(self, mock_queue):
-        mock_queue.get_nowait.side_effect = [
-            {
-                "verb": "RUN",
-                "job_sha3_224": "YYY",
-                "targets": ["test-node1", "test-node2"],
-                "job_id": "XXX",
-            }
-        ]
-        self.server.job_queue = mock_queue
-        self.server.run_job()
+    def test_run_job_run_node_fail(self):
+        q = tests.MockQueue()
+        with patch.object(q, "get_nowait", autospec=True) as mock_queue:
+            mock_queue.side_effect = [
+                {
+                    "verb": "RUN",
+                    "job_sha3_224": "YYY",
+                    "targets": ["test-node1", "test-node2"],
+                    "job_id": "XXX",
+                }
+            ]
+            self.server.job_queue = q
+            self.server.run_job()
 
-    @patch("queue.Queue", autospec=True)
-    def test_run_job_run(self, mock_queue):
-        mock_queue.get_nowait.side_effect = [
-            {
-                "verb": "RUN",
-                "job_sha3_224": "YYY",
-                "targets": ["test-node1", "test-node2"],
-                "job_id": "XXX",
-            }
-        ]
-        self.server.job_queue = mock_queue
-        for i in ["test-node1", "test-node2"]:
-            w = interface.Worker(identity=i)
-            w.version = "x.x.x"
-            w.expire_time = 12345
-            self.server.workers[w.identity] = w
-        self.server.run_job()
+    def test_run_job_run(self):
+        q = tests.MockQueue()
+        with patch.object(q, "get_nowait", autospec=True) as mock_queue:
+            mock_queue.side_effect = [
+                {
+                    "verb": "RUN",
+                    "job_sha3_224": "YYY",
+                    "targets": ["test-node1", "test-node2"],
+                    "job_id": "XXX",
+                }
+            ]
+            self.server.job_queue = q
+            for i in ["test-node1", "test-node2"]:
+                w = models.Worker(identity=i)
+                w.version = "x.x.x"
+                w.expire_time = 12345
+                self.server.workers[w.identity] = w
+            self.server.run_job()
 
     @patch("time.time", autospec=True)
     def test_run_interactions(self, mock_time):
@@ -638,7 +640,7 @@ class TestServer(tests.TestDriverBase):
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
         for i in ["test-node1", "test-node2"]:
-            w = interface.Worker(identity=i)
+            w = models.Worker(identity=i)
             w.version = "x.x.x"
             w.expire_time = 12345
             self.server.workers[w.identity] = w
@@ -699,7 +701,7 @@ class TestServer(tests.TestDriverBase):
         socket.accept.return_value = [conn, MagicMock()]
         self.server.workers = datastores.BaseDocument()
         for i in ["test-node1", "test-node2"]:
-            w = interface.Worker(identity=i)
+            w = models.Worker(identity=i)
             w.version = "x.x.x"
             w.expire_time = 0
             self.server.workers[w.identity] = w
