@@ -1,0 +1,18 @@
+[Unit]
+Description=Directord Client
+After=network.target
+
+[Service]
+User=root
+Group=directord
+ExecStart=/usr/bin/directord --config-file /etc/directord/config.yaml --socket-group directord client
+Restart=on-failure
+RestartSec=10
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
+Slice=directord.slice
+
+[Install]
+WantedBy=multi-user.target

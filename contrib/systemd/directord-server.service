@@ -1,0 +1,19 @@
+[Unit]
+Description=Directord Server
+After=network.target
+
+[Service]
+User=root
+Group=directord
+LimitNOFILE=65536
+ExecStart=/usr/bin/directord --config-file /etc/directord/config.yaml --socket-group directord server
+Restart=on-failure
+RestartSec=10
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
+Slice=directord.slice
+
+[Install]
+WantedBy=multi-user.target

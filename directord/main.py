@@ -16,10 +16,8 @@ import argparse
 import json
 import os
 import pkgutil
+import re
 import sys
-
-import jinja2
-from jinja2 import StrictUndefined
 
 import yaml
 
@@ -485,8 +483,13 @@ class SystemdInstall:
         """
 
         path = os.path.abspath(os.path.dirname(sys.argv[0]))
+        directord_bin_path = os.path.join(path, "directord")
+        directord_share_path = os.path.join(sys.prefix, "share", "directord")
+        service_file_share_path = os.path.join(
+            directord_share_path, "systemd", service_file
+        )
+
         self.path_setup()
-        base = os.path.dirname(directord.__file__)
         service_file_path = "/etc/systemd/system/{}".format(service_file)
         if os.path.exists(service_file_path) and not self.force:
             print(
@@ -494,20 +497,23 @@ class SystemdInstall:
             )
             return
 
-        blueprintLoader = jinja2.FileSystemLoader(
-            searchpath=os.path.join(base, "templates")
+        with open(service_file_share_path) as f:
+            outputText = f.read()
+
+        outputText = re.sub(
+            "/usr/bin/directord", directord_bin_path, outputText
         )
-        blueprintEnv = jinja2.Environment(
-            loader=blueprintLoader,
-            keep_trailing_newline=True,
-            undefined=StrictUndefined,
+        outputText = re.sub(
+            "--socket-group directord",
+            "--socket-group {}".format(self.socket_group),
+            outputText,
         )
-        blueprint = blueprintEnv.get_template("{}.j2".format(service_file))
-        blueprint_args = {
-            "directord_binary": os.path.join(path, "directord"),
-            "directord_group": self.socket_group,
-        }
-        outputText = blueprint.render(**blueprint_args)
+        outputText = re.sub(
+            "Group=directord",
+            "Group={}".format(self.socket_group),
+            outputText,
+        )
+
         with open(service_file_path, "w") as f:
             f.write(outputText)
 

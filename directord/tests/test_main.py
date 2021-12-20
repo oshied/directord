@@ -639,19 +639,20 @@ class TestMain(tests.TestBase):
             m.assert_not_called()
         mock_makedirs.assert_called()
 
-    @patch("jinja2.FileSystemLoader", autospec=True)
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
     @patch("os.makedirs", autospec=True)
     def test_systemdinstall_writer(
-        self, mock_makedirs, mock_exists, mock_print, mock_jinja
+        self,
+        mock_makedirs,
+        mock_exists,
+        mock_print,
     ):
         mock_exists.return_value = False
         with patch("builtins.open", unittest.mock.mock_open()) as m:
             main.SystemdInstall().writer(service_file="testfile")
             m.assert_called()
         mock_print.assert_called()
-        mock_jinja.assert_called()
 
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
@@ -665,12 +666,14 @@ class TestMain(tests.TestBase):
             m.assert_not_called()
         mock_print.assert_called()
 
-    @patch("jinja2.FileSystemLoader", autospec=True)
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
     @patch("os.makedirs", autospec=True)
     def test_systemdinstall_server(
-        self, mock_makedirs, mock_exists, mock_print, mock_jinja
+        self,
+        mock_makedirs,
+        mock_exists,
+        mock_print,
     ):
         mock_exists.return_value = False
         with patch("builtins.open", unittest.mock.mock_open()) as m:
@@ -681,14 +684,15 @@ class TestMain(tests.TestBase):
                 "/etc/systemd/system/directord-client.service", "w"
             )
         mock_print.assert_called()
-        mock_jinja.assert_called()
 
-    @patch("jinja2.FileSystemLoader", autospec=True)
     @patch("builtins.print")
     @patch("os.path.exists", autospec=True)
     @patch("os.makedirs", autospec=True)
     def test_systemdinstall_client(
-        self, mock_makedirs, mock_exists, mock_print, mock_jinja
+        self,
+        mock_makedirs,
+        mock_exists,
+        mock_print,
     ):
         mock_exists.return_value = False
         with patch("builtins.open", unittest.mock.mock_open()) as m:
@@ -699,7 +703,6 @@ class TestMain(tests.TestBase):
                 "/etc/systemd/system/directord-server.service", "w"
             )
         mock_print.assert_called()
-        mock_jinja.assert_called()
 
     @patch("directord.main._args", autospec=True)
     def test_main_server(self, mock__args):
