@@ -18,9 +18,9 @@ import socket
 import time
 import threading
 
+from directord import iodict
 from directord import logger
 from directord import models
-from directord import utils
 
 
 def parse_args(parser):
@@ -49,7 +49,7 @@ class ExceptionThreadProcessor(threading.Thread):
             self.exception = e
 
 
-class _FlushQueue(queue.Queue, utils.FlushQueue):
+class _FlushQueue(queue.Queue, iodict.FlushQueue):
     """Flush queue capability helper class."""
 
     def __init__(self, path, lock, semaphore):

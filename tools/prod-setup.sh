@@ -64,8 +64,6 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; 
     wget https://github.com/directord/directord/releases/download/${RELEASE}/rpm-bundle.tar.gz
     tar xf rpm-bundle.tar.gz
     RPMS=$(ls -1 *.rpm | egrep -v '(debug|src)')
-    IODICTRELEASE="$(get_latest_release directord/iodict)"
-    dnf -y install ${RPMS} https://github.com/directord/directord/releases/download/${IODICTRELEASE}/iodict-${IODICTRELEASE}-1.el8.noarch.rpm
   popd
   echo -e "\nDirectord is setup and installed within [ /usr/bin ]"
   echo "Activate the venv or run directord directly."

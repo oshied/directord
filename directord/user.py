@@ -20,7 +20,7 @@ import time
 import directord
 
 from directord import interface
-from directord import utils
+from directord import iodict
 
 
 class User(interface.Interface):
@@ -297,7 +297,7 @@ class Manage(User):
 
         def _cache_dump():
             try:
-                cache = utils.Cache(
+                cache = iodict.Cache(
                     path=os.path.join(self.args.cache_path, "client")
                 )
                 print(json.dumps(dict(cache.items()), indent=4))

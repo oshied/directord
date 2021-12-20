@@ -156,7 +156,7 @@ class TestManager(tests.TestDriverBase):
         )
 
     @patch("builtins.print")
-    @patch("directord.utils.Cache", autospec=True)
+    @patch("directord.iodict.Cache", autospec=True)
     def test_run_override_dump_cache(self, mock_diskcache, mock_print):
         cache = mock_diskcache.return_value = tests.FakeCache()
         cache.setdefault(key="test", value="value")

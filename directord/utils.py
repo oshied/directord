@@ -21,7 +21,6 @@ import sys
 import time
 import uuid
 
-import iodict
 import tabulate
 import yaml
 
@@ -29,8 +28,8 @@ from ssh import options
 from ssh.session import Session
 from ssh import key as ssh_key
 
-from directord import logger
 from directord import components
+from directord import logger
 
 
 def dump_yaml(file_path, data):
@@ -366,34 +365,3 @@ def component_lock_search():
             pass
     else:
         return lock_commands
-
-
-class Cache(iodict.IODict):
-    """Helper class to create the Cache object."""
-
-    pass
-
-
-class BaseQueue:
-    def getter(self):
-        """Yield items from the queue until empty."""
-
-        while True:
-            try:
-                item = self.get_nowait()
-            except Exception:
-                break
-            else:
-                yield item
-
-
-class DurableQueue(BaseQueue, iodict.DurableQueue):
-    """Helper class to create the DurableQueue object."""
-
-    pass
-
-
-class FlushQueue(BaseQueue, iodict.FlushQueue):
-    """Helper class to cerate a flushing queue."""
-
-    pass

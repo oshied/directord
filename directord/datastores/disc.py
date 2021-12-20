@@ -16,10 +16,10 @@ import os
 import struct
 import time
 
-from directord import utils
+from directord import iodict
 
 
-class BaseDocument(utils.Cache):
+class BaseDocument(iodict.Cache):
     """Create a document store object."""
 
     def __init__(self, url):

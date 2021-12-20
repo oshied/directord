@@ -29,6 +29,7 @@ except (ImportError, ModuleNotFoundError):
     pass
 
 from directord import drivers
+from directord import iodict
 from directord import logger
 from directord import utils
 
@@ -102,7 +103,7 @@ def parse_args(parser, parser_server, parser_client):
     return parser
 
 
-class _FlushQueue(mqs.Queue, utils.FlushQueue):
+class _FlushQueue(mqs.Queue, iodict.FlushQueue):
     """Flush queue capability helper class."""
 
     def __init__(self, path, lock, semaphore):

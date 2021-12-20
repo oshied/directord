@@ -21,6 +21,7 @@ import time
 import directord
 from directord import components
 from directord import interface
+from directord import iodict
 from directord import utils
 
 
@@ -134,7 +135,7 @@ class Client(interface.Interface):
         if not lock:
             lock = self.driver.get_lock()
 
-        parent_tracker_recover = utils.DurableQueue(
+        parent_tracker_recover = iodict.DurableQueue(
             path=os.path.join(self.args.cache_path, "parent_tracker"),
             lock=lock,
         )
@@ -851,7 +852,7 @@ class Client(interface.Interface):
                 False,
             ),
         ]
-        self.cache = utils.Cache(
+        self.cache = iodict.Cache(
             path=os.path.join(self.args.cache_path, "client"),
             lock=self.driver.get_lock(),
         )

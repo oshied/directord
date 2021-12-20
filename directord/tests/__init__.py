@@ -20,7 +20,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 from directord import drivers
-from directord import utils
+from directord import iodict
 
 
 tracemalloc.start()
@@ -108,13 +108,14 @@ class FakePopen:
 
 
 class FakeStat:
-    def __init__(self, uid, gid):
+    def __init__(self, uid=0, gid=0):
         self.st_uid = uid
         self.st_gid = gid
         self.st_size = 0
         self.st_mtime = 0
         self.st_mode = 0
         self.st_atime = 0
+        self.st_ctime = 1.0
 
 
 class FakeArgs:
@@ -176,7 +177,7 @@ class MockSocket:
         pass
 
 
-class MockQueue(queue.Queue, utils.BaseQueue):
+class MockQueue(queue.Queue, iodict.BaseQueue):
 
     pass
 
@@ -282,7 +283,7 @@ class TestDriverBase(TestBase):
         super().setUp()
         base_driver = drivers.BaseDriver(args=FakeArgs())
         self.patched_get_queue = patch(
-            "directord.utils.DurableQueue", autospec=True
+            "directord.iodict.DurableQueue", autospec=True
         )
         self.mock_driver_patched = patch(
             "directord.drivers.BaseDriver",
