@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 from directord import datastores
 from directord.datastores import memory  # noqa
+from directord import models
 from directord import interface
 from directord import server
 from directord import tests
@@ -433,7 +434,7 @@ class TestServer(tests.TestDriverBase):
         ]
         self.server.job_queue = mock_queue
         for i in ["test-node1", "test-node2"]:
-            w = interface.Worker(identity=i)
+            w = models.Worker(identity=i)
             w.version = "x.x.x"
             w.expire_time = 12345
             self.server.workers[w.identity] = w
@@ -638,7 +639,7 @@ class TestServer(tests.TestDriverBase):
         conn.sendall = MagicMock()
         socket.accept.return_value = [conn, MagicMock()]
         for i in ["test-node1", "test-node2"]:
-            w = interface.Worker(identity=i)
+            w = models.Worker(identity=i)
             w.version = "x.x.x"
             w.expire_time = 12345
             self.server.workers[w.identity] = w
@@ -699,7 +700,7 @@ class TestServer(tests.TestDriverBase):
         socket.accept.return_value = [conn, MagicMock()]
         self.server.workers = datastores.BaseDocument()
         for i in ["test-node1", "test-node2"]:
-            w = interface.Worker(identity=i)
+            w = models.Worker(identity=i)
             w.version = "x.x.x"
             w.expire_time = 0
             self.server.workers[w.identity] = w

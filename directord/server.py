@@ -23,6 +23,7 @@ import urllib.parse as urlparse
 import directord
 
 from directord import interface
+from directord import models
 from directord import utils
 
 
@@ -178,7 +179,7 @@ class Server(interface.Interface):
         :type targets: List
         """
 
-        _job = interface.Job(job_item=job_item)
+        _job = models.Job(job_item=job_item)
         for target in targets:
             try:
                 target = target.decode()
@@ -839,7 +840,7 @@ class Server(interface.Interface):
 
         worker = self.workers.get(identity)
         if worker is None:
-            worker = interface.Worker(identity=identity)
+            worker = models.Worker(identity=identity)
 
         worker.expire_time = self.driver.get_expiry(
             heartbeat_interval=self.heartbeat_interval,
