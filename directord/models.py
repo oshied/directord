@@ -16,6 +16,19 @@ import decimal
 import time
 
 
+class BaseModel:
+    coordination_failed = "\x07"  # Signals coordination failed
+    coordination_ack = "\x10"  # Signals coordination acknowledged
+    coordination_notice = "\x11"  # Signals coordination notice
+    job_end = "\x04"  # Signals job ended
+    job_failed = "\x15"  # Signals job failed
+    job_processing = "\x16"  # Signals job processing
+    heartbeat_notice = "\x05"  # Signals heartbeat notice
+    nullbyte = "\x00"  # Signals null
+    transfer_start = "\x02"  # Signals transfer start
+    transfer_end = "\x03"  # Signals transfer end
+
+
 class Worker:
     """Worker class object."""
 
@@ -48,7 +61,7 @@ class Worker:
         return self.expire_time - time.time()
 
 
-class Job:
+class Job(BaseModel):
     """Job class object."""
 
     def __init__(self, job_item):
@@ -104,23 +117,23 @@ class Job:
     def failed_nodes(self):
         """Return a list of failed nodes."""
 
-        return self._check_nodes(status_code="\x15")
+        return self._check_nodes(status_code=self.job_failed)
 
     @property
     def success_nodes(self):
         """Return a list of success nodes."""
 
-        return self._check_nodes(status_code="\x04")
+        return self._check_nodes(status_code=self.job_end)
 
     @property
     def processing(self):
         """Set the processing flag and return boolean if processing."""
 
-        processing = any(self._check_nodes(status_code="\x16"))
+        processing = any(self._check_nodes(status_code=self.job_processing))
         if processing:
-            self.PROCESSING = "\x16"
+            self.PROCESSING = self.job_processing
         else:
-            self.PROCESSING = "\x04"
+            self.PROCESSING = self.job_end
         return processing
 
     def set_roundtripltime(self, identity, recv_time):
