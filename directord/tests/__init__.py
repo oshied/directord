@@ -135,6 +135,9 @@ class FakeArgs:
     socket_group = "root"
     cache_path = "/var/cache/directord"
     backend_port = 5556
+    catalog = []
+    key_file = "~/.ssh/id_rsa"
+    threads = 10
     timeout = 600
     zmq_shared_key = None
     zmq_curve_encryption = None
