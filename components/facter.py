@@ -65,7 +65,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        self.log.debug("client(): job: %s, cache: %s", job, cache)
         stdout, stderr, outcome = self.run_command(
             command="command -v facter",
             env=cache.get("envs"),

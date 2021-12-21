@@ -82,7 +82,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        self.log.debug("client(): job: %s, cache: %s", job, cache)
         args = cache.get("args")
         if args:
             query = args.get(job["query"])

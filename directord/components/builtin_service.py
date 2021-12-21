@@ -118,7 +118,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        self.log.debug("client(): job: %s, cache: %s", job, cache)
         state = job.get("state")
         running = job.get("running", "start")
         services = job.get("services")
