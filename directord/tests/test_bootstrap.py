@@ -28,7 +28,12 @@ class Testbootstrap(tests.TestConnectionBase):
         self.args = tests.FakeArgs()
         self.patch_spinner = patch("directord.Spinner", autospec=True)
         self.patch_spinner.start()
-        self.bootstrap = bootstrap.Bootstrap(args=self.args)
+        self.bootstrap = bootstrap.Bootstrap(
+            catalog=self.args.catalog,
+            key_file=self.args.key_file,
+            threads=self.args.threads,
+            debug=self.args.debug,
+        )
         self.execute = ["long '{{ jinja }}' quoted string", "string"]
         self.orchestration = {
             "targets": [
@@ -302,8 +307,8 @@ class Testbootstrap(tests.TestConnectionBase):
     @patch("directord.bootstrap.Bootstrap.run_threads", autospec=True)
     def test_bootstrap_cluster(self, mock_threads):
         try:
-            setattr(self.args, "catalog", ["/file.yaml"])
-            setattr(self.args, "threads", 3)
+            self.bootstrap.catalog = ["/file.yaml"]
+            self.bootstrap.threads = 3
             m = unittest.mock.mock_open(read_data=tests.TEST_CATALOG.encode())
             with patch("builtins.open", m):
                 self.bootstrap.bootstrap_cluster()

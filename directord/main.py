@@ -715,7 +715,12 @@ def main():
             else:
                 return
     elif args.mode == "bootstrap":
-        _bootstrap = bootstrap.Bootstrap(args=args)
+        _bootstrap = bootstrap.Bootstrap(
+            args.catalog,
+            args.key_file,
+            args.threads,
+            args.debug,
+        )
         _bootstrap.bootstrap_cluster()
     else:
         parser.print_help(sys.stderr)

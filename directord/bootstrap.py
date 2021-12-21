@@ -48,7 +48,7 @@ class PrintError:
 class Bootstrap(directord.Processor):
     """Mixin class."""
 
-    def __init__(self, args):
+    def __init__(self, catalog, key_file, threads, debug=False):
         """Initialize the Directord mixin.
 
         Sets up the mixin object.
@@ -58,15 +58,16 @@ class Bootstrap(directord.Processor):
         """
 
         super(Bootstrap, self).__init__()
-        self.args = args
+        self.catalog = catalog
+        self.key_file = key_file
+        self.threads = threads
+        self.debug = debug
         self.blueprint = jinja2.Environment(
             loader=jinja2.BaseLoader(),
             keep_trailing_newline=True,
             undefined=StrictUndefined,
         )
-        self.log = logger.getLogger(
-            name="directord", debug_logging=getattr(args, "debug", False)
-        )
+        self.log = logger.getLogger(name="directord", debug_logging=self.debug)
         self.indicator = None
         self.return_queue = self.get_queue()
 
@@ -384,7 +385,7 @@ class Bootstrap(directord.Processor):
                 username=job_def["username"],
                 port=job_def["port"],
                 key_file=job_def.get("key_file"),
-                debug=getattr(self.args, "debug", False),
+                debug=self.debug,
             ) as ssh:
                 for job in self.bootstrap_flatten_jobs(jobs=job_def["jobs"]):
                     key, value = next(iter(job.items()))
@@ -471,14 +472,14 @@ class Bootstrap(directord.Processor):
 
         q = self.get_queue()
         catalog = dict()
-        if not self.args.catalog:
+        if not self.catalog:
             raise SystemExit("No catalog was defined.")
 
-        for c in self.args.catalog:
+        for c in self.catalog:
             utils.merge_dict(base=catalog, new=yaml.safe_load(c))
 
         if run_indicator is None:
-            run_indicator = not getattr(self.args, "debug", False)
+            run_indicator = self.debug
 
         with directord.Spinner(run=run_indicator, queue=q) as indicator:
             self.indicator = indicator
@@ -488,7 +489,7 @@ class Bootstrap(directord.Processor):
                 for s in self.bootstrap_catalog_entry(
                     entry=directord_server, required_entries=["targets"]
                 ):
-                    s["key_file"] = self.args.key_file
+                    s["key_file"] = self.key_file
                     catalog["directord_bootstrap"] = s
                     self.bootstrap_run(job_def=s, catalog=catalog)
 
@@ -496,11 +497,11 @@ class Bootstrap(directord.Processor):
             if directord_clients:
                 self.log.debug("Loading client information")
                 for c in self.bootstrap_catalog_entry(entry=directord_clients):
-                    c["key_file"] = self.args.key_file
+                    c["key_file"] = self.key_file
                     q.put(c)
 
             threads = list()
-            for _ in range(self.args.threads):
+            for _ in range(self.threads):
                 threads.append(
                     (
                         self.thread(
