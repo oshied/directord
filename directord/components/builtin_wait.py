@@ -106,7 +106,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        self.log.debug("client(): job: %s, cache: %s", job, cache)
         seconds = job.get("seconds")
         url = job.get("url")
         cmd = job.get("command")

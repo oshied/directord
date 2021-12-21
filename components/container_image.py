@@ -138,7 +138,7 @@ class Component(components.ComponentBase):
         :type job: Dictionary
         :returns: tuple
         """
-        self.log.debug("client(): job: %s, cache: %s", job, cache)
+
         if not AVAILABLE_PODMAN:
             return (
                 None,

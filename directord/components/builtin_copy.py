@@ -102,7 +102,6 @@ class Component(components.ComponentBase):
         :returns: tuple
         """
 
-        self.log.debug("client(): job: %s, cache: %s", job, cache)
         with components.Backend(
             driver=self.driver.__copy__(), log=self.log, job_id=job["job_id"]
         ) as driver:
