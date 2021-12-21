@@ -627,7 +627,6 @@ class Server(interface.ProcessInterface):
         :type job_id: String
         """
 
-        start_time = time.time()
         while True:
             if self.return_jobs[job_id].failed:
                 self.log.critical(
@@ -636,11 +635,6 @@ class Server(interface.ProcessInterface):
                 return
             elif all(self.return_jobs[job_id].STDOUT.values()):
                 break
-            elif start_time + 600 >= time.time():
-                self.log.error(
-                    "Query job [ %s ] encountered a timeout.", job_id
-                )
-                return
 
             self.log.info("Waiting for [ %s ], QUERY to complete", job_id)
             time.sleep(1)
