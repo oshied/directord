@@ -259,24 +259,92 @@ SSL configured can be configured manually with the following steps.
 
 Status: `Development`
 
-Used for distributed mesh communication between the server and client nodes.
-No additional setup is required outside of the initial package installation.
+A gRPC server is used to handle message queues between the server and client
+nodes.  No additional service setup is required outside of the initial
+package installation as the server is managed within Directord.  Optional
+configuration for TLS and authentication may be required for certificate
+generation.
 
 ### Configuration
 
-With the Directord needs to be configured to run with the `grpc` driver.
+With the Directord needs to be configured to run with the `grpcd` driver.
 To do this configuration edit the `/etc/directord/config.yaml` file and add
 the following options.
 
 ```yaml
-driver: grpc
+driver: grpcd
 grpc_server_address: 127.0.0.1
 ```
 
-### Encryption
+This configuration enables the grpc server to listen on `0.0.0.0` and connect
+to `127.0.0.1`.  External clients will need to have `grpc_server_address`
+configured to use the server's IP address or hostname.
 
-TBD
+#### Additional options
 
-### Tuning
+Additional configuration options are available with the `grpcd` driver.
 
-TBD
+* `--grpc-port` (`grpc_port`) **INTEGER** gRPC server port. Default: 5558
+* `--grpc-server-address` (`grpc_server_address`) **STRING** gRPC Domain or IP address of the server to connect to. Default: 127.0.0.1
+* `--grpc-disable-compression` (`grpc_disable_compression`) **BOOLEAN** Disable compression between client and server. Default: False
+* `--grpc-bind-address` (`grpc_bind_address`) **STRING** IP address to bind to when starting up the server. Default: 0.0.0.0
+* `--grpc-server-workers` (`grpc_server_workers`) **INTEGER** Number of gRPC server workers. Default: 4
+* `--grpc-ssl` (`grpc_ssl`) **BOOLEAN** Enable gRPC server TLS encruption. Default: False
+* `--grpc-ssl-ca` (`grpc_ssl_ca`) **STRING** gRPC driver SSL CA file path. Default: /etc/pki/ca-trust/source/anchors/cm-local-ca.pem
+* `--grpc-ssl-cert` (`grpc_ssl_cert`) **STRING** gRPC driver SSL certificate path. This file on the server is used as the server SSL certificate. On the client it is used for authentication when SSL Client Authentication is enabled. Default: /etc/directord/grpc/ssl/directord.crt
+* `--grpc-ssl-key` (`grpc_ssl_key`) **STRING** gRPC driver SSL certificate key path. This file on the server is used as the server SSL certificate key.  On the client it is used for authentication when SSL Client Authentication is enabled. Default: /etc/directord/grpc/ssl/directord.key
+* `--grpc-ssl-client-auth` (`grpc_ssl_client_auth`) **BOOLEAN** Require SSL Client Authenticaiton. If this is enabled, `grpc_ssl_cert` and `grpc_ssl_key` are required on the clients. Default: False
+
+### Encryption with TLS
+
+Encryption with TLS can be used to encrypt messages when using the `grpcd` driver.
+
+#### Automatic configuration with bootstrap
+
+Similar to the `messaging` driver, bootstrap scripts have been created to aide
+in generation of SSL CA and certificate generation.  A script is included with
+Directord at `tools/scripts/grpcd/grpcd-ssl-setup.sh` that can be used to
+automatically configure SSL.  The script is used if the
+`tools/directord-dev-bootstrap-grpc-ssl.yaml` bootstrap catalog is used.
+
+The script uses `openssl` to generate a local CA and certificates for
+encryption and authentication.
+
+#### SSL Client Authentication
+
+Authentication using client side SSL certificates can be used with the `grpcd`
+driver.  When `grpc_ssl_client_auth` is set to `True` on the server, clients
+must be configured with `grpc_ssl_cert` and `grpc_ssl_key` to be able to connect
+to the server. If `grpc_ssl` is set to `True` and `grpc_ssl_client_aith` is set
+to `False` on the server, clients only need to have the `grpc_ssl_ca` configured.
+
+#### Manual Configuration
+
+1. Configure a CA
+
+   A CA is necessary to sign certificates to use for client authentication.
+   If client authentication will not be used but TLS is used to encrypt
+   the trafic, only the key is required.
+
+2. Configure Directord server certificate and key.
+
+   Generate a certificate (or cetificate request) and key pair for the
+   Directord server. If using self signed CA, sign the certificate with
+   the CA. The Subject CN of the certificate should match the hostname
+   of the server or the value of `--grpc-server-address` (`grpc_server_addres`).
+
+   Specific the path to the server certificate and key with the
+   `--grpc-ssl-cert` (`grpc_ssl_cert`) and `--grpc-ssl-key` (`grpc_ssl_key`)
+   arguments or configuration file options when starting the Directord server.
+
+3. Configure Directord client CA, certificate, and key.
+
+   On the client use `--grpc-ssl` (`grpc_ssl`) to enable ssl. The CA option
+   `--grpc-ssl-ca` (`grpc_ssl_ca`) should be configured with the path to the
+   CA certificate.
+
+   If SSL Client Authentication is enabled, the `--grpc-ssl-cert`
+   (`grpc_ssl_cert`) and `--grpc-ssl-key` (`grpc_ssl_key`) must be configured
+   for the client to be able to connect to the server. If SSL Client
+   Authentication is not enabled, the options can be skipped.
+
