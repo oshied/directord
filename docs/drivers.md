@@ -299,6 +299,14 @@ Additional configuration options are available with the `grpcd` driver.
 
 Encryption with TLS can be used to encrypt messages when using the `grpcd` driver.
 
+#### SSL Client Authentication
+
+Authentication using client side SSL certificates can be used with the `grpcd`
+driver.  When `grpc_ssl_client_auth` is set to `True` on the server, clients
+must be configured with `grpc_ssl_cert` and `grpc_ssl_key` to be able to connect
+to the server. If `grpc_ssl` is set to `True` and `grpc_ssl_client_aith` is set
+to `False` on the server, clients only need to have the `grpc_ssl_ca` configured.
+
 #### Automatic configuration with bootstrap
 
 Similar to the `messaging` driver, bootstrap scripts have been created to aide
@@ -310,21 +318,14 @@ automatically configure SSL.  The script is used if the
 The script uses `openssl` to generate a local CA and certificates for
 encryption and authentication.
 
-#### SSL Client Authentication
-
-Authentication using client side SSL certificates can be used with the `grpcd`
-driver.  When `grpc_ssl_client_auth` is set to `True` on the server, clients
-must be configured with `grpc_ssl_cert` and `grpc_ssl_key` to be able to connect
-to the server. If `grpc_ssl` is set to `True` and `grpc_ssl_client_aith` is set
-to `False` on the server, clients only need to have the `grpc_ssl_ca` configured.
-
 #### Manual Configuration
 
 1. Configure a CA
 
-   A CA is necessary to sign certificates to use for client authentication.
-   If client authentication will not be used but TLS is used to encrypt
-   the trafic, only the key is required.
+   Obtain a CA certifcate and key that can be used to sign other certificates
+   needed by Directord.  A CA is necessary to sign certificates to use fori
+   client authentication. If client authentication will not be used but TLS is
+   used to encrypt the trafic, only the certificate is required.
 
 2. Configure Directord server certificate and key.
 
