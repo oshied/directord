@@ -1,0 +1,8 @@
+---
+directord_server:
+  jobs:
+  - RUN: sudo systemctl stop directord-server.service
+
+directord_clients:
+  jobs:
+  - RUN: sudo systemctl stop directord-client.service
