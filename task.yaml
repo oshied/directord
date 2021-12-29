@@ -1,0 +1,18 @@
+---
+- targets:
+    #- standalone.localdomain
+    - sshnaidm.remote
+  jobs:
+    # Test setting a cached object using the the stderr and stdout of a RUN using an arg_var.
+    # - RUN: ls / /nonexist || true
+    #   vars:
+    #     stdout_arg: test_stdout_arg3
+    #     stderr_arg: test_stderr_arg3
+
+    # - ENV: test_runtime_arg_env huhu mynext ahaha
+    # - RUN: echo "${test_runtime_arg_as_int_env} -- ${mynext}"
+
+    - RUN: |-
+        {% for item in ["asasds", "44444", "sdf4ds"] %}
+        echo "this is loop number {{ item }} - lalala"
+        {% endfor %}

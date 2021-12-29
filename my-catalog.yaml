@@ -1,0 +1,15 @@
+---
+directord_server:
+  targets:
+    - host: 192.168.2.161
+  port: 22
+  username: sshnaidm
+
+directord_clients:
+  args:
+    port: 22
+  targets:
+  - host: 192.168.2.77
+    username: cloud-user
+#  - host: 192.168.2.92
+#    username: centos
