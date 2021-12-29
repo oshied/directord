@@ -42,7 +42,7 @@ class Component(components.ComponentBase):
             help="Ensure service is restarted",
         )
         running_group.add_argument(
-            "--stopped", action="store_true", help="Ensure service is started"
+            "--stopped", action="store_true", help="Ensure service is stopped"
         )
         state_group = self.parser.add_mutually_exclusive_group()
         state_group.add_argument(
