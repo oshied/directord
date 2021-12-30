@@ -449,6 +449,45 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_mask_success(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={
+                "services": ["httpd.service"],
+                "running": "stop",
+                "state": "disable",
+                "mask": "mask",
+            },
+        )
+        calls = [
+            call(command="systemctl mask httpd.service", env=None),
+            call(command="systemctl disable httpd.service", env=None),
+            call(command="systemctl stop httpd.service", env=None),
+        ]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__service_command_unmask_success(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._service.client(
+            cache=tests.FakeCache(),
+            job={
+                "services": ["httpd.service"],
+                "state": "enable",
+                "mask": "unmask",
+            },
+        )
+        calls = [
+            call(command="systemctl unmask httpd.service", env=None),
+            call(command="systemctl enable httpd.service", env=None),
+            call(command="systemctl start httpd.service", env=None),
+        ]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__service_command_reload_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._service.client(

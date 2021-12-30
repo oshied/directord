@@ -46,9 +46,7 @@ class Component(components.ComponentBase):
         )
         state_group = self.parser.add_mutually_exclusive_group()
         state_group.add_argument(
-            "--enable",
-            help="Ensure service is enabled.",
-            action="store_true",
+            "--enable", help="Ensure service is enabled.", action="store_true"
         )
         state_group.add_argument(
             "--disable", help="Ensure service is disabled", action="store_true"
@@ -57,6 +55,12 @@ class Component(components.ComponentBase):
             "--daemon-reload",
             action="store_true",
             help="Reload the systemd daemon",
+        )
+        state_group.add_argument(
+            "--mask", help="Ensure service is masked.", action="store_true"
+        )
+        state_group.add_argument(
+            "--unmask", help="Ensure service is unmasked", action="store_true"
         )
         self.parser.add_argument(
             "--retry",
@@ -87,6 +91,10 @@ class Component(components.ComponentBase):
             data["state"] = "enable"
         elif self.known_args.disable:
             data["state"] = "disable"
+        if self.known_args.mask:
+            data["mask"] = "mask"
+        elif self.known_args.unamsk:
+            data["mask"] = "unmask"
 
         if self.known_args.restarted:
             data["running"] = "restart"
@@ -121,6 +129,7 @@ class Component(components.ComponentBase):
         state = job.get("state")
         running = job.get("running", "start")
         services = job.get("services")
+        mask = job.get("mask")
 
         job_stdout = []
         job_stderr = []
@@ -142,6 +151,23 @@ class Component(components.ComponentBase):
                     b"".join(job_stderr),
                     outcome,
                     "Failed to reload the systemd daemon",
+                )
+
+        if mask:
+            cmd = "systemctl {} {}".format(mask, " ".join(services))
+            stdout, stderr, outcome = self.run_command(
+                command=cmd, env=cache.get("envs")
+            )
+            job_stdout.append(stdout)
+            job_stderr.append(stderr)
+
+            # fail if masking fails
+            if not outcome:
+                return (
+                    b"".join(job_stdout),
+                    b"".join(job_stderr),
+                    outcome,
+                    "Failed to mask the systemd service",
                 )
 
         if state:
