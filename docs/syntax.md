@@ -269,6 +269,7 @@ Syntax: `PACKAGE [PACKAGE ...]`
 > Install/Update/Remove packages using dnf.
 
 * `--clear-metadata` **BOOLEAN** Clear dnf metadata and build cache before running install.
+* `--exclude` **STRING** Comma separated list for excluding packages.
 * `--latest` **BOOLEAN** Ensure latest package is installed.
 * `--absent` **BOOLEAN** Remove package.
 
