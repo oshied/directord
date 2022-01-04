@@ -15,4 +15,4 @@
 __version__ = "0.12.0"
 __author__ = "Kevin Carter"
 __email__ = "kevin@cloudnull.com"
-__driver_default__ = "zmq"
+__driver_default__ = "grpcd"

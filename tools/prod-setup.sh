@@ -14,7 +14,7 @@
 #   under the License.
 set -eo
 
-DRIVER=${DRIVER:-zmq}
+DRIVER=${DRIVER:-grpcd}
 
 if [[ $UID != 0 ]]; then
     echo "Please run this script with sudo:"

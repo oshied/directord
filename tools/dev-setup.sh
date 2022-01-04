@@ -18,7 +18,7 @@ VENV_PATH="${1:-${VENV_PATH:-/opt/directord}}"
 PYTHON_BIN="${2:-${PYTHON_BIN:-python3.8}}"
 CLONE_PATH="${3:-${CLONE_PATH-}}"
 SETUP="${4:-${SETUP:-true}}"
-DRIVER=${DRIVER:-zmq}
+DRIVER=${DRIVER:-grpcd}
 
 . /etc/os-release
 
