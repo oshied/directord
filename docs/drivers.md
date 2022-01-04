@@ -132,7 +132,7 @@ $ directord manage --list-nodes
 
 ## Messaging
 
-Status: `Development`
+Status: `Stable`
 
 Based on OSLO messaging and can make use of many messaging backends. For the
 purpose of this example, the environment will be configured to use the QPID
@@ -257,13 +257,18 @@ SSL configured can be configured manually with the following steps.
 
 ## GRPC
 
-Status: `Development`
+Status: `Stable`
 
 A gRPC server is used to handle message queues between the server and client
 nodes.  No additional service setup is required outside of the initial
 package installation as the server is managed within Directord.  Optional
 configuration for TLS and authentication may be required for certificate
 generation.
+
+> The following diagram shows the application flow when using the GRPCD
+  driver.
+
+![Directord](assets/driver-grpcd.png)
 
 ### Configuration
 
