@@ -15,6 +15,7 @@
 set -eo
 
 DRIVER=${DRIVER:-grpcd}
+EXTRA_DEPENDENCIES="${EXTRA_DEPENDENCIES:-}"
 
 if [[ $UID != 0 ]]; then
     echo "Please run this script with sudo:"
@@ -71,12 +72,24 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; 
   echo "/usr/bin/directord-client-systemd"
   echo -e "/usr/bin/directord-server-systemd\n"
   if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-    directord --driver zmq server --zmq-generate-keys
+    directord --driver zeromq server --zmq-generate-keys
   fi
 else
+  if [[ ${DRIVER} == "zeromq" ]]; then
+    export DEPENDENCIES="zmq"
+  elif [[ ${DRIVER} == "messaging" ]]; then
+    export DEPENDENCIES="oslo_messaging"
+  elif [[ ${DRIVER} == "grpcd" ]]; then
+    export DEPENDENCIES="grpc"
+  else
+    export DEPENDENCIES="all"
+  fi
+  if [[ ! -z "${EXTRA_DEPENDENCIES}" ]]; then
+    export DEPENDENCIES="${DEPENDENCIES},${EXTRA_DEPENDENCIES}"
+  fi
   python3 -m venv --system-site-packages /opt/directord
   /opt/directord/bin/pip install --upgrade pip setuptools wheel
-  /opt/directord/bin/pip install --upgrade directord[all]
+  /opt/directord/bin/pip install --upgrade directord[${DEPENDENCIES}]
 
   echo -e "\nDirectord is setup and installed within [ /opt/directord ]"
   echo "Activate the venv or run directord directly."
@@ -84,7 +97,7 @@ else
   echo "/opt/directord/bin/directord-client-systemd"
   echo -e "/opt/directord/bin/directord-server-systemd\n"
   if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-    /opt/directord/bin/directord --driver zmq server --zmq-generate-keys
+    /opt/directord/bin/directord --driver zeromq server --zmq-generate-keys
   fi
 fi
 

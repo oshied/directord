@@ -75,10 +75,17 @@ def _parse_driver_args(parser, parser_server, parser_client):
         driver = driver_importer.find_module(driver_name).load_module(
             driver_name
         )
-        if hasattr(driver, "parse_args"):
-            parser = driver.parse_args(parser, parser_server, parser_client)
 
-        sys.modules.pop(driver_name, None)
+        try:
+            if getattr(driver, "DRIVER_AVAILABLE", False) is False:
+                continue
+
+            if hasattr(driver, "parse_args"):
+                parser = driver.parse_args(
+                    parser, parser_server, parser_client
+                )
+        finally:
+            sys.modules.pop(driver_name, None)
 
     return parser
 
@@ -102,8 +109,10 @@ def _args(exec_args=None):
         "--config-file",
         help="File path for client configuration. Default: %(default)s",
         metavar="STRING",
-        default=os.getenv("DIRECTORD_CONFIG_FILE", None),
-        type=argparse.FileType(mode="r"),
+        default=os.getenv(
+            "DIRECTORD_CONFIG_FILE", "/etc/directord/config.yaml"
+        ),
+        type=str,
     )
     parser.add_argument(
         "--driver",
@@ -434,7 +443,8 @@ def _args(exec_args=None):
     else:
         args = parser.parse_args()
     # Check for configuration file and load it if found.
-    if args.config_file:
+    if os.path.isfile(args.config_file) or os.path.islink(args.config_file):
+        args.__dict__["config_file"] = open(args.__dict__["config_file"])
         config_data = yaml.safe_load(args.config_file)
         if config_data:
             for key, value in config_data.items():

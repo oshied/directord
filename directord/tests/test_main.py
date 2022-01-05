@@ -46,7 +46,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -76,7 +76,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -104,7 +104,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -132,7 +132,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -160,7 +160,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -188,7 +188,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -217,7 +217,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -245,7 +245,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -273,7 +273,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -301,7 +301,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "check": False,
                 "datastore": "memory",
                 "debug": False,
@@ -329,7 +329,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -349,7 +349,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -371,7 +371,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -403,7 +403,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -435,7 +435,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -467,7 +467,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -499,7 +499,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -531,7 +531,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -563,7 +563,7 @@ class TestMain(tests.TestBase):
         self.assertDictEqual(
             vars(args),
             {
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -598,7 +598,7 @@ class TestMain(tests.TestBase):
             vars(args),
             {
                 "catalog": mock.ANY,
-                "config_file": None,
+                "config_file": "/etc/directord/config.yaml",
                 "datastore": "memory",
                 "debug": False,
                 "driver": "grpcd",
@@ -707,7 +707,7 @@ class TestMain(tests.TestBase):
     @patch("directord.main._args", autospec=True)
     def test_main_server(self, mock__args):
         _args = {
-            "config_file": None,
+            "config_file": "/etc/directord/config.yaml",
             "zmq_shared_key": None,
             "zmq_curve_encryption": False,
             "debug": False,
@@ -730,7 +730,7 @@ class TestMain(tests.TestBase):
     @patch("directord.main._args", autospec=True)
     def test_main_client(self, mock__args, mock__client):
         _args = {
-            "config_file": None,
+            "config_file": "/etc/directord/config.yaml",
             "zmq_shared_key": None,
             "zmq_curve_encryption": False,
             "debug": False,
@@ -752,7 +752,7 @@ class TestMain(tests.TestBase):
     @patch("directord.main._args", autospec=True)
     def test_main_exec(self, mock__args):
         _args = {
-            "config_file": None,
+            "config_file": "/etc/directord/config.yaml",
             "zmq_shared_key": None,
             "zmq_curve_encryption": False,
             "debug": False,
@@ -779,7 +779,7 @@ class TestMain(tests.TestBase):
     @patch("directord.main._args", autospec=True)
     def test_main_orchestrate(self, mock__args):
         _args = {
-            "config_file": None,
+            "config_file": "/etc/directord/config.yaml",
             "zmq_shared_key": None,
             "zmq_curve_encryption": False,
             "debug": False,
@@ -808,7 +808,7 @@ class TestMain(tests.TestBase):
     @patch("directord.main._args", autospec=True)
     def test_main_manage(self, mock__args):
         _args = {
-            "config_file": None,
+            "config_file": "/etc/directord/config.yaml",
             "zmq_shared_key": None,
             "zmq_curve_encryption": False,
             "debug": False,
@@ -841,7 +841,7 @@ class TestMain(tests.TestBase):
     def test_main_bootstrap(self, mock__args):
         _args = {
             "catalog": mock.ANY,
-            "config_file": None,
+            "config_file": "/etc/directord/config.yaml",
             "zmq_shared_key": None,
             "zmq_curve_encryption": False,
             "debug": False,
@@ -868,7 +868,7 @@ class TestMain(tests.TestBase):
     def test_main_fail(self, mock__args):
         _args = {
             "catalog": mock.ANY,
-            "config_file": None,
+            "config_file": "/etc/directord/config.yaml",
             "zmq_shared_key": None,
             "zmq_curve_encryption": False,
             "debug": False,

@@ -2,7 +2,7 @@
 directord_clients:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
-  - RUN: sudo bash dev-setup.sh
+  - RUN: sudo DRIVER=zeromq bash dev-setup.sh
   - RUN: sudo /opt/directord/bin/directord-client-systemd
   - RUN: |-
       sudo python3 <<EOC

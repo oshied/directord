@@ -47,18 +47,20 @@ jobs:
                                               functional-tests-facter.yaml \
                                               --poll \
                                               --check
-
       - name: Generate log details
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: functional-facter-test-logs
-          path: /tmp/directord-*.log
+          name: functional-test-logs
+          path: /tmp/directord*

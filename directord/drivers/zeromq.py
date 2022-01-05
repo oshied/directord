@@ -25,8 +25,10 @@ try:
     import zmq
     import zmq.auth as zmq_auth
     from zmq.auth.thread import ThreadAuthenticator
+
+    DRIVER_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
-    pass
+    DRIVER_AVAILABLE = False
 
 from directord import drivers
 from directord import iodict
@@ -46,16 +48,16 @@ def parse_args(parser, parser_server, parser_client):
     :returns: Object
     """
 
-    group = parser.add_argument_group("ZMQ driver options")
+    group = parser.add_argument_group("ZeroMQ driver options")
     group.add_argument(
         "--zmq-highwater-mark",
         type=int,
-        default=os.getenv("DIRECTORD_ZMQ_HIGHWATER_MARK", 1024),
+        default=int(os.getenv("DIRECTORD_ZMQ_HIGHWATER_MARK", 1024)),
         metavar="INTEGER",
-        help=("Set the ZMQ highwater mark. Default %(default)s."),
+        help=("Set the ZeroMQ highwater mark. Default %(default)s."),
     )
     server_group = parser_server.add_argument_group(
-        "ZMQ Server driver options"
+        "ZeroMQ Server driver options"
     )
     server_group.add_argument(
         "--zmq-generate-keys",
@@ -65,19 +67,19 @@ def parse_args(parser, parser_server, parser_client):
     server_group.add_argument(
         "--zmq-bind-address",
         help=(
-            "ZMQ IP Address to bind a Directord Server."
+            "ZeroMQ IP Address to bind a Directord Server."
             " Default: %(default)s"
         ),
         metavar="STRING",
         default=os.getenv("DIRECTORD_ZMQ_BIND_ADDRESS", "*"),
     )
     client_group = parser_client.add_argument_group(
-        "ZMQ Client driver options"
+        "ZeroMQ Client driver options"
     )
     client_group.add_argument(
         "--zmq-server-address",
         help=(
-            "ZMQ Domain or IP address of the Directord server."
+            "ZeroMQ Domain or IP address of the Directord server."
             " Default: %(default)s"
         ),
         metavar="STRING",
@@ -96,7 +98,7 @@ def parse_args(parser, parser_server, parser_client):
         help=(
             "Server and client will connect using Curve authentication"
             " and encryption. Enabling this option assumes keys have been"
-            " generated. see `--zmq-generate-keys` for more."
+            " generated. see `--zmq-generate-keys` under `server` for more."
         ),
     )
 
@@ -379,16 +381,16 @@ class Driver(drivers.BaseDriver):
         registered with self.poller as defined within the Interface
         class.
 
-        :param socket_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
+        :param socket_type: Set the Socket type, typically defined using a
+                            ZeroMQ constant.
         :type socket_type: Integer
         :param connection: Set the Address information used for the bound
                            socket.
         :type connection: String
         :param port: Define the port which the socket will be bound to.
         :type port: Integer
-        :param poller_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
+        :param poller_type: Set the Socket type, typically defined using a
+                            ZeroMQ constant.
         :type poller_type: Integer
         :returns: Object
         """
@@ -464,16 +466,16 @@ class Driver(drivers.BaseDriver):
           before going into a retry loop. This is done to forcefully cycle
           the connection object to reset.
 
-        :param socket_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
+        :param socket_type: Set the Socket type, typically defined using a
+                            ZeroMQ constant.
         :type socket_type: Integer
         :param connection: Set the Address information used for the bound
                            socket.
         :type connection: String
         :param port: Define the port which the socket will be bound to.
         :type port: Integer
-        :param poller_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
+        :param poller_type: Set the Socket type, typically defined using a
+                            ZeroMQ constant.
         :type poller_type: Integer
         :returns: Object
         """
@@ -543,8 +545,8 @@ class Driver(drivers.BaseDriver):
     def _socket_context(self, socket_type):
         """Create socket context and return a bind object.
 
-        :param socket_type: Set the Socket type, typically defined using a ZMQ
-                            constant.
+        :param socket_type: Set the Socket type, typically defined using a
+                            ZeroMQ constant.
         :type socket_type: Integer
         :returns: Object
         """

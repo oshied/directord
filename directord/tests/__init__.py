@@ -122,7 +122,7 @@ class FakeArgs:
     config_file = None
     datastore = None
     debug = False
-    driver = "zmq"
+    driver = "zeromq"
     dump_cache = False
     heartbeat_interval = 60
     job_port = 5555

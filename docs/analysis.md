@@ -64,8 +64,8 @@ as a point of correlation.
 
 | Service                 | Configuration    | Actual Runtime (Seconds) |
 | ----------------------- | ---------------- | ------------------------ |
-| Directord               | ZMQ Driver       | 19                       |
-| Directord (async)       | ZMQ Driver       | 15                       |
+| Directord               | ZeroMQ Driver       | 19                       |
+| Directord (async)       | ZeroMQ Driver       | 15                       |
 | Directord               | Messaging Driver | 101                      |
 | Directord (async)       | Messaging Driver | 99                       |
 | Directord               | GRPC Driver      |                          |

@@ -38,16 +38,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_messaging_check:
     runs-on: ubuntu-latest
@@ -130,7 +133,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
       - name: Run install
-        run: sudo DRIVER=zmq bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+        run: sudo DRIVER=zeromq bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -156,16 +159,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-zmq-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_posix_check:
     runs-on: ubuntu-latest
@@ -207,16 +213,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-posix-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_redis_check:
     runs-on: ubuntu-latest
@@ -229,7 +238,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
       - name: Run install
-        run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+        run: sudo EXTRA_DEPENDENCIES=redis bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
       - name: Install Redis
         run: sudo apt install -y redis
       - name: Start Redis
@@ -262,16 +271,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-redis-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_defaults_query_check:
     runs-on: ubuntu-latest
@@ -310,16 +322,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-query-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_defaults_queuesentinel_check:
     runs-on: ubuntu-latest
@@ -357,16 +372,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-queuesentinel-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_defaults_async_check:
     runs-on: ubuntu-latest
@@ -421,16 +439,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-async-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_messaging_async_check:
     runs-on: ubuntu-latest
@@ -499,15 +520,14 @@ jobs:
                                              --check
       - name: Generate log details
         run: |
-          sudo mkdir -p /tmp/directord
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
           sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
           sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
           sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
-          sudo cp /etc/directord/messaging/ssl/directord* /tmp/directord
-          sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord
-          sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord
+          sudo cp -R /etc/directord /tmp/
+          sudo cp /usr/local/share/ca-certificates/directord/* /tmp/directord/
+          sudo cp /etc/qpid-dispatch/qdrouterd.* /tmp/directord/
           sudo find /tmp/directord -type d -exec chmod 0755 {} \;
           sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
@@ -529,7 +549,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
       - name: Run install
-        run: sudo DRIVER=zmq bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+        run: sudo DRIVER=zeromq bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
       - name: Run server service install
         run: |
           sudo /opt/directord/bin/directord-server-systemd
@@ -571,16 +591,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-zmq-async-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_defaults_add_check:
     runs-on: ubuntu-latest
@@ -619,16 +642,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-add-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_bootstrap_check:
     runs-on: ubuntu-latest
@@ -698,7 +724,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: functional-bootstrap-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_defaults_realworld_check:
     runs-on: ubuntu-latest
@@ -737,16 +763,19 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-realworld-test-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
 
   functional_prune_check:
     runs-on: ubuntu-latest
@@ -783,13 +812,16 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: functional-prune-logs
-          path: /tmp/directord-*.log
+          path: /tmp/directord*
