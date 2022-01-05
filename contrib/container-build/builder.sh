@@ -19,6 +19,7 @@ echo "Building: ${SPEC_PATH}"
 echo "Logging to ${ARTIFACT_PATH}/rpmbuild.log"
 rpmbuild --undefine=_disable_source_fetch \
          --define "released_version ${RELEASE_VERSION}" \
+         --define "git_ref ${GIT_REF}" \
          -ba ${SPEC_PATH} \
          --nocheck &> ${ARTIFACT_PATH}/rpmbuild.log
 

@@ -9,7 +9,7 @@ RUN dnf -y update && \
                    centos-release-openstack-xena \
                    python3-rpm \
                    python3-wheel && \
-    useradd builder -u 1000 -m -G users,wheel && \
+    useradd builder -u 1000 -m -G users,wheel || true && \
     echo "builder ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     echo "# macros"                        >  /home/builder/.rpmmacros && \
     echo "%_topdir    /home/builder/build" >> /home/builder/.rpmmacros && \
@@ -34,8 +34,8 @@ RUN dnf -y install rpmdevtools python3-pytoml python3-pyxdg python38-requests cm
     find ~/rpmbuild/RPMS -name '*.rpm' -exec cp "{}" /home/builder/build/ \; && \
     dnf -y install $(find /home/builder/build/ -name '*rpm' ! -name '*src*' -type f)
 
-COPY directord.spec /home/builder/build/
 COPY directord.tar.gz /home/builder/build/
+RUN tar -O -xzf /home/builder/build/directord.tar.gz directord/contrib/rpm/directord.spec > /home/builder/build/directord.spec
 COPY builder.sh /home/builder/
 USER builder
 CMD /home/builder/builder.sh

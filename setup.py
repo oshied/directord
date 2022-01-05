@@ -126,5 +126,9 @@ setuptools.setup(
                 if os.path.isfile(i)
             ],
         ),
+        (
+            "share/directord/systemd",
+            [i for i in glob.glob("contrib/systemd/*") if os.path.isfile(i)],
+        ),
     ],
 )
