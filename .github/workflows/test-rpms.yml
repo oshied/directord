@@ -10,18 +10,8 @@ jobs:
       uses: actions/checkout@v2
     - name: Set up Python
       uses: actions/setup-python@v2
-    - name: Create source tarball
-      run: |
-        name=${PWD##*/}
-        cd ..
-        tar -czf /tmp/directord.tar.gz "${name}"
-        mv /tmp/directord.tar.gz ${{ github.workspace }}/contrib/container-build/
-    - name: Build builder container image
-      run: docker build -t directord-builder -f ./contrib/container-build/Containerfile ./contrib/container-build
-    - name: Run builder container
-      run: |
-        export RELEASE_VERSION=$(awk -F'"' '/version/ {print $2}' ${{ github.workspace }}/directord/meta.py)
-        docker run --env RELEASE_VERSION="${RELEASE_VERSION}" --net=host -v ${{ github.workspace }}/contrib:/home/builder/rpm directord-builder
+    - name: Build RPMs
+      run: ${{ github.workspace }}/tools/build-rpms.sh
     - name: Upload build Log artifacts on failure
       if: failure()
       uses: actions/upload-artifact@v2

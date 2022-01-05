@@ -2,11 +2,11 @@ FROM quay.io/centos/centos:stream8
 LABEL maintainer="Kevin Carter <kecarter@redhat.com>"
 
 RUN dnf -y update && \
-    dnf -y install sudo \
+    dnf -y --nobest install sudo \
                    yum-utils \
                    rpm-build \
                    dnf-plugins-core \
-                   centos-release-openstack-wallaby \
+                   centos-release-openstack-xena \
                    python3-rpm \
                    python3-wheel && \
     useradd builder -u 1000 -m -G users,wheel && \
