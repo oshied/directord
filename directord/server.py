@@ -692,11 +692,15 @@ class Server(interface.ProcessInterface):
         def _node_return_info(node_info):
             """Return a dictionary of parsed node information."""
 
-            _node_info = node_info.__dict__
-            _node_info["_nodes"] = node_info._nodes
-            _node_info["SUCCESS"] = node_info.success_nodes
-            _node_info["FAILED"] = node_info.failed_nodes
-            return _node_info
+            try:
+                _node_info = node_info.__dict__
+            except AttributeError:
+                return dict()
+            else:
+                _node_info["_nodes"] = node_info._nodes
+                _node_info["SUCCESS"] = node_info.success_nodes
+                _node_info["FAILED"] = node_info.failed_nodes
+                return _node_info
 
         try:
             os.unlink(self.args.socket_path)

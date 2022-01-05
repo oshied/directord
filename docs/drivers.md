@@ -9,7 +9,7 @@ based on the operating environment.
 
 ## ZMQ
 
-Status: `Default`
+Status: `Stable`
 
 Used for distributed mesh communication between the server and client nodes.
 No additional setup is required outside of the initial package installation.
@@ -257,7 +257,7 @@ SSL configured can be configured manually with the following steps.
 
 ## GRPC
 
-Status: `Stable`
+Status: `Default`
 
 A gRPC server is used to handle message queues between the server and client
 nodes.  No additional service setup is required outside of the initial
