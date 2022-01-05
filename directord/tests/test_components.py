@@ -334,6 +334,22 @@ class TestComponents(tests.TestBase):
         self.assertTrue(outcome)
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_success_exclude(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._dnf.client(
+            cache=tests.FakeCache(),
+            job={"packages": ["kernel", "gcc"], "exclude": "libexec"},
+        )
+        calls = [
+            call(
+                command="dnf -q -y --exclude=libexec install kernel gcc",
+                env=None,
+            )
+        ]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__dnf_command_fail(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", False]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -373,6 +389,29 @@ class TestComponents(tests.TestBase):
         self.assertTrue(outcome)
 
     @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_latest_exclude(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._dnf.client(
+            cache=tests.FakeCache(),
+            job={
+                "packages": ["kernel", "gcc"],
+                "state": "latest",
+                "exclude": "libexec,libunrar,libsome",
+            },
+        )
+        calls = [
+            call(
+                command=(
+                    "dnf -q -y --best --exclude=libexec,libunrar,libsome "
+                    "install kernel gcc"
+                ),
+                env=None,
+            ),
+        ]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
     def test__dnf_command_absent(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -380,6 +419,26 @@ class TestComponents(tests.TestBase):
             job={"packages": ["kernel", "gcc"], "state": "absent"},
         )
         calls = [call(command="dnf -q -y remove kernel gcc", env=None)]
+        self.assertEqual(mock_run_command.call_args_list, calls)
+        self.assertTrue(outcome)
+
+    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    def test__dnf_command_absent_exclude(self, mock_run_command):
+        mock_run_command.return_value = [b"", b"", True]
+        stdout, stderr, outcome, return_info = self._dnf.client(
+            cache=tests.FakeCache(),
+            job={
+                "packages": ["kernel", "gcc"],
+                "state": "absent",
+                "exclude": "libexec,unzip",
+            },
+        )
+        calls = [
+            call(
+                command="dnf -q -y --exclude=libexec,unzip remove kernel gcc",
+                env=None,
+            )
+        ]
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 

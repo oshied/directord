@@ -35,6 +35,11 @@ class Component(components.ComponentBase):
             action="store_true",
             help="Clear dnf metadata and make cache before running action.",
         )
+        self.parser.add_argument(
+            "--exclude",
+            type=str,
+            help="Exclude packages from dnf action, comma separated list",
+        )
         state_group = self.parser.add_mutually_exclusive_group()
         state_group.add_argument(
             "--latest",
@@ -79,6 +84,7 @@ class Component(components.ComponentBase):
         data["retry"] = self.known_args.retry
         data["clear"] = self.known_args.clear_metadata
         data["packages"] = self.known_args.packages
+        data["exclude"] = self.known_args.exclude
 
         return data
 
@@ -135,9 +141,12 @@ class Component(components.ComponentBase):
             to_update_or_install = packages
         else:
             to_install = packages
+        exclude = (
+            f' --exclude={job.get("exclude")}' if job.get("exclude") else ""
+        )
 
         if to_remove:
-            cmd = "dnf -q -y remove {}".format(" ".join(to_remove))
+            cmd = "dnf -q -y{} remove {}".format(exclude, " ".join(to_remove))
             job_stdout.append(b"=== dnf remove ===\n")
             stdout, stderr, outcome = self.run_command(
                 command=cmd, env=cache.get("envs")
@@ -146,7 +155,9 @@ class Component(components.ComponentBase):
             job_stderr.append(stderr)
 
         if to_install:
-            cmd = "dnf -q -y install {}".format(" ".join(to_install))
+            cmd = "dnf -q -y{} install {}".format(
+                exclude, " ".join(to_install)
+            )
             job_stdout.append(b"=== dnf install ===\n")
             stdout, stderr, outcome = self.run_command(
                 command=cmd, env=cache.get("envs")
@@ -155,8 +166,8 @@ class Component(components.ComponentBase):
             job_stderr.append(stderr)
 
         if to_update_or_install:
-            cmd = "dnf -q -y --best install {}".format(
-                " ".join(to_update_or_install)
+            cmd = "dnf -q -y --best{} install {}".format(
+                exclude, " ".join(to_update_or_install)
             )
             job_stdout.append(b"=== dnf update ===\n")
             stdout, stderr, outcome = self.run_command(
