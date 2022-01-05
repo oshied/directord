@@ -9,7 +9,7 @@ RUN dnf -y update && \
                    centos-release-openstack-xena \
                    python3-rpm \
                    python3-wheel && \
-    useradd builder -u 1000 -m -G users,wheel && \
+    useradd builder -u 1000 -m -G users,wheel || true && \
     echo "builder ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     echo "# macros"                        >  /home/builder/.rpmmacros && \
     echo "%_topdir    /home/builder/build" >> /home/builder/.rpmmacros && \
