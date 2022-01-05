@@ -75,10 +75,17 @@ def _parse_driver_args(parser, parser_server, parser_client):
         driver = driver_importer.find_module(driver_name).load_module(
             driver_name
         )
-        if hasattr(driver, "parse_args"):
-            parser = driver.parse_args(parser, parser_server, parser_client)
 
-        sys.modules.pop(driver_name, None)
+        try:
+            if getattr(driver, "DRIVER_AVAILABLE", False) is False:
+                continue
+
+            if hasattr(driver, "parse_args"):
+                parser = driver.parse_args(
+                    parser, parser_server, parser_client
+                )
+        finally:
+            sys.modules.pop(driver_name, None)
 
     return parser
 

@@ -3,7 +3,7 @@
 directord_server:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
-  - RUN: sudo bash dev-setup.sh
+  - RUN: sudo DRIVER=zmq bash dev-setup.sh
   - RUN: sudo /opt/directord/bin/directord-server-systemd
   - RUN: sudo systemctl daemon-reload
   - RUN: sudo systemctl enable directord-server.service
@@ -12,7 +12,7 @@ directord_server:
 directord_clients:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
-  - RUN: sudo bash dev-setup.sh
+  - RUN: sudo DRIVER=zmq bash dev-setup.sh
   - RUN: sudo /opt/directord/bin/directord-client-systemd
   - RUN: |-
       sudo python3 <<EOC

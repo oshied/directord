@@ -19,6 +19,7 @@ PYTHON_BIN="${2:-${PYTHON_BIN:-python3.8}}"
 CLONE_PATH="${3:-${CLONE_PATH-}}"
 SETUP="${4:-${SETUP:-true}}"
 DRIVER=${DRIVER:-grpcd}
+EXTRA_DEPENDENCIES="${EXTRA_DEPENDENCIES:-}"
 
 . /etc/os-release
 
@@ -46,6 +47,20 @@ fi
 if [[ ${ID} == "rhel" ]] && [[ ${DRIVER} == "messaging" ]]; then
     echo "messaging driver not yet supported with RHEL."
     exit 1
+fi
+
+if [[ ${DRIVER} == "zmq" ]]; then
+  export DEPENDENCIES="zmq"
+elif [[ ${DRIVER} == "messaging" ]]; then
+  export DEPENDENCIES="oslo_messaging"
+elif [[ ${DRIVER} == "grpcd" ]]; then
+  export DEPENDENCIES="grpc"
+else
+  export DEPENDENCIES="all"
+fi
+
+if [[ ! -z "${EXTRA_DEPENDENCIES}" ]]; then
+  export DEPENDENCIES="${DEPENDENCIES},${EXTRA_DEPENDENCIES}"
 fi
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
@@ -86,9 +101,9 @@ ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel bindep pyyaml
 ${VENV_PATH}/bin/pip install --upgrade pip setuptools wheel
 
 if [ -z "${CLONE_PATH}" ] || [ ! -d "${CLONE_PATH}" ] ; then
-  ${VENV_PATH}/bin/pip install --upgrade --pre directord[all]
+  ${VENV_PATH}/bin/pip install --upgrade --pre directord[${DEPENDENCIES}]
 else
-  ${VENV_PATH}/bin/pip install --upgrade ${CLONE_PATH}[all]
+  ${VENV_PATH}/bin/pip install --upgrade ${CLONE_PATH}[${DEPENDENCIES}]
 fi
 
 # Create basic development configuration

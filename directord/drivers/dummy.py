@@ -14,6 +14,8 @@
 
 from directord import drivers
 
+DRIVER_AVAILABLE = True
+
 
 def parse_args(parser, parser_server, parser_client):
     """Add arguments for this driver to the parser.

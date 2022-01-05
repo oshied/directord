@@ -29,7 +29,10 @@ try:
     from directord.drivers.generated.msg_pb2_grpc import (
         MessageServiceServicer as grpc_MessageServiceServicer,
     )
+
+    DRIVER_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
+    DRIVER_AVAILABLE = False
     grpc_MessageServiceServicer = object
     pass
 

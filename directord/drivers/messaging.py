@@ -26,7 +26,10 @@ try:
     from oslo_messaging.rpc import dispatcher
     from oslo_messaging.rpc.server import expose
     from oslo_messaging import transport
+
+    DRIVER_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
+    DRIVER_AVAILABLE = False
 
     def expose(*args, **kwargs):
         """Mock expose."""

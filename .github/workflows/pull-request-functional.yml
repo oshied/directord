@@ -229,7 +229,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
       - name: Run install
-        run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+        run: sudo EXTRA_DEPENDENCIES=redis bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
       - name: Install Redis
         run: sudo apt install -y redis
       - name: Start Redis

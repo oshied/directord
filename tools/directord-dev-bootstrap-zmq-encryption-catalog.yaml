@@ -3,7 +3,7 @@
 directord_server:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
-  - RUN: sudo bash dev-setup.sh
+  - RUN: sudo DRIVER=zmq bash dev-setup.sh
   - RUN: sudo /opt/directord/bin/directord-server-systemd
   - RUN: sudo systemctl daemon-reload
   - RUN: sudo systemctl enable directord-server.service
@@ -15,7 +15,7 @@ directord_server:
 directord_clients:
   jobs:
   - ADD: dev-setup.sh dev-setup.sh
-  - RUN: sudo bash dev-setup.sh
+  - RUN: sudo DRIVER=zmq bash dev-setup.sh
   - ADD: /tmp/client.key_secret /tmp/client.key_secret-stash
   - RUN: sudo mv /tmp/client.key_secret-stash /etc/directord/private_keys/client.key_secret
   - ADD: /tmp/client.key /tmp/client.key-stash

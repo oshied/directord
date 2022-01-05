@@ -25,8 +25,10 @@ try:
     import zmq
     import zmq.auth as zmq_auth
     from zmq.auth.thread import ThreadAuthenticator
+
+    DRIVER_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
-    pass
+    DRIVER_AVAILABLE = False
 
 from directord import drivers
 from directord import iodict
