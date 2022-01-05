@@ -21,7 +21,7 @@ from unittest.mock import patch
 import zmq
 
 from directord import tests
-from directord.drivers import zmq as zmq_driver
+from directord.drivers import zeromq as zmq_driver
 
 
 class TestDriverZMQSharedAuth(tests.TestBase):
@@ -56,7 +56,7 @@ class TestDriverZMQSharedAuth(tests.TestBase):
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
-    @patch("directord.drivers.zmq.ThreadAuthenticator", autospec=True)
+    @patch("directord.drivers.zeromq.ThreadAuthenticator", autospec=True)
     def test_socket_bind_shared_curve_auth(
         self, mock_auth, mock_poller, mock_socket
     ):
@@ -97,7 +97,7 @@ class TestDriverZMQ(tests.TestBase):
 
     @patch("zmq.backend.Socket", autospec=True)
     @patch("zmq.Poller", autospec=True)
-    @patch("directord.drivers.zmq.ThreadAuthenticator", autospec=True)
+    @patch("directord.drivers.zeromq.ThreadAuthenticator", autospec=True)
     def test_socket_bind_shared_auth(
         self, mock_auth, mock_poller, mock_socket
     ):
@@ -304,7 +304,7 @@ class TestDriverZMQ(tests.TestBase):
             flags=0,
         )
 
-    @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
+    @patch("directord.drivers.zeromq.Driver._socket_bind", autospec=True)
     def test_job_bind(self, mock_socket_bind):
         self.driver._job_bind()
         mock_socket_bind.assert_called_with(
@@ -314,7 +314,7 @@ class TestDriverZMQ(tests.TestBase):
             port=5555,
         )
 
-    @patch("directord.drivers.zmq.Driver._socket_bind", autospec=True)
+    @patch("directord.drivers.zeromq.Driver._socket_bind", autospec=True)
     def test_backend_bind(self, mock_socket_bind):
         self.driver._backend_bind()
         mock_socket_bind.assert_called_with(
@@ -332,12 +332,12 @@ class TestDriverZMQ(tests.TestBase):
                 1000000180.0000001,
             )
 
-    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
+    @patch("directord.drivers.zeromq.Driver._socket_connect", autospec=True)
     def test_job_connect(self, mock_socket_connect):
         self.driver._job_connect()
         mock_socket_connect.assert_called()
 
-    @patch("directord.drivers.zmq.Driver._socket_connect", autospec=True)
+    @patch("directord.drivers.zeromq.Driver._socket_connect", autospec=True)
     def test_backend_connect(self, mock_socket_connect):
         self.driver._backend_connect()
         mock_socket_connect.assert_called()

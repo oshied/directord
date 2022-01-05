@@ -72,10 +72,10 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; 
   echo "/usr/bin/directord-client-systemd"
   echo -e "/usr/bin/directord-server-systemd\n"
   if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-    directord --driver zmq server --zmq-generate-keys
+    directord --driver zeromq server --zmq-generate-keys
   fi
 else
-  if [[ ${DRIVER} == "zmq" ]]; then
+  if [[ ${DRIVER} == "zeromq" ]]; then
     export DEPENDENCIES="zmq"
   elif [[ ${DRIVER} == "messaging" ]]; then
     export DEPENDENCIES="oslo_messaging"
@@ -97,7 +97,7 @@ else
   echo "/opt/directord/bin/directord-client-systemd"
   echo -e "/opt/directord/bin/directord-server-systemd\n"
   if [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-    /opt/directord/bin/directord --driver zmq server --zmq-generate-keys
+    /opt/directord/bin/directord --driver zeromq server --zmq-generate-keys
   fi
 fi
 

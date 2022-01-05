@@ -40,7 +40,6 @@ jobs:
           sudo podman build -t test-image .
           sudo podman system service --log-level debug -t 0 unix:///tmp/podman.sock &>/tmp/directord-podman-api.log &
           sudo podman run --rm --name registry -d -p 5000:5000 registry:2
-
       - name: Wait for client online
         run: |
           timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
@@ -52,21 +51,24 @@ jobs:
                                               functional-podman-test.yaml \
                                               --poll \
                                               --check
-
       - name: Generate log details
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: functional-podman-test-logs
-          path: /tmp/directord-*.log
+          name: functional-test-logs
+          path: /tmp/directord*
+
 
   functional_defaults_podman_pod_check:
     runs-on: ubuntu-latest
@@ -142,13 +144,16 @@ jobs:
         run: |
           sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
           sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
-          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log
-          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log
-          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
         if: failure()
       - name: Upload build Log artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: functional-pod-test-logs
-          path: /tmp/directord-*.log
+          name: functional-test-logs
+          path: /tmp/directord*

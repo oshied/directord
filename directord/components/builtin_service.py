@@ -93,7 +93,7 @@ class Component(components.ComponentBase):
             data["state"] = "disable"
         if self.known_args.mask:
             data["mask"] = "mask"
-        elif self.known_args.unamsk:
+        elif self.known_args.unmask:
             data["mask"] = "unmask"
 
         if self.known_args.restarted:

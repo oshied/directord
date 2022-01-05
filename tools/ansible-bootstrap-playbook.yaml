@@ -43,7 +43,7 @@
     directord_bin_path: "{{ directord_development_env | bool | ternary('/opt/directord/bin', '/opt/directord/bin') }}"
   tasks:
     - name: Generate curve keys
-      command: "{{ directord_bin_path }}/directord --driver zmq server --zmq-generate-keys"
+      command: "{{ directord_bin_path }}/directord --driver zeromq server --zmq-generate-keys"
     - name: Specifying a destination path
       fetch:
         src: "{{ item }}"

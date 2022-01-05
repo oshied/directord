@@ -49,7 +49,7 @@ if [[ ${ID} == "rhel" ]] && [[ ${DRIVER} == "messaging" ]]; then
     exit 1
 fi
 
-if [[ ${DRIVER} == "zmq" ]]; then
+if [[ ${DRIVER} == "zeromq" ]]; then
   export DEPENDENCIES="zmq"
 elif [[ ${DRIVER} == "messaging" ]]; then
   export DEPENDENCIES="oslo_messaging"
@@ -124,8 +124,8 @@ with open('/etc/directord/config.yaml', 'w') as f:
     f.write(yaml.safe_dump(config, default_flow_style=False))
 EOC
 
-if [ "${DRIVER}" == "zmq" ] && [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
-  ${VENV_PATH}/bin/directord --driver zmq server --zmq-generate-keys
+if [ "${DRIVER}" == "zeromq" ] && [ ! -f "/etc/directord/private_keys/server.key_secret" ]; then
+  ${VENV_PATH}/bin/directord --driver zeromq server --zmq-generate-keys
 fi
 
 if [ "${SETUP}" = true ]; then

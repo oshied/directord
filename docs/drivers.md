@@ -7,7 +7,7 @@ Directord is powered by message platforms. As such, to run Directord a
 messaging driver needs to be selected, which may require additional setup
 based on the operating environment.
 
-## ZMQ
+## ZeroMQ
 
 Status: `Stable`
 
@@ -19,7 +19,7 @@ No additional setup is required outside of the initial package installation.
 
 ![Directord](assets/driver-zmq.png)
 
-Directord with the ZMQ driver supports two forms of authentication, **Shared
+Directord with the ZeroMQ driver supports two forms of authentication, **Shared
 Key** and **Curve25519**. Both of these authentication methods enhance the
 security of an environment however both methods have some pros and cons.
 
@@ -55,7 +55,7 @@ $ directord --zmq-shared-key ${SECRET_TOKEN} client
 
 **Curve25519** is a more complicated method to setup as keys have to be
 generated and synchronized to all client and server nodes. While generating
-keys is simple with the `directord --driver zmq server --zmq-generate-keys` command,
+keys is simple with the `directord --driver zeromq server --zmq-generate-keys` command,
 the **Curve25519** method is called out as more complex due to the requirement
 of file transfers. **Curve25519** will encrypt the traffic within the cluster
 making it suitable for deployments that extend beyond a single data center.
@@ -70,7 +70,7 @@ The following command will generate the encryption keys required to enable
 **Curve25519**.
 
 ``` shell
-$ directord --driver zmq server --zmq-generate-keys
+$ directord --driver zeromq server --zmq-generate-keys
 ```
 
 > If the `--zmq-generate-keys` command is run more than once it will backup old key
@@ -117,7 +117,7 @@ run, which will first generate new keys on the server and run a simple
 orchestration to rotate the keys across an active cluster.
 
 ``` shell
-$ directord --driver zmq server --zmq-generate-keys
+$ directord --driver zeromq server --zmq-generate-keys
 $ directord orchestrate key-rotation.yaml
 ```
 

@@ -30,8 +30,9 @@ REQUIREMENTS = {
     "redis": ["redis"],
     "oslo_messaging": ["oslo_messaging[amqp1]"],
     "zmq": ["pyzmq"],
-    "grpc": [GPRC_PACKAGE, "protobuf", "requests"],
+    "grpc": [GPRC_PACKAGE, "protobuf"],
 }
+
 REQUIREMENTS["all"] = list(
     set([item for line in REQUIREMENTS.values() for item in line])
 )
@@ -52,6 +53,7 @@ setuptools.setup(
     install_requires=[
         "jinja2",
         "pyyaml",
+        "requests",
         "ssh-python",
         "tabulate",
         "tenacity",
