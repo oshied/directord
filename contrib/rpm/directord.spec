@@ -1,5 +1,7 @@
 %global pypi_name directord
 %{?!released_version: %global released_version 0.11.3}
+%{?git_ref: %global directord_version git%{git_ref}}
+%{!?git_ref: %global directord_version %{released_version}}
 
 Name:           %{pypi_name}
 Release:        1%{?dist}
@@ -7,7 +9,7 @@ Summary:        A deployment framework built to manage the data center life cycl
 
 License:        None
 URL:            https://github.com/directord/directord
-Version:        %{released_version}
+Version:        %{directord_version}
 Source0:        directord.tar.gz
 
 BuildArch:      noarch
