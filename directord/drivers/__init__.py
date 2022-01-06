@@ -305,7 +305,7 @@ class BaseDriver(models.BaseModel):
             return self.identity
 
     def heartbeat_send(
-        self, host_uptime=None, agent_uptime=None, version=None
+        self, host_uptime=None, agent_uptime=None, version=None, driver=None
     ):
         """Send a heartbeat.
 
@@ -314,6 +314,8 @@ class BaseDriver(models.BaseModel):
         :param agent_uptime: Sender agent uptime
         :type agent_uptime: String
         :param version: Sender directord version
+        :type version: String
+        :param version: Driver information
         :type version: String
         """
 

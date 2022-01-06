@@ -58,21 +58,33 @@ class Interface(directord.Processor):
         self.keys_exist = os.path.exists(
             self.public_keys_dir
         ) and os.path.exists(self.secret_keys_dir)
+        try:
+            self.driver = self._load_driver(driver=self.args.driver)
+        except AttributeError as e:
+            self.log.warning(
+                "Falling back with dummy driver due error [ %s ] in driver"
+                " [ %s ]. Check the driver CLI arguments, the configuration"
+                " file [ %s ] contents, and ensure all dependencies are"
+                " installed.",
+                str(e),
+                self.args.driver,
+                self.args.config_file,
+            )
+            self.driver = self._load_driver(driver="dummy")
 
+    def _load_driver(self, driver):
         try:
             _driver = directord.plugin_import(
-                plugin=".drivers.{}".format(self.args.driver)
+                plugin=".drivers.{}".format(driver)
             )
         except Exception as e:
             raise SystemExit(
                 "Driver was not able to be loaded: {}".format(str(e))
             )
         else:
-            self.log.debug(
-                "Loading messaging driver: [ %s ]", self.args.driver
-            )
+            self.log.debug("Loading messaging driver: [ %s ]", driver)
             try:
-                self.driver = _driver.Driver(
+                return _driver.Driver(
                     args=self.args,
                     encrypted_traffic_data={
                         "enabled": self.keys_exist,
@@ -85,7 +97,7 @@ class Interface(directord.Processor):
                 raise OSError(
                     "Failed to load driver {} - Error: {} - Check"
                     " configuration and dependency installation.".format(
-                        self.args.driver, str(e)
+                        driver, str(e)
                     )
                 ) from None
 
