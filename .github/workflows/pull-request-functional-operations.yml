@@ -1,0 +1,233 @@
+name: Run pull-request functional workflows operations
+on: [pull_request]
+jobs:
+  functional_posix_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Configure posix backend
+        run: >-
+          echo 'datastore: file:///var/cache/directord' | sudo tee -a /etc/directord/config.yaml
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Execute functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 240 /opt/directord/bin/directord \
+                                              orchestrate \
+                                              functional-tests.yaml \
+                                              --poll \
+                                              --check
+      - name: Generate log details
+        run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
+        if: failure()
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-posix-test-logs
+          path: /tmp/directord*
+
+  functional_redis_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo EXTRA_DEPENDENCIES=redis bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Install Redis
+        run: sudo apt install -y redis
+      - name: Start Redis
+        run: sudo systemctl restart redis
+      - name: Configure redis backend
+        run: >-
+          echo 'datastore: redis://127.0.0.1:6379/2' | sudo tee -a /etc/directord/config.yaml
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Execute functional check
+        run: |
+          cd /opt/directord/share/directord/orchestrations
+          sudo timeout 240 /opt/directord/bin/directord \
+                                              orchestrate \
+                                              functional-tests.yaml \
+                                              --poll \
+                                              --check
+      - name: Generate log details
+        run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
+        if: failure()
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-redis-test-logs
+          path: /tmp/directord*
+
+  functional_bootstrap_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Ensure ssh is installed
+        run: sudo apt update; sudo apt -y install openssh-server
+      - name: Check config
+        run: |
+          cat > sshd_config <<EOF
+            SyslogFacility AUTHPRIV
+            PermitRootLogin yes
+            AuthorizedKeysFile	.ssh/authorized_keys
+            PasswordAuthentication yes
+            ChallengeResponseAuthentication no
+            UsePAM yes
+            UseDNS no
+            X11Forwarding no
+            PrintMotd no
+            AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+            AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+            AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+            AcceptEnv XMODIFIERS
+            Subsystem sftp internal-sftp
+          EOF
+          sudo mv sshd_config /etc/ssh/sshd_config
+          sudo systemctl restart ssh
+      - name: Create ssh key
+        run: >
+          ssh-keygen -t rsa -b 4096 -N '' -f ~/.ssh/id_rsa
+      - name: Add key to auth file
+        run: >
+          cat ~/.ssh/id_rsa.pub | tee -a ~/.ssh/authorized_keys
+      - name: Ensure the owner of the key is correct
+        run: |
+          chmod 600 ~/.ssh/authorized_keys
+          chmod 700 ~/.ssh
+          sudo chmod -c 0755 ~/
+          ls -la ~/.ssh
+      - name: Test SSH connection to localhost
+        run: >
+          ssh -vvv -i ~/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $(whoami)@localhost
+      - name: Run bootstrap test
+        run: |
+          /opt/directord/bin/directord --debug \
+                                       bootstrap \
+                                       --catalog tools/directord-inventory-catalog.yaml \
+                                       --catalog tests/directord-test-catalog.yaml \
+                                       --key-file ~/.ssh/id_rsa &> /tmp/directord-bootstrap-failure.log
+      - name: Run bootstrap test for clients only
+        run: |
+          /opt/directord/bin/directord --debug \
+                                       bootstrap \
+                                       --catalog tools/directord-inventory-catalog.yaml \
+                                       --catalog tests/directord-test-catalog-no-srvr.yaml \
+                                       --key-file ~/.ssh/id_rsa &> /tmp/directord-bootstrap-failure-no-srvr.log
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-bootstrap-test-logs
+          path: /tmp/directord*
+
+  functional_prune_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run install
+        run: sudo bash tools/dev-setup.sh /opt/directord python3 ${{ github.workspace }}
+      - name: Run server service install
+        run: |
+          sudo /opt/directord/bin/directord-server-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-server
+      - name: Run client service install
+        run: |
+          sudo /opt/directord/bin/directord-client-systemd
+          sudo systemctl daemon-reload
+          sudo systemctl restart directord-client
+      - name: Wait for client online
+        run: |
+          timeout 120 bash -c 'while ! sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Stop client service
+        run: |
+          sudo systemctl stop directord-client
+      - name: Wait for client to be pruned
+        run: |
+          timeout 240 bash -c 'while sudo /opt/directord/bin/directord manage --list-nodes; do sleep 1; done'
+      - name: Generate log details
+        run: |
+          sudo journalctl -u directord-client -n 2000 &> /tmp/directord-client.log || true
+          sudo journalctl -u directord-server -n 2000 &> /tmp/directord-server.log || true
+          sudo /opt/directord/bin/directord manage --list-nodes &> /tmp/directord-nodes.log || true
+          sudo /opt/directord/bin/directord manage --dump-cache &> /tmp/directord-cache.log || true
+          sudo /opt/directord/bin/directord manage --export-jobs /tmp/directord-jobs-export.log || true
+          sudo cp -R /etc/directord /tmp/
+          sudo find /tmp/directord -type d -exec chmod 0755 {} \;
+          sudo find /tmp/directord -type f -exec chmod 0644 {} \;
+        if: failure()
+      - name: Upload build Log artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: functional-prune-logs
+          path: /tmp/directord*
