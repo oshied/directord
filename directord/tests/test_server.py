@@ -644,7 +644,7 @@ class TestServer(tests.TestDriverBase):
             w.version = "x.x.x"
             w.expire_time = 12345
             self.server.workers[w.identity] = w
-        with patch("time.time", autospec=True) as mock_time:
+        with patch("time.time") as mock_time:
             mock_time.return_value = 0
             self.server.run_socket_server()
         mock_unlink.assert_called_with(self.args.socket_path)

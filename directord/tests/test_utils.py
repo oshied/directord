@@ -132,9 +132,7 @@ class TestUtils(tests.TestConnectionBase):
     @patch("ssh.key.import_privkey_file", autospec=True)
     def test_sshconnect_agent_failure_default_key(self, mock_import_key):
         ssh = utils.SSHConnect(host="test", username="testuser", port=22)
-        with patch.object(
-            ssh.session, "userauth_agent", autospec=True
-        ) as mock_agent_auth:
+        with patch.object(ssh.session, "userauth_agent") as mock_agent_auth:
             mock_agent_auth.side_effect = Exception("failed")
             with patch("os.path.exists") as mock_path:
                 mock_path.return_value = True

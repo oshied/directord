@@ -93,9 +93,9 @@ class TestLoggerHandlers(unittest.TestCase):
         self.assertTrue(self._log.addHandler.called)
 
     def test_return_logfile(self):
-        with patch("os.stat", autospec=True) as mock_stat:
+        with patch("os.stat") as mock_stat:
             mock_stat.return_value = tests.FakeStat(uid=9998, gid=9999)
-            with patch("os.path.expanduser", autospec=True) as mock_expanduser:
+            with patch("os.path.expanduser") as mock_expanduser:
                 mock_expanduser.return_value = "/test/home/path"
                 log_file = self.log.return_logfile(
                     filename="test.log", log_dir="/"
@@ -103,9 +103,9 @@ class TestLoggerHandlers(unittest.TestCase):
         self.assertEqual(log_file, "/test/home/path/test.log")
 
     def test_return_logfile_dir_missing(self):
-        with patch("os.stat", autospec=True) as mock_stat:
+        with patch("os.stat") as mock_stat:
             mock_stat.return_value = tests.FakeStat(uid=9998, gid=9999)
-            with patch("os.path.expanduser", autospec=True) as mock_expanduser:
+            with patch("os.path.expanduser") as mock_expanduser:
                 mock_expanduser.return_value = "/test/home/path"
                 log_file = self.log.return_logfile(
                     filename="test.log", log_dir="/not/a/path"
@@ -113,13 +113,13 @@ class TestLoggerHandlers(unittest.TestCase):
         self.assertEqual(log_file, "/test/home/path/test.log")
 
     def test_return_logfile_path_user_writable(self):
-        with patch("os.stat", autospec=True) as mock_stat:
+        with patch("os.stat") as mock_stat:
             mock_stat.return_value = tests.FakeStat(uid=9998, gid=9999)
-            with patch("os.path.expanduser", autospec=True) as mock_expanduser:
+            with patch("os.path.expanduser") as mock_expanduser:
                 mock_expanduser.return_value = "/test/home/path"
-                with patch("os.path.isdir", autospec=True) as mock_isdir:
+                with patch("os.path.isdir") as mock_isdir:
                     mock_isdir.return_value = True
-                    with patch("os.getuid", autospec=True) as mock_uid:
+                    with patch("os.getuid") as mock_uid:
                         mock_uid.return_value = 9998
                         log_file = self.log.return_logfile(
                             filename="test.log", log_dir="/not/a/path"
@@ -127,13 +127,13 @@ class TestLoggerHandlers(unittest.TestCase):
         self.assertEqual(log_file, "/not/a/path/test.log")
 
     def test_return_logfile_path_group_writable(self):
-        with patch("os.stat", autospec=True) as mock_stat:
+        with patch("os.stat") as mock_stat:
             mock_stat.return_value = tests.FakeStat(uid=9998, gid=9999)
-            with patch("os.path.expanduser", autospec=True) as mock_expanduser:
+            with patch("os.path.expanduser") as mock_expanduser:
                 mock_expanduser.return_value = "/test/home/path"
-                with patch("os.path.isdir", autospec=True) as mock_isdir:
+                with patch("os.path.isdir") as mock_isdir:
                     mock_isdir.return_value = True
-                    with patch("os.getuid", autospec=True) as mock_uid:
+                    with patch("os.getuid") as mock_uid:
                         mock_uid.return_value = 9999
                         log_file = self.log.return_logfile(
                             filename="test.log", log_dir="/not/a/path"

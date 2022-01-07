@@ -34,7 +34,7 @@ class BaseTest(unittest.TestCase):
     def setUp(self):
         self.patched_makedirs = patch("os.makedirs", autospec=True)
         self.mock_makedirs = self.patched_makedirs.start()
-        self.patched_stat = patch("os.stat", autospec=True)
+        self.patched_stat = patch("os.stat")
         mock_stat = self.patched_stat.start()
         mock_stat.return_value = tests.FakeStat()
 
@@ -572,7 +572,7 @@ class TestIODict(BaseTest):
 class TestDurableQueue(BaseTest):
     def setUp(self):
         super().setUp()
-        self.patched_iodict = patch("directord.iodict.IODict", autospec=True)
+        self.patched_iodict = patch("directord.iodict.IODict")
         self.mock_iodict = self.patched_iodict.start()
         self.m = self.mock_iodict.return_value = MagicMock()
         self.m._db_path = "/not/a/path"
@@ -595,7 +595,7 @@ class TestDurableQueue(BaseTest):
     def test_empty(self):
         q = iodict.DurableQueue(path="/not/a/path")
         self.assertEqual(q.empty(), True)
-        with patch.object(self.m, "__len__", autospec=True):
+        with patch.object(self.m, "__len__"):
             self.assertEqual(q.empty(), False)
 
     def test_get_negative_timeout(self):
@@ -609,48 +609,42 @@ class TestDurableQueue(BaseTest):
             q.get(timeout=0.1)
 
     def test_get(self):
-        with patch.object(self.m, "__len__", autospec=True) as mock_len:
+        with patch.object(self.m, "__len__") as mock_len:
             mock_len.return_value = 1
             q = iodict.DurableQueue(path="/not/a/path")
             with patch.object(
                 q._count, "acquire", autospec=True
             ) as mock_acquire:
-                with patch.object(
-                    q._queue, "popitem", autospec=True
-                ) as mock_popitem:
+                with patch.object(q._queue, "popitem") as mock_popitem:
                     mock_popitem.return_value = "test"
                     self.assertEqual(q.get(), "test")
                     mock_acquire.assert_called_with(True, None)
 
     def test_getnowait(self):
-        with patch.object(self.m, "__len__", autospec=True) as mock_len:
+        with patch.object(self.m, "__len__") as mock_len:
             mock_len.return_value = 1
             q = iodict.DurableQueue(path="/not/a/path")
             with patch.object(
                 q._count, "acquire", autospec=True
             ) as mock_acquire:
-                with patch.object(
-                    q._queue, "popitem", autospec=True
-                ) as mock_popitem:
+                with patch.object(q._queue, "popitem") as mock_popitem:
                     mock_popitem.return_value = "test"
                     self.assertEqual(q.get_nowait(), "test")
                     mock_acquire.assert_called_with(False, None)
 
     def test_put(self):
         q = iodict.DurableQueue(path="/not/a/path")
-        with patch.object(self.m, "_queue", autospec=True) as mock__queue:
+        with patch.object(self.m, "_queue") as mock__queue:
             mock__queue.return_value = dict()
             with patch("builtins.open", unittest.mock.mock_open()):
                 q.put("test")
-            mock__queue.assert_called()
 
     def test_putnowait(self):
         q = iodict.DurableQueue(path="/not/a/path")
-        with patch.object(self.m, "_queue", autospec=True) as mock__queue:
+        with patch.object(self.m, "_queue") as mock__queue:
             mock__queue.return_value = dict()
             with patch("builtins.open", unittest.mock.mock_open()):
                 q.put_nowait("test")
-            mock__queue.assert_called()
 
 
 class _FlushQueue(queue.Queue, iodict.FlushQueue):
@@ -664,11 +658,11 @@ class _FlushQueue(queue.Queue, iodict.FlushQueue):
 class TestFlushQueue(BaseTest):
     def setUp(self):
         super().setUp()
-        self.patched_iodict = patch("directord.iodict.IODict", autospec=True)
+        self.patched_iodict = patch("directord.iodict.IODict")
         self.mock_iodict = self.patched_iodict.start()
         self.m = self.mock_iodict.return_value = MagicMock()
         self.m._db_path = "/not/a/path"
-        self.patched_queue = patch.object(self.m, "_queue", autospec=True)
+        self.patched_queue = patch.object(self.m, "_queue")
         self.mock__queue = self.patched_queue.start()
         self.mock__queue.return_value = dict()
 
