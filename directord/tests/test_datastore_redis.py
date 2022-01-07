@@ -12,7 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import redis
 
@@ -24,10 +24,9 @@ from directord import tests
 class TestDatastoreRedis(tests.TestBase):
     def setUp(self):
         super().setUp()
-        self.redis_patched = patch.object(
-            redis.Redis, "from_url", autospec=True
-        )
-        self.redis_patched.start()
+        self.redis_patched = patch("redis.Redis", autospec=True)
+        mock_redis = self.redis_patched.start()
+        mock_redis.from_url = MagicMock()
         self.datastore = datastore_redis.BaseDocument(
             url="redis://test.localdomain"
         )
