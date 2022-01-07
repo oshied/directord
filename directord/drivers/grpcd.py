@@ -24,12 +24,21 @@ import uuid
 
 try:
     import grpc
-    from directord.drivers.generated import msg_pb2
-    from directord.drivers.generated import msg_pb2_grpc
-    from directord.drivers.generated.msg_pb2_grpc import (
-        MessageServiceServicer as grpc_MessageServiceServicer,
-    )
 
+    try:
+        # Use dynmaic code generation which is available in
+        # grpc-tools >= 1.32.0
+        msg_pb2, msg_pb2_grpc = grpc.protos_and_services(
+            "directord/drivers/generated/msg.proto"
+        )
+        grpc_MessageServiceServicer = msg_pb2_grpc.MessageServiceServicer
+    except NotImplementedError:
+        # Fall back to our generated version which requires grpc <= 1.26.0
+        from directord.drivers.generated import msg_pb2
+        from directord.drivers.generated import msg_pb2_grpc
+        from directord.drivers.generated.msg_pb2_grpc import (
+            MessageServiceServicer as grpc_MessageServiceServicer,
+        )
     DRIVER_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     DRIVER_AVAILABLE = False
