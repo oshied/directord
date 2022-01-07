@@ -14,21 +14,21 @@
 
 import unittest
 
-from unittest.mock import ANY
+from unittest.mock import ANY, MagicMock
 from unittest.mock import call
 from unittest.mock import patch
 
 import zmq
 
 from directord import tests
-from directord.drivers import zeromq as zmq_driver
+from directord.drivers import zeromq
 
 
 class TestDriverZMQSharedAuth(tests.TestBase):
     def setUp(self):
         super().setUp()
         with patch("zmq.Context"):
-            self.driver = zmq_driver.Driver(args=tests.FakeArgs)
+            self.driver = zeromq.Driver(args=tests.FakeArgs)
         self.driver.encrypted_traffic = True
         self.driver.secret_keys_dir = "test/key"
         self.driver.public_keys_dir = "test/key"
@@ -47,11 +47,18 @@ class TestDriverZMQSharedAuth(tests.TestBase):
         with patch("builtins.open", m):
             with patch("os.path.exists") as mock_exists:
                 mock_exists.return_value = True
-                bind = self.driver._socket_connect(
-                    socket_type=zmq.PULL,
-                    connection="tcp://test",
-                    port=1234,
-                )
+                with patch(
+                    "zmq.auth.load_certificate", autospec=True
+                ) as mock_load_certificate:
+                    mock_load_certificate.return_value = (
+                        MagicMock(),
+                        MagicMock(),
+                    )
+                    bind = self.driver._socket_connect(
+                        socket_type=zmq.PULL,
+                        connection="tcp://test",
+                        port=1234,
+                    )
             self.assertEqual(bind.linger, 60)
 
     @patch("zmq.backend.Socket", autospec=True)
@@ -66,11 +73,18 @@ class TestDriverZMQSharedAuth(tests.TestBase):
             setattr(self.driver.args, "zmq_shared_key", None)
             with patch("os.path.exists") as mock_exists:
                 mock_exists.return_value = True
-                bind = self.driver._socket_bind(
-                    socket_type=zmq.ROUTER,
-                    connection="tcp://127.0.0.1",
-                    port=9000,
-                )
+                with patch(
+                    "zmq.auth.load_certificate", autospec=True
+                ) as mock_load_certificate:
+                    mock_load_certificate.return_value = (
+                        MagicMock(),
+                        MagicMock(),
+                    )
+                    bind = self.driver._socket_bind(
+                        socket_type=zmq.ROUTER,
+                        connection="tcp://127.0.0.1",
+                        port=9000,
+                    )
             self.assertIsNotNone(bind.bind)
             self.assertEqual(bind.curve_server, True)
 
@@ -79,7 +93,7 @@ class TestDriverZMQ(tests.TestBase):
     def setUp(self):
         super().setUp()
         with patch("zmq.Context"):
-            self.driver = zmq_driver.Driver(args=tests.FakeArgs)
+            self.driver = zeromq.Driver(args=tests.FakeArgs)
 
     def tearDown(self):
         super().tearDown()
@@ -346,7 +360,7 @@ class TestDriverZMQ(tests.TestBase):
         client_args = tests.FakeArgs()
         client_args.mode = "client"
         with patch("zmq.Context"):
-            driver = zmq_driver.Driver(args=client_args)
+            driver = zeromq.Driver(args=client_args)
         try:
             self.assertEqual(driver.bind_address, "localhost")
         finally:
@@ -356,7 +370,7 @@ class TestDriverZMQ(tests.TestBase):
         server_args = tests.FakeArgs()
         server_args.mode = "server"
         with patch("zmq.Context"):
-            driver = zmq_driver.Driver(args=server_args)
+            driver = zeromq.Driver(args=server_args)
         try:
             self.assertEqual(driver.bind_address, "10.1.10.1")
         finally:

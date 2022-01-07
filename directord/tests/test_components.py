@@ -322,7 +322,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(stdout, None)
         self.assertEqual(outcome, False)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -333,7 +333,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_success_exclude(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -349,7 +349,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_fail(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", False]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -360,7 +360,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertFalse(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_clear_cache(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -375,7 +375,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_latest(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -388,7 +388,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_latest_exclude(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -411,7 +411,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_absent(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -422,7 +422,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__dnf_command_absent_exclude(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._dnf.client(
@@ -442,7 +442,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -453,7 +453,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_fail(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", False]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -464,7 +464,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertFalse(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_enable_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -478,7 +478,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_enable_fail(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", False]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -489,7 +489,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertFalse(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_disable_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -507,7 +507,7 @@ class TestComponents(tests.TestBase):
         self.assertTrue(outcome)
         self.assertEqual(mock_run_command.call_args_list, calls)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_mask_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -527,7 +527,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_unmask_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -546,7 +546,7 @@ class TestComponents(tests.TestBase):
         self.assertEqual(mock_run_command.call_args_list, calls)
         self.assertTrue(outcome)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__service_command_reload_success(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         stdout, stderr, outcome, return_info = self._service.client(
@@ -652,7 +652,7 @@ class TestComponents(tests.TestBase):
         )
         self.assertFalse(success)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__run_command(self, mock_run_command):
         mock_run_command.return_value = [b"", b"", True]
         self._run.client(
@@ -663,7 +663,7 @@ class TestComponents(tests.TestBase):
             command="command 1 test", env=None, no_block=None
         )
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__run_command_stdout_args(self, mock_run_command):
         mock_run_command.return_value = [b"testing", b"", True]
         fake_cache = tests.FakeCache()
@@ -678,7 +678,7 @@ class TestComponents(tests.TestBase):
             command="command 1 test", env=None, no_block=None
         )
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     def test__run_command_stderr_args(self, mock_run_command):
         mock_run_command.return_value = [b"testing", b"errors", True]
         fake_cache = tests.FakeCache()
@@ -806,7 +806,7 @@ class TestComponents(tests.TestBase):
         self.assertFalse(outcome)
         mock_get.assert_called_once_with("http://localhost", verify=False)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     @patch("time.sleep")
     def test_wait_cmd(self, mock_sleep, mock_run_command):
         mock_run_command.side_effect = [
@@ -830,7 +830,7 @@ class TestComponents(tests.TestBase):
         ]
         self.assertEqual(mock_run_command.mock_calls, run_calls)
 
-    @patch("directord.components.ComponentBase.run_command", autospec=True)
+    @patch("directord.components.ComponentBase.run_command")
     @patch("time.sleep")
     def test_wait_cmd_fail(self, mock_sleep, mock_run_command):
         mock_run_command.return_value = (b"", b"", False)

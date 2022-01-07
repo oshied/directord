@@ -24,9 +24,7 @@ from directord import tests
 class TestDatastoreRedis(tests.TestBase):
     def setUp(self):
         super().setUp()
-        self.redis_patched = patch(
-            "redis.Redis", autospec=True
-        )
+        self.redis_patched = patch("redis.Redis", autospec=True)
         mock_redis = self.redis_patched.start()
         mock_redis.from_url = MagicMock()
         self.datastore = datastore_redis.BaseDocument(
