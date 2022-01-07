@@ -22,7 +22,7 @@ with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 
-GPRC_PACKAGE = "grpcio-tools<=1.26.0"
+GPRC_PACKAGE = "grpcio-tools>=1.26.0"
 
 REQUIREMENTS = {
     "dev": ["podman-py", GPRC_PACKAGE],
