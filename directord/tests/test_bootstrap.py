@@ -26,7 +26,7 @@ class Testbootstrap(tests.TestConnectionBase):
     def setUp(self):
         super().setUp()
         self.args = tests.FakeArgs()
-        self.patch_spinner = patch("directord.Spinner", autospec=True)
+        self.patch_spinner = patch("directord.Spinner")
         self.patch_spinner.start()
         self.bootstrap = bootstrap.Bootstrap(
             catalog=self.args.catalog,
@@ -54,9 +54,7 @@ class Testbootstrap(tests.TestConnectionBase):
             host="test", username="tester", port=22
         ).__enter__()
 
-        self.mock_chan_patched = patch.object(
-            self.mock_ssh, "session", autospec=True
-        )
+        self.mock_chan_patched = patch.object(self.mock_ssh, "session")
         self.mock_chan = self.mock_chan_patched.start()
         self.mock_chan.sftp_new = MagicMock(return_value=self.fakechannel)
         self.mock_chan.scp_new = MagicMock(return_value=self.fakechannel)
