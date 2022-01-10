@@ -64,7 +64,7 @@ if [[ ! -z "${EXTRA_DEPENDENCIES}" ]]; then
 fi
 
 if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
-  PACKAGES="git gcc gcc-c++ python3-pyyaml zeromq libsodium"
+  PACKAGES="git gcc gcc-c++ python3-pyyaml zeromq libsodium cmake"
   if [[ ${DRIVER} == "messaging" ]]; then
     PACKAGES+=" qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
   fi
@@ -78,7 +78,7 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   dnf -y install ${PACKAGES}
   CA_PATH=/etc/pki/ca-trust/source/anchors/directord-ca.crt
 elif [[ ${ID} == "fedora" ]]; then
-  PACKAGES="git python3-devel gcc gcc-c++ python3-pyyaml zeromq libsodium qpid-dispatch-router certmonger openssl openssl-devel python3-devel"
+  PACKAGES="git python3-devel gcc gcc-c++ python3-pyyaml zeromq libsodium qpid-dispatch-router certmonger openssl openssl-devel python3-devel cmake"
   dnf -y install ${PACKAGES}
   PYTHON_BIN=${2:-python3}
   CA_PATH=/etc/pki/ca-trust/source/anchors/directord-ca.crt
