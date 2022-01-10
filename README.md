@@ -22,14 +22,14 @@ diagrams, installation, usage, and more can all be
 
 * When ready, if you'd like to contribute to Directord pull-requests are very
   welcomed. Directord is an open platform built for operators. If you see
-  something broken, please feel free to raise a but and/or fix it.
+  something broken, please feel free to raise a bug and/or fix it.
 
 * Information on running tests can be [found here](https://directord.com/testing).
 
 ### Have Questions?
 
 Join us on [`libera.chat`](https://libera.chat/guides/connect) at
-**#directord**. The community is just getting started: folks are here to help,
+**#directord**. The community is just getting started; folks are here to help,
 answer questions, and support one another.
 
 ## Quick Introduction
