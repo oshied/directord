@@ -12,9 +12,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 
-import grp
 import os
-import pwd
 import traceback
 
 from directord import components
@@ -37,6 +35,9 @@ class Component(components.ComponentBase):
             "--chown", help="Set the file ownership", type=str
         )
         self.parser.add_argument("--chmod", help="Set the file mode", type=str)
+        self.parser.add_argument(
+            "--recursive", help="Recursive chown/chmod", action="store_true"
+        )
         self.parser.add_argument("workdir", help="Create a directory.")
 
     def server(self, exec_array, data, arg_vars):
@@ -56,11 +57,21 @@ class Component(components.ComponentBase):
             chown = self.known_args.chown.split(":", 1)
             if len(chown) == 1:
                 chown.append(None)
+            if len(chown) == 2:
+                if chown[1] == "":
+                    chown[1] = chown[0]
+                if chown[0] == "":
+                    chown[0] = None
             data["user"], data["group"] = chown
 
-        if self.known_args.chmod:
-            data["mode"] = int(oct(int(self.known_args.chmod, 8)), 8)
-
+        data["mode"] = self.known_args.chmod
+        if self.known_args.recursive and not (
+            self.known_args.chown or self.known_args.chmod
+        ):
+            raise AttributeError(
+                "Recursive chown/chmod requires chown or chmod"
+            )
+        data["recursive"] = self.known_args.recursive
         data["workdir"] = self.known_args.workdir
         return data
 
@@ -89,6 +100,7 @@ class Component(components.ComponentBase):
         user = job.get("user")
         group = job.get("group")
         mode = job.get("mode")
+        recursive = job.get("recursive")
 
         if not workdir:
             return None, None, False, None
@@ -99,40 +111,27 @@ class Component(components.ComponentBase):
             self.log.critical(str(e))
             return None, traceback.format_exc(), False, None
         else:
-            update_info = "Directory {} OK".format(workdir)
-            outcome = True
-            stderr = None
-            info = ""
-            if user:
-                try:
-                    try:
-                        uid = int(user)
-                    except ValueError:
-                        uid = pwd.getpwnam(user).pw_uid
-                        info += " uid {} found from name {}.".format(uid, user)
-
-                    if group:
-                        try:
-                            gid = int(group)
-                        except ValueError:
-                            gid = grp.getgrnam(group).gr_gid
-                            info += " gid {} found from name {}.".format(
-                                gid, group
-                            )
-                    else:
-                        gid = -1
-                except KeyError as e:
-                    outcome = False
-                    stderr = (
-                        "Failed to set ownership properties."
-                        " USER:{} GROUP:{}".format(user, group)
-                    )
-                    info += " {}".format(str(e))
-                else:
-                    os.chown(workdir, uid, gid)
-                    outcome = True
+            update_info = f"Directory {workdir} OK"
+            task_outcome = True
+            task_stderr = ""
+            task_info = ""
+            if user or group:
+                rec = " -R" if recursive else ""
+                user_group = f"{user or ''}:{group or ''}".rstrip(":")
+                stdout, stderr, outcome = self.run_command(
+                    f"chown{rec} {user_group} {workdir}"
+                )
+                task_outcome = task_outcome and outcome
+                task_stderr = stderr.decode()
+                task_info = stdout.decode()
 
             if mode:
-                os.chmod(workdir, mode)
+                rec = " -R" if recursive else ""
+                stdout, stderr, outcome = self.run_command(
+                    command=f"chmod{rec} {mode} {workdir}"
+                )
+                task_outcome = task_outcome and outcome
+                task_stderr = "\n".join([task_stderr, stderr.decode()])
+                task_info = "\n".join([task_info, stdout.decode()])
 
-            return update_info, stderr, outcome, info
+            return update_info, task_stderr, task_outcome, task_info

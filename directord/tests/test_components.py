@@ -714,27 +714,37 @@ class TestComponents(tests.TestBase):
         fake_cache = tests.FakeCache()
         self._workdir.client(cache=fake_cache, job={"workdir": ""})
 
-    @patch("os.chmod", autospec=True)
     @patch("os.makedirs", autospec=True)
-    def test__run_workdir_mode(self, mock_makedirs, mock_chmod):
+    def test__run_workdir_mode(self, mock_makedirs):
         fake_cache = tests.FakeCache()
         self._workdir.client(
             cache=fake_cache,
             job={"workdir": "/test/path", "mode": "0o777"},
         )
         mock_makedirs.assert_called_with("/test/path", exist_ok=True)
-        mock_chmod.assert_called()
 
-    @patch("os.chown", autospec=True)
     @patch("os.makedirs", autospec=True)
-    def test__run_workdir_mode_user_group(self, mock_makedirs, mock_chown):
+    def test__run_workdir_mode_user_group(self, mock_makedirs):
         fake_cache = tests.FakeCache()
         self._workdir.client(
             cache=fake_cache,
             job={"workdir": "/test/path", "user": 9999, "group": 9999},
         )
         mock_makedirs.assert_called_with("/test/path", exist_ok=True)
-        mock_chown.assert_called()
+
+    @patch("os.makedirs", autospec=True)
+    def test__run_workdir_mode_user_group_recursive(self, mock_makedirs):
+        fake_cache = tests.FakeCache()
+        self._workdir.client(
+            cache=fake_cache,
+            job={
+                "workdir": "/test/path",
+                "user": 9999,
+                "group": 9999,
+                "recursive": True,
+            },
+        )
+        mock_makedirs.assert_called_with("/test/path", exist_ok=True)
 
     def test_blueprinter(self):
         _, blueprinted_content = self.components.blueprinter(

@@ -66,6 +66,13 @@
   - WORKDIR: --chown=0:0 --chmod=0777 /tmp/test-mode
   - RUN: stat /tmp/test-mode | grep Uid | grep 0777
 
+  # Test creating a work directory with a ownership and mode and recursive
+  - WORKDIR: /tmp/test-moderec/nested
+  - RUN: touch /tmp/test-moderec/nested/file1
+  - WORKDIR: --chown=0:0 --chmod=0777 --recursive /tmp/test-moderec
+  - RUN: stat /tmp/test-moderec/nested | grep Uid | grep 0777
+  - RUN: stat /tmp/test-moderec/nested/file1 | grep Uid | grep 0777
+
   # Test environment interactions
   - RUN: echo "${test_runtime_arg_as_env}" | tee /tmp/test/test-sh-env
   - RUN: grep environment /tmp/test/test-sh-env

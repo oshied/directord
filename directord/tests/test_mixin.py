@@ -256,10 +256,12 @@ class TestMixin(tests.TestConnectionBase):
             json.dumps(
                 {
                     "verb": "WORKDIR",
+                    "mode": None,
+                    "recursive": False,
                     "workdir": "/test/path",
                     "timeout": 600,
                     "run_once": False,
-                    "job_sha3_224": "b899de26c8055243a43cc0c28d5a689a8ce6510bfcb420397e673a5f",  # noqa
+                    "job_sha3_224": "97a4bbc43cf426b177f48455794749f04a0b9d28fe399eb5eb229e34",  # noqa
                     "return_raw": False,
                     "skip_cache": False,
                 }
