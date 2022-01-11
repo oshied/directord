@@ -40,7 +40,13 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
     else
       DISTRO="--no-stream ${DISTRO}"
     fi
-    tripleo-repos ${DISTRO} -b master current-tripleo ceph
+    # Update this when tripleo-repos supports CentOS 9
+    if [[ ${VERSION_ID} == "9" ]]; then
+        curl -o /etc/yum.repos.d/delorean.repo https://trunk.rdoproject.org/centos9-master/current-tripleo/delorean.repo
+        curl -o /etc/yum.repos.d/delorean-deps.repo https://trunk.rdoproject.org/centos9-master/delorean-deps.repo
+    else
+        tripleo-repos ${DISTRO} -b master current-tripleo ceph
+    fi
   fi
 fi
 
