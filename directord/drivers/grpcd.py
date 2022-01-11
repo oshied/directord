@@ -32,7 +32,7 @@ try:
             "directord/drivers/generated/msg.proto"
         )
         grpc_MessageServiceServicer = msg_pb2_grpc.MessageServiceServicer
-    except NotImplementedError:
+    except (AttributeError, NotImplementedError):
         # Fall back to our generated version which requires grpc <= 1.26.0
         from directord.drivers.generated import msg_pb2
         from directord.drivers.generated import msg_pb2_grpc
