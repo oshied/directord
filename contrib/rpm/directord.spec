@@ -1,22 +1,21 @@
 %global pypi_name directord
-%{?!released_version: %global released_version 0.11.3}
-%{?git_ref: %global directord_version git%{git_ref}}
-%{!?git_ref: %global directord_version %{released_version}}
+%{?!released_version: %global released_version 0.12.0}
+%{?upstream_version: %global directord_version git%{upstream_version}}
+%{!?upstream_version: %global directord_version %{released_version}%{?milestone}}
 
 Name:           %{pypi_name}
+Version:        %{directord_version}
 Release:        1%{?dist}
 Summary:        A deployment framework built to manage the data center life cycle
 
-License:        None
+License:        ASL 2.0
 URL:            https://github.com/directord/directord
-Version:        %{directord_version}
 Source0:        directord.tar.gz
 
 BuildArch:      noarch
 
 BuildRequires:  python3-devel
 BuildRequires:  python3-coverage
-BuildRequires:  python3-flake8
 BuildRequires:  python3-flask
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-pyyaml
@@ -25,9 +24,6 @@ BuildRequires:  python3-tabulate
 BuildRequires:  python3-tenacity
 BuildRequires:  python3-oslo-messaging
 BuildRequires:  systemd-rpm-macros
-
-# Source Build Requirements
-# TODO(cloudnull): This needs to be packaged officially
 BuildRequires:  python3-ssh-python
 
 Requires:       python3-jinja2
@@ -61,7 +57,7 @@ getent group directord >/dev/null || groupadd -r directord
 exit 0
 
 %prep
-%autosetup -n %{pypi_name}
+%autosetup -n %{name}-%{upstream_version} -S git
 # Remove bundled egg-info
 rm -rf %{pypi_name}.egg-info
 
@@ -85,8 +81,6 @@ true
 %license LICENSE
 %doc README.md
 %{_bindir}/directord
-%{_bindir}/directord-client-systemd
-%{_bindir}/directord-server-systemd
 %{_datadir}/directord/components
 %{_datadir}/directord/orchestrations
 %{_datadir}/directord/pods
@@ -97,6 +91,7 @@ true
 
 %package server
 Summary:        Server components for Directord
+Requires:       %{pypi_name}
 
 %description server
 Server components for Directord, including the Systemd unit files
@@ -108,6 +103,7 @@ Server components for Directord, including the Systemd unit files
 
 %package client
 Summary:        Client components for Directord
+Requires:       %{pypi_name}
 
 %description client
 Client components for Directord, including the Systemd unit files
@@ -118,5 +114,9 @@ Client components for Directord, including the Systemd unit files
 %{_datadir}/directord/systemd/directord-client.service
 
 %changelog
+* Mon Jan 8 2022 James Slagle <jslagle@redhat.com>
+- Packaging updates to align with Fedora/RDO review guidelines
+
 * Thu Jul 29 2021 Kevin Carter <kecarter@redhat.com>
 - Initial package.
+
