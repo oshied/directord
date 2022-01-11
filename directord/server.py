@@ -722,7 +722,16 @@ class Server(interface.ProcessInterface):
             gid = int(group)
         except ValueError:
             gid = grp.getgrnam(group).gr_gid
-        os.chown(self.args.socket_path, uid, gid)
+        try:
+            os.chown(self.args.socket_path, uid, gid)
+        except PermissionError:
+            uid = os.getuid()
+            self.log.warning(
+                "Default socket bind permission failure. Running with current"
+                " UID: [ %s ]",
+                uid,
+            )
+            os.chown(self.args.socket_path, uid, gid)
         sock.listen(1)
         while True:
             try:
