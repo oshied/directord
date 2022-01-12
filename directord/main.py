@@ -371,7 +371,10 @@ def _args(exec_args=None):
     )
     manage_group.add_argument(
         "--job-info",
-        help="Pull information on a specific job ID.",
+        help=(
+            "Pull information on a specific job ID.\n"
+            "Supports special identifiers (last)"
+        ),
         metavar="STRING",
     )
     manage_group.add_argument(

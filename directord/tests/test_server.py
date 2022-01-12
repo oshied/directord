@@ -800,3 +800,7 @@ class TestServer(tests.TestDriverBase):
         mock_run_threads.assert_called_with(
             ANY, threads=[ANY, ANY, ANY], stop_event=ANY
         )
+
+    def test_handle_job_info(self):
+        data = self.server.handle_job_info("last")
+        self.assertEqual("XXX", dict(data)["last"]["job_id"])

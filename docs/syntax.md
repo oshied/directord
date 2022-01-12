@@ -489,6 +489,13 @@ ROUNDTRIP_TIME        0.023545026779174805
 Total Items: 14
 ```
 
+The `--job-info` command also accepts special identifiers (`last`), to more
+quickly inspect certain executions.
+
+``` shell
+$ directord --debug manage --job-info last
+```
+
 ###### Building an Orchestration
 
 ``` yaml

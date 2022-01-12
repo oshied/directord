@@ -22,6 +22,7 @@ import urllib.parse as urlparse
 
 import directord
 
+from directord import constants
 from directord import interface
 from directord import models
 from directord import utils
@@ -675,6 +676,23 @@ class Server(interface.ProcessInterface):
                 )
             )
 
+    def _node_return_info(self, node_info):
+        """Return a dictionary of parsed node information.
+
+        :param node_info: Node information
+        :type node_info: Dict
+        """
+
+        try:
+            _node_info = node_info.__dict__
+        except AttributeError:
+            return dict()
+        else:
+            _node_info["_nodes"] = node_info._nodes
+            _node_info["SUCCESS"] = node_info.success_nodes
+            _node_info["FAILED"] = node_info.failed_nodes
+            return _node_info
+
     def run_socket_server(self):
         """Start a socket server.
 
@@ -688,19 +706,6 @@ class Server(interface.ProcessInterface):
         ID can be defined in the data. If a task ID is not defined one will
         be generated.
         """
-
-        def _node_return_info(node_info):
-            """Return a dictionary of parsed node information."""
-
-            try:
-                _node_info = node_info.__dict__
-            except AttributeError:
-                return dict()
-            else:
-                _node_info["_nodes"] = node_info._nodes
-                _node_info["SUCCESS"] = node_info.success_nodes
-                _node_info["FAILED"] = node_info.failed_nodes
-                return _node_info
 
         try:
             os.unlink(self.args.socket_path)
@@ -761,20 +766,10 @@ class Server(interface.ProcessInterface):
                         data = list()
                         for k, v in self.return_jobs.items():
                             data.append(
-                                (str(k), _node_return_info(node_info=v))
+                                (str(k), self._node_return_info(node_info=v))
                             )
                     elif key == "job_info":
-                        try:
-                            data = [
-                                (
-                                    str(value),
-                                    _node_return_info(
-                                        node_info=self.return_jobs[value]
-                                    ),
-                                )
-                            ]
-                        except KeyError:
-                            data = []
+                        data = self.handle_job_info(value)
                     elif key == "purge_nodes":
                         self.workers.clear()
                         data = {"success": True}
@@ -984,6 +979,31 @@ class Server(interface.ProcessInterface):
                         data=new_task,
                     )
                 )
+
+    def handle_job_info(self, job_info):
+        """Return info for the given job.
+
+        :param job_id: Job Id
+        :type job_id: String
+        """
+
+        if job_info == constants.JOB_LAST:
+            if len(self.return_jobs) > 0:
+                job_id = list(self.return_jobs.keys())[-1]
+        else:
+            job_id = job_info
+
+        try:
+            data = [
+                (
+                    str(job_info),
+                    self._node_return_info(node_info=self.return_jobs[job_id]),
+                )
+            ]
+        except KeyError:
+            data = []
+
+        return data
 
     def worker_run(self):
         """Run all work related threads.
