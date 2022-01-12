@@ -17,6 +17,7 @@ import datetime
 import json
 import os
 import time
+import traceback
 
 import directord
 from directord import components
@@ -393,7 +394,7 @@ class Client(interface.ProcessInterface):
                 self.log.critical(stderr)
                 stdout = None
                 outcome = False
-                info = e.__traceback__
+                info = traceback.format_exc()
 
             job["component_exec_timestamp"] = datetime.datetime.fromtimestamp(
                 time.time()
