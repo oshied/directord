@@ -31,7 +31,7 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
   if [[ ${ID} == "rhel" ]]; then
     dnf install -y python3 ${TRIPLEO_REPOS}
     DISTRO="--no-stream --distro rhel${VERSION_INFO[0]}"
-    tripleo-repos ${DISTRO} -b master current-tripleo ceph
+    tripleo-repos ${DISTRO} -b master current-tripleo
   elif [[ ${ID} == "centos" ]]; then
     dnf install -y python3 ${TRIPLEO_REPOS}
     DISTRO="--distro centos${VERSION_INFO[0]}"
@@ -45,7 +45,7 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]]; then
         curl -o /etc/yum.repos.d/delorean.repo https://trunk.rdoproject.org/centos9-master/current-tripleo/delorean.repo
         curl -o /etc/yum.repos.d/delorean-deps.repo https://trunk.rdoproject.org/centos9-master/delorean-deps.repo
     else
-        tripleo-repos ${DISTRO} -b master current-tripleo ceph
+        tripleo-repos ${DISTRO} -b master current-tripleo
     fi
   fi
 fi
