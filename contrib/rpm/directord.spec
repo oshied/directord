@@ -24,10 +24,10 @@ BuildRequires:  python3-tabulate
 BuildRequires:  python3-tenacity
 BuildRequires:  python3-oslo-messaging
 BuildRequires:  systemd-rpm-macros
-BuildRequires:  python3-ssh-python
 
 Requires:       python3-jinja2
 Requires:       python3-pyyaml
+Requires:       python3-requests
 Requires:       python3-tabulate
 Requires:       python3-tenacity
 
@@ -91,7 +91,7 @@ true
 
 %package server
 Summary:        Server components for Directord
-Requires:       %{pypi_name}
+Requires:       %{pypi_name} = %{version}-%{release}
 
 %description server
 Server components for Directord, including the Systemd unit files
@@ -101,9 +101,18 @@ Server components for Directord, including the Systemd unit files
 %{_unitdir}/directord-server.service
 %{_datadir}/directord/systemd/directord-server.service
 
+%post server
+%systemd_post %{pypi_name}-server
+
+%preun server
+%systemd_preun %{pypi_name}-server
+
+%postun server
+%systemd_postun_with_restart %{pypi_name}-server
+
 %package client
 Summary:        Client components for Directord
-Requires:       %{pypi_name}
+Requires:       %{pypi_name} = %{version}-%{release}
 
 %description client
 Client components for Directord, including the Systemd unit files
@@ -113,10 +122,22 @@ Client components for Directord, including the Systemd unit files
 %{_unitdir}/directord-client.service
 %{_datadir}/directord/systemd/directord-client.service
 
+%post client
+%systemd_post %{pypi_name}-client
+
+%preun client
+%systemd_preun %{pypi_name}-client
+
+%postun client
+%systemd_postun_with_restart %{pypi_name}-client
+
 %changelog
+* Wed Jan 19 2022 James Slagle <jslagle@redhat.com>
+- Packaging updates to align with Fedora/RDO review guidelines
+- Remove python3-ssh-python from BuildRequires
+
 * Mon Jan 8 2022 James Slagle <jslagle@redhat.com>
 - Packaging updates to align with Fedora/RDO review guidelines
 
 * Thu Jul 29 2021 Kevin Carter <kecarter@redhat.com>
 - Initial package.
-
