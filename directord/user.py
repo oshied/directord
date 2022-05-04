@@ -262,9 +262,12 @@ class Manage(User):
             for item in job.get("FAILED", list()):
                 meta["node_failures"][item] += 1
 
-        analysis["actual_runtime"] = parent_jobs[-1].get(
-            "_lasttime", 0
-        ) - parent_jobs[0].get("_createtime", 0)
+        try:
+            analysis["actual_runtime"] = parent_jobs[-1].get(
+                "_lasttime", 0
+            ) - parent_jobs[0].get("_createtime", 0)
+        except IndexError:
+            return json.dumps({})
         analysis["slowest_node_execution"] = max(
             meta["execution"], key=meta["execution"].get
         )
