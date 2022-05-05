@@ -3,7 +3,7 @@
 ## Supported Versions
 
 The only supported version is the most current
-[release](https://github.com/directord/directord/releases). while it may
+[release](https://github.com/oshied/directord/releases). while it may
 be possible to backport changes to previous releases, doing so is a labor
 of love.
 

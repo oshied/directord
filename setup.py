@@ -60,9 +60,9 @@ setuptools.setup(
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/directord/directord",
+    url="https://github.com/oshied/directord",
     project_urls={
-        "Bug Tracker": "https://github.com/directord/directord/issues",
+        "Bug Tracker": "https://github.com/oshied/directord/issues",
     },
     python_requires=">=3.6",
     extras_require=REQUIREMENTS,

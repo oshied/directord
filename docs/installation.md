@@ -188,7 +188,7 @@ given checkout into the virtual environment.
 
 ``` shell
 python3 -m venv --system-site-packages /opt/directord
-/opt/directord/bin/pip install git+https://github.com/directord/directord
+/opt/directord/bin/pip install git+https://github.com/oshied/directord
 ```
 
 > Once Installed further installation customizations can be made within the

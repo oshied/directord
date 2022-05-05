@@ -247,7 +247,7 @@ Directord cluster.
   needed on the client side to manage pods; `pip install directord[dev]`.
 
 > Client side **podman** needs to be setup to enable the socket API. The
-  orchestration [podman.yaml](https://github.com/directord/directord/blob/main/orchestrations/podman.yaml)
+  orchestration [podman.yaml](https://github.com/oshied/directord/blob/main/orchestrations/podman.yaml)
   can be used to automate the **podman** installation and setup process.
 
 ##### `SECONTEXT`
@@ -385,7 +385,7 @@ simple.
 #### Complete User Defined Component Example
 
 An example user defined component is available within the **components**
-directory of Directord; [echo component](https://github.com/directord/directord/blob/main/components/echo.py).
+directory of Directord; [echo component](https://github.com/oshied/directord/blob/main/components/echo.py).
 
 ##### Minified Example
 
@@ -431,7 +431,7 @@ orchestrations.
 
 > The following shell output is from the invocation of the above user-defined
   component, which can also be seen
-  [here](https://github.com/directord/directord/blob/main/components/echo.py).
+  [here](https://github.com/oshied/directord/blob/main/components/echo.py).
 
 
 ###### Help Information From Components
@@ -515,7 +515,7 @@ The `ComponentBase` offers an Ansible documentation to Directord argument
 conversion method `options_converter`, which will allow developers to create
 new Directord components with ease. An example of a converted module can be
 seen in the `container_config_data` component and found
-[here](https://github.com/directord/directord/blob/main/components/container_config_data.py).
+[here](https://github.com/oshied/directord/blob/main/components/container_config_data.py).
 
 #### Job specification
 

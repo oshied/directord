@@ -17,7 +17,7 @@ across a 6 node environment.
 
 he following sections detail what was tested and how. All of the tools used for
 these tests are provided within the Directord
-[repository](https://github.com/directord/directord).
+[repository](https://github.com/oshied/directord).
 
 The server used (orchestration node) within the test environment was a
 standalone machine, which was not part of the test executions. The server only

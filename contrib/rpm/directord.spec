@@ -9,7 +9,7 @@ Release:        1%{?dist}
 Summary:        A deployment framework built to manage the data center life cycle
 
 License:        ASL 2.0
-URL:            https://github.com/directord/directord
+URL:            https://github.com/oshied/directord
 Source0:        directord.tar.gz
 
 BuildArch:      noarch

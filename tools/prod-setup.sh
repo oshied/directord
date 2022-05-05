@@ -62,7 +62,7 @@ if [[ ${ID} == "rhel" ]] || [[ ${ID} == "centos" ]] || [[ ${ID} == "fedora" ]]; 
   mkdir -p ~/directord-RPMS
   pushd ~/directord-RPMS
     rm -f rpm-bundle.tar.gz
-    wget https://github.com/directord/directord/releases/download/${RELEASE}/rpm-bundle.tar.gz
+    wget https://github.com/oshied/directord/releases/download/${RELEASE}/rpm-bundle.tar.gz
     tar xf rpm-bundle.tar.gz
     RPMS=$(ls -1 *.rpm | egrep -v '(debug|src)')
   popd
