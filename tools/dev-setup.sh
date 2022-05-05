@@ -154,3 +154,7 @@ if [ "${SETUP}" = true ]; then
     echo "${VENV_PATH}/bin/directord-client-systemd"
   fi
 fi
+
+echo "Directord has been installed."
+echo "Update your PATH with the following to make Directord available on the system"
+echo -e "    export PATH=\$PATH:${VENV_PATH}/bin\n"
