@@ -25,9 +25,9 @@ with open("README.md", "r", encoding="utf-8") as f:
 GPRC_PACKAGE = "grpcio-tools>=1.26.0"
 
 REQUIREMENTS = {
-    "dev": ["podman-py", GPRC_PACKAGE],
     "test": ["flake8", "coverage"],
     "redis": ["redis"],
+    "containers": ["podman"],
     "oslo_messaging": ["oslo_messaging[amqp1]"],
     "zmq": ["pyzmq"],
     "grpc": [GPRC_PACKAGE, "protobuf"],
@@ -35,6 +35,12 @@ REQUIREMENTS = {
 
 REQUIREMENTS["all"] = list(
     set([item for line in REQUIREMENTS.values() for item in line])
+)
+
+req = REQUIREMENTS.copy()
+req.pop("test")
+REQUIREMENTS["dev"] = list(
+    set([item for line in req.values() for item in line])
 )
 
 
