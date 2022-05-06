@@ -1,6 +1,6 @@
-ARG VERSION=0.1.0
+ARG VERSION=0.1.2
 
-FROM registry.access.redhat.com/ubi8/python-38 as BUILD
+FROM registry.access.redhat.com/ubi8/python-39 as BUILD
 
 LABEL summary="Directord used to orchestrate system deployments." \
       description="Directord used to orchestrate system deployments." \
@@ -15,10 +15,10 @@ LABEL summary="Directord used to orchestrate system deployments." \
 USER root
 
 WORKDIR /build
-RUN python3.8 -m venv /build/builder
+RUN python3.9 -m venv /build/builder
 RUN /build/builder/bin/pip install --force --upgrade pip setuptools bindep wheel
 ADD . /build/
-RUN bash -c "EXTRA_DEPENDENCIES=all /build/tools/dev-setup.sh /directord /bin/python3.8 /build false"
+RUN bash -c "EXTRA_DEPENDENCIES=all /build/tools/dev-setup.sh /directord /bin/python3.9 /build false"
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 EXPOSE 5555
@@ -26,8 +26,8 @@ EXPOSE 5556
 EXPOSE 5557
 COPY --from=BUILD /etc/yum.repos.d /etc/yum.repos.d
 COPY --from=BUILD /etc/pki /etc/pki
-RUN microdnf install -y openssh-clients python3.8 zeromq libsodium hostname && rm -rf /var/cache/{dnf,yum}
-RUN /bin/python3.8 -m venv --upgrade /directord
+RUN microdnf install -y openssh-clients python3.9 zeromq libsodium hostname && rm -rf /var/cache/{dnf,yum}
+RUN /bin/python3.9 -m venv --upgrade /directord
 COPY --from=BUILD /directord /directord
 ADD assets/entrypoint /bin/entrypoint
 RUN chmod +x /bin/entrypoint
