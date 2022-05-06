@@ -27,6 +27,7 @@ GPRC_PACKAGE = "grpcio-tools>=1.26.0"
 REQUIREMENTS = {
     "test": ["flake8", "coverage"],
     "redis": ["redis"],
+    "containers": ["podman"],
     "oslo_messaging": ["oslo_messaging[amqp1]"],
     "zmq": ["pyzmq"],
     "grpc": [GPRC_PACKAGE, "protobuf"],
